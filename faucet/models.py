@@ -12,8 +12,8 @@ class BrightUser(models.Model):
     states = ((PENDING, "Pending"),
               (VERIFIED, "Verified"))
 
-    user = models.OneToOneField(User, related_name="bright_user", on_delete=models.CASCADE)
-    address = models.CharField(max_length=45)
+
+    address = models.CharField(max_length=45, unique=True)
     context_id = models.UUIDField(default=uuid.uuid4, unique=True)
 
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
@@ -23,8 +23,7 @@ class BrightUser(models.Model):
         try:
             return BrightUser.objects.get(address=address)
         except BrightUser.DoesNotExist:
-            _user = User.objects.create_user(username=address)
-            return BrightUser.objects.create(user=_user, address=address)
+            return BrightUser.objects.create(address=address)
 
     def get_verification_status(self, bright_driver=BRIGHT_ID_DRIVER) -> states:
         if self._verification_status == self.VERIFIED:

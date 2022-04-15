@@ -41,6 +41,18 @@ class TestCreateAccount(APITestCase):
         self.assertIsNotNone(json.loads(response.content).get('context_id'))
         self.assertEqual(json.loads(response.content).get('address'), "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250")
 
+    def test_should_fail_to_create_duplicate_address(self):
+        endpoint = reverse("FAUCET:create-user")
+        response_1 = self.client.post(endpoint, data={
+            'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+        })
+        response_2 = self.client.post(endpoint, data={
+            'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+        })
+
+        self.assertEqual(response_1.status_code, 201)
+        self.assertEqual(response_2.status_code, 400)
+
     def test_newly_created_user_verification_status_should_be_pending(self):
         new_user = self.create_new_user()
         self.assertEqual(new_user.get_verification_status(self.mock_bright_id_driver), BrightUser.PENDING)
@@ -50,7 +62,3 @@ class TestCreateAccount(APITestCase):
         url = new_user.get_verification_url(self.mock_bright_id_driver)
         self.assertEqual(url, "http://<no-link>")
         self.assertEqual(new_user.get_verification_status(self.mock_bright_id_driver), BrightUser.VERIFIED)
-
-    def test_get_verified_users_token(self):
-        new_user = self.create_new_user()
-        new_user.get_verification_url(self.mock_bright_id_driver)
