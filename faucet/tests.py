@@ -1,7 +1,10 @@
 import json
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APITestCase
-from faucet.models import BrightUser
+
+from faucet.credit_strategy import SimpleCreditStrategy
+from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
 def create_new_user():
@@ -54,3 +57,49 @@ class TestChainInfo(APITestCase):
         endpoint = reverse("FAUCET:chain-list")
         chains = self.client.get(endpoint)
         self.assertEqual(chains.status_code, 200)
+
+
+def create_xDai_chain():
+    return Chain.objects.create(name="Gnosis Chain", symbol="XDAI",
+                                chain_id="10")
+
+
+def create_ethereum_chain():
+    return Chain.objects.create(name="Ethereum", symbol="ETH", chain_id="20")
+
+
+class TestClaim(APITestCase):
+
+    def setUp(self) -> None:
+        self.new_user = create_new_user()
+        self.xdai = create_xDai_chain()
+        self.eth = create_ethereum_chain()
+
+    def test_get_claimed_should_be_zero(self):
+        credit_strategy_xdai = SimpleCreditStrategy(self.xdai, self.new_user)
+        credit_strategy_eth = SimpleCreditStrategy(self.eth, self.new_user)
+
+        self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
+        self.assertEqual(credit_strategy_eth.get_claimed(), 0)
+
+    def test_xdai_claimed_be_zero_eth_be_100(self):
+        ClaimReceipt.objects.create(chain=self.eth,
+                                    bright_user=self.new_user,
+                                    datetime=timezone.now(),
+                                    amount=100)
+
+        credit_strategy_xdai = SimpleCreditStrategy(self.xdai, self.new_user)
+        credit_strategy_eth = SimpleCreditStrategy(self.eth, self.new_user)
+
+        self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
+        self.assertEqual(credit_strategy_eth.get_claimed(), 100)
+
+    def test_claimed_should_not_be_zero(self):
+        return
+        endpoint = reverse("FAUCET:get-unclaimed",
+                           kwargs={'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250",
+                                   'chain_pk': self.xdai.pk})
+        response = self.client.get(endpoint)
+
+        self.assertNotEqual(json.loads(response.content)['unclaimed'], 0)
+        self.assertEqual(response.status_code, 200)

@@ -28,3 +28,7 @@ class GetVerificationUrlView(RetrieveAPIView):
 class ChainListView(ListAPIView):
     serializer_class = ChainSerializer
     queryset = Chain.objects.all()
+
+
+class GetUnclaimed(RetrieveAPIView):
+    pass

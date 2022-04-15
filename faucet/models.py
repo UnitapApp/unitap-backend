@@ -1,8 +1,7 @@
-from django.contrib.auth.models import User
-from django.db import models, transaction
+from django.db import models
 import uuid
 
-from brightIDfaucet.settings import BRIGHT_ID_DRIVER
+from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
 
 class Chain(models.Model):
@@ -28,7 +27,7 @@ class BrightUser(models.Model):
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
 
     @property
-    def verification_url(self, bright_driver=BRIGHT_ID_DRIVER):
+    def verification_url(self, bright_driver=BRIGHT_ID_INTERFACE):
         return bright_driver.get_verification_link(str(self.context_id))
 
     @property
@@ -42,7 +41,7 @@ class BrightUser(models.Model):
         except BrightUser.DoesNotExist:
             return BrightUser.objects.create(address=address)
 
-    def get_verification_status(self, bright_driver=BRIGHT_ID_DRIVER) -> states:
+    def get_verification_status(self, bright_driver=BRIGHT_ID_INTERFACE) -> states:
         if self._verification_status == self.VERIFIED:
             return self.VERIFIED
 
@@ -54,5 +53,14 @@ class BrightUser(models.Model):
 
         return self._verification_status
 
-    def get_verification_url(self, bright_driver=BRIGHT_ID_DRIVER) -> str:
+    def get_verification_url(self, bright_driver=BRIGHT_ID_INTERFACE) -> str:
         return bright_driver.get_verification_link(str(self.context_id))
+
+
+class ClaimReceipt(models.Model):
+    chain = models.ForeignKey(Chain, related_name="claims", on_delete=models.PROTECT)
+    bright_user = models.ForeignKey(BrightUser, related_name="claims", on_delete=models.PROTECT)
+
+    amount = models.BigIntegerField()
+    datetime = models.DateTimeField()
+    tx_hash = models.CharField(max_length=100, blank=True, null=True)
