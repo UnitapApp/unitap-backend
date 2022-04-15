@@ -4,16 +4,6 @@ import uuid
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
 
-class Chain(models.Model):
-    name = models.CharField(max_length=255)
-    symbol = models.CharField(max_length=255)
-    chain_id = models.CharField(max_length=255, unique=True)
-    rpc_url = models.URLField(max_length=255, blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.pk} - {self.symbol}:{self.chain_id}"
-
-
 class BrightUser(models.Model):
     PENDING = "0"
     VERIFIED = "1"
@@ -55,6 +45,18 @@ class BrightUser(models.Model):
 
     def get_verification_url(self, bright_driver=BRIGHT_ID_INTERFACE) -> str:
         return bright_driver.get_verification_link(str(self.context_id))
+
+
+class Chain(models.Model):
+    name = models.CharField(max_length=255)
+    symbol = models.CharField(max_length=255)
+    chain_id = models.CharField(max_length=255, unique=True)
+    rpc_url = models.URLField(max_length=255, blank=True, null=True)
+
+    max_claim_amount = models.BigIntegerField()
+
+    def __str__(self):
+        return f"{self.pk} - {self.symbol}:{self.chain_id}"
 
 
 class ClaimReceipt(models.Model):

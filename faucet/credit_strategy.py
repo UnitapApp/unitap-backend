@@ -18,3 +18,6 @@ class SimpleCreditStrategy:
         if not _sum:
             return 0
         return _sum
+
+    def get_unclaimed(self):
+        return self.chain.max_claim_amount - self.get_claimed()

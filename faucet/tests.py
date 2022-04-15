@@ -61,11 +61,11 @@ class TestChainInfo(APITestCase):
 
 def create_xDai_chain():
     return Chain.objects.create(name="Gnosis Chain", symbol="XDAI",
-                                chain_id="10")
+                                chain_id="10", max_claim_amount=800)
 
 
 def create_ethereum_chain():
-    return Chain.objects.create(name="Ethereum", symbol="ETH", chain_id="20")
+    return Chain.objects.create(name="Ethereum", symbol="ETH", chain_id="20", max_claim_amount=1000)
 
 
 class TestClaim(APITestCase):
@@ -81,6 +81,8 @@ class TestClaim(APITestCase):
 
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
         self.assertEqual(credit_strategy_eth.get_claimed(), 0)
+        self.assertEqual(credit_strategy_xdai.get_unclaimed(), 800)
+        self.assertEqual(credit_strategy_eth.get_unclaimed(), 1000)
 
     def test_xdai_claimed_be_zero_eth_be_100(self):
         ClaimReceipt.objects.create(chain=self.eth,
@@ -93,13 +95,6 @@ class TestClaim(APITestCase):
 
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
         self.assertEqual(credit_strategy_eth.get_claimed(), 100)
+        self.assertEqual(credit_strategy_xdai.get_unclaimed(), 800)
+        self.assertEqual(credit_strategy_eth.get_unclaimed(), 900)
 
-    def test_claimed_should_not_be_zero(self):
-        return
-        endpoint = reverse("FAUCET:get-unclaimed",
-                           kwargs={'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250",
-                                   'chain_pk': self.xdai.pk})
-        response = self.client.get(endpoint)
-
-        self.assertNotEqual(json.loads(response.content)['unclaimed'], 0)
-        self.assertEqual(response.status_code, 200)
