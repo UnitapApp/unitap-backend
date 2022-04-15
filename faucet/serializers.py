@@ -6,10 +6,10 @@ from rest_framework import serializers
 from faucet.models import BrightUser
 
 
-class CreateUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BrightUser
-        fields = ['pk', 'context_id', "address"]
+        fields = ['pk', 'context_id', "address", "verification_url", "verification_status"]
         read_only_fields = ['context_id']
 
     def create(self, validated_data):

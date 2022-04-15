@@ -62,3 +62,9 @@ class TestCreateAccount(APITestCase):
         url = new_user.get_verification_url(self.mock_bright_id_driver)
         self.assertEqual(url, "http://<no-link>")
         self.assertEqual(new_user.get_verification_status(self.mock_bright_id_driver), BrightUser.VERIFIED)
+
+    def test_get_verification_url(self):
+        endpoint = reverse("FAUCET:get-verification-url",
+                           kwargs={'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"})
+        response_1 = self.client.get(endpoint)
+        self.assertEqual(response_1.status_code, 200)

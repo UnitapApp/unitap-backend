@@ -12,11 +12,18 @@ class BrightUser(models.Model):
     states = ((PENDING, "Pending"),
               (VERIFIED, "Verified"))
 
-
     address = models.CharField(max_length=45, unique=True)
     context_id = models.UUIDField(default=uuid.uuid4, unique=True)
 
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
+
+    @property
+    def verification_url(self, bright_driver=BRIGHT_ID_DRIVER):
+        return bright_driver.get_verification_link(str(self.context_id))
+
+    @property
+    def verification_status(self):
+        return self.get_verification_status()
 
     @staticmethod
     def get_or_create(address):
@@ -24,6 +31,8 @@ class BrightUser(models.Model):
             return BrightUser.objects.get(address=address)
         except BrightUser.DoesNotExist:
             return BrightUser.objects.create(address=address)
+
+
 
     def get_verification_status(self, bright_driver=BRIGHT_ID_DRIVER) -> states:
         if self._verification_status == self.VERIFIED:
