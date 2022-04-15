@@ -129,4 +129,19 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-BRIGHT_ID_DRIVER = BrightIDDeriver(APP_NAME)
+if DEBUG:
+    class MockBrightIdDriver(BrightIDDeriver):
+        states = {}
+
+        def __init__(self, app_name):
+            super(MockBrightIdDriver, self).__init__(app_name)
+
+        def get_verification_link(self, context_id, network="app"):
+            self.states[context_id] = True
+            return "http://<no-link>"
+
+        def get_verification_status(self, context_id, network="node"):
+            return self.states.get(context_id, False)
+    BRIGHT_ID_DRIVER = MockBrightIdDriver(APP_NAME)
+else:
+    BRIGHT_ID_DRIVER = BrightIDDeriver(APP_NAME)

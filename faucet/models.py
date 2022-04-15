@@ -5,6 +5,16 @@ import uuid
 from brightIDfaucet.settings import BRIGHT_ID_DRIVER
 
 
+class Chain(models.Model):
+    name = models.CharField(max_length=255)
+    symbol = models.CharField(max_length=255)
+    chain_id = models.CharField(max_length=255, unique=True)
+    rpc_url = models.URLField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.pk} - {self.symbol}:{self.chain_id}"
+
+
 class BrightUser(models.Model):
     PENDING = "0"
     VERIFIED = "1"
@@ -31,8 +41,6 @@ class BrightUser(models.Model):
             return BrightUser.objects.get(address=address)
         except BrightUser.DoesNotExist:
             return BrightUser.objects.create(address=address)
-
-
 
     def get_verification_status(self, bright_driver=BRIGHT_ID_DRIVER) -> states:
         if self._verification_status == self.VERIFIED:
