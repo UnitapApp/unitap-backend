@@ -27,24 +27,30 @@ class TestCreateAccount(APITestCase):
 
     def setUp(self) -> None:
         self.mock_bright_id_driver = MockBrightIdDriver(APP_NAME)
-        self.new_user = self.create_new_user()
 
     @staticmethod
     def create_new_user():
-        _uuid = uuid.uuid4()
-        user = User.objects.create_user(username=str(_uuid))
-        return BrightUser.objects.create(user=user, context_id=_uuid)
+        return BrightUser.get_or_create("0xaa6cD66cA508F22fe125e83342c7dc3dbE779250")
 
     def test_create_bright_user(self):
         endpoint = reverse("FAUCET:create-user")
-        response = self.client.post(endpoint)
+        response = self.client.post(endpoint, data={
+            'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+        })
         self.assertEqual(response.status_code, 201)
         self.assertIsNotNone(json.loads(response.content).get('context_id'))
+        self.assertEqual(json.loads(response.content).get('address'), "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250")
 
     def test_newly_created_user_verification_status_should_be_pending(self):
-        self.assertEqual(self.new_user.get_verification_status(self.mock_bright_id_driver), BrightUser.PENDING)
+        new_user = self.create_new_user()
+        self.assertEqual(new_user.get_verification_status(self.mock_bright_id_driver), BrightUser.PENDING)
 
     def test_verify_bright_user(self):
-        url = self.new_user.get_verification_url(self.mock_bright_id_driver)
+        new_user = self.create_new_user()
+        url = new_user.get_verification_url(self.mock_bright_id_driver)
         self.assertEqual(url, "http://<no-link>")
-        self.assertEqual(self.new_user.get_verification_status(self.mock_bright_id_driver), BrightUser.VERIFIED)
+        self.assertEqual(new_user.get_verification_status(self.mock_bright_id_driver), BrightUser.VERIFIED)
+
+    def test_get_verified_users_token(self):
+        new_user = self.create_new_user()
+        new_user.get_verification_url(self.mock_bright_id_driver)
