@@ -52,14 +52,6 @@ class TestCreateAccount(APITestCase):
         self.assertEqual(response_1.status_code, 200)
 
 
-class TestChainInfo(APITestCase):
-
-    def test_list_chains(self):
-        endpoint = reverse("FAUCET:chain-list")
-        chains = self.client.get(endpoint)
-        self.assertEqual(chains.status_code, 200)
-
-
 def create_xDai_chain():
     return Chain.objects.create(name="Gnosis Chain", symbol="XDAI",
                                 chain_id="100", max_claim_amount=800)
@@ -67,6 +59,21 @@ def create_xDai_chain():
 
 def create_idChain_chain():
     return Chain.objects.create(name="IDChain", symbol="eidi", chain_id="74", max_claim_amount=1000)
+
+
+class TestChainInfo(APITestCase):
+    def setUp(self) -> None:
+        self.new_user = create_new_user()
+        self.xdai = create_xDai_chain()
+        self.idChain = create_idChain_chain()
+
+    def test_list_chains(self):
+        endpoint = reverse("FAUCET:chain-list")
+        chains = self.client.get(endpoint)
+        self.assertEqual(chains.status_code, 200)
+
+    def test_list_chain_claimed_and_unclaimed_info(self):
+        pass
 
 
 class TestClaim(APITestCase):

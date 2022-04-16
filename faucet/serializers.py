@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ChainSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Chain
-        fields = ['pk', 'name', 'symbol', 'chain_id', 'rpc_url']
+        fields = ['pk', 'name', 'symbol', 'chain_id', 'rpc_url', 'max_claim_amount']

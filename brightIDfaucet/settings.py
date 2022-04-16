@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-from faucet.brightID_interface import BrightIInterface
+from faucet.brightID_interface import BrightIDInterface
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -130,7 +130,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 if DEBUG:
-    class MockBrightIdDriver(BrightIInterface):
+    class MockBrightIdDriver(BrightIDInterface):
         states = {}
 
         def __init__(self, app_name):
@@ -144,4 +144,4 @@ if DEBUG:
             return self.states.get(context_id, False)
     BRIGHT_ID_INTERFACE = MockBrightIdDriver(APP_NAME)
 else:
-    BRIGHT_ID_INTERFACE = BrightIInterface(APP_NAME)
+    BRIGHT_ID_INTERFACE = BrightIDInterface(APP_NAME)
