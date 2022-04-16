@@ -7,6 +7,10 @@ from faucet.models import ClaimReceipt
 
 class CreditStrategy(ABC):
 
+    def __int__(self, chain, bright_user):
+        self.chain = chain
+        self.bright_user = bright_user
+
     @abc.abstractmethod
     def get_claim_receipts(self):
         pass

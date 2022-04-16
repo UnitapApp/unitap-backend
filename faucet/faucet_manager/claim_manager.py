@@ -1,7 +1,10 @@
 import abc
 from abc import ABC
 
-from faucet.faucet_manager.credit_strategy import CreditStrategy
+from django.utils import timezone
+
+from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
+from faucet.models import ClaimReceipt
 
 
 class ClaimManager(ABC):
@@ -18,12 +21,25 @@ class SimpleClaimManager(ClaimManager):
 
     def claim(self, amount):
         assert amount <= self.credit_strategy.get_unclaimed()
+        ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
+                                    bright_user=self.credit_strategy.bright_user,
+                                    amount=amount,
+                                    datetime=timezone.now())
 
 
 class ClaimManagerFactory:
 
-    def __init__(self):
-        pass
+    default_claim_manager = {
+        '100': SimpleClaimManager,
+        '74': SimpleClaimManager
+    }
+
+    def __init__(self, chain, bright_user):
+        self.chain = chain
+        self.bright_user = bright_user
 
     def get_manager(self) -> ClaimManager:
-        pass
+        _Manager = self.default_claim_manager[self.chain.chain_id]
+        assert _Manager is not None, f"Manager for chain {self.chain.pk} not found"
+        _strategy = CreditStrategyFactory(self.chain, self.bright_user).get_strategy()
+        return _Manager(_strategy)

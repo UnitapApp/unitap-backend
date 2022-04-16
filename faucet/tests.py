@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
+from faucet.faucet_manager.claim_manager import ClaimManagerFactory
 from faucet.faucet_manager.credit_strategy import SimpleCreditStrategy, CreditStrategyFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
@@ -96,3 +97,20 @@ class TestClaim(APITestCase):
         self.assertEqual(credit_strategy_idChain.get_claimed(), 100)
         self.assertEqual(credit_strategy_xdai.get_unclaimed(), 800)
         self.assertEqual(credit_strategy_idChain.get_unclaimed(), 900)
+
+    def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
+        claim_manager_x_dai = ClaimManagerFactory(self.xdai, self.new_user).get_manager()
+        try:
+            claim_manager_x_dai.claim(950)
+            self.assertEqual(True, False)
+        except AssertionError:
+            self.assertEqual(True, True)
+
+    def test_claim_manager_should_claim(self):
+        claim_manager_x_dai = ClaimManagerFactory(self.xdai, self.new_user).get_manager()
+        credit_strategy_x_dai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
+
+        claim_manager_x_dai.claim(100)
+
+        self.assertEqual(credit_strategy_x_dai.get_claimed(), 100)
+        self.assertEqual(credit_strategy_x_dai.get_unclaimed(), 700)
