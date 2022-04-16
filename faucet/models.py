@@ -1,5 +1,6 @@
 from django.db import models
 import uuid
+from encrypted_model_fields.fields import EncryptedCharField
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -54,6 +55,8 @@ class Chain(models.Model):
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
 
     max_claim_amount = models.BigIntegerField()
+
+    wallet_key = EncryptedCharField(max_length=100)
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
