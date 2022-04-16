@@ -17,8 +17,8 @@ class BrightUser(models.Model):
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
 
     @property
-    def verification_url(self, bright_driver=BRIGHT_ID_INTERFACE):
-        return bright_driver.get_verification_link(str(self.context_id))
+    def verification_url(self, bright_interface=BRIGHT_ID_INTERFACE):
+        return bright_interface.get_verification_link(str(self.context_id))
 
     @property
     def verification_status(self):
@@ -31,11 +31,11 @@ class BrightUser(models.Model):
         except BrightUser.DoesNotExist:
             return BrightUser.objects.create(address=address)
 
-    def get_verification_status(self, bright_driver=BRIGHT_ID_INTERFACE) -> states:
+    def get_verification_status(self, bright_interface=BRIGHT_ID_INTERFACE) -> states:
         if self._verification_status == self.VERIFIED:
             return self.VERIFIED
 
-        is_verified = bright_driver.get_verification_status(str(self.context_id))
+        is_verified = bright_interface.get_verification_status(str(self.context_id))
 
         if is_verified:
             self._verification_status = self.VERIFIED
@@ -43,8 +43,8 @@ class BrightUser(models.Model):
 
         return self._verification_status
 
-    def get_verification_url(self, bright_driver=BRIGHT_ID_INTERFACE) -> str:
-        return bright_driver.get_verification_link(str(self.context_id))
+    def get_verification_url(self, bright_interface=BRIGHT_ID_INTERFACE) -> str:
+        return bright_interface.get_verification_link(str(self.context_id))
 
 
 class Chain(models.Model):

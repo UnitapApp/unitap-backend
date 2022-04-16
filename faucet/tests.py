@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
-from faucet.credit_strategy import SimpleCreditStrategy
+from faucet.faucet_manager.credit_strategy import SimpleCreditStrategy, CreditStrategyFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
@@ -61,11 +61,11 @@ class TestChainInfo(APITestCase):
 
 def create_xDai_chain():
     return Chain.objects.create(name="Gnosis Chain", symbol="XDAI",
-                                chain_id="10", max_claim_amount=800)
+                                chain_id="100", max_claim_amount=800)
 
 
-def create_ethereum_chain():
-    return Chain.objects.create(name="Ethereum", symbol="ETH", chain_id="20", max_claim_amount=1000)
+def create_idChain_chain():
+    return Chain.objects.create(name="IDChain", symbol="eidi", chain_id="74", max_claim_amount=1000)
 
 
 class TestClaim(APITestCase):
@@ -73,28 +73,26 @@ class TestClaim(APITestCase):
     def setUp(self) -> None:
         self.new_user = create_new_user()
         self.xdai = create_xDai_chain()
-        self.eth = create_ethereum_chain()
+        self.idChain = create_idChain_chain()
 
     def test_get_claimed_should_be_zero(self):
-        credit_strategy_xdai = SimpleCreditStrategy(self.xdai, self.new_user)
-        credit_strategy_eth = SimpleCreditStrategy(self.eth, self.new_user)
+        credit_strategy_xdai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
+        credit_strategy_idChain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
 
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
-        self.assertEqual(credit_strategy_eth.get_claimed(), 0)
+        self.assertEqual(credit_strategy_idChain.get_claimed(), 0)
         self.assertEqual(credit_strategy_xdai.get_unclaimed(), 800)
-        self.assertEqual(credit_strategy_eth.get_unclaimed(), 1000)
+        self.assertEqual(credit_strategy_idChain.get_unclaimed(), 1000)
 
     def test_xdai_claimed_be_zero_eth_be_100(self):
-        ClaimReceipt.objects.create(chain=self.eth,
+        ClaimReceipt.objects.create(chain=self.idChain,
                                     bright_user=self.new_user,
                                     datetime=timezone.now(),
                                     amount=100)
 
-        credit_strategy_xdai = SimpleCreditStrategy(self.xdai, self.new_user)
-        credit_strategy_eth = SimpleCreditStrategy(self.eth, self.new_user)
-
+        credit_strategy_xdai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
+        credit_strategy_idChain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
-        self.assertEqual(credit_strategy_eth.get_claimed(), 100)
+        self.assertEqual(credit_strategy_idChain.get_claimed(), 100)
         self.assertEqual(credit_strategy_xdai.get_unclaimed(), 800)
-        self.assertEqual(credit_strategy_eth.get_unclaimed(), 900)
-
+        self.assertEqual(credit_strategy_idChain.get_unclaimed(), 900)
