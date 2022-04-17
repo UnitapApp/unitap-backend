@@ -168,3 +168,27 @@ class TestClaim(APITestCase):
 
         self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
         self.assertEqual(credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount)
+
+    def test_only_one_pending_claim(self):
+        claim_amount_1 = 100
+        claim_amount_2 = 50
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai.claim(claim_amount_1)
+
+        try:
+            claim_manager_x_dai.claim(claim_amount_2)
+            self.assertEqual(True, False)
+        except AssertionError:
+            self.assertEqual(True, True)
+
+    def test_two_claims_after_first_verifies(self):
+        claim_amount_1 = 100
+        claim_amount_2 = 50
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai.claim(claim_amount_1)
+
+        try:
+            claim_manager_x_dai.claim(claim_amount_2)
+            self.assertEqual(True, False)
+        except AssertionError:
+            self.assertEqual(True, True)

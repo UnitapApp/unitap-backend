@@ -24,17 +24,30 @@ class SimpleClaimManager(ClaimManager):
         with transaction.atomic():
             bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
 
-            assert amount <= self.credit_strategy.get_unclaimed()
-            assert self.credit_strategy.bright_user.verification_status == BrightUser.VERIFIED
+            self.assert_pre_claim_conditions(amount, bright_user)
+            self.create_claim_receipt(amount, bright_user)
 
-            ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
-                                        bright_user=bright_user,
-                                        amount=amount,
-                                        datetime=timezone.now())
+    def create_claim_receipt(self, amount, bright_user):
+        ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
+                                    bright_user=bright_user,
+                                    amount=amount,
+                                    datetime=timezone.now())
+
+    def assert_pre_claim_conditions(self, amount, bright_user):
+        assert amount <= self.credit_strategy.get_unclaimed()
+        assert self.credit_strategy.bright_user.verification_status == BrightUser.VERIFIED
+
+        # update receipts first
+        ClaimReceipt.update_status(self.credit_strategy.chain, bright_user)
+
+        assert not ClaimReceipt.objects.filter(
+            chain=self.credit_strategy.chain,
+            bright_user=bright_user,
+            _status=BrightUser.PENDING
+        ).exists()
 
 
 class ClaimManagerFactory:
-
     default_claim_manager = {
         '100': SimpleClaimManager,
         '74': SimpleClaimManager

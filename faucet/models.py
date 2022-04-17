@@ -63,9 +63,37 @@ class Chain(models.Model):
 
 
 class ClaimReceipt(models.Model):
+    MAX_PENDING_DURATION = 15  # minutes
+    PENDING = '0'
+    VERIFIED = '1'
+    REJECTED = '2'
+
+    states = ((PENDING, "Pending"),
+              (VERIFIED, "Verified"),
+              (REJECTED, "Rejected")
+              )
+
     chain = models.ForeignKey(Chain, related_name="claims", on_delete=models.PROTECT)
     bright_user = models.ForeignKey(BrightUser, related_name="claims", on_delete=models.PROTECT)
+
+    _status = models.CharField(max_length=1, choices=states, default=PENDING)
 
     amount = models.BigIntegerField()
     datetime = models.DateTimeField()
     tx_hash = models.CharField(max_length=100, blank=True, null=True)
+
+    @staticmethod
+    def update_status(chain, bright_user):
+        # verified and rejected receipts don't get updated,
+        # so only update pending receipts
+        for pending_recept in ClaimReceipt.objects.filter(chain=chain,
+                                                          bright_user=bright_user,
+                                                          _status=ClaimReceipt.PENDING):
+            # todo: fetch status from blockchain
+            pass
+
+    def get_status(self) -> states:
+        if self._status in [self.VERIFIED, self.REJECTED]:
+            return self._status
+        self.update_status(self.chain, self.bright_user)
+        return self._status
