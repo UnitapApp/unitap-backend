@@ -2,12 +2,12 @@ import abc
 from abc import ABC
 
 from django.db.models import Sum
-from faucet.models import ClaimReceipt
+from faucet.models import ClaimReceipt, BrightUser, Chain
 
 
 class CreditStrategy(ABC):
 
-    def __int__(self, chain, bright_user):
+    def __int__(self, chain: Chain, bright_user: BrightUser):
         self.chain = chain
         self.bright_user = bright_user
 

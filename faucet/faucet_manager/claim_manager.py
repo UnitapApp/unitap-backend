@@ -4,7 +4,7 @@ from abc import ABC
 from django.utils import timezone
 
 from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
-from faucet.models import ClaimReceipt
+from faucet.models import ClaimReceipt, BrightUser
 
 
 class ClaimManager(ABC):
@@ -21,6 +21,8 @@ class SimpleClaimManager(ClaimManager):
 
     def claim(self, amount):
         assert amount <= self.credit_strategy.get_unclaimed()
+        assert self.credit_strategy.bright_user.verification_status == BrightUser.VERIFIED
+
         ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
                                     bright_user=self.credit_strategy.bright_user,
                                     amount=amount,

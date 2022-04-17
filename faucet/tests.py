@@ -8,8 +8,15 @@ from faucet.faucet_manager.credit_strategy import SimpleCreditStrategy, CreditSt
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
-def create_new_user():
+def create_new_user() -> BrightUser:
     return BrightUser.get_or_create("0xaa6cD66cA508F22fe125e83342c7dc3dbE779250")
+
+
+def create_verified_user() -> BrightUser:
+    user = create_new_user()
+    user._verification_status = BrightUser.VERIFIED
+    user.save()
+    return user
 
 
 address = "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
@@ -107,11 +114,12 @@ class TestClaim(APITestCase):
 
     def setUp(self) -> None:
         self.new_user = create_new_user()
-        self.xdai = create_xDai_chain()
+        self.verified_user = create_verified_user()
+        self.x_dai = create_xDai_chain()
         self.idChain = create_idChain_chain()
 
     def test_get_claimed_should_be_zero(self):
-        credit_strategy_xdai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
+        credit_strategy_xdai = CreditStrategyFactory(self.x_dai, self.new_user).get_strategy()
         credit_strategy_id_chain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
 
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
@@ -119,14 +127,14 @@ class TestClaim(APITestCase):
         self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
         self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim)
 
-    def test_xdai_claimed_be_zero_eth_be_100(self):
+    def test_x_dai_claimed_be_zero_eth_be_100(self):
         claim_amount = 100
         ClaimReceipt.objects.create(chain=self.idChain,
                                     bright_user=self.new_user,
                                     datetime=timezone.now(),
                                     amount=claim_amount)
 
-        credit_strategy_xdai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
+        credit_strategy_xdai = CreditStrategyFactory(self.x_dai, self.new_user).get_strategy()
         credit_strategy_id_chain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
         self.assertEqual(credit_strategy_id_chain.get_claimed(), claim_amount)
@@ -134,17 +142,27 @@ class TestClaim(APITestCase):
         self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount)
 
     def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
-        claim_manager_x_dai = ClaimManagerFactory(self.xdai, self.new_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.new_user).get_manager()
         try:
             claim_manager_x_dai.claim(x_dai_max_claim + 10)
             self.assertEqual(True, False)
         except AssertionError:
             self.assertEqual(True, True)
 
+    def test_claim_unverified_user_should_fail(self):
+        claim_amount = 100
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.new_user).get_manager()
+
+        try:
+            claim_manager_x_dai.claim(claim_amount)
+            self.assertEqual(True, False)
+        except AssertionError:
+            self.assertEqual(True, True)
+
     def test_claim_manager_should_claim(self):
         claim_amount = 100
-        claim_manager_x_dai = ClaimManagerFactory(self.xdai, self.new_user).get_manager()
-        credit_strategy_x_dai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        credit_strategy_x_dai = CreditStrategyFactory(self.x_dai, self.verified_user).get_strategy()
 
         claim_manager_x_dai.claim(claim_amount)
 
