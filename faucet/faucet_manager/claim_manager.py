@@ -25,13 +25,13 @@ class SimpleClaimManager(ClaimManager):
             bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
 
             self.assert_pre_claim_conditions(amount, bright_user)
-            self.create_claim_receipt(amount, bright_user)
+            return self.create_claim_receipt(amount, bright_user)
 
     def create_claim_receipt(self, amount, bright_user):
-        ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
-                                    bright_user=bright_user,
-                                    amount=amount,
-                                    datetime=timezone.now())
+        return ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
+                                           bright_user=bright_user,
+                                           amount=amount,
+                                           datetime=timezone.now())
 
     def assert_pre_claim_conditions(self, amount, bright_user):
         assert amount <= self.credit_strategy.get_unclaimed()

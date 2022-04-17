@@ -185,10 +185,16 @@ class TestClaim(APITestCase):
         claim_amount_1 = 100
         claim_amount_2 = 50
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
-        claim_manager_x_dai.claim(claim_amount_1)
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1._status = ClaimReceipt.VERIFIED
+        claim_1.save()
+        claim_manager_x_dai.claim(claim_amount_2)
 
-        try:
-            claim_manager_x_dai.claim(claim_amount_2)
-            self.assertEqual(True, False)
-        except AssertionError:
-            self.assertEqual(True, True)
+    def test_two_claims_after_first_fails(self):
+        claim_amount_1 = 100
+        claim_amount_2 = 50
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1._status = ClaimReceipt.REJECTED
+        claim_1.save()
+        claim_manager_x_dai.claim(claim_amount_2)
