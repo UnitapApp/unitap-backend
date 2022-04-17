@@ -12,24 +12,29 @@ def create_new_user():
     return BrightUser.get_or_create("0xaa6cD66cA508F22fe125e83342c7dc3dbE779250")
 
 
+address = "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+x_dai_max_claim = 800
+eidi_max_claim = 1000
+
+
 class TestCreateAccount(APITestCase):
 
     def test_create_bright_user(self):
         endpoint = reverse("FAUCET:create-user")
         response = self.client.post(endpoint, data={
-            'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+            'address': address
         })
         self.assertEqual(response.status_code, 201)
         self.assertIsNotNone(json.loads(response.content).get('context_id'))
-        self.assertEqual(json.loads(response.content).get('address'), "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250")
+        self.assertEqual(json.loads(response.content).get('address'), address)
 
     def test_should_fail_to_create_duplicate_address(self):
         endpoint = reverse("FAUCET:create-user")
         response_1 = self.client.post(endpoint, data={
-            'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+            'address': address
         })
         response_2 = self.client.post(endpoint, data={
-            'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+            'address': address
         })
 
         self.assertEqual(response_1.status_code, 201)
@@ -47,18 +52,18 @@ class TestCreateAccount(APITestCase):
 
     def test_get_verification_url(self):
         endpoint = reverse("FAUCET:get-verification-url",
-                           kwargs={'address': "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"})
+                           kwargs={'address': address})
         response_1 = self.client.get(endpoint)
         self.assertEqual(response_1.status_code, 200)
 
 
 def create_xDai_chain():
     return Chain.objects.create(name="Gnosis Chain", symbol="XDAI",
-                                chain_id="100", max_claim_amount=800)
+                                chain_id="100", max_claim_amount=x_dai_max_claim)
 
 
 def create_idChain_chain():
-    return Chain.objects.create(name="IDChain", symbol="eidi", chain_id="74", max_claim_amount=1000)
+    return Chain.objects.create(name="IDChain", symbol="eidi", chain_id="74", max_claim_amount=eidi_max_claim)
 
 
 class TestChainInfo(APITestCase):
@@ -67,13 +72,35 @@ class TestChainInfo(APITestCase):
         self.xdai = create_xDai_chain()
         self.idChain = create_idChain_chain()
 
-    def test_list_chains(self):
+    def request_chain_list(self):
         endpoint = reverse("FAUCET:chain-list")
         chains = self.client.get(endpoint)
-        self.assertEqual(chains.status_code, 200)
+        return chains
 
-    def test_list_chain_claimed_and_unclaimed_info(self):
-        pass
+    def test_list_chains(self):
+        response = self.request_chain_list()
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_chain_should_show_NA_if_no_addresses_provided(self):
+        chains = self.request_chain_list()
+        chains_list = json.loads(chains.content)
+
+        for chain_data in chains_list:
+            self.assertEqual(chain_data['claimed'], "N/A")
+            self.assertEqual(chain_data['unclaimed'], 'N/A')
+            if chain_data['symbol'] == "XDAI":
+                self.assertEqual(chain_data['max_claim_amount'], x_dai_max_claim)
+            elif chain_data['symbol'] == "eidi":
+                self.assertEqual(chain_data['max_claim_amount'], eidi_max_claim)
+
+    def test_chain_list_with_address(self):
+        endpoint = reverse("FAUCET:chain-list-address", kwargs={'address': address})
+        chain_list_response = self.client.get(endpoint)
+        chain_list = json.loads(chain_list_response.content)
+
+        for chain_data in chain_list:
+            self.assertEqual(chain_data['claimed'], 0)
+            self.assertEqual(chain_data['unclaimed'], chain_data['max_claim_amount'])
 
 
 class TestClaim(APITestCase):
@@ -85,39 +112,41 @@ class TestClaim(APITestCase):
 
     def test_get_claimed_should_be_zero(self):
         credit_strategy_xdai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
-        credit_strategy_idChain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
+        credit_strategy_id_chain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
 
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
-        self.assertEqual(credit_strategy_idChain.get_claimed(), 0)
-        self.assertEqual(credit_strategy_xdai.get_unclaimed(), 800)
-        self.assertEqual(credit_strategy_idChain.get_unclaimed(), 1000)
+        self.assertEqual(credit_strategy_id_chain.get_claimed(), 0)
+        self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
+        self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim)
 
     def test_xdai_claimed_be_zero_eth_be_100(self):
+        claim_amount = 100
         ClaimReceipt.objects.create(chain=self.idChain,
                                     bright_user=self.new_user,
                                     datetime=timezone.now(),
-                                    amount=100)
+                                    amount=claim_amount)
 
         credit_strategy_xdai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
-        credit_strategy_idChain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
+        credit_strategy_id_chain = CreditStrategyFactory(self.idChain, self.new_user).get_strategy()
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
-        self.assertEqual(credit_strategy_idChain.get_claimed(), 100)
-        self.assertEqual(credit_strategy_xdai.get_unclaimed(), 800)
-        self.assertEqual(credit_strategy_idChain.get_unclaimed(), 900)
+        self.assertEqual(credit_strategy_id_chain.get_claimed(), claim_amount)
+        self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
+        self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount)
 
     def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
         claim_manager_x_dai = ClaimManagerFactory(self.xdai, self.new_user).get_manager()
         try:
-            claim_manager_x_dai.claim(950)
+            claim_manager_x_dai.claim(x_dai_max_claim + 10)
             self.assertEqual(True, False)
         except AssertionError:
             self.assertEqual(True, True)
 
     def test_claim_manager_should_claim(self):
+        claim_amount = 100
         claim_manager_x_dai = ClaimManagerFactory(self.xdai, self.new_user).get_manager()
         credit_strategy_x_dai = CreditStrategyFactory(self.xdai, self.new_user).get_strategy()
 
-        claim_manager_x_dai.claim(100)
+        claim_manager_x_dai.claim(claim_amount)
 
-        self.assertEqual(credit_strategy_x_dai.get_claimed(), 100)
-        self.assertEqual(credit_strategy_x_dai.get_unclaimed(), 700)
+        self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
+        self.assertEqual(credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount)
