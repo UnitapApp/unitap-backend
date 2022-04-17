@@ -1,6 +1,7 @@
 import abc
 from abc import ABC
 
+from django.db import transaction
 from django.utils import timezone
 
 from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
@@ -20,13 +21,16 @@ class SimpleClaimManager(ClaimManager):
         self.credit_strategy = credit_strategy
 
     def claim(self, amount):
-        assert amount <= self.credit_strategy.get_unclaimed()
-        assert self.credit_strategy.bright_user.verification_status == BrightUser.VERIFIED
+        with transaction.atomic():
+            bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
 
-        ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
-                                    bright_user=self.credit_strategy.bright_user,
-                                    amount=amount,
-                                    datetime=timezone.now())
+            assert amount <= self.credit_strategy.get_unclaimed()
+            assert self.credit_strategy.bright_user.verification_status == BrightUser.VERIFIED
+
+            ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
+                                        bright_user=bright_user,
+                                        amount=amount,
+                                        datetime=timezone.now())
 
 
 class ClaimManagerFactory:
