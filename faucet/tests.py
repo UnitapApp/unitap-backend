@@ -4,7 +4,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory
-from faucet.faucet_manager.credit_strategy import SimpleCreditStrategy, CreditStrategyFactory
+from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
@@ -181,7 +181,7 @@ class TestClaim(APITestCase):
         except AssertionError:
             self.assertEqual(True, True)
 
-    def test_two_claims_after_first_verifies(self):
+    def test_second_claim_after_first_verifies(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
@@ -190,7 +190,7 @@ class TestClaim(APITestCase):
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
 
-    def test_two_claims_after_first_fails(self):
+    def test_second_claim_after_first_fails(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
@@ -198,3 +198,8 @@ class TestClaim(APITestCase):
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
+
+    def test_claim_with_api(self):
+        claim_amount = 100
+        endpoint = reverse("FAUCET:claim", kwargs={'address': address,
+                                                   'amount': claim_amount, })

@@ -1,7 +1,6 @@
-from django.contrib.auth.models import User
 from django.http import Http404
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
-import uuid
+
 
 from faucet.models import BrightUser, Chain
 from faucet.serializers import UserSerializer, ChainSerializer

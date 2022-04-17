@@ -1,6 +1,8 @@
 from django.db import models
 import uuid
 from encrypted_model_fields.fields import EncryptedCharField
+from eth_account.signers.local import LocalAccount
+from web3 import Web3
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -57,6 +59,28 @@ class Chain(models.Model):
     max_claim_amount = models.BigIntegerField()
 
     wallet_key = EncryptedCharField(max_length=100)
+
+    def w3(self) -> Web3:
+        assert self.rpc_url is not None
+        _w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        if _w3.isConnected():
+            return _w3
+        raise Exception(f"Could not connect to rpc {self.rpc_url}")
+
+    @property
+    def account(self) -> LocalAccount:
+        return self.w3().eth.account.privateKeyToAccount(self.wallet_key)
+
+    def transfer(self, to, amount):
+        nonce = self.w3().eth.get_transaction_count(self.account.address)
+
+        transaction = {
+            'nonce': nonce,
+            'to': to,
+            'value': amount,
+            'gas': 2100000,
+            'gasPrice': self.w3().eth.generate_gas_price()
+        }
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"

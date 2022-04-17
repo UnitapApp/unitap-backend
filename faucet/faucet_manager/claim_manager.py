@@ -3,7 +3,6 @@ from abc import ABC
 
 from django.db import transaction
 from django.utils import timezone
-
 from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
 from faucet.models import ClaimReceipt, BrightUser
 
@@ -23,8 +22,8 @@ class SimpleClaimManager(ClaimManager):
     def claim(self, amount):
         with transaction.atomic():
             bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
-
             self.assert_pre_claim_conditions(amount, bright_user)
+
             return self.create_claim_receipt(amount, bright_user)
 
     def create_claim_receipt(self, amount, bright_user):
