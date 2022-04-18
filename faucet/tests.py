@@ -22,6 +22,7 @@ def create_verified_user() -> BrightUser:
 address = "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
 x_dai_max_claim = 800
 eidi_max_claim = 1000
+t_chain_max = 500
 
 
 class TestCreateAccount(APITestCase):
@@ -64,12 +65,18 @@ class TestCreateAccount(APITestCase):
         self.assertEqual(response_1.status_code, 200)
 
 
-def create_xDai_chain():
+def create_xDai_chain() -> Chain:
     return Chain.objects.create(name="Gnosis Chain", symbol="XDAI",
                                 chain_id="100", max_claim_amount=x_dai_max_claim)
 
 
-def create_idChain_chain():
+def create_test_chain() -> Chain:
+    return Chain.objects.create(name="Ethereum", symbol="ETH", rpc_url="http://127.0.0.1:8545",
+                                wallet_key="0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
+                                chain_id="1337", max_claim_amount=t_chain_max)
+
+
+def create_idChain_chain() -> Chain:
     return Chain.objects.create(name="IDChain", symbol="eidi", chain_id="74", max_claim_amount=eidi_max_claim)
 
 
@@ -117,6 +124,7 @@ class TestClaim(APITestCase):
         self.verified_user = create_verified_user()
         self.x_dai = create_xDai_chain()
         self.idChain = create_idChain_chain()
+        self.test_chain = create_test_chain()
 
     def test_get_claimed_should_be_zero(self):
         credit_strategy_xdai = CreditStrategyFactory(self.x_dai, self.new_user).get_strategy()
@@ -199,7 +207,5 @@ class TestClaim(APITestCase):
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
 
-    def test_claim_with_api(self):
-        claim_amount = 100
-        endpoint = reverse("FAUCET:claim", kwargs={'address': address,
-                                                   'amount': claim_amount, })
+    def test_transfer(self):
+        self.test_chain.transfer(self.verified_user, 100)

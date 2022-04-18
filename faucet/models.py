@@ -1,8 +1,13 @@
 from django.db import models
 import uuid
+from threading import Thread
+from django.utils import timezone
 from encrypted_model_fields.fields import EncryptedCharField
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
+from web3.exceptions import TimeExhausted
+from web3.gas_strategies.rpc import rpc_gas_price_strategy
+import binascii
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -64,6 +69,7 @@ class Chain(models.Model):
         assert self.rpc_url is not None
         _w3 = Web3(Web3.HTTPProvider(self.rpc_url))
         if _w3.isConnected():
+            _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
             return _w3
         raise Exception(f"Could not connect to rpc {self.rpc_url}")
 
@@ -71,16 +77,51 @@ class Chain(models.Model):
     def account(self) -> LocalAccount:
         return self.w3().eth.account.privateKeyToAccount(self.wallet_key)
 
-    def transfer(self, to, amount):
-        nonce = self.w3().eth.get_transaction_count(self.account.address)
+    def transfer(self, bright_user: BrightUser, amount: int):
+        tx = self.sigh_transfer_tx(amount, bright_user)
+        claim_receipt = self.create_claim_receipt(amount, bright_user, tx)
+        t = Thread(target=self.broadcast_and_wait_for_receipt, args=(claim_receipt, tx))
+        t.start()
+        return claim_receipt
 
-        transaction = {
+    def broadcast_and_wait_for_receipt(self, claim_receipt, tx):
+        self.w3().eth.send_raw_transaction(tx.rawTransaction)
+        self.wait_for_tx_receipt(claim_receipt, tx)
+
+    def wait_for_tx_receipt(self, claim_receipt, tx):
+        try:
+            receipt = self.w3().eth.wait_for_transaction_receipt(tx['hash'])
+            if receipt['status'] == 1:
+                claim_receipt._status = ClaimReceipt.VERIFIED
+                claim_receipt.save()
+
+        except TimeExhausted:
+            pass
+
+    def create_claim_receipt(self, amount, bright_user, tx):
+        claim_receipt = ClaimReceipt.objects.create(chain=self, bright_user=bright_user,
+                                                    datetime=timezone.now(),
+                                                    amount=amount,
+                                                    tx_hash=tx['hash'].hex(),
+                                                    _status=ClaimReceipt.PENDING)
+        return claim_receipt
+
+    def sigh_transfer_tx(self, amount, bright_user):
+        tx_data = self.get_transaction_data(amount, bright_user)
+        tx = self.w3().eth.account.sign_transaction(tx_data, self.account.key)
+        return tx
+
+    def get_transaction_data(self, amount, bright_user):
+        nonce = self.w3().eth.get_transaction_count(self.account.address)
+        tx_data = {
             'nonce': nonce,
-            'to': to,
+            'from': self.account.address,
+            'to': bright_user.address,
             'value': amount,
             'gas': 2100000,
             'gasPrice': self.w3().eth.generate_gas_price()
         }
+        return tx_data
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
