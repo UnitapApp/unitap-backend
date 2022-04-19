@@ -1,6 +1,6 @@
 from django.db import models
 import uuid
-from threading import Thread
+
 from django.utils import timezone
 from encrypted_model_fields.fields import EncryptedCharField
 from eth_account.signers.local import LocalAccount
@@ -78,11 +78,10 @@ class Chain(models.Model):
         return self.w3().eth.account.privateKeyToAccount(self.wallet_key)
 
     def transfer(self, bright_user: BrightUser, amount: int):
-        tx = self.sigh_transfer_tx(amount, bright_user)
+        tx = self.sign_transfer_tx(amount, bright_user)
         claim_receipt = self.create_claim_receipt(amount, bright_user, tx)
-        t = Thread(target=self.broadcast_and_wait_for_receipt, args=(claim_receipt, tx))
-        t.start()
-        return claim_receipt
+
+        self.broadcast_and_wait_for_receipt(claim_receipt, tx)
 
     def broadcast_and_wait_for_receipt(self, claim_receipt, tx):
         self.w3().eth.send_raw_transaction(tx.rawTransaction)
@@ -106,7 +105,7 @@ class Chain(models.Model):
                                                     _status=ClaimReceipt.PENDING)
         return claim_receipt
 
-    def sigh_transfer_tx(self, amount, bright_user):
+    def sign_transfer_tx(self, amount, bright_user):
         tx_data = self.get_transaction_data(amount, bright_user)
         tx = self.w3().eth.account.sign_transaction(tx_data, self.account.key)
         return tx
