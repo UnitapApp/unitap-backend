@@ -2,6 +2,7 @@ import abc
 from abc import ABC
 
 from django.db.models import Sum
+from brightIDfaucet import settings
 from faucet.models import ClaimReceipt, BrightUser, Chain
 
 
@@ -55,6 +56,9 @@ class CreditStrategyFactory:
         self.bright_user = bright_user
 
     def get_strategy(self) -> CreditStrategy:
-        _Strategy = self.default_credit_strategy[self.chain.chain_id]
+        if settings.DEBUG:
+            _Strategy = SimpleCreditStrategy
+        else:
+            _Strategy = self.default_credit_strategy[self.chain.chain_id]
         assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
         return _Strategy(self.chain, self.bright_user)

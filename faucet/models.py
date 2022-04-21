@@ -55,6 +55,44 @@ class BrightUser(models.Model):
         return bright_interface.get_verification_link(str(self.context_id))
 
 
+
+class ClaimReceipt(models.Model):
+    MAX_PENDING_DURATION = 15  # minutes
+    PENDING = '0'
+    VERIFIED = '1'
+    REJECTED = '2'
+
+    states = ((PENDING, "Pending"),
+              (VERIFIED, "Verified"),
+              (REJECTED, "Rejected")
+              )
+
+    chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
+    bright_user = models.ForeignKey(BrightUser, related_name="claims", on_delete=models.PROTECT)
+
+    _status = models.CharField(max_length=1, choices=states, default=PENDING)
+
+    amount = models.BigIntegerField()
+    datetime = models.DateTimeField()
+    tx_hash = models.CharField(max_length=100, blank=True, null=True)
+
+    @staticmethod
+    def update_status(chain, bright_user):
+        # verified and rejected receipts don't get updated,
+        # so only update pending receipts
+        for pending_recept in ClaimReceipt.objects.filter(chain=chain,
+                                                          bright_user=bright_user,
+                                                          _status=ClaimReceipt.PENDING):
+            # todo: fetch status from blockchain
+            pass
+
+    def get_status(self) -> states:
+        if self._status in [self.VERIFIED, self.REJECTED]:
+            return self._status
+        self.update_status(self.chain, self.bright_user)
+        return self._status
+
+
 class Chain(models.Model):
     name = models.CharField(max_length=255)
     symbol = models.CharField(max_length=255)
@@ -77,11 +115,12 @@ class Chain(models.Model):
     def account(self) -> LocalAccount:
         return self.w3().eth.account.privateKeyToAccount(self.wallet_key)
 
-    def transfer(self, bright_user: BrightUser, amount: int):
+    def transfer(self, bright_user: BrightUser, amount: int) -> ClaimReceipt:
         tx = self.sign_transfer_tx(amount, bright_user)
         claim_receipt = self.create_claim_receipt(amount, bright_user, tx)
 
         self.broadcast_and_wait_for_receipt(claim_receipt, tx)
+        return claim_receipt
 
     def broadcast_and_wait_for_receipt(self, claim_receipt, tx):
         self.w3().eth.send_raw_transaction(tx.rawTransaction)
@@ -110,7 +149,7 @@ class Chain(models.Model):
         tx = self.w3().eth.account.sign_transaction(tx_data, self.account.key)
         return tx
 
-    def get_transaction_data(self, amount, bright_user):
+    def get_transaction_data(self, amount: int, bright_user: BrightUser):
         nonce = self.w3().eth.get_transaction_count(self.account.address)
         tx_data = {
             'nonce': nonce,
@@ -124,40 +163,3 @@ class Chain(models.Model):
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
-
-
-class ClaimReceipt(models.Model):
-    MAX_PENDING_DURATION = 15  # minutes
-    PENDING = '0'
-    VERIFIED = '1'
-    REJECTED = '2'
-
-    states = ((PENDING, "Pending"),
-              (VERIFIED, "Verified"),
-              (REJECTED, "Rejected")
-              )
-
-    chain = models.ForeignKey(Chain, related_name="claims", on_delete=models.PROTECT)
-    bright_user = models.ForeignKey(BrightUser, related_name="claims", on_delete=models.PROTECT)
-
-    _status = models.CharField(max_length=1, choices=states, default=PENDING)
-
-    amount = models.BigIntegerField()
-    datetime = models.DateTimeField()
-    tx_hash = models.CharField(max_length=100, blank=True, null=True)
-
-    @staticmethod
-    def update_status(chain, bright_user):
-        # verified and rejected receipts don't get updated,
-        # so only update pending receipts
-        for pending_recept in ClaimReceipt.objects.filter(chain=chain,
-                                                          bright_user=bright_user,
-                                                          _status=ClaimReceipt.PENDING):
-            # todo: fetch status from blockchain
-            pass
-
-    def get_status(self) -> states:
-        if self._status in [self.VERIFIED, self.REJECTED]:
-            return self._status
-        self.update_status(self.chain, self.bright_user)
-        return self._status

@@ -10,20 +10,26 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+import os
 from pathlib import Path
-from .secrets import DEBUG, FIELD_KEY, SECRET_KEY
+
+from dotenv import load_dotenv
+
+load_dotenv()  # take environment variables from .env.
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from faucet.brightID_interface import BrightIDInterface
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-FIELD_ENCRYPTION_KEY = FIELD_KEY
+FIELD_ENCRYPTION_KEY = os.environ["FIELD_KEY"]
+SECRET_KEY = os.environ["SECRET_KEY"]
+DEBUG = os.environ["DEBUG"]
 
 APP_NAME = "UniversalFaucet"
 

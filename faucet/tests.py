@@ -3,8 +3,8 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
-from faucet.faucet_manager.claim_manager import ClaimManagerFactory
-from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
+from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, SimpleClaimManager
+from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
@@ -71,8 +71,8 @@ def create_xDai_chain() -> Chain:
 
 
 def create_test_chain() -> Chain:
-    return Chain.objects.create(name="Ethereum", symbol="ETH", rpc_url="http://127.0.0.1:8545",
-                                wallet_key="0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
+    return Chain.objects.create(name="Ethereum", symbol="ETH", rpc_url="http://127.0.0.1:7545",
+                                wallet_key="0x517df364e4457538237d223400176844373ca8888ea0ff084856fc4cec7efe77",
                                 chain_id="1337", max_claim_amount=t_chain_max)
 
 
@@ -208,4 +208,11 @@ class TestClaim(APITestCase):
         claim_manager_x_dai.claim(claim_amount_2)
 
     def test_transfer(self):
-        self.test_chain.transfer(self.verified_user, 100)
+        receipt = self.test_chain.transfer(self.verified_user, 100)
+        self.assertEqual(receipt.amount, 100)
+
+    def test_simple_claim_manager_transfer(self):
+        manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
+        receipt = manager.claim(100)
+        self.assertEqual(receipt.amount, 100)
+        
