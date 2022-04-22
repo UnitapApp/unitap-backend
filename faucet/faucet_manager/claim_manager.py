@@ -13,13 +13,17 @@ class ClaimManager(ABC):
     def claim(self, amount) -> ClaimReceipt:
         pass
 
+    @abc.abstractmethod
+    def get_credit_strategy(self) -> CreditStrategy:
+        pass
+
 
 class SimpleClaimManager(ClaimManager):
 
     def __init__(self, credit_strategy: CreditStrategy):
         self.credit_strategy = credit_strategy
 
-    def claim(self, amount )-> ClaimReceipt:
+    def claim(self, amount) -> ClaimReceipt:
         with transaction.atomic():
             bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
             self.assert_pre_claim_conditions(amount, bright_user)
@@ -38,6 +42,9 @@ class SimpleClaimManager(ClaimManager):
             _status=BrightUser.PENDING
         ).exists()
 
+    def get_credit_strategy(self) -> CreditStrategy:
+        return self.credit_strategy
+
 
 class MockClaimManager(SimpleClaimManager):
 
@@ -53,6 +60,7 @@ class MockClaimManager(SimpleClaimManager):
                                            bright_user=bright_user,
                                            amount=amount,
                                            datetime=timezone.now())
+
 
 class ClaimManagerFactory:
     default_claim_manager = {

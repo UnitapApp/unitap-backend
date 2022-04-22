@@ -1,25 +1,29 @@
 import json
+from unittest import skipIf
+
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
+from brightIDfaucet.secrets import DEBUG
+from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
-def create_new_user() -> BrightUser:
-    return BrightUser.get_or_create("0xaa6cD66cA508F22fe125e83342c7dc3dbE779250")
+def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> BrightUser:
+    return BrightUser.get_or_create(_address)
 
 
 def create_verified_user() -> BrightUser:
-    user = create_new_user()
+    user = create_new_user("0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e")
     user._verification_status = BrightUser.VERIFIED
     user.save()
     return user
 
 
-address = "0xaa6cD66cA508F22fe125e83342c7dc3dbE779250"
+address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 x_dai_max_claim = 800
 eidi_max_claim = 1000
 t_chain_max = 500
@@ -52,9 +56,11 @@ class TestCreateAccount(APITestCase):
         new_user = create_new_user()
         self.assertEqual(new_user.verification_status, BrightUser.PENDING)
 
+    @skipIf(not DEBUG, "Only On Debug")
     def test_verify_bright_user(self):
         new_user = create_new_user()
         url = new_user.get_verification_url()
+        BRIGHT_ID_INTERFACE.verify(str(new_user.context_id))
         self.assertEqual(url, "http://<no-link>")
         self.assertEqual(new_user.verification_status, BrightUser.VERIFIED)
 
@@ -72,7 +78,7 @@ def create_xDai_chain() -> Chain:
 
 def create_test_chain() -> Chain:
     return Chain.objects.create(name="Ethereum", symbol="ETH", rpc_url="http://127.0.0.1:7545",
-                                wallet_key="0x517df364e4457538237d223400176844373ca8888ea0ff084856fc4cec7efe77",
+                                wallet_key="0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
                                 chain_id="1337", max_claim_amount=t_chain_max)
 
 
@@ -215,4 +221,38 @@ class TestClaim(APITestCase):
         manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
         receipt = manager.claim(100)
         self.assertEqual(receipt.amount, 100)
-        
+
+
+class TestClaimAPI(APITestCase):
+    def setUp(self) -> None:
+        self.new_user = create_new_user()
+        self.verified_user = create_verified_user()
+        self.x_dai = create_xDai_chain()
+        self.idChain = create_idChain_chain()
+        self.test_chain = create_test_chain()
+
+    def test_claim_max_api_should_fail_if_not_verified(self):
+        endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.new_user.address,
+                                                       'chain_pk': self.x_dai.pk})
+        response = self.client.post(endpoint)
+
+        self.assertEqual(response.status_code, 406)
+
+    def test_claim_max_api_should_claim_all(self):
+        endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.verified_user.address,
+                                                       'chain_pk': self.x_dai.pk})
+
+        response = self.client.post(endpoint)
+        claim_receipt = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(claim_receipt['amount'], self.x_dai.max_claim_amount)
+
+    def test_claim_max_twice_should_fail(self):
+        endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.verified_user.address,
+                                                       'chain_pk': self.x_dai.pk})
+        response_1 = self.client.post(endpoint)
+        self.assertEqual(response_1.status_code, 200)
+
+        response_2 = self.client.post(endpoint)
+        self.assertEqual(response_2.status_code, 403)

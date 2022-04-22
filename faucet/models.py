@@ -55,7 +55,6 @@ class BrightUser(models.Model):
         return bright_interface.get_verification_link(str(self.context_id))
 
 
-
 class ClaimReceipt(models.Model):
     MAX_PENDING_DURATION = 15  # minutes
     PENDING = '0'
@@ -83,10 +82,10 @@ class ClaimReceipt(models.Model):
         for pending_recept in ClaimReceipt.objects.filter(chain=chain,
                                                           bright_user=bright_user,
                                                           _status=ClaimReceipt.PENDING):
-            # todo: fetch status from blockchain
+            chain.wait_for_tx_receipt(pending_recept, pending_recept.tx_hash)
             pass
 
-    def get_status(self) -> states:
+    def status(self) -> states:
         if self._status in [self.VERIFIED, self.REJECTED]:
             return self._status
         self.update_status(self.chain, self.bright_user)

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
-from faucet.models import BrightUser, Chain
+from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,3 +41,10 @@ class ChainSerializer(serializers.ModelSerializer):
             return "N/A"
         bright_user = BrightUser.get_or_create(address)
         return CreditStrategyFactory(chain, bright_user).get_strategy().get_unclaimed()
+
+
+class ReceiptSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ClaimReceipt
+        fields = ['pk', 'tx_hash', 'chain', 'datetime', 'amount']

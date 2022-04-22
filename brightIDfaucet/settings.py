@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     'faucet.apps.FaucetConfig',
     'rest_framework',
     'encrypted_model_fields',
-
 ]
 
 MIDDLEWARE = [
@@ -143,8 +142,10 @@ if DEBUG:
         def __init__(self, app_name):
             super(MockBrightIdDriver, self).__init__(app_name)
 
-        def get_verification_link(self, context_id, network="app"):
+        def verify(self, context_id):
             self.states[context_id] = True
+
+        def get_verification_link(self, context_id, network="app"):
             return "http://<no-link>"
 
         def get_verification_status(self, context_id, network="node"):
