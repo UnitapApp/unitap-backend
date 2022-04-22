@@ -79,6 +79,7 @@ class ClaimReceipt(models.Model):
     def update_status(chain, bright_user):
         # verified and rejected receipts don't get updated,
         # so only update pending receipts
+        # todo: reject pending claim after MAX_PENDING_DURATION
         for pending_recept in ClaimReceipt.objects.filter(chain=chain,
                                                           bright_user=bright_user,
                                                           _status=ClaimReceipt.PENDING):
