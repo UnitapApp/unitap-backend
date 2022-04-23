@@ -40,6 +40,13 @@ class TestCreateAccount(APITestCase):
         self.assertIsNotNone(json.loads(response.content).get('context_id'))
         self.assertEqual(json.loads(response.content).get('address'), address)
 
+    def test_get_user_info(self):
+        user = create_new_user()
+        endpoint = reverse("FAUCET:user-info", kwargs={'address': user.address})
+        response = self.client.get(endpoint)
+
+        self.assertEqual(response.status_code, 200)
+
     def test_should_fail_to_create_duplicate_address(self):
         endpoint = reverse("FAUCET:create-user")
         response_1 = self.client.post(endpoint, data={

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from faucet.views import CreateUserView, GetVerificationUrlView, ChainListView, ClaimMaxView
+from faucet.views import CreateUserView, GetVerificationUrlView, ChainListView, ClaimMaxView, UserInfoView
 
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -21,6 +21,7 @@ app_name = "FAUCET"
 
 urlpatterns = [
     path("user/create/", CreateUserView.as_view(), name="create-user"),
+    path("user/<str:address>/", UserInfoView.as_view(), name="user-info"),
     path("user/<address>/verification-url/", GetVerificationUrlView.as_view(), name="get-verification-url"),
     path("chain/list/", ChainListView.as_view(), name="chain-list"),
     path("chain/list/<address>", ChainListView.as_view(), name="chain-list-address"),

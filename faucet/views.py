@@ -10,10 +10,29 @@ from faucet.serializers import UserSerializer, ChainSerializer, ReceiptSerialize
 
 
 class CreateUserView(CreateAPIView):
+    """
+    Create an unverified user with the given address
+
+    this user can be verified using verification_link
+    """
     serializer_class = UserSerializer
 
 
+class UserInfoView(RetrieveAPIView):
+    """
+    User info of the given address
+    """
+    serializer_class = UserSerializer
+    queryset = BrightUser.objects.all()
+
+    lookup_field = "address"
+    lookup_url_kwarg = "address"
+
+
 class GetVerificationUrlView(RetrieveAPIView):
+    """
+    Return the bright verification url
+    """
     serializer_class = UserSerializer
 
     def get_object(self):
@@ -28,11 +47,21 @@ class GetVerificationUrlView(RetrieveAPIView):
 
 
 class ChainListView(ListAPIView):
+    """
+    list of supported chains
+
+    this endpoint returns detailed user specific info if supplied with an address
+    """
     serializer_class = ChainSerializer
     queryset = Chain.objects.all()
 
 
 class ClaimMaxView(APIView):
+    """
+    Claims maximum possible fee for the given user and chain
+
+    **user must be verified**
+    """
     def get_user(self) -> BrightUser:
         address = self.kwargs.get('address', None)
         return BrightUser.objects.get(address=address)
