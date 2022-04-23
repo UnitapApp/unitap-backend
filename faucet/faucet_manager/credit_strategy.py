@@ -56,7 +56,7 @@ class CreditStrategyFactory:
         self.bright_user = bright_user
 
     def get_strategy(self) -> CreditStrategy:
-        if settings.DEBUG:
+        if settings.USE_MOCK:
             _Strategy = SimpleCreditStrategy
         else:
             _Strategy = self.default_credit_strategy[self.chain.chain_id]

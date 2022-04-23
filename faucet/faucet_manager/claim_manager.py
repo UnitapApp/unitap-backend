@@ -73,7 +73,7 @@ class ClaimManagerFactory:
         self.bright_user = bright_user
 
     def get_manager(self) -> ClaimManager:
-        if settings.DEBUG:
+        if settings.USE_MOCK:
             _Manager = MockClaimManager
         else:
             _Manager = self.default_claim_manager[self.chain.chain_id]
