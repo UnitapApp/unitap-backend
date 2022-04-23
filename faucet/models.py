@@ -131,7 +131,7 @@ class Chain(models.Model):
 
     def broadcast_and_wait_for_receipt(self, claim_receipt, tx):
         self.w3().eth.send_raw_transaction(tx.rawTransaction)
-        self.wait_for_tx_receipt(claim_receipt, tx['hash'])
+        self.wait_for_tx_receipt(claim_receipt, tx['hash'].hex())
 
     def wait_for_tx_receipt(self, claim_receipt, tx):
         try:
