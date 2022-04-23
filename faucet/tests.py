@@ -222,6 +222,7 @@ class TestClaim(APITestCase):
 
     def test_transfer(self):
         receipt = self.test_chain.transfer(self.verified_user, 100)
+        self.assertIsNotNone(receipt.tx_hash)
         self.assertEqual(receipt.amount, 100)
 
     def test_simple_claim_manager_transfer(self):
