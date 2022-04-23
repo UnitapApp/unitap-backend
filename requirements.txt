@@ -12,11 +12,14 @@ certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.12
 constantly==15.1.0
+coreapi==2.3.3
+coreschema==0.0.4
 cryptography==36.0.2
 cytoolz==0.11.2
 Django==4.0.4
 django-encrypted-model-fields==0.6.5
 djangorestframework==3.13.1
+drf-yasg==1.20.0
 eth-abi==2.1.1
 eth-account==0.5.7
 eth-hash==0.3.2
@@ -31,10 +34,14 @@ hyperlink==21.0.0
 idna==3.3
 importlib-resources==5.7.1
 incremental==21.3.0
+inflection==0.5.1
 iniconfig==1.1.1
 ipfshttpclient==0.8.0a2
+itypes==1.2.0
+Jinja2==3.1.1
 jsonschema==4.4.0
 lru-dict==1.1.7
+MarkupSafe==2.1.1
 multiaddr==0.0.9
 multidict==6.0.2
 netaddr==0.8.0
@@ -56,6 +63,8 @@ python-dotenv==0.20.0
 pytz==2022.1
 requests==2.27.1
 rlp==2.0.1
+ruamel.yaml==0.17.21
+ruamel.yaml.clib==0.2.6
 service-identity==21.1.0
 six==1.16.0
 sqlparse==0.4.2
@@ -65,6 +74,7 @@ Twisted==22.4.0
 txaio==22.2.1
 typing_extensions==4.2.0
 tzdata==2022.1
+uritemplate==4.1.1
 urllib3==1.26.9
 uWSGI==2.0.20
 varint==1.0.2

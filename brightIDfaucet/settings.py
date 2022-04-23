@@ -15,7 +15,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 from .private import FIELD_KEY, SECRET_KEY, DEBUG
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -45,6 +44,7 @@ INSTALLED_APPS = [
     'faucet.apps.FaucetConfig',
     'rest_framework',
     'encrypted_model_fields',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -116,7 +116,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-CSRF_TRUSTED_ORIGINS = ["*", "https://bright.cafepay.app"]
+CSRF_TRUSTED_ORIGINS = ["http://*", "https://*", "https://bright.cafepay.app"]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
