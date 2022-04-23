@@ -24,6 +24,9 @@ class BrightUser(models.Model):
 
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
 
+    def __str__(self):
+        return "%d - %s" % (self.pk, self.address)
+
     @property
     def verification_url(self, bright_interface=BRIGHT_ID_INTERFACE):
         return bright_interface.get_verification_link(str(self.context_id))
