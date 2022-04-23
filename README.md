@@ -16,6 +16,10 @@ DEBUG=
 
 **note: leave the DEBUG field blank for production**
 
+#
+
+you might need "sudo" privilege to run the following.
+
 run the following command from projects root directory to build a docker image:
 
 ```shell
@@ -25,18 +29,19 @@ $ docker build . -t bright_faucet:latest
 start the container:
 
 ```shell
-$ docker run -d -p [PORT]:5678 -v [DB-FOLDER]:/code/db/ bright_faucet:latest
+$ docker run -d -p [PORT]:5678 -v [DB-FOLDER]:/code/db/ -v [STATIC-FOLDER]:/code/static/ bright_faucet:latest
 5eb97c398fdf6d28d3e9644ff762e7cb2dfbe716e6d2e8f1f6f43506533e8fdf
 ```
 
 - [PORT]: the port that you want to be able to access the container from, example: 8080
 - [DB-FOLDER]: a location to hold database files
+- [STATIC-FOLDER]: a location to hold static files
 - the output of the command is the container id
 
 open up a shell terminal inside the container:
 
 ```shell
-$ docker exec -it [cointainer_id] /bin/bash
+$ docker exec -it [container_id] /bin/bash
 ```
 
 inside the terminal, first run the migrations:
