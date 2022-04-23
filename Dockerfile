@@ -8,4 +8,4 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 5678
-CMD daphne -b 0.0.0.0 -p 5678 brightIDfaucet.asgi:application
+CMD uwsgi --socket 0.0.0.0:5678 --protocol=http -w brightIDfaucet.wsgi

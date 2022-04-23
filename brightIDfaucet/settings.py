@@ -15,7 +15,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()  # take environment variables from .env.
+
+from .private import FIELD_KEY, SECRET_KEY, DEBUG
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from faucet.brightID_interface import BrightIDInterface
@@ -26,9 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-FIELD_ENCRYPTION_KEY = os.environ["FIELD_KEY"]
-SECRET_KEY = os.environ["SECRET_KEY"]
-DEBUG = True if os.environ["DEBUG"] == "True" else False
+FIELD_ENCRYPTION_KEY = FIELD_KEY
 
 APP_NAME = "GasFaucet"
 
@@ -117,7 +116,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-CSRF_TRUSTED_ORIGINS = ['*']
+CSRF_TRUSTED_ORIGINS = ["*", "https://bright.cafepay.app"]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
