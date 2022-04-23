@@ -115,6 +115,13 @@ class Chain(models.Model):
     def account(self) -> LocalAccount:
         return self.w3().eth.account.privateKeyToAccount(self.wallet_key)
 
+    @property
+    def balance(self) -> int:
+        try:
+            return self.w3().eth.get_balance(self.account.address)
+        except:
+            return "N/A"
+
     def transfer(self, bright_user: BrightUser, amount: int) -> ClaimReceipt:
         tx = self.sign_transfer_tx(amount, bright_user)
         claim_receipt = self.create_claim_receipt(amount, bright_user, tx)

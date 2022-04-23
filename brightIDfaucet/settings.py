@@ -29,12 +29,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 FIELD_ENCRYPTION_KEY = os.environ["FIELD_KEY"]
 SECRET_KEY = os.environ["SECRET_KEY"]
-DEBUG = os.environ["DEBUG"]
+DEBUG = False
 
-APP_NAME = "UniversalFaucet"
+APP_NAME = "GasFaucet"
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
