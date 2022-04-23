@@ -16,10 +16,6 @@ USE_MOCK = False
 
 ```
 
-**note: leave the DEBUG field blank for production**
-
-#
-
 you might need "sudo" privilege to run the following.
 
 run the following command from projects root directory to build a docker image:
