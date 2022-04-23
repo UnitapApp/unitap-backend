@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 FIELD_ENCRYPTION_KEY = os.environ["FIELD_KEY"]
 SECRET_KEY = os.environ["SECRET_KEY"]
-DEBUG = False
+DEBUG = True if os.environ["DEBUG"] == "True" else False
 
 APP_NAME = "GasFaucet"
 
@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'brightIDfaucet.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db/db.sqlite3',
     }
 }
 

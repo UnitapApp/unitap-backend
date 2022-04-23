@@ -4,11 +4,8 @@ WORKDIR /code
 COPY requirements.txt /code/
 RUN pip install pip --upgrade
 RUN pip install -r requirements.txt
-COPY . /code/
-RUN python manage.py migrate
-RUN python manage.py collectstatic
+COPY . .
+RUN python manage.py collectstatic --noinput
 
 EXPOSE 5678
 CMD python manage.py runserver 0.0.0.0:5678
-
-
