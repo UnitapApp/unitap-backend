@@ -86,6 +86,8 @@ class ClaimMaxView(APIView):
             return manager.claim(max_credit)
         except AssertionError as e:
             raise rest_framework.exceptions.PermissionDenied
+        except ValueError as e:
+            raise rest_framework.exceptions.APIException(e)
 
     def post(self, request, *args, **kwargs):
         self.check_user_is_verified()
