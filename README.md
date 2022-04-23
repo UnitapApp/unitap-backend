@@ -50,6 +50,11 @@ inside the terminal, first run the migrations:
 $ python manage.py migrate
 ```
 
+collect static files:
+```shell
+$ python manage.py collectstatic
+```
+
 create a superuser:
 
 ```shell
