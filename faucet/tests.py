@@ -11,6 +11,15 @@ from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactor
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
+address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
+x_dai_max_claim = 800
+eidi_max_claim = 1000
+t_chain_max = 500
+
+test_rpc_url = "http://127.0.0.1:7545"
+test_chain_id = 1337
+test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
+
 
 def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> BrightUser:
     return BrightUser.get_or_create(_address)
@@ -21,12 +30,6 @@ def create_verified_user() -> BrightUser:
     user._verification_status = BrightUser.VERIFIED
     user.save()
     return user
-
-
-address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-x_dai_max_claim = 800
-eidi_max_claim = 1000
-t_chain_max = 500
 
 
 class TestCreateAccount(APITestCase):
@@ -84,9 +87,9 @@ def create_xDai_chain() -> Chain:
 
 
 def create_test_chain() -> Chain:
-    return Chain.objects.create(name="Ethereum", symbol="ETH", rpc_url="http://127.0.0.1:7545",
-                                wallet_key="0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
-                                chain_id="1337", max_claim_amount=t_chain_max)
+    return Chain.objects.create(name="Ethereum", symbol="ETH", rpc_url=test_rpc_url,
+                                wallet_key=test_wallet_key,
+                                chain_id=test_chain_id, max_claim_amount=t_chain_max)
 
 
 def create_idChain_chain() -> Chain:
