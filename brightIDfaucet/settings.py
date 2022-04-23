@@ -15,7 +15,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from .private import FIELD_KEY, SECRET_KEY, DEBUG
+from .private import FIELD_KEY, SECRET_KEY, DEBUG, USE_MOCK
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from faucet.brightID_interface import BrightIDInterface
@@ -116,7 +116,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-CSRF_TRUSTED_ORIGINS = ["http://*", "https://*", "https://bright.cafepay.app"]
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:5678", "https://*", "https://bright.cafepay.app"]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
@@ -128,7 +128,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-if DEBUG:
+if USE_MOCK:
     class MockBrightIdDriver(BrightIDInterface):
         states = {}
 

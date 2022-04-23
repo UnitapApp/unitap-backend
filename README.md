@@ -6,12 +6,14 @@ BrightID users can claim free gas tokens on supported chains.
 
 ### Using Docker
 
-create a `.env` file inside `brightIDFaucet` directory and add the following
+create a `private.py` file inside `brightIDFaucet` directory and add the following
 
-```shell
-FIELD_KEY=rnPAm1QKx8hepMhqV0IKJxB9tdR_hhU4-0EVTGVXQg0=
-SECRET_KEY=django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5
-DEBUG=
+```python
+FIELD_KEY = "rnPAm1QKx8hepMhqV0IKJxB9tdR_hhU4-0EVTGVXQg0="
+SECRET_KEY = 'django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5'
+DEBUG = False
+USE_MOCK = False
+
 ```
 
 **note: leave the DEBUG field blank for production**
