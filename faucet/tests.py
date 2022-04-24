@@ -40,7 +40,7 @@ class TestCreateAccount(APITestCase):
             'address': address
         })
         self.assertEqual(response.status_code, 201)
-        self.assertIsNotNone(json.loads(response.content).get('context_id'))
+        self.assertIsNotNone(json.loads(response.content).get('contextId'))
         self.assertEqual(json.loads(response.content).get('address'), address)
 
     def test_get_user_info(self):
@@ -119,9 +119,9 @@ class TestChainInfo(APITestCase):
             self.assertEqual(chain_data['claimed'], "N/A")
             self.assertEqual(chain_data['unclaimed'], 'N/A')
             if chain_data['symbol'] == "XDAI":
-                self.assertEqual(chain_data['max_claim_amount'], x_dai_max_claim)
+                self.assertEqual(chain_data['maxClaimAmount'], x_dai_max_claim)
             elif chain_data['symbol'] == "eidi":
-                self.assertEqual(chain_data['max_claim_amount'], eidi_max_claim)
+                self.assertEqual(chain_data['maxClaimAmount'], eidi_max_claim)
 
     def test_chain_list_with_address(self):
         endpoint = reverse("FAUCET:chain-list-address", kwargs={'address': address})
@@ -130,7 +130,7 @@ class TestChainInfo(APITestCase):
 
         for chain_data in chain_list:
             self.assertEqual(chain_data['claimed'], 0)
-            self.assertEqual(chain_data['unclaimed'], chain_data['max_claim_amount'])
+            self.assertEqual(chain_data['unclaimed'], chain_data['maxClaimAmount'])
 
 
 class TestClaim(APITestCase):

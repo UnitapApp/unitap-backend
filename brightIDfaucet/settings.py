@@ -153,3 +153,17 @@ STATIC_ROOT = 'static'
 MEDIA_ROOT = 'media'
 STATIC_URL = os.path.join(BASE_DIR, '/static/')
 MEDIA_URL = os.path.join(BASE_DIR, '/media/')
+
+REST_FRAMEWORK = {
+
+    'DEFAULT_RENDERER_CLASSES': (
+        'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
+        'djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer',
+    ),
+
+    'DEFAULT_PARSER_CLASSES': (
+        'djangorestframework_camel_case.parser.CamelCaseFormParser',
+        'djangorestframework_camel_case.parser.CamelCaseMultiPartParser',
+        'djangorestframework_camel_case.parser.CamelCaseJSONParser',
+    ),
+}
