@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 import uuid
 
@@ -82,12 +84,17 @@ class ClaimReceipt(models.Model):
     def update_status(chain, bright_user):
         # verified and rejected receipts don't get updated,
         # so only update pending receipts
-        # todo: reject pending claim after MAX_PENDING_DURATION
         for pending_recept in ClaimReceipt.objects.filter(chain=chain,
                                                           bright_user=bright_user,
                                                           _status=ClaimReceipt.PENDING):
-            chain.wait_for_tx_receipt(pending_recept, pending_recept.tx_hash)
-            pass
+            if pending_recept.is_expired():
+                pending_recept._status = ClaimReceipt.REJECTED
+                pending_recept.save()
+            else:
+                chain.wait_for_tx_receipt(pending_recept, pending_recept.tx_hash)
+
+    def is_expired(self):
+        return timezone.now() - self.datetime > timedelta(minutes=self.MAX_PENDING_DURATION)
 
     def status(self) -> states:
         if self._status in [self.VERIFIED, self.REJECTED]:
