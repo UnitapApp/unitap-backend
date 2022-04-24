@@ -87,11 +87,16 @@ class ClaimReceipt(models.Model):
         for pending_recept in ClaimReceipt.objects.filter(chain=chain,
                                                           bright_user=bright_user,
                                                           _status=ClaimReceipt.PENDING):
-            if pending_recept.is_expired():
+
+            ClaimReceipt.update_claim_receipt_from_tx_receipt(chain, pending_recept)
+
+            if pending_recept._status == ClaimReceipt.PENDING and pending_recept.is_expired():
                 pending_recept._status = ClaimReceipt.REJECTED
                 pending_recept.save()
-            else:
-                chain.wait_for_tx_receipt(pending_recept, pending_recept.tx_hash)
+
+    @staticmethod
+    def update_claim_receipt_from_tx_receipt(chain, pending_recept):
+        chain.wait_for_tx_receipt(pending_recept, pending_recept.tx_hash)
 
     def is_expired(self):
         return timezone.now() - self.datetime > timedelta(minutes=self.MAX_PENDING_DURATION)
