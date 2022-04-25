@@ -22,7 +22,14 @@ class ChainSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chain
-        fields = ['pk', 'name', 'symbol', 'chain_id', 'rpc_url',
+        fields = ['pk',
+                  'chain_name',
+                  'chain_id',
+
+                  'native_currency_name',
+                  'symbol', 'decimals',
+                  'explorer_url',
+                  'rpc_url', 'logo_url',
                   'max_claim_amount',
                   'claimed',
                   'unclaimed',

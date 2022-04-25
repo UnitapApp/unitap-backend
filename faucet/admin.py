@@ -3,7 +3,7 @@ from .models import *
 
 
 class ChainAdmin(admin.ModelAdmin):
-    list_display = ['pk', 'name', 'chain_id', 'symbol', 'balance', 'rpc_url']
+    list_display = ['pk', 'chain_name', 'chain_id', 'symbol', 'balance']
 
 
 class BrightUserAdmin(admin.ModelAdmin):

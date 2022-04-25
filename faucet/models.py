@@ -109,10 +109,16 @@ class ClaimReceipt(models.Model):
 
 
 class Chain(models.Model):
-    name = models.CharField(max_length=255)
-    symbol = models.CharField(max_length=255)
+    chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
+
+    native_currency_name = models.CharField(max_length=255)
+    symbol = models.CharField(max_length=255)
+    decimals = models.IntegerField(default=18)
+
+    explorer_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
+    logo_url = models.URLField(max_length=255, blank=True, null=True)
 
     max_claim_amount = models.BigIntegerField()
 

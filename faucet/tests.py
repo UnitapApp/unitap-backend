@@ -82,18 +82,18 @@ class TestCreateAccount(APITestCase):
 
 
 def create_xDai_chain() -> Chain:
-    return Chain.objects.create(name="Gnosis Chain", symbol="XDAI",
+    return Chain.objects.create(chain_name="Gnosis Chain", native_currency_name="xdai", symbol="XDAI",
                                 chain_id="100", max_claim_amount=x_dai_max_claim)
 
 
 def create_test_chain() -> Chain:
-    return Chain.objects.create(name="Ethereum", symbol="ETH", rpc_url=test_rpc_url,
+    return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH", rpc_url=test_rpc_url,
                                 wallet_key=test_wallet_key,
                                 chain_id=test_chain_id, max_claim_amount=t_chain_max)
 
 
 def create_idChain_chain() -> Chain:
-    return Chain.objects.create(name="IDChain", symbol="eidi", chain_id="74", max_claim_amount=eidi_max_claim)
+    return Chain.objects.create(chain_name="IDChain", native_currency_name="eidi", symbol="eidi", chain_id="74", max_claim_amount=eidi_max_claim)
 
 
 class TestChainInfo(APITestCase):
