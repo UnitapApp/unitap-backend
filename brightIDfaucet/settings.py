@@ -45,11 +45,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'encrypted_model_fields',
     'drf_yasg',
+    "corsheaders",
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -117,6 +120,7 @@ USE_I18N = True
 USE_TZ = True
 
 CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:5678", "https://unitap.app", "https://bright.cafepay.app"]
+CORS_ALLOWED_ORIGINS  = ["http://127.0.0.1:5678", "https://unitap.app", "https://bright.cafepay.app"]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
