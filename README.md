@@ -95,5 +95,6 @@ test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b
 
 run tests:
 ```shell
+$ ganache-cli -d -p 7545
 $ python manage.py test
 ```
