@@ -10,6 +10,7 @@ from web3 import Web3
 from web3.exceptions import TimeExhausted
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 import binascii
+from web3.middleware import geth_poa_middleware
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -124,9 +125,13 @@ class Chain(models.Model):
 
     wallet_key = EncryptedCharField(max_length=100)
 
+    poa = models.BooleanField(default=False)
+
     def w3(self) -> Web3:
         assert self.rpc_url is not None
         _w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        if self.poa:
+            _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         if _w3.isConnected():
             _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
             return _w3

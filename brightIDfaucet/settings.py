@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 FIELD_ENCRYPTION_KEY = FIELD_KEY
 
-APP_NAME = "GasFaucet"
+APP_NAME = "unitap"
 
 ALLOWED_HOSTS = ['*']
 
