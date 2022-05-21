@@ -5,7 +5,6 @@ async-timeout==4.0.2
 attrs==21.4.0
 autobahn==22.3.2
 Automat==20.2.0
-backports.zoneinfo==0.2.1
 base58==2.1.1
 bitarray==1.2.2
 certifi==2021.10.8
