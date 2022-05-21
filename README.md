@@ -98,3 +98,4 @@ run tests:
 $ ganache-cli -d -p 7545
 $ python manage.py test
 ```
+*if you some tests fail, make sure you have set `USE_MOCK` flag to `True` in `private.py`*
