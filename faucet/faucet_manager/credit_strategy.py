@@ -47,7 +47,7 @@ class SimpleCreditStrategy(CreditStrategy):
 
 class CreditStrategyFactory:
 
-    def get_default_credit_strategy():
+    def get_default_credit_strategy(self):
         return SimpleCreditStrategy
 
     def __init__(self, chain, bright_user):
