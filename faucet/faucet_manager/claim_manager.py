@@ -61,12 +61,9 @@ class MockClaimManager(SimpleClaimManager):
                                            amount=amount,
                                            datetime=timezone.now())
 
-
 class ClaimManagerFactory:
-    default_claim_manager = {
-        '100': SimpleClaimManager,
-        '74': SimpleClaimManager
-    }
+    def get_default_claim_manager():
+        return SimpleClaimManager
 
     def __init__(self, chain, bright_user):
         self.chain = chain
@@ -76,7 +73,7 @@ class ClaimManagerFactory:
         if settings.USE_MOCK:
             _Manager = MockClaimManager
         else:
-            _Manager = self.default_claim_manager[self.chain.chain_id]
+            _Manager = self.get_default_claim_manager()
         assert _Manager is not None, f"Manager for chain {self.chain.pk} not found"
         _strategy = CreditStrategyFactory(self.chain, self.bright_user).get_strategy()
         return _Manager(_strategy)

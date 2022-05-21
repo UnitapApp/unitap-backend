@@ -46,10 +46,9 @@ class SimpleCreditStrategy(CreditStrategy):
 
 
 class CreditStrategyFactory:
-    default_credit_strategy = {
-        '74': SimpleCreditStrategy,
-        '100': SimpleCreditStrategy
-    }
+
+    def get_default_credit_strategy():
+        return SimpleCreditStrategy
 
     def __init__(self, chain, bright_user):
         self.chain = chain
@@ -59,6 +58,6 @@ class CreditStrategyFactory:
         if settings.USE_MOCK:
             _Strategy = SimpleCreditStrategy
         else:
-            _Strategy = self.default_credit_strategy[self.chain.chain_id]
+            _Strategy = self.get_default_credit_strategy()
         assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
         return _Strategy(self.chain, self.bright_user)
