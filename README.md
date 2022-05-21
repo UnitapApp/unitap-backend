@@ -73,6 +73,7 @@ $ pip install -r requirements.txt
 ```
 run migrations:
 ```shell
+$ mkdir db # make sure db folder exists
 $ python manage.py migrate
 ```
 
