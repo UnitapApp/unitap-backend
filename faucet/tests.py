@@ -6,7 +6,8 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from brightIDfaucet.private import DEBUG
-from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
+from brightIDfaucet.settings import APP_NAME, BRIGHT_ID_INTERFACE
+from faucet.brightID_interface import BrightIDInterface
 from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy
 from faucet.models import BrightUser, Chain, ClaimReceipt
