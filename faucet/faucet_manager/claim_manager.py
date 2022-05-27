@@ -24,10 +24,9 @@ class SimpleClaimManager(ClaimManager):
         self.credit_strategy = credit_strategy
 
     def claim(self, amount) -> ClaimReceipt:
-        with transaction.atomic():
-            bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
-            self.assert_pre_claim_conditions(amount, bright_user)
-            return self.credit_strategy.chain.transfer(bright_user, amount)
+        bright_user = self.credit_strategy.bright_user
+        self.assert_pre_claim_conditions(amount, bright_user)
+        return self.credit_strategy.chain.transfer(bright_user, amount)
 
     def assert_pre_claim_conditions(self, amount, bright_user):
         assert amount <= self.credit_strategy.get_unclaimed()
@@ -49,11 +48,9 @@ class SimpleClaimManager(ClaimManager):
 class MockClaimManager(SimpleClaimManager):
 
     def claim(self, amount) -> ClaimReceipt:
-        with transaction.atomic():
-            bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
-            self.assert_pre_claim_conditions(amount, bright_user)
-
-            return self.create_claim_receipt(amount, bright_user)
+        bright_user = self.credit_strategy.bright_user
+        self.assert_pre_claim_conditions(amount, bright_user)
+        return self.create_claim_receipt(amount, bright_user)
 
     def create_claim_receipt(self, amount, bright_user):
         return ClaimReceipt.objects.create(chain=self.credit_strategy.chain,

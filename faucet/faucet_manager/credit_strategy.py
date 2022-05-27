@@ -1,7 +1,11 @@
 import abc
 from abc import ABC
+from time import time
+import datetime
 
 from django.db.models import Sum
+from django.utils import timezone
+
 from brightIDfaucet import settings
 from faucet.models import ClaimReceipt, BrightUser, Chain
 
@@ -43,6 +47,32 @@ class SimpleCreditStrategy(CreditStrategy):
 
     def get_unclaimed(self):
         return self.chain.max_claim_amount - self.get_claimed()
+
+
+class WeeklyCreditStrategy(SimpleCreditStrategy):
+
+    def __int__(self, chain: Chain, bright_user: BrightUser):
+        self.chain = chain
+        self.bright_user = bright_user
+
+    def get_claim_receipts(self):
+        return ClaimReceipt.objects.filter(chain=self.chain, bright_user=self.bright_user,
+                                           datetime__gte=self.get_last_monday())
+
+    @staticmethod
+    def get_last_monday():
+        now = int(time())
+        day = 86400  # seconds in a day
+        week = 7 * day
+        weeks = now // week  # number of weeks since epoch
+        monday = 345600  # first monday midnight
+        last_monday_midnight = monday + (weeks * week)
+
+        # last monday could be off by one week
+        if last_monday_midnight > now:
+            last_monday_midnight -= week
+
+        return timezone.make_aware(datetime.datetime.fromtimestamp(last_monday_midnight))
 
 
 class CreditStrategyFactory:

@@ -1,3 +1,4 @@
+import datetime
 import json
 from unittest import skipIf
 
@@ -9,7 +10,7 @@ from brightIDfaucet.private import DEBUG
 from brightIDfaucet.settings import APP_NAME, BRIGHT_ID_INTERFACE
 from faucet.brightID_interface import BrightIDInterface
 from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, SimpleClaimManager
-from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy
+from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy, WeeklyCreditStrategy
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
@@ -88,13 +89,15 @@ def create_xDai_chain() -> Chain:
 
 
 def create_test_chain() -> Chain:
-    return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH", rpc_url=test_rpc_url,
+    return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH",
+                                rpc_url=test_rpc_url,
                                 wallet_key=test_wallet_key,
                                 chain_id=test_chain_id, max_claim_amount=t_chain_max)
 
 
 def create_idChain_chain() -> Chain:
-    return Chain.objects.create(chain_name="IDChain", native_currency_name="eidi", symbol="eidi", chain_id="74", max_claim_amount=eidi_max_claim)
+    return Chain.objects.create(chain_name="IDChain", native_currency_name="eidi", symbol="eidi", chain_id="74",
+                                max_claim_amount=eidi_max_claim)
 
 
 class TestChainInfo(APITestCase):
@@ -268,3 +271,47 @@ class TestClaimAPI(APITestCase):
 
         response_2 = self.client.post(endpoint)
         self.assertEqual(response_2.status_code, 403)
+
+
+class TestWeeklyCreditStrategy(APITestCase):
+    def setUp(self) -> None:
+        self.verified_user = create_verified_user()
+        self.test_chain = create_test_chain()
+        self.strategy = WeeklyCreditStrategy(self.test_chain, self.verified_user)
+
+    def test_last_monday(self):
+        now = timezone.now()
+        last_monday = WeeklyCreditStrategy.get_last_monday()
+        self.assertGreaterEqual(now, last_monday)
+
+    def create_claim_receipt(self, date, amount=10):
+        ClaimReceipt.objects.create(chain=self.test_chain, bright_user=self.verified_user,
+                                    _status=ClaimReceipt.VERIFIED,
+                                    amount=amount,
+                                    datetime=date, tx_hash="test-hash")
+
+    def test_last_week_claims(self):
+        last_monday = WeeklyCreditStrategy.get_last_monday()
+        last_sunday = last_monday - datetime.timedelta(days=1)
+        tuesday = last_monday + datetime.timedelta(days=1)
+        wednesday = last_monday + datetime.timedelta(days=2)
+
+        # last sunday
+        self.create_claim_receipt(last_sunday)
+        self.create_claim_receipt(last_monday)
+        self.create_claim_receipt(tuesday)
+        self.create_claim_receipt(wednesday)
+
+        total_claimed = self.strategy.get_claimed()
+        self.assertEqual(total_claimed, 30)
+
+    def test_unclaimed(self):
+        last_monday = WeeklyCreditStrategy.get_last_monday()
+        last_sunday = last_monday - datetime.timedelta(days=1)
+        tuesday = last_monday + datetime.timedelta(days=1)
+
+        self.create_claim_receipt(last_sunday, t_chain_max)
+        self.create_claim_receipt(tuesday, 100)
+
+        unclaimed = self.strategy.get_unclaimed()
+        self.assertEqual(unclaimed, t_chain_max - 100)
