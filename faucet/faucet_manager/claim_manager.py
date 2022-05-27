@@ -58,6 +58,7 @@ class MockClaimManager(SimpleClaimManager):
                                            amount=amount,
                                            datetime=timezone.now())
 
+
 class ClaimManagerFactory:
     def get_default_claim_manager(self):
         return SimpleClaimManager

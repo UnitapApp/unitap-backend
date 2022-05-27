@@ -78,7 +78,7 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
 class CreditStrategyFactory:
 
     def get_default_credit_strategy(self):
-        return SimpleCreditStrategy
+        return WeeklyCreditStrategy
 
     def __init__(self, chain, bright_user):
         self.chain = chain
@@ -86,7 +86,7 @@ class CreditStrategyFactory:
 
     def get_strategy(self) -> CreditStrategy:
         if settings.USE_MOCK:
-            _Strategy = SimpleCreditStrategy
+            _Strategy = WeeklyCreditStrategy
         else:
             _Strategy = self.get_default_credit_strategy()
         assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
