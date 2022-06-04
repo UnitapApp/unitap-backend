@@ -4,13 +4,13 @@ BrightID users can claim free gas tokens on supported chains.
 
 ## Quick start
 
-create a `private.py` file inside `brightIDfaucet` directory and add the following
+create a `.env` file inside `brightIDfaucet` directory and add the following
 
-```python
-FIELD_KEY = "rnPAm1QKx8hepMhqV0IKJxB9tdR_hhU4-0EVTGVXQg0="
-SECRET_KEY = 'django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5'
-DEBUG = False
-USE_MOCK = False # only set True for running tests 
+```bash
+FIELD_KEY="rnPAm1QKx8hepMhqV0IKJxB9tdR_hhU4-0EVTGVXQg0="
+SECRET_KEY='django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5'
+DEBUG=False
+USE_MOCK=False # only set True for running tests
 ```
 
 ### Using Docker
@@ -48,6 +48,7 @@ $ python manage.py migrate
 ```
 
 collect static files:
+
 ```shell
 $ python manage.py collectstatic
 ```
@@ -60,24 +61,30 @@ $ python manage.py createsuperuser
 
 you can exit the terminal now. You should now be able to visit the site on `http://127.0.0.1:[PORT]`
 
-
 ### Using Local Virtual Environment
+
 create a new virtualenv and activate it:
+
 ```shell
 $ python3.8 -m virtualenv .venv
 $ source .venv/bin/activate
 ```
+
 install requirements:
+
 ```shell
 $ pip install -r requirements.txt
 ```
+
 run migrations:
+
 ```shell
 $ mkdir db # make sure db folder exists
 $ python manage.py migrate
 ```
 
 run server:
+
 ```shell
 $ python manage.py runserver
 ```
@@ -86,7 +93,8 @@ $ python manage.py runserver
 
 You need [ganache](https://www.npmjs.com/package/ganache-cli) or any web3 rpc compatible test chain to run the tests.
 
-edit ```faucet/test.py``` and set the following according to your local test chain:
+edit `faucet/test.py` and set the following according to your local test chain:
+
 ```python
 test_rpc_url = "http://127.0.0.1:7545"
 test_chain_id = 1337
@@ -94,8 +102,10 @@ test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b
 ```
 
 run tests:
+
 ```shell
 $ ganache-cli -d -p 7545
 $ python manage.py test
 ```
-*if you some tests fail, make sure you have set `USE_MOCK` flag to `True` in `private.py`*
+
+_if you some tests fail, make sure you have set `USE_MOCK` flag to `True` in `private.py`_
