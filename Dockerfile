@@ -6,6 +6,8 @@ RUN pip install pip --upgrade
 RUN pip install -r requirements.txt
 COPY . .
 RUN mkdir db
+RUN mkdir static
+RUN mkdir meida
 RUN python manage.py collectstatic --noinput
 RUN python manage.py migrate
 
