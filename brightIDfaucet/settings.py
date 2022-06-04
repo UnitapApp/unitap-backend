@@ -15,7 +15,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from .private import FIELD_KEY, SECRET_KEY, DEBUG, USE_MOCK
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from faucet.brightID_interface import BrightIDInterface
@@ -24,9 +24,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-FIELD_ENCRYPTION_KEY = FIELD_KEY
+FIELD_ENCRYPTION_KEY = os.environ.get('FIELD_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
+DEBUG = str2bool(os.environ.get('DEBUG'))
+USE_MOCK = str2bool(os.environ.get('USE_MOCK'))
 
 APP_NAME = "unitap"
 

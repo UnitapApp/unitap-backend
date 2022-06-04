@@ -5,8 +5,6 @@ import requests
 import base64
 import ed25519
 
-from brightIDfaucet.private import BRIGHT_PRIVATE_KEY
-
 
 class BrightIDInterface:
 
@@ -30,6 +28,8 @@ class BrightIDInterface:
         return True
     
     def sponsor(self, context_id, network="node"):
+        from brightIDfaucet import BRIGHT_PRIVATE_KEY
+
         URL = f'http://{network}.brightid.org/brightid/v6/operations'
         op = {
             'name': 'Sponsor',
