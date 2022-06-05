@@ -11,7 +11,10 @@ FIELD_KEY="rnPAm1QKx8hepMhqV0IKJxB9tdR_hhU4-0EVTGVXQg0="
 SECRET_KEY='django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5'
 DEBUG=False
 SENTRY_DSN = "DEBUG-DSN"
+DATABASE_URL="sqlite:///db/db.sqlite3"
 ```
+
+_read more about `DATABASE_URL` in the [dj-database-url](https://github.com/kennethreitz/dj-database-url#url-schema) docs_
 
 ### Using Docker
 
@@ -107,5 +110,3 @@ run tests:
 $ ganache-cli -d -p 7545
 $ python manage.py test
 ```
-
-_if you some tests fail, make sure you have set `USE_MOCK` flag to `True` in `private.py`_
