@@ -152,11 +152,14 @@ class Chain(models.Model):
     def transfer(self, bright_user: BrightUser, amount: int) -> ClaimReceipt:
         tx = self.sign_transfer_tx(amount, bright_user)
         claim_receipt = self.create_claim_receipt(amount, bright_user, tx)
-        # Thread(target=self.broadcast_and_wait_for_receipt, args=(claim_receipt, tx)).start()
+        self.broadcast_transaction(tx)
         return claim_receipt
 
-    def broadcast_and_wait_for_receipt(self, claim_receipt, tx):
+    def broadcast_transaction(self, tx):
         self.w3().eth.send_raw_transaction(tx.rawTransaction)
+
+    def broadcast_and_wait_for_receipt(self, claim_receipt, tx):
+        self.broadcast_transaction(tx);
         self.wait_for_tx_receipt(claim_receipt, tx['hash'].hex())
 
     def wait_for_tx_receipt(self, claim_receipt, tx):

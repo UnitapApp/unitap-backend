@@ -24,7 +24,7 @@ BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 DEBUG = str2bool(os.environ.get('DEBUG'))
 
-if not DEBUG: # setup sentry only on production
+if SENTRY_DSN != "DEBUG-DSN": # setup sentry only on production
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],

@@ -255,11 +255,13 @@ class TestClaim(APITestCase):
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
 
+    @skipIf(not DEBUG, "only on debug")
     def test_transfer(self):
         receipt = self.test_chain.transfer(self.verified_user, 100)
         self.assertIsNotNone(receipt.tx_hash)
         self.assertEqual(receipt.amount, 100)
 
+    @skipIf(not DEBUG, "only on debug")
     def test_simple_claim_manager_transfer(self):
         manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
         receipt = manager.claim(100)
