@@ -33,3 +33,4 @@ jobs:
           BRIGHT_PRIVATE_KEY: "bright-private-key"
           DEBUG: False
           SENTRY_DSN: "DEBUG-DSN"
+          DATABASE_URL: sqlite:///db/db.sqlite3
