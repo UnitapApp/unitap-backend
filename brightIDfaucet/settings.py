@@ -35,7 +35,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 DEBUG = str2bool(os.environ.get('DEBUG'))
-USE_MOCK = str2bool(os.environ.get('USE_MOCK'))
+
 
 sentry_sdk.init(
     dsn=SENTRY_DSN,

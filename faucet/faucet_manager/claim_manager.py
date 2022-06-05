@@ -67,11 +67,11 @@ class ClaimManagerFactory:
         self.chain = chain
         self.bright_user = bright_user
 
+    def get_manager_class(self):
+        return self.get_default_claim_manager()
+
     def get_manager(self) -> ClaimManager:
-        if settings.USE_MOCK:
-            _Manager = MockClaimManager
-        else:
-            _Manager = self.get_default_claim_manager()
+        _Manager = self.get_manager_class()
         assert _Manager is not None, f"Manager for chain {self.chain.pk} not found"
         _strategy = CreditStrategyFactory(self.chain, self.bright_user).get_strategy()
         return _Manager(_strategy)

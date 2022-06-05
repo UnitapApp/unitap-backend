@@ -84,10 +84,10 @@ class CreditStrategyFactory:
         self.chain = chain
         self.bright_user = bright_user
 
+    def get_strategy_class(self):
+        return WeeklyCreditStrategy
+
     def get_strategy(self) -> CreditStrategy:
-        if settings.USE_MOCK:
-            _Strategy = WeeklyCreditStrategy
-        else:
-            _Strategy = self.get_default_credit_strategy()
+        _Strategy = self.get_strategy_class()
         assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
         return _Strategy(self.chain, self.bright_user)

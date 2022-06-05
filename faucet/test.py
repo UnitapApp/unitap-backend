@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 
 from brightIDfaucet.settings import DEBUG
 from faucet.brightID_interface import BrightIDInterface
-from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, SimpleClaimManager
+from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, MockClaimManager, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy, WeeklyCreditStrategy
 from faucet.models import BrightUser, Chain, ClaimReceipt
 from unittest.mock import patch
@@ -62,6 +62,12 @@ def bright_interface_mock(status_mock=False, link_mock="http://<no-link>"):
 
         return wrapper
     return inner
+
+def claim_manager_mock(func):
+    @patch("faucet.faucet_manager.claim_manager.ClaimManagerFactory.get_manager_class", lambda a: MockClaimManager)
+    def wrapper(*args, **kwarg):
+        func(*args, **kwarg)
+    return wrapper
 
 class TestCreateAccount(APITestCase):
 
@@ -205,6 +211,7 @@ class TestClaim(APITestCase):
         except AssertionError:
             self.assertEqual(True, True)
 
+    @claim_manager_mock
     def test_claim_manager_should_claim(self):
         claim_amount = 100
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
@@ -215,6 +222,7 @@ class TestClaim(APITestCase):
         self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
         self.assertEqual(credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount)
 
+    @claim_manager_mock
     def test_only_one_pending_claim(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
@@ -227,6 +235,7 @@ class TestClaim(APITestCase):
         except AssertionError:
             self.assertEqual(True, True)
 
+    @claim_manager_mock
     def test_second_claim_after_first_verifies(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
@@ -236,6 +245,7 @@ class TestClaim(APITestCase):
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
 
+    @claim_manager_mock
     def test_second_claim_after_first_fails(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
@@ -272,6 +282,7 @@ class TestClaimAPI(APITestCase):
 
         self.assertEqual(response.status_code, 406)
 
+    @claim_manager_mock
     def test_claim_max_api_should_claim_all(self):
         endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.verified_user.address,
                                                        'chain_pk': self.x_dai.pk})
@@ -282,6 +293,7 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(claim_receipt['amount'], self.x_dai.max_claim_amount)
 
+    @claim_manager_mock
     def test_claim_max_twice_should_fail(self):
         endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.verified_user.address,
                                                        'chain_pk': self.x_dai.pk})
