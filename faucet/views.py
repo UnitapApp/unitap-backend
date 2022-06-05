@@ -93,3 +93,7 @@ class ClaimMaxView(APIView):
         self.check_user_is_verified()
         receipt = self.claim_max()
         return Response(ReceiptSerializer(instance=receipt).data)
+
+
+def error500(request):
+    1/ 0

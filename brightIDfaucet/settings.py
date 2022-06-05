@@ -19,6 +19,8 @@ load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from faucet.brightID_interface import BrightIDInterface
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -31,8 +33,23 @@ def str2bool(v):
 FIELD_ENCRYPTION_KEY = os.environ.get('FIELD_KEY')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
 DEBUG = str2bool(os.environ.get('DEBUG'))
 USE_MOCK = str2bool(os.environ.get('USE_MOCK'))
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[DjangoIntegration()],
+
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0,
+
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    send_default_pii=True
+)
 
 APP_NAME = "unitap"
 
@@ -126,7 +143,7 @@ USE_I18N = True
 USE_TZ = True
 
 CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:5678", "https://unitap.app", "https://bright.cafepay.app"]
-CORS_ALLOWED_ORIGINS  = ["http://127.0.0.1:5678", "https://unitap.app", "https://bright.cafepay.app"]
+CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:5678", "https://unitap.app", "https://bright.cafepay.app"]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
