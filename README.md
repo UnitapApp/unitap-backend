@@ -10,7 +10,7 @@ create a `.env` file inside `brightIDfaucet` directory and add the following
 FIELD_KEY="rnPAm1QKx8hepMhqV0IKJxB9tdR_hhU4-0EVTGVXQg0="
 SECRET_KEY='django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5'
 DEBUG=False
-USE_MOCK=False # only set True for running tests
+SENTRY_DSN = "sentry-dsn"
 ```
 
 ### Using Docker
