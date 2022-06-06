@@ -3,11 +3,11 @@ from .models import *
 
 
 class ChainAdmin(admin.ModelAdmin):
-    list_display = ['pk', 'chain_name', 'chain_id', 'symbol', 'balance']
+    list_display = ['pk', 'chain_name', 'chain_id', 'symbol']
 
 
 class BrightUserAdmin(admin.ModelAdmin):
-    list_display = ['pk', 'address', 'context_id', 'verification_status', 'verification_url']
+    list_display = ['pk', 'address', 'context_id']
 
 
 class ClaimReceiptAdmin(admin.ModelAdmin):

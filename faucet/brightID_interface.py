@@ -28,7 +28,7 @@ class BrightIDInterface:
         return True
     
     def sponsor(self, context_id, network="node"):
-        from brightIDfaucet import BRIGHT_PRIVATE_KEY
+        from brightIDfaucet.settings import BRIGHT_PRIVATE_KEY
 
         URL = f'http://{network}.brightid.org/brightid/v6/operations'
         op = {
