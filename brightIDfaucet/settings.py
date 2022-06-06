@@ -150,6 +150,8 @@ MEDIA_ROOT = 'media'
 STATIC_URL = os.path.join(BASE_DIR, '/static/')
 MEDIA_URL = os.path.join(BASE_DIR, '/media/')
 
+APPEND_SLASH = True
+
 REST_FRAMEWORK = {
 
     'DEFAULT_RENDERER_CLASSES': (
