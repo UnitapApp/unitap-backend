@@ -17,10 +17,11 @@ from web3.middleware import geth_poa_middleware
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
+
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     private_key = EncryptedCharField(max_length=100)
-    
+
     def __str__(self) -> str:
         return self.name
 
@@ -122,6 +123,7 @@ class ClaimReceipt(models.Model):
         self.update_status(self.chain, self.bright_user)
         return self._status
 
+
 class Chain(models.Model):
     chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
@@ -139,8 +141,8 @@ class Chain(models.Model):
 
     poa = models.BooleanField(default=False)
 
-    wallet = models.ForeignKey(WalletAccount, related_name="chains",blank=True, null=True,
-     on_delete=models.PROTECT)
+    wallet = models.ForeignKey(WalletAccount, related_name="chains", blank=True, null=True,
+                               on_delete=models.PROTECT)
 
     def w3(self) -> Web3:
         assert self.rpc_url_private is not None
