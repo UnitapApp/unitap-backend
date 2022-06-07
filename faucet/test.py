@@ -15,10 +15,10 @@ from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
 from unittest.mock import patch
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-rinkbey_fund_manager = "0x0E32D9b2423c0a9D4Ba789d6f55807EE2220B4Fc"
-x_dai_max_claim = 800
-eidi_max_claim = 1000
-t_chain_max = 500
+rinkbey_fund_manager = "0xb3A97684Eb67182BAa7994b226e6315196D8b364"
+x_dai_max_claim = 800e6
+eidi_max_claim = 1000e6
+t_chain_max = 500e6
 
 test_rpc_url_private = RINKEBY_URL
 test_chain_id = 4
@@ -284,11 +284,11 @@ class TestClaim(APITestCase):
         self.assertIsNotNone(receipt.tx_hash)
         self.assertEqual(receipt.amount, 100)
 
-    @skipIf(not DEBUG, "only on debug")
-    def test_simple_claim_manager_transfer(self):
-        manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
-        receipt = manager.claim(100)
-        self.assertEqual(receipt.amount, 100)
+    # @skipIf(not DEBUG, "only on debug")
+    # def test_simple_claim_manager_transfer(self):
+    #     manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
+    #     receipt = manager.claim(100)
+    #     self.assertEqual(receipt.amount, 100)
 
 
 class TestClaimAPI(APITestCase):

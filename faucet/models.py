@@ -217,19 +217,17 @@ class Chain(models.Model):
         return self.w3().eth.generate_gas_price()
 
     def get_transaction_data(self, amount: int, bright_user: BrightUser):
-        with transaction.atomic():
-            _wallet = WalletAccount.objects.select_for_update().get(pk=self.wallet.pk)
-            nonce = self.w3().eth.get_transaction_count(self.account.address, "pending")
-            tx_func = self.fund_manager.functions.withdraw(amount, bright_user.address)
-            gas_estimation = tx_func.estimateGas({'from':_wallet.address})
-            tx_data = tx_func.buildTransaction({
-                'nonce': nonce,
-                'from': _wallet.address,
-                'value': amount,
-                'gas': gas_estimation*2,
-                'gasPrice': self.gas_price
-            })
-            return tx_data
+
+        nonce = self.w3().eth.get_transaction_count(self.account.address, "pending")
+        tx_func = self.fund_manager.functions.withdraw(amount, bright_user.address)
+        gas_estimation = tx_func.estimateGas({'from':self.account.address})
+        tx_data = tx_func.buildTransaction({
+            'nonce': nonce,
+            'from': self.account.address,
+            'gas': gas_estimation,
+            'gasPrice': self.gas_price
+        })
+        return tx_data
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
