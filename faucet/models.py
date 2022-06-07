@@ -2,7 +2,7 @@ from datetime import timedelta
 from operator import mod
 from statistics import mode
 from threading import Thread
-
+from django.db import transaction
 from django.db import models
 import uuid
 from .managerAbi import manager_abi
@@ -212,18 +212,24 @@ class Chain(models.Model):
         tx = self.w3().eth.account.sign_transaction(tx_data, self.account.key)
         return tx
 
+    @property
+    def gas_price(self):
+        return self.w3().eth.generate_gas_price()
+
     def get_transaction_data(self, amount: int, bright_user: BrightUser):
-        nonce = self.w3().eth.get_transaction_count(self.account.address, "pending")
-        tx_func = self.fund_manager.functions.withdraw(amount, bright_user.address)
-        gas_estimation = tx_func.estimateGas({'from': self.wallet.address})
-        tx_data = tx_func.buildTransaction({
-            'nonce': nonce,
-            'from': self.wallet.address,
-            'value': amount,
-            'gas': gas_estimation,
-            'gasPrice': self.w3().eth.generate_gas_price()
-        })
-        return tx_data
+        with transaction.atomic():
+            _wallet = WalletAccount.objects.select_for_update().get(pk=self.wallet.pk)
+            nonce = self.w3().eth.get_transaction_count(self.account.address, "pending")
+            tx_func = self.fund_manager.functions.withdraw(amount, bright_user.address)
+            gas_estimation = tx_func.estimateGas({'from':_wallet.address})
+            tx_data = tx_func.buildTransaction({
+                'nonce': nonce,
+                'from': _wallet.address,
+                'value': amount,
+                'gas': gas_estimation*2,
+                'gasPrice': self.gas_price
+            })
+            return tx_data
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
