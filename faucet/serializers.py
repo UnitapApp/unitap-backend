@@ -25,7 +25,7 @@ class ChainSerializer(serializers.ModelSerializer):
         fields = ['pk',
                   'chain_name',
                   'chain_id',
-
+                  'fund_manager_address',
                   'native_currency_name',
                   'symbol', 'decimals',
                   'explorer_url',

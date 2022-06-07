@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
-from brightIDfaucet.settings import DEBUG
+from brightIDfaucet.settings import DEBUG, RINKEBY_URL, TEST_RIKEBY_KEY
 from faucet.brightID_interface import BrightIDInterface
 from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, MockClaimManager, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy, WeeklyCreditStrategy
@@ -15,13 +15,14 @@ from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
 from unittest.mock import patch
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
+rinkbey_fund_manager = "0x0E32D9b2423c0a9D4Ba789d6f55807EE2220B4Fc"
 x_dai_max_claim = 800
 eidi_max_claim = 1000
 t_chain_max = 500
 
-test_rpc_url_private = "http://127.0.0.1:7545"
-test_chain_id = 1337
-test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
+test_rpc_url_private = RINKEBY_URL
+test_chain_id = 4
+test_wallet_key = TEST_RIKEBY_KEY
 
 
 def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> BrightUser:
@@ -38,6 +39,7 @@ def create_verified_user() -> BrightUser:
 def create_xDai_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="Gnosis Chain",
                                 wallet=wallet,
+                                fund_manager_address=rinkbey_fund_manager,
                                 native_currency_name="xdai", symbol="XDAI",
                                 chain_id="100", max_claim_amount=x_dai_max_claim)
 
@@ -46,12 +48,14 @@ def create_test_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH",
                                 rpc_url_private=test_rpc_url_private,
                                 wallet=wallet,
+                                fund_manager_address=rinkbey_fund_manager,
                                 chain_id=test_chain_id, max_claim_amount=t_chain_max)
 
 
 def create_idChain_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="IDChain",
                                 wallet=wallet,
+                                fund_manager_address=rinkbey_fund_manager,
                                 native_currency_name="eidi", symbol="eidi", chain_id="74",
                                 max_claim_amount=eidi_max_claim)
 
@@ -140,7 +144,6 @@ class TestCreateAccount(APITestCase):
         self.assertAlmostEqual(response_1.json()["verificationUrl"], "http://<no-link>")
 
 
-#
 class TestChainInfo(APITestCase):
     def setUp(self) -> None:
         self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)

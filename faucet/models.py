@@ -5,16 +5,17 @@ from threading import Thread
 
 from django.db import models
 import uuid
-
+from .managerAbi import manager_abi
 from django.utils import timezone
 from encrypted_model_fields.fields import EncryptedCharField
 from eth_account.signers.local import LocalAccount
+from eth_typing import Address
 from web3 import Web3
 from web3.exceptions import TimeExhausted
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 import binascii
 from web3.middleware import geth_poa_middleware
-
+from bip_utils import Bip44Coins, Bip44
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
 
@@ -22,8 +23,13 @@ class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     private_key = EncryptedCharField(max_length=100)
 
+    @property
+    def address(self):
+        node = Bip44.FromPrivateKey(binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM)
+        return node.PublicKey().ToAddress()
+
     def __str__(self) -> str:
-        return self.name
+        return "%s - %s" % (self.name, self.address)
 
     @property
     def main_key(self):
@@ -141,6 +147,7 @@ class Chain(models.Model):
 
     poa = models.BooleanField(default=False)
 
+    fund_manager_address = models.CharField(max_length=255, blank=True, null=True)
     wallet = models.ForeignKey(WalletAccount, related_name="chains", blank=True, null=True,
                                on_delete=models.PROTECT)
 
@@ -159,6 +166,10 @@ class Chain(models.Model):
         return self.w3().eth.account.privateKeyToAccount(self.wallet.main_key)
 
     @property
+    def fund_manager(self):
+        return self.w3().eth.contract(address=self.fund_manager_address, abi=manager_abi)
+
+    @property
     def balance(self) -> int:
         try:
             return self.w3().eth.get_balance(self.account.address)
@@ -175,7 +186,7 @@ class Chain(models.Model):
         self.w3().eth.send_raw_transaction(tx.rawTransaction)
 
     def broadcast_and_wait_for_receipt(self, claim_receipt, tx):
-        self.broadcast_transaction(tx);
+        self.broadcast_transaction(tx)
         self.wait_for_tx_receipt(claim_receipt, tx['hash'].hex())
 
     def wait_for_tx_receipt(self, claim_receipt, tx):
@@ -202,15 +213,16 @@ class Chain(models.Model):
         return tx
 
     def get_transaction_data(self, amount: int, bright_user: BrightUser):
-        nonce = self.w3().eth.get_transaction_count(self.account.address)
-        tx_data = {
+        nonce = self.w3().eth.get_transaction_count(self.account.address, "pending")
+        tx_func = self.fund_manager.functions.withdraw(amount, bright_user.address)
+        gas_estimation = tx_func.estimateGas({'from': self.wallet.address})
+        tx_data = tx_func.buildTransaction({
             'nonce': nonce,
-            'from': self.account.address,
-            'to': bright_user.address,
+            'from': self.wallet.address,
             'value': amount,
-            'gas': 2100000,
+            'gas': gas_estimation,
             'gasPrice': self.w3().eth.generate_gas_price()
-        }
+        })
         return tx_data
 
     def __str__(self):

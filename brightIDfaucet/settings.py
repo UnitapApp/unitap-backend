@@ -26,6 +26,9 @@ BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 DEBUG = str2bool(os.environ.get('DEBUG'))
 DATABASE_URL = os.environ.get("DATABASE_URL")
+RINKEBY_URL = os.environ.get("RINKEBY_URL")
+
+TEST_RIKEBY_KEY = os.environ.get("TEST_RIKEBY_KEY")
 
 if SENTRY_DSN != "DEBUG-DSN": # setup sentry only on production
     sentry_sdk.init(
