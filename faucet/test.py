@@ -11,16 +11,15 @@ from brightIDfaucet.settings import DEBUG
 from faucet.brightID_interface import BrightIDInterface
 from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, MockClaimManager, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy, WeeklyCreditStrategy
-from faucet.models import BrightUser, Chain, ClaimReceipt
+from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
 from unittest.mock import patch
-
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 x_dai_max_claim = 800
 eidi_max_claim = 1000
 t_chain_max = 500
 
-test_rpc_url = "http://127.0.0.1:7545"
+test_rpc_url_private = "http://127.0.0.1:7545"
 test_chain_id = 1337
 test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
 
@@ -35,39 +34,57 @@ def create_verified_user() -> BrightUser:
     user.save()
     return user
 
-def create_xDai_chain() -> Chain:
-    return Chain.objects.create(chain_name="Gnosis Chain", native_currency_name="xdai", symbol="XDAI",
+
+def create_xDai_chain(wallet) -> Chain:
+    return Chain.objects.create(chain_name="Gnosis Chain",
+                                wallet=wallet,
+                                native_currency_name="xdai", symbol="XDAI",
                                 chain_id="100", max_claim_amount=x_dai_max_claim)
 
 
-def create_test_chain() -> Chain:
+def create_test_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH",
-                                rpc_url=test_rpc_url,
-                                wallet_key=test_wallet_key,
+                                rpc_url_private=test_rpc_url_private,
+                                wallet=wallet,
                                 chain_id=test_chain_id, max_claim_amount=t_chain_max)
 
 
-def create_idChain_chain() -> Chain:
-    return Chain.objects.create(chain_name="IDChain", native_currency_name="eidi", symbol="eidi", chain_id="74",
+def create_idChain_chain(wallet) -> Chain:
+    return Chain.objects.create(chain_name="IDChain",
+                                wallet=wallet,
+                                native_currency_name="eidi", symbol="eidi", chain_id="74",
                                 max_claim_amount=eidi_max_claim)
 
 
 def bright_interface_mock(status_mock=False, link_mock="http://<no-link>"):
-
     def inner(func):
-        @patch("faucet.brightID_interface.BrightIDInterface.get_verification_status", lambda a,b : status_mock)
-        @patch("faucet.brightID_interface.BrightIDInterface.get_verification_link", lambda a,b : link_mock) 
+        @patch("faucet.brightID_interface.BrightIDInterface.get_verification_status", lambda a, b: status_mock)
+        @patch("faucet.brightID_interface.BrightIDInterface.get_verification_link", lambda a, b: link_mock)
         def wrapper(*args, **kwarg):
             func(*args, **kwarg)
 
         return wrapper
+
     return inner
+
 
 def claim_manager_mock(func):
     @patch("faucet.faucet_manager.claim_manager.ClaimManagerFactory.get_manager_class", lambda a: MockClaimManager)
     def wrapper(*args, **kwarg):
         func(*args, **kwarg)
+
     return wrapper
+
+
+class TestWalletAccount(APITestCase):
+
+    def setUp(self) -> None:
+        self.key = test_wallet_key
+        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+
+    def test_create_wallet(self):
+        self.assertEqual(self.wallet.main_key, self.key)
+
 
 class TestCreateAccount(APITestCase):
 
@@ -101,7 +118,7 @@ class TestCreateAccount(APITestCase):
 
         self.assertEqual(response_1.status_code, 201)
         self.assertEqual(response_2.status_code, 400)
-    
+
     @bright_interface_mock
     def test_newly_created_user_verification_status_should_be_pending(self):
         new_user = create_new_user()
@@ -113,7 +130,7 @@ class TestCreateAccount(APITestCase):
         url = new_user.get_verification_url()
         self.assertEqual(url, "http://<no-link>")
         self.assertEqual(new_user.verification_status, BrightUser.VERIFIED)
-    
+
     @bright_interface_mock
     def test_get_verification_url(self):
         endpoint = reverse("FAUCET:get-verification-url",
@@ -123,11 +140,13 @@ class TestCreateAccount(APITestCase):
         self.assertAlmostEqual(response_1.json()["verificationUrl"], "http://<no-link>")
 
 
+#
 class TestChainInfo(APITestCase):
     def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
         self.new_user = create_new_user()
-        self.xdai = create_xDai_chain()
-        self.idChain = create_idChain_chain()
+        self.xdai = create_xDai_chain(self.wallet)
+        self.idChain = create_idChain_chain(self.wallet)
 
     def request_chain_list(self):
         endpoint = reverse("FAUCET:chain-list")
@@ -163,11 +182,12 @@ class TestChainInfo(APITestCase):
 class TestClaim(APITestCase):
 
     def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
         self.new_user = create_new_user()
         self.verified_user = create_verified_user()
-        self.x_dai = create_xDai_chain()
-        self.idChain = create_idChain_chain()
-        self.test_chain = create_test_chain()
+        self.x_dai = create_xDai_chain(self.wallet)
+        self.idChain = create_idChain_chain(self.wallet)
+        self.test_chain = create_test_chain(self.wallet)
 
     def test_get_claimed_should_be_zero(self):
         credit_strategy_xdai = CreditStrategyFactory(self.x_dai, self.new_user).get_strategy()
@@ -270,11 +290,13 @@ class TestClaim(APITestCase):
 
 class TestClaimAPI(APITestCase):
     def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+
         self.new_user = create_new_user()
         self.verified_user = create_verified_user()
-        self.x_dai = create_xDai_chain()
-        self.idChain = create_idChain_chain()
-        self.test_chain = create_test_chain()
+        self.x_dai = create_xDai_chain(self.wallet)
+        self.idChain = create_idChain_chain(self.wallet)
+        self.test_chain = create_test_chain(self.wallet)
 
     @bright_interface_mock
     def test_claim_max_api_should_fail_if_not_verified(self):
@@ -308,8 +330,9 @@ class TestClaimAPI(APITestCase):
 
 class TestWeeklyCreditStrategy(APITestCase):
     def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
         self.verified_user = create_verified_user()
-        self.test_chain = create_test_chain()
+        self.test_chain = create_test_chain(self.wallet)
         self.strategy = WeeklyCreditStrategy(self.test_chain, self.verified_user)
 
     def test_last_monday(self):

@@ -1,4 +1,6 @@
 from datetime import timedelta
+from operator import mod
+from statistics import mode
 from threading import Thread
 
 from django.db import models
@@ -14,6 +16,17 @@ import binascii
 from web3.middleware import geth_poa_middleware
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
+
+class WalletAccount(models.Model):
+    name = models.CharField(max_length=255, blank=True, null=True)
+    private_key = EncryptedCharField(max_length=100)
+    
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def main_key(self):
+        return self.private_key
 
 
 class BrightUser(models.Model):
@@ -109,7 +122,6 @@ class ClaimReceipt(models.Model):
         self.update_status(self.chain, self.bright_user)
         return self._status
 
-
 class Chain(models.Model):
     chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
@@ -121,26 +133,28 @@ class Chain(models.Model):
     explorer_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
     logo_url = models.URLField(max_length=255, blank=True, null=True)
+    rpc_url_private = models.URLField(max_length=255, blank=True, null=True)
 
     max_claim_amount = models.BigIntegerField()
 
-    wallet_key = EncryptedCharField(max_length=100)
-
     poa = models.BooleanField(default=False)
 
+    wallet = models.ForeignKey(WalletAccount, related_name="chains",blank=True, null=True,
+     on_delete=models.PROTECT)
+
     def w3(self) -> Web3:
-        assert self.rpc_url is not None
-        _w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        assert self.rpc_url_private is not None
+        _w3 = Web3(Web3.HTTPProvider(self.rpc_url_private))
         if self.poa:
             _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         if _w3.isConnected():
             _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
             return _w3
-        raise Exception(f"Could not connect to rpc {self.rpc_url}")
+        raise Exception(f"Could not connect to rpc {self.rpc_url_private}")
 
     @property
     def account(self) -> LocalAccount:
-        return self.w3().eth.account.privateKeyToAccount(self.wallet_key)
+        return self.w3().eth.account.privateKeyToAccount(self.wallet.main_key)
 
     @property
     def balance(self) -> int:
