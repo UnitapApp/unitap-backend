@@ -1,11 +1,10 @@
 import abc
 from abc import ABC
-from brightIDfaucet import settings
-from django.db import transaction
-from django.utils import timezone
 from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
+from faucet.faucet_manager.fund_manager import EVMFundManager
 from faucet.models import ClaimReceipt, BrightUser
 from django.db import transaction
+
 
 class ClaimManager(ABC):
 
@@ -23,19 +22,26 @@ class SimpleClaimManager(ClaimManager):
     def __init__(self, credit_strategy: CreditStrategy):
         self.credit_strategy = credit_strategy
 
+    @property
+    def fund_manager(self) -> EVMFundManager:
+        return EVMFundManager(self.credit_strategy.chain)
+
     def claim(self, amount) -> ClaimReceipt:
-        with transaction.atomic():
-            bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
-            self.assert_pre_claim_conditions(amount, bright_user)
-            return self.credit_strategy.chain.transfer(bright_user, amount)
+        bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
+        self.update_pending_receipts_status()
+        self.assert_pre_claim_conditions(amount, bright_user)
+        return self.fund_manager.transfer(bright_user, amount)
+
+    def update_pending_receipts_status(self):
+        for receipt in ClaimReceipt.objects.filter(
+                chain=self.credit_strategy.chain,
+                bright_user=self.credit_strategy.bright_user,
+                _status=BrightUser.PENDING):
+            self.fund_manager.update_receipt_status(receipt)
 
     def assert_pre_claim_conditions(self, amount, bright_user):
         assert amount <= self.credit_strategy.get_unclaimed()
         assert self.credit_strategy.bright_user.verification_status == BrightUser.VERIFIED
-
-        # update receipts first
-        ClaimReceipt.update_status(self.credit_strategy.chain, bright_user)
-
         assert not ClaimReceipt.objects.filter(
             chain=self.credit_strategy.chain,
             bright_user=bright_user,
@@ -46,31 +52,14 @@ class SimpleClaimManager(ClaimManager):
         return self.credit_strategy
 
 
-class MockClaimManager(SimpleClaimManager):
-
-    def claim(self, amount) -> ClaimReceipt:
-        bright_user = self.credit_strategy.bright_user
-        self.assert_pre_claim_conditions(amount, bright_user)
-        return self.create_claim_receipt(amount, bright_user)
-
-    def create_claim_receipt(self, amount, bright_user):
-        return ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
-                                           bright_user=bright_user,
-                                           amount=amount,
-                                           _status=ClaimReceipt.VERIFIED,
-                                           datetime=timezone.now())
-
-
 class ClaimManagerFactory:
-    def get_default_claim_manager(self):
-        return SimpleClaimManager
 
     def __init__(self, chain, bright_user):
         self.chain = chain
         self.bright_user = bright_user
 
     def get_manager_class(self):
-        return self.get_default_claim_manager()
+        return SimpleClaimManager
 
     def get_manager(self) -> ClaimManager:
         _Manager = self.get_manager_class()

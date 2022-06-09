@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from faucet.brightID_interface import BrightIDInterface
+from faucet.faucet_manager.bright_id_interface import BrightIDInterface
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 from dotenv import load_dotenv
