@@ -27,7 +27,7 @@ class SimpleClaimManager(ClaimManager):
         return EVMFundManager(self.credit_strategy.chain)
 
     def claim(self, amount) -> ClaimReceipt:
-        bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
+        bright_user = self.credit_strategy.bright_user
         self.update_pending_receipts_status()
         self.assert_pre_claim_conditions(amount, bright_user)
         return self.fund_manager.transfer(bright_user, amount)
