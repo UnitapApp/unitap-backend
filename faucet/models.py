@@ -103,6 +103,9 @@ class ClaimReceipt(models.Model):
         return timezone.now() - self.datetime > timedelta(minutes=self.MAX_PENDING_DURATION)
 
     def status(self) -> states:
+        from faucet.faucet_manager.fund_manager import EVMFundManager
+        if self._status not in [self.VERIFIED, self.REJECTED]:
+            EVMFundManager(self.chain).update_receipt_status(self)
         return self._status
 
 
