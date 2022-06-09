@@ -20,9 +20,9 @@ x_dai_max_claim = 800e6
 eidi_max_claim = 1000e6
 t_chain_max = 500e6
 
-test_rpc_url_private = RINKEBY_URL
+test_rpc_url_private = "http://127.0.0.1:7545"
+test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
 test_chain_id = 4
-test_wallet_key = TEST_RIKEBY_KEY
 
 
 def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> BrightUser:
@@ -284,11 +284,11 @@ class TestClaim(APITestCase):
         self.assertIsNotNone(receipt.tx_hash)
         self.assertEqual(receipt.amount, 100)
 
-    # @skipIf(not DEBUG, "only on debug")
-    # def test_simple_claim_manager_transfer(self):
-    #     manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
-    #     receipt = manager.claim(100)
-    #     self.assertEqual(receipt.amount, 100)
+    @skipIf(not DEBUG, "only on debug")
+    def test_simple_claim_manager_transfer(self):
+        manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
+        receipt = manager.claim(100)
+        self.assertEqual(receipt.amount, 100)
 
 
 class TestClaimAPI(APITestCase):
