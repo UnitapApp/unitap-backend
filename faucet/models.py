@@ -1,5 +1,6 @@
 from datetime import timedelta
 from django.db import models
+from django.db import transaction
 import uuid
 from .managerAbi import manager_abi
 from django.utils import timezone

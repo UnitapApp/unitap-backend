@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
 from faucet.models import ClaimReceipt, BrightUser
-
+from django.db import transaction
 
 class ClaimManager(ABC):
 
@@ -24,9 +24,10 @@ class SimpleClaimManager(ClaimManager):
         self.credit_strategy = credit_strategy
 
     def claim(self, amount) -> ClaimReceipt:
-        bright_user = self.credit_strategy.bright_user
-        self.assert_pre_claim_conditions(amount, bright_user)
-        return self.credit_strategy.chain.transfer(bright_user, amount)
+        with transaction.atomic():
+            bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
+            self.assert_pre_claim_conditions(amount, bright_user)
+            return self.credit_strategy.chain.transfer(bright_user, amount)
 
     def assert_pre_claim_conditions(self, amount, bright_user):
         assert amount <= self.credit_strategy.get_unclaimed()
