@@ -22,13 +22,14 @@ t_chain_max = 500e6
 
 test_rpc_url_private = "http://127.0.0.1:7545"
 test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
-test_chain_id = 4
+test_chain_id = 1337
 
 
+@patch("faucet.brightID_interface.BrightIDInterface.sponsor", lambda a, b: True)
 def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> BrightUser:
     return BrightUser.get_or_create(_address)
 
-
+@patch("faucet.brightID_interface.BrightIDInterface.sponsor", lambda a, b: True)
 def create_verified_user() -> BrightUser:
     user = create_new_user("0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e")
     user._verification_status = BrightUser.VERIFIED
@@ -64,6 +65,7 @@ def bright_interface_mock(status_mock=False, link_mock="http://<no-link>"):
     def inner(func):
         @patch("faucet.brightID_interface.BrightIDInterface.get_verification_status", lambda a, b: status_mock)
         @patch("faucet.brightID_interface.BrightIDInterface.get_verification_link", lambda a, b: link_mock)
+        @patch("faucet.brightID_interface.BrightIDInterface.sponsor", lambda a, b: True)
         def wrapper(*args, **kwarg):
             func(*args, **kwarg)
 
@@ -172,6 +174,7 @@ class TestChainInfo(APITestCase):
             elif chain_data['symbol'] == "eidi":
                 self.assertEqual(chain_data['maxClaimAmount'], eidi_max_claim)
 
+    @patch("faucet.brightID_interface.BrightIDInterface.sponsor", lambda a, b: True)
     def test_chain_list_with_address(self):
         endpoint = reverse("FAUCET:chain-list-address", kwargs={'address': address})
         chain_list_response = self.client.get(endpoint)

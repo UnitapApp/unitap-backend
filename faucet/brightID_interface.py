@@ -21,10 +21,6 @@ class BrightIDInterface:
         ).json()
         if 'error' in response:
             return False
-        
-        # sponsor the user
-        self.sponsor(context_id, network)
-        
         return True
     
     def sponsor(self, context_id, network="node"):

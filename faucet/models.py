@@ -1,8 +1,4 @@
 from datetime import timedelta
-from operator import mod
-from statistics import mode
-from threading import Thread
-from django.db import transaction
 from django.db import models
 import uuid
 from .managerAbi import manager_abi
@@ -17,7 +13,6 @@ import binascii
 from web3.middleware import geth_poa_middleware
 from bip_utils import Bip44Coins, Bip44
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-
 
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -48,6 +43,8 @@ class BrightUser(models.Model):
 
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
 
+    _sponsored = models.BooleanField(default=False)
+
     def __str__(self):
         return "%d - %s" % (self.pk, self.address)
 
@@ -64,7 +61,17 @@ class BrightUser(models.Model):
         try:
             return BrightUser.objects.get(address=address)
         except BrightUser.DoesNotExist:
-            return BrightUser.objects.create(address=address)
+            _user = BrightUser.objects.create(address=address)
+            if not _user.sponsor():
+                raise Exception("Could not sponsor")
+            return _user
+
+    def sponsor(self, bright_interface=BRIGHT_ID_INTERFACE):
+        if not self._sponsored:
+            if bright_interface.sponsor(str(self.context_id)):
+                self._sponsored = True
+                self.save()
+        return self._sponsored
 
     def get_verification_status(self, bright_interface=BRIGHT_ID_INTERFACE) -> states:
         if self._verification_status == self.VERIFIED:
