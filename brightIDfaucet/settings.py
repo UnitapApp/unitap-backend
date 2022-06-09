@@ -134,8 +134,17 @@ USE_I18N = True
 
 USE_TZ = True
 
-CSRF_TRUSTED_ORIGINS = ["https://unitap-front.vercel.app","http://127.0.0.1:5678", "https://unitap.app", "https://bright.cafepay.app"]
-CORS_ALLOWED_ORIGINS = ["https://unitap-front.vercel.app","http://127.0.0.1:5678", "https://unitap.app", "https://bright.cafepay.app"]
+WHITE_ORIGINS = [
+    "https://unitap-front.vercel.app",
+    "http://127.0.0.1:5678", 
+    "https://unitap.app",
+    "https://bright.cafepay.app",
+    "https://api.unitap.app",
+    "https://stage.unitap.app",
+ ]
+
+CSRF_TRUSTED_ORIGINS = WHITE_ORIGINS
+CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
