@@ -15,7 +15,7 @@ from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
 from unittest.mock import patch
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-rinkbey_fund_manager = "0xb3A97684Eb67182BAa7994b226e6315196D8b364"
+rinkbey_fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
 x_dai_max_claim = 800e6
 eidi_max_claim = 1000e6
 t_chain_max = 500e6

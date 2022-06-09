@@ -219,7 +219,7 @@ class Chain(models.Model):
     def get_transaction_data(self, amount: int, bright_user: BrightUser):
 
         nonce = self.w3().eth.get_transaction_count(self.account.address, "pending")
-        tx_func = self.fund_manager.functions.withdraw(amount, bright_user.address)
+        tx_func = self.fund_manager.functions.withdrawEth(amount, bright_user.address)
         gas_estimation = tx_func.estimateGas({'from':self.account.address})
         tx_data = tx_func.buildTransaction({
             'nonce': nonce,
