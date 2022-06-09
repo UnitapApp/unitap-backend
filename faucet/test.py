@@ -209,6 +209,7 @@ class TestClaim(APITestCase):
         ClaimReceipt.objects.create(chain=self.idChain,
                                     bright_user=self.new_user,
                                     datetime=timezone.now(),
+                                    _status=ClaimReceipt.VERIFIED,
                                     amount=claim_amount)
 
         credit_strategy_xdai = CreditStrategyFactory(self.x_dai, self.new_user).get_strategy()

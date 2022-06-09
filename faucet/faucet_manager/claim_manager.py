@@ -56,6 +56,7 @@ class MockClaimManager(SimpleClaimManager):
         return ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
                                            bright_user=bright_user,
                                            amount=amount,
+                                           _status=ClaimReceipt.VERIFIED,
                                            datetime=timezone.now())
 
 
