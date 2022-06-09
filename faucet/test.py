@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
-from brightIDfaucet.settings import DEBUG, RINKEBY_URL, TEST_RIKEBY_KEY
+from brightIDfaucet.settings import DEBUG
 from faucet.brightID_interface import BrightIDInterface
 from faucet.faucet_manager.claim_manager import ClaimManager, ClaimManagerFactory, MockClaimManager, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy, WeeklyCreditStrategy
