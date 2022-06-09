@@ -27,7 +27,8 @@ test_chain_id = 1337
 
 @patch("faucet.brightID_interface.BrightIDInterface.sponsor", lambda a, b: True)
 def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> BrightUser:
-    return BrightUser.get_or_create(_address)
+    return BrightUser.objects.get_or_create(_address)
+
 
 @patch("faucet.brightID_interface.BrightIDInterface.sponsor", lambda a, b: True)
 def create_verified_user() -> BrightUser:

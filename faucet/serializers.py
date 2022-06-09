@@ -39,14 +39,14 @@ class ChainSerializer(serializers.ModelSerializer):
         address = self.context['view'].kwargs.get('address')
         if not address:
             return "N/A"
-        bright_user = BrightUser.get_or_create(address)
+        bright_user = BrightUser.objects.get_or_create(address)
         return CreditStrategyFactory(chain, bright_user).get_strategy().get_claimed()
 
     def get_unclaimed(self, chain) -> int:
         address = self.context['view'].kwargs.get('address')
         if not address:
             return "N/A"
-        bright_user = BrightUser.get_or_create(address)
+        bright_user = BrightUser.objects.get_or_create(address)
         return CreditStrategyFactory(chain, bright_user).get_strategy().get_unclaimed()
 
 

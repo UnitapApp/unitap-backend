@@ -15,6 +15,7 @@ from web3.middleware import geth_poa_middleware
 from bip_utils import Bip44Coins, Bip44
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
+
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     private_key = EncryptedCharField(max_length=100)
@@ -32,6 +33,22 @@ class WalletAccount(models.Model):
         return self.private_key
 
 
+class BrightUserManager(models.Manager):
+
+    def get_or_create(self, address):
+        try:
+            return super().get_queryset().get(address=address)
+        except BrightUser.DoesNotExist:
+            # don't create user if sponsorship fails
+            # so user can retry connecting their wallet
+            with transaction.atomic():
+                _user = BrightUser(address=address)
+                _user.save()
+                if not _user.sponsor():
+                    raise Exception("Could not sponsor")
+                return _user
+
+
 class BrightUser(models.Model):
     PENDING = "0"
     VERIFIED = "1"
@@ -43,8 +60,9 @@ class BrightUser(models.Model):
     context_id = models.UUIDField(default=uuid.uuid4, unique=True)
 
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
-
     _sponsored = models.BooleanField(default=False)
+
+    objects = BrightUserManager()
 
     def __str__(self):
         return "%d - %s" % (self.pk, self.address)
@@ -55,39 +73,26 @@ class BrightUser(models.Model):
 
     @property
     def verification_status(self):
+        if self._verification_status == self.VERIFIED:
+            return self.VERIFIED
         return self.get_verification_status()
 
-    @staticmethod
-    def get_or_create(address):
-        try:
-            return BrightUser.objects.get(address=address)
-        except BrightUser.DoesNotExist:
-            _user = BrightUser.objects.create(address=address)
-            if not _user.sponsor():
-                raise Exception("Could not sponsor")
-            return _user
-
-    def sponsor(self, bright_interface=BRIGHT_ID_INTERFACE):
+    def sponsor(self):
         if not self._sponsored:
-            if bright_interface.sponsor(str(self.context_id)):
+            if BRIGHT_ID_INTERFACE.sponsor(str(self.context_id)):
                 self._sponsored = True
                 self.save()
         return self._sponsored
 
-    def get_verification_status(self, bright_interface=BRIGHT_ID_INTERFACE) -> states:
-        if self._verification_status == self.VERIFIED:
-            return self.VERIFIED
-
-        is_verified = bright_interface.get_verification_status(str(self.context_id))
-
+    def get_verification_status(self) -> states:
+        is_verified = BRIGHT_ID_INTERFACE.get_verification_status(str(self.context_id))
         if is_verified:
             self._verification_status = self.VERIFIED
             self.save()
-
         return self._verification_status
 
-    def get_verification_url(self, bright_interface=BRIGHT_ID_INTERFACE) -> str:
-        return bright_interface.get_verification_link(str(self.context_id))
+    def get_verification_url(self) -> str:
+        return BRIGHT_ID_INTERFACE.get_verification_link(str(self.context_id))
 
 
 class ClaimReceipt(models.Model):
@@ -228,7 +233,7 @@ class Chain(models.Model):
 
         nonce = self.w3().eth.get_transaction_count(self.account.address, "pending")
         tx_func = self.fund_manager.functions.withdrawEth(amount, bright_user.address)
-        gas_estimation = tx_func.estimateGas({'from':self.account.address})
+        gas_estimation = tx_func.estimateGas({'from': self.account.address})
         tx_data = tx_func.buildTransaction({
             'nonce': nonce,
             'from': self.account.address,
