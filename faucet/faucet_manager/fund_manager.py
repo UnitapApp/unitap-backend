@@ -33,11 +33,12 @@ class EVMFundManager:
     def contract(self):
         return self.w3.eth.contract(address=self.chain.fund_manager_address, abi=self.abi)
 
-    def transfer(self, bright_user: BrightUser, amount: int) -> ClaimReceipt:
+    def transfer(self, bright_user: BrightUser, pending_receipt: ClaimReceipt, amount: int) -> ClaimReceipt:
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
-        claim_receipt = self.create_pending_claim_receipt(amount, bright_user, tx)
+        pending_receipt.tx_hash = tx['hash'].hex()
+        pending_receipt.save()
         self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return claim_receipt
+        return pending_receipt
 
     def single_eth_transfer_signed_tx(self, amount: int, to: str):
         nonce = self.w3.eth.get_transaction_count(self.account.address, "pending")
@@ -51,14 +52,6 @@ class EVMFundManager:
         })
         signed_tx = self.w3.eth.account.sign_transaction(tx_data, self.account.key)
         return signed_tx
-
-    def create_pending_claim_receipt(self, amount, bright_user, tx):
-        return ClaimReceipt.objects.create(chain=self.chain,
-                                           bright_user=bright_user,
-                                           datetime=timezone.now(),
-                                           amount=amount,
-                                           tx_hash=tx['hash'].hex(),
-                                           _status=ClaimReceipt.PENDING)
 
     def is_tx_verified(self, tx_hash):
         try:
