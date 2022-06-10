@@ -6,18 +6,17 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from dotenv import load_dotenv
 import dj_database_url
 
-
 load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 def str2bool(v):
-  return v.lower() in ("yes", "true", "t", "1")
+    return v.lower() in ("yes", "true", "t", "1")
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 FIELD_ENCRYPTION_KEY = os.environ.get('FIELD_KEY')
@@ -26,11 +25,8 @@ BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 DEBUG = str2bool(os.environ.get('DEBUG'))
 DATABASE_URL = os.environ.get("DATABASE_URL")
-RINKEBY_URL = os.environ.get("RINKEBY_URL")
 
-TEST_RIKEBY_KEY = os.environ.get("TEST_RIKEBY_KEY")
-
-if SENTRY_DSN != "DEBUG-DSN": # setup sentry only on production
+if SENTRY_DSN != "DEBUG-DSN":  # setup sentry only on production
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
@@ -98,12 +94,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'brightIDfaucet.wsgi.application'
 
-
 # Database
 DATABASES = {
     "default": dj_database_url.config(conn_max_age=600)
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -136,12 +130,12 @@ USE_TZ = True
 
 WHITE_ORIGINS = [
     "https://unitap-front.vercel.app",
-    "http://127.0.0.1:5678", 
+    "http://127.0.0.1:5678",
     "https://unitap.app",
     "https://bright.cafepay.app",
     "https://api.unitap.app",
     "https://stage.unitap.app",
- ]
+]
 
 CSRF_TRUSTED_ORIGINS = WHITE_ORIGINS
 CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
@@ -149,7 +143,6 @@ CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
