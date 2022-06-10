@@ -62,6 +62,9 @@ class EVMFundManager:
             return False
 
     def update_receipt_status(self, claim_receipt: ClaimReceipt):
+        if not claim_receipt.tx_hash:
+            return
+
         if self.is_tx_verified(claim_receipt.tx_hash):
             claim_receipt._status = ClaimReceipt.VERIFIED
         elif claim_receipt.is_expired():
