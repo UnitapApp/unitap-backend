@@ -104,7 +104,7 @@ class ClaimReceipt(models.Model):
 
     def status(self) -> states:
         from faucet.faucet_manager.fund_manager import EVMFundManager
-        if self._status not in [self.VERIFIED, self.REJECTED]:
+        if self._status not in [self.VERIFIED, self.REJECTED] and self.tx_hash is not None:
             EVMFundManager(self.chain).update_receipt_status(self)
         return self._status
 
