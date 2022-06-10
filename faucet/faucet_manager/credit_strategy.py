@@ -36,7 +36,8 @@ class SimpleCreditStrategy(CreditStrategy):
         self.bright_user = bright_user
 
     def get_claim_receipts(self):
-        return ClaimReceipt.objects.filter(chain=self.chain, bright_user=self.bright_user, _status=ClaimReceipt.VERIFIED)
+        return ClaimReceipt.objects.filter(chain=self.chain, bright_user=self.bright_user,
+                                           _status=ClaimReceipt.VERIFIED)
 
     def get_claimed(self):
         aggregate = self.get_claim_receipts().aggregate(Sum("amount"))
@@ -57,8 +58,8 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
 
     def get_claim_receipts(self):
         return ClaimReceipt.objects.filter(chain=self.chain, bright_user=self.bright_user,
-                                        _status=ClaimReceipt.VERIFIED,
-                                        datetime__gte=self.get_last_monday())
+                                           _status=ClaimReceipt.VERIFIED,
+                                           datetime__gte=self.get_last_monday())
 
     @staticmethod
     def get_last_monday():
