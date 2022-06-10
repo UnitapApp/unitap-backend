@@ -15,4 +15,3 @@ def broadcast_and_wait_for_receipt(chain_id, bright_user_id, pending_receipt_id,
         manager = EVMFundManager(chain)
         receipt = manager.transfer(bright_user, pending_receipt, amount)
         manager.update_receipt_status(receipt)
-        return receipt
