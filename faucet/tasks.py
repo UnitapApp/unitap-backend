@@ -1,17 +1,49 @@
 from celery import shared_task
 from django.db import transaction
-from .models import Chain, BrightUser, ClaimReceipt
+from django.db.models import Q
+
+from .models import Chain, ClaimReceipt
 from .faucet_manager.fund_manager import EVMFundManager
 
 
+@shared_task()
+def update_receipt_status(receipt_pk):
+    try:
+        r = ClaimReceipt.objects.get(pk=receipt_pk)
+        r.update_status()
+    except ClaimReceipt.DoesNotExist:
+        pass
+
+
 @shared_task
-def broadcast_and_wait_for_receipt(chain_id, bright_user_id, pending_receipt_id, amount):
-    with transaction.atomic():
-        chain = Chain.objects.select_for_update().get(pk=chain_id)  # lock based on chain
+def update_pending_receipts_status():  # periodic task
+    for _receipt in ClaimReceipt.objects.filter(_status=ClaimReceipt.PENDING):
+        update_receipt_status.delay(_receipt.pk)
 
-        bright_user = BrightUser.objects.get(pk=bright_user_id)
-        pending_receipt = ClaimReceipt.objects.get(pk=pending_receipt_id)
 
-        manager = EVMFundManager(chain)
-        receipt = manager.transfer(bright_user, pending_receipt, amount)
-        manager.update_receipt_status(receipt)
+def has_pending_receipt_with_tx_hash(chain):
+    return ClaimReceipt.objects.filter(~Q(tx_hash=None), chain=chain, _status=ClaimReceipt.PENDING).exists()
+
+
+@shared_task
+def process_pending_receipts_with_no_hash():  # periodic task
+    for _chain in Chain.objects.all():
+        with transaction.atomic():
+            chain = Chain.objects.select_for_update().get(pk=_chain.pk)  # lock based on chain
+
+            # all pending receipts with a tx_hash must be resolved before new transactions can be made
+            if has_pending_receipt_with_tx_hash(chain):
+                continue
+
+            receipts = ClaimReceipt.objects.filter(chain=chain,
+                                                   _status=ClaimReceipt.PENDING,
+                                                   tx_hash=None)
+            if receipts.count() == 0:
+                continue
+
+            # generate transfer data in batches of 32
+            data = [{'to': receipt.bright_user.address, 'amount': receipt.amount} for receipt in receipts[:32]]
+
+            manager = EVMFundManager(chain)
+            tx_hash = manager.multi_transfer(data)
+            receipts.update(tx_hash=tx_hash)

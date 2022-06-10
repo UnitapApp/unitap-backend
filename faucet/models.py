@@ -5,6 +5,8 @@ from django.utils import timezone
 from encrypted_model_fields.fields import EncryptedCharField
 import binascii
 from bip_utils import Bip44Coins, Bip44
+from web3.exceptions import TimeExhausted
+
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
 
@@ -102,11 +104,31 @@ class ClaimReceipt(models.Model):
     def is_expired(self):
         return timezone.now() - self.datetime > timedelta(minutes=self.MAX_PENDING_DURATION)
 
+    def _verified_or_rejected(self):
+        return self._status not in [self.VERIFIED, self.REJECTED]
+
+    def _has_tx_hash(self):
+        return self.tx_hash is not None
+
     def status(self) -> states:
-        from faucet.faucet_manager.fund_manager import EVMFundManager
-        if self._status not in [self.VERIFIED, self.REJECTED] and self.tx_hash is not None:
-            EVMFundManager(self.chain).update_receipt_status(self)
+        if not self._verified_or_rejected():
+            self.update_status()
         return self._status
+
+    def update_status(self):
+        if self._has_tx_hash():
+            try:
+                from faucet.faucet_manager.fund_manager import EVMFundManager
+                if EVMFundManager(self.chain).is_tx_verified(self.tx_hash):
+                    self._status = ClaimReceipt.VERIFIED
+                else:
+                    self._status = ClaimReceipt.REJECTED
+            except TimeExhausted:
+                if self.is_expired():
+                    self._status = ClaimReceipt.REJECTED
+        elif self.is_expired():
+            self._status = ClaimReceipt.REJECTED
+        self.save()
 
 
 class Chain(models.Model):

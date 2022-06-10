@@ -240,8 +240,9 @@ class TestClaim(APITestCase):
         claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
         credit_strategy_x_dai = WeeklyCreditStrategy(self.x_dai, self.verified_user)
 
-        claim_manager_x_dai.claim(claim_amount)
-        claim_manager_x_dai.update_pending_receipts_status()
+        r = claim_manager_x_dai.claim(claim_amount)
+        r._status = ClaimReceipt.VERIFIED
+        r.save()
 
         self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
         self.assertEqual(credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount)
@@ -271,7 +272,7 @@ class TestClaim(APITestCase):
         claim_amount_1 = 100
         claim_amount_2 = 50
         claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1).get()
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
@@ -279,16 +280,13 @@ class TestClaim(APITestCase):
     @skipIf(not DEBUG, "only on debug")
     def test_transfer(self):
         fund_manager = EVMFundManager(self.test_chain)
-        receipt = fund_manager.transfer(self.verified_user, 100)
-        self.assertIsNotNone(receipt.tx_hash)
-        self.assertEqual(receipt.amount, 100)
+        tx_hash = fund_manager.transfer(self.verified_user, 100)
+        self.assertIsNotNone(tx_hash)
 
     @skipIf(not DEBUG, "only on debug")
     def test_simple_claim_manager_transfer(self):
         manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
-        receipt = manager.claim(100).get()
-        self.assertEqual(receipt.amount, 100)
-
+        receipt = manager.claim(100)
 
 class TestClaimAPI(APITestCase):
     def setUp(self) -> None:

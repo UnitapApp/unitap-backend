@@ -13,6 +13,18 @@ app = Celery('unitap')
 #   should have a `CELERY_` prefix.
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
+app.conf.beat_schedule = {
+    # Executes at sunset in Melbourne
+    'process-pending-tx': {
+        'task': 'faucet.tasks.process_pending_receipts_with_no_hash',
+        'schedule': 3,
+    },
+    'update-pending-tx': {
+        'task': 'faucet.tasks.update_pending_receipts_status',
+        'schedule': 3,
+    },
+}
+
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
 
