@@ -62,9 +62,13 @@ class ClaimMaxView(APIView):
 
     **user must be verified**
     """
+
     def get_user(self) -> BrightUser:
         address = self.kwargs.get('address', None)
-        return BrightUser.objects.get(address=address)
+        try:
+            return BrightUser.objects.get(address=address)
+        except BrightUser.DoesNotExist:
+            raise Http404(f"Bright User With Address {address} Does not Exist")
 
     def check_user_is_verified(self):
         _is_verified = self.get_user().verification_status == BrightUser.VERIFIED
@@ -73,7 +77,10 @@ class ClaimMaxView(APIView):
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get('chain_pk', None)
-        return Chain.objects.get(pk=chain_pk)
+        try:
+            return Chain.objects.get(pk=chain_pk)
+        except Chain.DoesNotExist:
+            raise Http404(f"Chain with id {chain_pk} Does not Exist")
 
     def get_claim_manager(self):
         return ClaimManagerFactory(self.get_chain(), self.get_user()).get_manager()
@@ -96,4 +103,4 @@ class ClaimMaxView(APIView):
 
 
 def error500(request):
-    1/ 0
+    1 / 0
