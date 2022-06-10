@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         address = validated_data['address']
-        bright_user = BrightUser.get_or_create(address)
+        bright_user = BrightUser.objects.get_or_create(address)
         return bright_user
 
 

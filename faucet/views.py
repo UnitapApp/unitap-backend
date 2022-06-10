@@ -41,7 +41,7 @@ class GetVerificationUrlView(RetrieveAPIView):
             return BrightUser.objects.get(address=address)
         except BrightUser.DoesNotExist:
             if address is not None:
-                return BrightUser.get_or_create(address)
+                return BrightUser.objects.get_or_create(address)
 
             raise Http404
 
