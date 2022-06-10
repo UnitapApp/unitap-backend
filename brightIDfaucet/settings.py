@@ -25,6 +25,7 @@ BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 DEBUG = str2bool(os.environ.get('DEBUG'))
 DATABASE_URL = os.environ.get("DATABASE_URL")
+REDIS_URL = os.environ.get('REDIS_URL')
 
 if SENTRY_DSN != "DEBUG-DSN":  # setup sentry only on production
     sentry_sdk.init(
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
     'encrypted_model_fields',
     'drf_yasg',
     "corsheaders",
+    'django_celery_results',
 
 ]
 
@@ -170,3 +172,6 @@ REST_FRAMEWORK = {
         'djangorestframework_camel_case.parser.CamelCaseJSONParser',
     ),
 }
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = 'django-db'
+
