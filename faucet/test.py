@@ -267,12 +267,11 @@ class TestClaim(APITestCase):
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
 
-
     def test_second_claim_after_first_fails(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1).get()
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
@@ -287,7 +286,7 @@ class TestClaim(APITestCase):
     @skipIf(not DEBUG, "only on debug")
     def test_simple_claim_manager_transfer(self):
         manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
-        receipt = manager.claim(100)
+        receipt = manager.claim(100).get()
         self.assertEqual(receipt.amount, 100)
 
 

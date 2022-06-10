@@ -1,9 +1,13 @@
 import abc
 from abc import ABC
+
+from celery.result import AsyncResult
+
 from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
-from faucet.faucet_manager.fund_manager import EVMFundManager
 from faucet.models import ClaimReceipt, BrightUser
 from django.db import transaction
+
+from faucet.tasks import broadcast_and_wait_for_receipt
 
 
 class ClaimManager(ABC):
@@ -22,16 +26,14 @@ class SimpleClaimManager(ClaimManager):
     def __init__(self, credit_strategy: CreditStrategy):
         self.credit_strategy = credit_strategy
 
-    @property
-    def fund_manager(self) -> EVMFundManager:
-        return EVMFundManager(self.credit_strategy.chain)
-
-    def claim(self, amount) -> ClaimReceipt:
+    def claim(self, amount):
         self.update_pending_receipts_status()
         with transaction.atomic():
             bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
             self.assert_pre_claim_conditions(amount, bright_user)
-            return self.fund_manager.transfer(bright_user, amount)
+            _transfer_task = broadcast_and_wait_for_receipt.delay(chain_id=self.credit_strategy.chain.pk,
+                                                                  bright_user_id=bright_user.pk,
+                                                                  amount=amount)
 
     def update_pending_receipts_status(self):
         for receipt in ClaimReceipt.objects.filter(
