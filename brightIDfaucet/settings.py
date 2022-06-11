@@ -139,8 +139,10 @@ WHITE_ORIGINS = [
     "https://stage.unitap.app",
 ]
 
-CSRF_TRUSTED_ORIGINS = WHITE_ORIGINS
-CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
+else:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
