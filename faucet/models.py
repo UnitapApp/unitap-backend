@@ -105,12 +105,12 @@ class ClaimReceipt(models.Model):
         return timezone.now() - self.datetime > timedelta(minutes=self.MAX_PENDING_DURATION)
 
     def _verified_or_rejected(self):
-        return self._status not in [self.VERIFIED, self.REJECTED]
+        return self._status in [self.VERIFIED, self.REJECTED]
 
     def _has_tx_hash(self):
         return self.tx_hash is not None
 
-    def status(self) -> states:
+    def status(self):
         if not self._verified_or_rejected():
             self.update_status()
         return self._status

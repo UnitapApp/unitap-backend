@@ -11,10 +11,12 @@ class BrightUserAdmin(admin.ModelAdmin):
 
 
 class ClaimReceiptAdmin(admin.ModelAdmin):
-    list_display = ['pk', 'tx_hash', 'chain', 'bright_user', 'status']
+    list_display = ['pk', 'tx_hash', 'chain', 'bright_user', '_status']
+
 
 class WalletAccountAdmin(admin.ModelAdmin):
     list_display = ['pk', 'name', 'address']
+
 
 admin.site.register(WalletAccount, WalletAccountAdmin)
 admin.site.register(Chain, ChainAdmin)

@@ -60,8 +60,6 @@ INSTALLED_APPS = [
     'encrypted_model_fields',
     'drf_yasg',
     "corsheaders",
-    'django_celery_results',
-
 ]
 
 MIDDLEWARE = [
