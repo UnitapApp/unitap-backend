@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt
-from faucet.serializers import UserSerializer, ChainSerializer, ReceiptSerializer
+from faucet.serializers import ReceiptSerializer, UserSerializer, ChainSerializer
 
 
 class CreateUserView(CreateAPIView):
@@ -17,6 +17,16 @@ class CreateUserView(CreateAPIView):
     """
     serializer_class = UserSerializer
 
+
+class LastClaimView(RetrieveAPIView):
+
+    serializer_class = ReceiptSerializer
+
+    def get_object(self):
+        try:
+            return ClaimReceipt.objects.get(bright_user__address=self.kwargs.get('address'))
+        except ClaimReceipt.DoesNotExist:
+            raise Http404(f"Claim Receipt with address {self.kwargs.get('address')} does not exist")
 
 class UserInfoView(RetrieveAPIView):
     """

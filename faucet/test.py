@@ -1,6 +1,7 @@
 import datetime
 import json
 from unittest import skipIf
+from uuid import uuid4
 
 from django.urls import reverse
 from django.utils import timezone
@@ -325,6 +326,26 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(response_2.status_code, 403)
 
 
+    def test_get_last_claim_of_user(self):
+        endpoint = reverse("FAUCET:last-claim", kwargs={'address': self.verified_user.address})
+        last_claim = ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x0000000000",
+        amount=1000,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.VERIFIED,
+        bright_user=self.verified_user)
+
+        response = self.client.get(endpoint)
+        self.assertEqual(response.status_code, 200)
+        claim_data = json.loads(response.content)
+
+        self.assertEqual(claim_data['pk'], last_claim.pk)
+        self.assertEqual(claim_data['status'], last_claim._status)
+        self.assertEqual(claim_data['txHash'], last_claim.tx_hash)
+        self.assertEqual(claim_data['chain'], last_claim.chain.pk)
+
+
+
 class TestWeeklyCreditStrategy(APITestCase):
     def setUp(self) -> None:
         self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
@@ -368,3 +389,4 @@ class TestWeeklyCreditStrategy(APITestCase):
 
         unclaimed = self.strategy.get_unclaimed()
         self.assertEqual(unclaimed, t_chain_max - 100)
+
