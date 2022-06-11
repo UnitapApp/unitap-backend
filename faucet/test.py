@@ -14,7 +14,7 @@ from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
 from unittest.mock import patch
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-rinkbey_fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
+fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
 x_dai_max_claim = 800e6
 eidi_max_claim = 1000e6
 t_chain_max = 500e6
@@ -41,7 +41,7 @@ def create_xDai_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="Gnosis Chain",
                                 wallet=wallet,
                                 rpc_url_private=test_rpc_url_private,
-                                fund_manager_address=rinkbey_fund_manager,
+                                fund_manager_address=fund_manager,
                                 native_currency_name="xdai", symbol="XDAI",
                                 chain_id="100", max_claim_amount=x_dai_max_claim)
 
@@ -50,14 +50,14 @@ def create_test_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH",
                                 rpc_url_private=test_rpc_url_private,
                                 wallet=wallet,
-                                fund_manager_address=rinkbey_fund_manager,
+                                fund_manager_address=fund_manager,
                                 chain_id=test_chain_id, max_claim_amount=t_chain_max)
 
 
 def create_idChain_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="IDChain",
                                 wallet=wallet,
-                                fund_manager_address=rinkbey_fund_manager,
+                                fund_manager_address=fund_manager,
                                 native_currency_name="eidi", symbol="eidi", chain_id="74",
                                 max_claim_amount=eidi_max_claim)
 
