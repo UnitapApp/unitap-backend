@@ -53,4 +53,4 @@ class ChainSerializer(serializers.ModelSerializer):
 class ReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClaimReceipt
-        fields = ['pk', 'tx_hash', 'chain', 'datetime', 'amount']
+        fields = ['pk', 'tx_hash', 'chain', 'datetime', 'amount', 'status']

@@ -1,6 +1,8 @@
 import datetime
 import json
 from unittest import skipIf
+from urllib import response
+from uuid import uuid4
 
 from django.urls import reverse
 from django.utils import timezone
@@ -13,8 +15,10 @@ from faucet.faucet_manager.fund_manager import EVMFundManager
 from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
 from unittest.mock import patch
 
+from faucet.serializers import ReceiptSerializer
+
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-rinkbey_fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
+fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
 x_dai_max_claim = 800e6
 eidi_max_claim = 1000e6
 t_chain_max = 500e6
@@ -41,7 +45,7 @@ def create_xDai_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="Gnosis Chain",
                                 wallet=wallet,
                                 rpc_url_private=test_rpc_url_private,
-                                fund_manager_address=rinkbey_fund_manager,
+                                fund_manager_address=fund_manager,
                                 native_currency_name="xdai", symbol="XDAI",
                                 chain_id="100", max_claim_amount=x_dai_max_claim)
 
@@ -50,14 +54,14 @@ def create_test_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH",
                                 rpc_url_private=test_rpc_url_private,
                                 wallet=wallet,
-                                fund_manager_address=rinkbey_fund_manager,
+                                fund_manager_address=fund_manager,
                                 chain_id=test_chain_id, max_claim_amount=t_chain_max)
 
 
 def create_idChain_chain(wallet) -> Chain:
     return Chain.objects.create(chain_name="IDChain",
                                 wallet=wallet,
-                                fund_manager_address=rinkbey_fund_manager,
+                                fund_manager_address=fund_manager,
                                 native_currency_name="eidi", symbol="eidi", chain_id="74",
                                 max_claim_amount=eidi_max_claim)
 
@@ -240,8 +244,9 @@ class TestClaim(APITestCase):
         claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
         credit_strategy_x_dai = WeeklyCreditStrategy(self.x_dai, self.verified_user)
 
-        claim_manager_x_dai.claim(claim_amount)
-        claim_manager_x_dai.update_pending_receipts_status()
+        r = claim_manager_x_dai.claim(claim_amount)
+        r._status = ClaimReceipt.VERIFIED
+        r.save()
 
         self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
         self.assertEqual(credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount)
@@ -267,11 +272,10 @@ class TestClaim(APITestCase):
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
 
-
     def test_second_claim_after_first_fails(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
@@ -280,16 +284,13 @@ class TestClaim(APITestCase):
     @skipIf(not DEBUG, "only on debug")
     def test_transfer(self):
         fund_manager = EVMFundManager(self.test_chain)
-        receipt = fund_manager.transfer(self.verified_user, 100)
-        self.assertIsNotNone(receipt.tx_hash)
-        self.assertEqual(receipt.amount, 100)
+        tx_hash = fund_manager.transfer(self.verified_user, 100)
+        self.assertIsNotNone(tx_hash)
 
     @skipIf(not DEBUG, "only on debug")
     def test_simple_claim_manager_transfer(self):
         manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
         receipt = manager.claim(100)
-        self.assertEqual(receipt.amount, 100)
-
 
 class TestClaimAPI(APITestCase):
     def setUp(self) -> None:
@@ -327,6 +328,55 @@ class TestClaimAPI(APITestCase):
         response_2 = self.client.post(endpoint)
         self.assertEqual(response_2.status_code, 403)
 
+
+    def test_get_last_claim_of_user(self):
+        endpoint = reverse("FAUCET:last-claim", kwargs={'address': self.verified_user.address})
+        
+        ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x1111111111",
+        amount=1500,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.REJECTED,
+        bright_user=self.verified_user)
+
+        last_claim = ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x0000000000",
+        amount=1000,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.VERIFIED,
+        bright_user=self.verified_user)
+
+        response = self.client.get(endpoint)
+        self.assertEqual(response.status_code, 200)
+        claim_data = json.loads(response.content)
+
+        self.assertEqual(claim_data['pk'], last_claim.pk)
+        self.assertEqual(claim_data['status'], last_claim._status)
+        self.assertEqual(claim_data['txHash'], last_claim.tx_hash)
+        self.assertEqual(claim_data['chain'], last_claim.chain.pk)
+    
+    def test_get_claim_list(self):
+        endpoint = reverse("FAUCET:claims", kwargs={'address': self.verified_user.address})
+
+        c1 = ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x1111111111",
+        amount=1500,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.REJECTED,
+        bright_user=self.verified_user)
+
+        c2 = ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x0000000000",
+        amount=1000,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.VERIFIED,
+        bright_user=self.verified_user)
+
+
+        response = self.client.get(endpoint)
+        data = json.loads(response.content)
+        self.assertEqual(data[0]['pk'], c2.pk)
+        self.assertEqual(data[1]['pk'], c1.pk)
 
 class TestWeeklyCreditStrategy(APITestCase):
     def setUp(self) -> None:
@@ -371,3 +421,4 @@ class TestWeeklyCreditStrategy(APITestCase):
 
         unclaimed = self.strategy.get_unclaimed()
         self.assertEqual(unclaimed, t_chain_max - 100)
+

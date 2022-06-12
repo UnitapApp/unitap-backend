@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt
-from faucet.serializers import UserSerializer, ChainSerializer, ReceiptSerializer
+from faucet.serializers import ReceiptSerializer, UserSerializer, ChainSerializer
 
 
 class CreateUserView(CreateAPIView):
@@ -16,6 +16,33 @@ class CreateUserView(CreateAPIView):
     this user can be verified using verification_link
     """
     serializer_class = UserSerializer
+
+
+class LastClaimView(RetrieveAPIView):
+
+    serializer_class = ReceiptSerializer
+
+    def get_object(self):
+        try:
+            return ClaimReceipt.objects.filter(bright_user__address=self.kwargs.get('address')).order_by('pk').last()
+        except ClaimReceipt.DoesNotExist:
+            raise Http404(f"Claim Receipt with address {self.kwargs.get('address')} does not exist")
+
+
+class ListClaims(ListAPIView):
+
+    serializer_class = ReceiptSerializer
+
+    filterset_fields = {
+        'chain': {'exact'},
+        '_status': {'exact'},
+        'datetime': {'exact', 'gte', 'lte'}
+    }
+
+    def get_queryset(self):
+        return ClaimReceipt.objects.filter(bright_user__address=self.kwargs.get('address')).order_by('-pk')
+        
+        
 
 
 class UserInfoView(RetrieveAPIView):

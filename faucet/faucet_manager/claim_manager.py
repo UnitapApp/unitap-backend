@@ -1,5 +1,7 @@
 import abc
 from abc import ABC
+from django.utils import timezone
+
 from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
 from faucet.faucet_manager.fund_manager import EVMFundManager
 from faucet.models import ClaimReceipt, BrightUser
@@ -23,22 +25,14 @@ class SimpleClaimManager(ClaimManager):
         self.credit_strategy = credit_strategy
 
     @property
-    def fund_manager(self) -> EVMFundManager:
+    def fund_manager(self):
         return EVMFundManager(self.credit_strategy.chain)
 
-    def claim(self, amount) -> ClaimReceipt:
-        self.update_pending_receipts_status()
+    def claim(self, amount):
         with transaction.atomic():
             bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
             self.assert_pre_claim_conditions(amount, bright_user)
-            return self.fund_manager.transfer(bright_user, amount)
-
-    def update_pending_receipts_status(self):
-        for receipt in ClaimReceipt.objects.filter(
-                chain=self.credit_strategy.chain,
-                bright_user=self.credit_strategy.bright_user,
-                _status=BrightUser.PENDING):
-            self.fund_manager.update_receipt_status(receipt)
+            return self.create_pending_claim_receipt(amount)  # all pending claims will be processed periodically
 
     def assert_pre_claim_conditions(self, amount, bright_user):
         assert amount <= self.credit_strategy.get_unclaimed()
@@ -48,6 +42,13 @@ class SimpleClaimManager(ClaimManager):
             bright_user=bright_user,
             _status=BrightUser.PENDING
         ).exists()
+
+    def create_pending_claim_receipt(self, amount):
+        return ClaimReceipt.objects.create(chain=self.credit_strategy.chain,
+                                           bright_user=self.credit_strategy.bright_user,
+                                           datetime=timezone.now(),
+                                           amount=amount,
+                                           _status=ClaimReceipt.PENDING)
 
     def get_credit_strategy(self) -> CreditStrategy:
         return self.credit_strategy

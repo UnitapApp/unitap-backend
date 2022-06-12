@@ -1,11 +1,10 @@
-from django.utils import timezone
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
 from web3.exceptions import TimeExhausted
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
-from faucet.models import Chain, BrightUser, ClaimReceipt
+from faucet.models import Chain, BrightUser
 
 
 class EVMFundManager:
@@ -33,15 +32,26 @@ class EVMFundManager:
     def contract(self):
         return self.w3.eth.contract(address=self.chain.fund_manager_address, abi=self.abi)
 
-    def transfer(self, bright_user: BrightUser, amount: int) -> ClaimReceipt:
+    def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
-        claim_receipt = self.create_pending_claim_receipt(amount, bright_user, tx)
         self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return claim_receipt
+        return tx['hash'].hex()
+
+    def multi_transfer(self, data):
+        tx = self.multi_eth_transfer_signed_tx(data)
+        self.w3.eth.send_raw_transaction(tx.rawTransaction)
+        return tx['hash'].hex()
 
     def single_eth_transfer_signed_tx(self, amount: int, to: str):
-        nonce = self.w3.eth.get_transaction_count(self.account.address, "pending")
         tx_function = self.contract.functions.withdrawEth(amount, to)
+        return self.prepare_tx_for_broadcast(tx_function)
+
+    def multi_eth_transfer_signed_tx(self, data):
+        tx_function = self.contract.functions.multiWithdrawEth(data)
+        return self.prepare_tx_for_broadcast(tx_function)
+
+    def prepare_tx_for_broadcast(self, tx_function):
+        nonce = self.w3.eth.get_transaction_count(self.account.address)
         gas_estimation = tx_function.estimateGas({'from': self.account.address})
         tx_data = tx_function.buildTransaction({
             'nonce': nonce,
@@ -52,26 +62,11 @@ class EVMFundManager:
         signed_tx = self.w3.eth.account.sign_transaction(tx_data, self.account.key)
         return signed_tx
 
-    def create_pending_claim_receipt(self, amount, bright_user, tx):
-        return ClaimReceipt.objects.create(chain=self.chain,
-                                           bright_user=bright_user,
-                                           datetime=timezone.now(),
-                                           amount=amount,
-                                           tx_hash=tx['hash'].hex(),
-                                           _status=ClaimReceipt.PENDING)
-
     def is_tx_verified(self, tx_hash):
         try:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             if receipt['status'] == 1:
                 return True
-        except TimeExhausted:
             return False
-
-    def update_receipt_status(self, claim_receipt: ClaimReceipt):
-        if self.is_tx_verified(claim_receipt.tx_hash):
-            claim_receipt._status = ClaimReceipt.VERIFIED
-        elif claim_receipt.is_expired():
-            claim_receipt._status = ClaimReceipt.REJECTED
-        claim_receipt.save()
-
+        except TimeExhausted:
+            raise
