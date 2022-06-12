@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'encrypted_model_fields',
     'drf_yasg',
     "corsheaders",
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -160,6 +161,8 @@ MEDIA_URL = os.path.join(BASE_DIR, '/media/')
 APPEND_SLASH = True
 
 REST_FRAMEWORK = {
+
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 
     'DEFAULT_RENDERER_CLASSES': (
         'djangorestframework_camel_case.render.CamelCaseJSONRenderer',

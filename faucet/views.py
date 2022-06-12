@@ -33,6 +33,12 @@ class ListClaims(ListAPIView):
 
     serializer_class = ReceiptSerializer
 
+    filterset_fields = {
+        'chain': {'exact'},
+        '_status': {'exact'},
+        'datetime': {'exact', 'gte', 'lte'}
+    }
+
     def get_queryset(self):
         return ClaimReceipt.objects.filter(bright_user__address=self.kwargs.get('address')).order_by('-pk')
         
