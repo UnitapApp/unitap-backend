@@ -1,6 +1,7 @@
 import datetime
 import json
 from unittest import skipIf
+from urllib import response
 from uuid import uuid4
 
 from django.urls import reverse
@@ -13,6 +14,8 @@ from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleC
 from faucet.faucet_manager.fund_manager import EVMFundManager
 from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
 from unittest.mock import patch
+
+from faucet.serializers import ReceiptSerializer
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
@@ -328,6 +331,14 @@ class TestClaimAPI(APITestCase):
 
     def test_get_last_claim_of_user(self):
         endpoint = reverse("FAUCET:last-claim", kwargs={'address': self.verified_user.address})
+        
+        ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x1111111111",
+        amount=1500,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.REJECTED,
+        bright_user=self.verified_user)
+
         last_claim = ClaimReceipt.objects.create(chain=self.test_chain, 
         tx_hash="0x0000000000",
         amount=1000,
@@ -343,8 +354,29 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(claim_data['status'], last_claim._status)
         self.assertEqual(claim_data['txHash'], last_claim.tx_hash)
         self.assertEqual(claim_data['chain'], last_claim.chain.pk)
+    
+    def test_get_claim_list(self):
+        endpoint = reverse("FAUCET:claims", kwargs={'address': self.verified_user.address})
+
+        c1 = ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x1111111111",
+        amount=1500,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.REJECTED,
+        bright_user=self.verified_user)
+
+        c2 = ClaimReceipt.objects.create(chain=self.test_chain, 
+        tx_hash="0x0000000000",
+        amount=1000,
+        datetime=timezone.now(),
+        _status=ClaimReceipt.VERIFIED,
+        bright_user=self.verified_user)
 
 
+        response = self.client.get(endpoint)
+        data = json.loads(response.content)
+        self.assertEqual(data[0]['pk'], c2.pk)
+        self.assertEqual(data[1]['pk'], c1.pk)
 
 class TestWeeklyCreditStrategy(APITestCase):
     def setUp(self) -> None:

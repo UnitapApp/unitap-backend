@@ -24,9 +24,20 @@ class LastClaimView(RetrieveAPIView):
 
     def get_object(self):
         try:
-            return ClaimReceipt.objects.get(bright_user__address=self.kwargs.get('address'))
+            return ClaimReceipt.objects.filter(bright_user__address=self.kwargs.get('address')).order_by('pk').last()
         except ClaimReceipt.DoesNotExist:
             raise Http404(f"Claim Receipt with address {self.kwargs.get('address')} does not exist")
+
+
+class ListClaims(ListAPIView):
+
+    serializer_class = ReceiptSerializer
+
+    def get_queryset(self):
+        return ClaimReceipt.objects.filter(bright_user__address=self.kwargs.get('address')).order_by('-pk')
+        
+        
+
 
 class UserInfoView(RetrieveAPIView):
     """
