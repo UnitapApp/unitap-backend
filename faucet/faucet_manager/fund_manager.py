@@ -28,9 +28,12 @@ class EVMFundManager:
     def account(self) -> LocalAccount:
         return self.w3.eth.account.privateKeyToAccount(self.chain.wallet.main_key)
 
+    def get_checksum_address(self):
+        return Web3.toChecksumAddress(self.chain.fund_manager_address.lower())
+
     @property
     def contract(self):
-        return self.w3.eth.contract(address=self.chain.fund_manager_address, abi=self.abi)
+        return self.w3.eth.contract(address=self.get_checksum_address(), abi=self.abi)
 
     def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
