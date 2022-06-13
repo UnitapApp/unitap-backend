@@ -142,15 +142,14 @@ class Chain(models.Model):
     explorer_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
     logo_url = models.URLField(max_length=255, blank=True, null=True)
-    rpc_url_private = models.URLField(max_length=255, blank=True, null=True)
+    rpc_url_private = models.URLField(max_length=255)
 
     max_claim_amount = models.BigIntegerField()
 
     poa = models.BooleanField(default=False)
 
-    fund_manager_address = models.CharField(max_length=255, blank=True, null=True)
-    wallet = models.ForeignKey(WalletAccount, related_name="chains", blank=True, null=True,
-                               on_delete=models.PROTECT)
+    fund_manager_address = models.CharField(max_length=255)
+    wallet = models.ForeignKey(WalletAccount, related_name="chains", on_delete=models.PROTECT)
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
