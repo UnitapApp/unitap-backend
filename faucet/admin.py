@@ -3,7 +3,8 @@ from .models import *
 
 
 class ChainAdmin(admin.ModelAdmin):
-    list_display = ['pk', 'chain_name', 'chain_id', 'symbol']
+    list_display = ['pk', 'chain_name', 'chain_id', 'symbol', 'order']
+    list_editable = ['order']
 
 
 class BrightUserAdmin(admin.ModelAdmin):
