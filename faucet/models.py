@@ -151,5 +151,7 @@ class Chain(models.Model):
     fund_manager_address = models.CharField(max_length=255)
     wallet = models.ForeignKey(WalletAccount, related_name="chains", on_delete=models.PROTECT)
 
+    order = models.IntegerField(default=0)
+
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"

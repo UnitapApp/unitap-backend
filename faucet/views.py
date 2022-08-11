@@ -80,7 +80,7 @@ class ChainListView(ListAPIView):
     this endpoint returns detailed user specific info if supplied with an address
     """
     serializer_class = ChainSerializer
-    queryset = Chain.objects.all()
+    queryset = Chain.objects.all().order_by('order')
 
 
 class ClaimMaxView(APIView):
