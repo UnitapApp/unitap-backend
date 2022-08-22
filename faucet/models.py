@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.db import models
 import uuid
 from django.utils import timezone
@@ -53,6 +53,7 @@ class BrightUser(models.Model):
     context_id = models.UUIDField(default=uuid.uuid4, unique=True)
 
     _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
+    _last_verified_datetime = models.DateTimeField(default=timezone.make_aware(datetime.utcfromtimestamp(0)))
     _sponsored = models.BooleanField(default=False)
 
     objects = BrightUserManager()
@@ -66,7 +67,11 @@ class BrightUser(models.Model):
 
     @property
     def verification_status(self):
-        if self._verification_status == self.VERIFIED:
+        _now = timezone.now()
+        _delta = _now - self._last_verified_datetime
+        _max_delta = timedelta(days=7)
+
+        if self._verification_status == self.VERIFIED and _delta <= _max_delta:
             return self.VERIFIED
         return self.get_verification_status()
 
@@ -74,7 +79,10 @@ class BrightUser(models.Model):
         is_verified = BRIGHT_ID_INTERFACE.get_verification_status(str(self.context_id))
         if is_verified:
             self._verification_status = self.VERIFIED
-            self.save()
+            self._last_verified_datetime = timezone.now()
+        else:
+            self._verification_status = self.PENDING
+        self.save()
         return self._verification_status
 
     def get_verification_url(self) -> str:

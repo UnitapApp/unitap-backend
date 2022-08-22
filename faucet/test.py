@@ -37,6 +37,7 @@ def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> Br
 def create_verified_user() -> BrightUser:
     user = create_new_user("0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e")
     user._verification_status = BrightUser.VERIFIED
+    user._last_verified_datetime = timezone.now()
     user.save()
     return user
 
