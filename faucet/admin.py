@@ -19,7 +19,12 @@ class WalletAccountAdmin(admin.ModelAdmin):
     list_display = ['pk', 'name', 'address']
 
 
+class GlobalSettingsAdmin(admin.ModelAdmin):
+    list_display = ['pk', 'weekly_chain_claim_limit']
+    list_editable = ['weekly_chain_claim_limit', ]
+
 admin.site.register(WalletAccount, WalletAccountAdmin)
 admin.site.register(Chain, ChainAdmin)
 admin.site.register(BrightUser, BrightUserAdmin)
 admin.site.register(ClaimReceipt, ClaimReceiptAdmin)
+admin.site.register(GlobalSettings, GlobalSettingsAdmin)

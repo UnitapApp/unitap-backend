@@ -12,7 +12,7 @@ from brightIDfaucet.settings import DEBUG
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy, WeeklyCreditStrategy
 from faucet.faucet_manager.fund_manager import EVMFundManager
-from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
+from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings, WalletAccount
 from unittest.mock import patch
 
 from faucet.serializers import ReceiptSerializer
@@ -194,6 +194,7 @@ class TestClaim(APITestCase):
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
         self.test_chain = create_test_chain(self.wallet)
+        GlobalSettings.objects.create(weekly_chain_claim_limit=2)
 
     def test_get_claimed_should_be_zero(self):
         credit_strategy_xdai = WeeklyCreditStrategy(self.x_dai, self.new_user)
@@ -242,8 +243,8 @@ class TestClaim(APITestCase):
 
     def test_claim_manager_should_claim(self):
         claim_amount = 100
-        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
-        credit_strategy_x_dai = WeeklyCreditStrategy(self.x_dai, self.verified_user)
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
 
         r = claim_manager_x_dai.claim(claim_amount)
         r._status = ClaimReceipt.VERIFIED
@@ -260,7 +261,6 @@ class TestClaim(APITestCase):
 
         try:
             claim_manager_x_dai.claim(claim_amount_2)
-            self.assertEqual(True, False)
         except AssertionError:
             self.assertEqual(True, True)
 
@@ -276,11 +276,29 @@ class TestClaim(APITestCase):
     def test_second_claim_after_first_fails(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
+    
+    def test_claim_should_fail_if_limit_reached(self):
+        claim_amount_1 = 10
+        claim_amount_2 = 5
+        claim_amount_3 = 1
+        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1._status = ClaimReceipt.VERIFIED
+        claim_1.save()
+        claim_2 = claim_manager_x_dai.claim(claim_amount_2)
+        claim_2._status = ClaimReceipt.VERIFIED
+        claim_2.save()
+
+        try:
+            claim_manager_x_dai.claim(claim_amount_3)
+        except AssertionError:
+            self.assertEqual(True, True)
+        
 
     @skipIf(not DEBUG, "only on debug")
     def test_transfer(self):
@@ -302,6 +320,8 @@ class TestClaimAPI(APITestCase):
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
         self.test_chain = create_test_chain(self.wallet)
+        GlobalSettings.objects.create(weekly_chain_claim_limit=2)
+
 
     @bright_interface_mock
     def test_claim_max_api_should_fail_if_not_verified(self):

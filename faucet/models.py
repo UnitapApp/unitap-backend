@@ -163,3 +163,7 @@ class Chain(models.Model):
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
+
+
+class GlobalSettings(models.Model):
+    weekly_chain_claim_limit = models.IntegerField(default=10)

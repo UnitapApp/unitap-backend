@@ -2,9 +2,9 @@ import abc
 from abc import ABC
 from django.utils import timezone
 
-from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory
+from faucet.faucet_manager.credit_strategy import CreditStrategy, CreditStrategyFactory, WeeklyCreditStrategy
 from faucet.faucet_manager.fund_manager import EVMFundManager
-from faucet.models import ClaimReceipt, BrightUser
+from faucet.models import ClaimReceipt, BrightUser, GlobalSettings
 from django.db import transaction
 
 
@@ -33,7 +33,7 @@ class SimpleClaimManager(ClaimManager):
             bright_user = BrightUser.objects.select_for_update().get(pk=self.credit_strategy.bright_user.pk)
             self.assert_pre_claim_conditions(amount, bright_user)
             return self.create_pending_claim_receipt(amount)  # all pending claims will be processed periodically
-
+    
     def assert_pre_claim_conditions(self, amount, bright_user):
         assert amount <= self.credit_strategy.get_unclaimed()
         assert self.credit_strategy.bright_user.verification_status == BrightUser.VERIFIED
@@ -54,6 +54,22 @@ class SimpleClaimManager(ClaimManager):
         return self.credit_strategy
 
 
+class LimitedChainClaimManager(SimpleClaimManager):
+    
+    def get_weekly_limit(self):
+        limit = GlobalSettings.objects.first().weekly_chain_claim_limit
+        return limit
+    def assert_pre_claim_conditions(self, amount, bright_user):
+        super().assert_pre_claim_conditions(amount, bright_user)
+        last_monday = WeeklyCreditStrategy.get_last_monday()
+        total_claims = ClaimReceipt.objects.filter(
+            bright_user=bright_user,
+            _status__in=[BrightUser.PENDING, BrightUser.VERIFIED],
+            datetime__gte=last_monday
+        ).count()
+        assert total_claims < self.get_weekly_limit()
+
+
 class ClaimManagerFactory:
 
     def __init__(self, chain, bright_user):
@@ -61,7 +77,7 @@ class ClaimManagerFactory:
         self.bright_user = bright_user
 
     def get_manager_class(self):
-        return SimpleClaimManager
+        return LimitedChainClaimManager
 
     def get_manager(self) -> ClaimManager:
         _Manager = self.get_manager_class()
