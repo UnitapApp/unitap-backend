@@ -7,7 +7,7 @@ from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
 
 class UserSerializer(serializers.ModelSerializer):
 
-    total_weekly_claims = serializers.SerializerMethodField()
+    total_weekly_claims_remaining = serializers.SerializerMethodField()
 
     class Meta:
         model = BrightUser
@@ -17,12 +17,14 @@ class UserSerializer(serializers.ModelSerializer):
             "address",
             "verification_url",
             "verification_status",
-            "total_weekly_claims",
+            "total_weekly_claims_remaining",
         ]
         read_only_fields = ["context_id"]
 
-    def get_total_weekly_claims(self, instance):
-        return LimitedChainClaimManager.get_total_weekly_claims(instance)
+    def get_total_weekly_claims_remaining(self, instance):
+        gs = GlobalSettings.objects.first()
+        if gs is not None:
+            return LimitedChainClaimManager.get_total_weekly_claims(instance) - gs.weekly_chain_claim_limit
 
     def create(self, validated_data):
         address = validated_data["address"]
