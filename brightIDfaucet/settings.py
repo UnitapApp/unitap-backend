@@ -19,111 +19,107 @@ def str2bool(v):
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-FIELD_ENCRYPTION_KEY = os.environ.get('FIELD_KEY')
-SECRET_KEY = os.environ.get('SECRET_KEY')
-BRIGHT_PRIVATE_KEY = os.environ.get('BRIGHT_PRIVATE_KEY')
-SENTRY_DSN = os.environ.get('SENTRY_DSN')
-DEBUG = str2bool(os.environ.get('DEBUG'))
+FIELD_ENCRYPTION_KEY = os.environ.get("FIELD_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+BRIGHT_PRIVATE_KEY = os.environ.get("BRIGHT_PRIVATE_KEY")
+SENTRY_DSN = os.environ.get("SENTRY_DSN")
+DEBUG = str2bool(os.environ.get("DEBUG"))
 DATABASE_URL = os.environ.get("DATABASE_URL")
-REDIS_URL = os.environ.get('REDIS_URL')
+REDIS_URL = os.environ.get("REDIS_URL")
 
 if SENTRY_DSN != "DEBUG-DSN":  # setup sentry only on production
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
-
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
-
         # If you wish to associate users to errors (assuming you are using
         # django.contrib.auth) you may enable sending PII data.
-        send_default_pii=True
+        send_default_pii=True,
     )
 
 APP_NAME = "unitap"
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'faucet.apps.FaucetConfig',
-    'rest_framework',
-    'encrypted_model_fields',
-    'drf_yasg',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "faucet.apps.FaucetConfig",
+    "rest_framework",
+    "encrypted_model_fields",
+    "drf_yasg",
     "corsheaders",
-    'django_filters',
+    "django_filters",
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'brightIDfaucet.urls'
+ROOT_URLCONF = "brightIDfaucet.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'brightIDfaucet.wsgi.application'
+WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
 
 # Database
-DATABASES = {
-    "default": dj_database_url.config(conn_max_age=600)
-}
+DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -150,29 +146,26 @@ else:
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 BRIGHT_ID_INTERFACE = BrightIDInterface(APP_NAME)
 
-STATIC_ROOT = 'static'
-MEDIA_ROOT = 'media'
-STATIC_URL = os.path.join(BASE_DIR, '/static/')
-MEDIA_URL = os.path.join(BASE_DIR, '/media/')
+STATIC_ROOT = "static"
+MEDIA_ROOT = "media"
+STATIC_URL = os.path.join(BASE_DIR, "/static/")
+MEDIA_URL = os.path.join(BASE_DIR, "/media/")
 
 APPEND_SLASH = True
 
 REST_FRAMEWORK = {
-
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-
-    'DEFAULT_RENDERER_CLASSES': (
-        'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
-        'djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer',
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "DEFAULT_RENDERER_CLASSES": (
+        "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer",
     ),
-
-    'DEFAULT_PARSER_CLASSES': (
-        'djangorestframework_camel_case.parser.CamelCaseFormParser',
-        'djangorestframework_camel_case.parser.CamelCaseMultiPartParser',
-        'djangorestframework_camel_case.parser.CamelCaseJSONParser',
+    "DEFAULT_PARSER_CLASSES": (
+        "djangorestframework_camel_case.parser.CamelCaseFormParser",
+        "djangorestframework_camel_case.parser.CamelCaseMultiPartParser",
+        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
     ),
 }
 CELERY_BROKER_URL = REDIS_URL

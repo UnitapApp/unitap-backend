@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class FaucetConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'faucet'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "faucet"

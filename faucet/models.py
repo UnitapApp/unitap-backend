@@ -16,7 +16,9 @@ class WalletAccount(models.Model):
 
     @property
     def address(self):
-        node = Bip44.FromPrivateKey(binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM)
+        node = Bip44.FromPrivateKey(
+            binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
+        )
         return node.PublicKey().ToAddress()
 
     def __str__(self) -> str:
@@ -28,7 +30,6 @@ class WalletAccount(models.Model):
 
 
 class BrightUserManager(models.Manager):
-
     def get_or_create(self, address):
         try:
             return super().get_queryset().get(address=address)
@@ -46,14 +47,17 @@ class BrightUser(models.Model):
     PENDING = "0"
     VERIFIED = "1"
 
-    states = ((PENDING, "Pending"),
-              (VERIFIED, "Verified"))
+    states = ((PENDING, "Pending"), (VERIFIED, "Verified"))
 
     address = models.CharField(max_length=45, unique=True)
     context_id = models.UUIDField(default=uuid.uuid4, unique=True)
 
-    _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
-    _last_verified_datetime = models.DateTimeField(default=timezone.make_aware(datetime.utcfromtimestamp(0)))
+    _verification_status = models.CharField(
+        max_length=1, choices=states, default=PENDING
+    )
+    _last_verified_datetime = models.DateTimeField(
+        default=timezone.make_aware(datetime.utcfromtimestamp(0))
+    )
     _sponsored = models.BooleanField(default=False)
 
     objects = BrightUserManager()
@@ -91,17 +95,16 @@ class BrightUser(models.Model):
 
 class ClaimReceipt(models.Model):
     MAX_PENDING_DURATION = 15  # minutes
-    PENDING = '0'
-    VERIFIED = '1'
-    REJECTED = '2'
+    PENDING = "0"
+    VERIFIED = "1"
+    REJECTED = "2"
 
-    states = ((PENDING, "Pending"),
-              (VERIFIED, "Verified"),
-              (REJECTED, "Rejected")
-              )
+    states = ((PENDING, "Pending"), (VERIFIED, "Verified"), (REJECTED, "Rejected"))
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
-    bright_user = models.ForeignKey(BrightUser, related_name="claims", on_delete=models.PROTECT)
+    bright_user = models.ForeignKey(
+        BrightUser, related_name="claims", on_delete=models.PROTECT
+    )
 
     _status = models.CharField(max_length=1, choices=states, default=PENDING)
 
@@ -110,7 +113,9 @@ class ClaimReceipt(models.Model):
     tx_hash = models.CharField(max_length=100, blank=True, null=True)
 
     def is_expired(self):
-        return timezone.now() - self.datetime > timedelta(minutes=self.MAX_PENDING_DURATION)
+        return timezone.now() - self.datetime > timedelta(
+            minutes=self.MAX_PENDING_DURATION
+        )
 
     def _verified_or_rejected(self):
         return self._status in [self.VERIFIED, self.REJECTED]
@@ -127,6 +132,7 @@ class ClaimReceipt(models.Model):
         if self._has_tx_hash():
             try:
                 from faucet.faucet_manager.fund_manager import EVMFundManager
+
                 if EVMFundManager(self.chain).is_tx_verified(self.tx_hash):
                     self._status = ClaimReceipt.VERIFIED
                 else:
@@ -157,7 +163,9 @@ class Chain(models.Model):
     poa = models.BooleanField(default=False)
 
     fund_manager_address = models.CharField(max_length=255)
-    wallet = models.ForeignKey(WalletAccount, related_name="chains", on_delete=models.PROTECT)
+    wallet = models.ForeignKey(
+        WalletAccount, related_name="chains", on_delete=models.PROTECT
+    )
 
     order = models.IntegerField(default=0)
 

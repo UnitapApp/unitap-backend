@@ -11,7 +11,6 @@ from faucet.models import ClaimReceipt, BrightUser, Chain
 
 
 class CreditStrategy(ABC):
-
     def __int__(self, chain: Chain, bright_user: BrightUser):
         self.chain = chain
         self.bright_user = bright_user
@@ -30,18 +29,20 @@ class CreditStrategy(ABC):
 
 
 class SimpleCreditStrategy(CreditStrategy):
-
     def __init__(self, chain, bright_user):
         self.chain = chain
         self.bright_user = bright_user
 
     def get_claim_receipts(self):
-        return ClaimReceipt.objects.filter(chain=self.chain, bright_user=self.bright_user,
-                                           _status=ClaimReceipt.VERIFIED)
+        return ClaimReceipt.objects.filter(
+            chain=self.chain,
+            bright_user=self.bright_user,
+            _status=ClaimReceipt.VERIFIED,
+        )
 
     def get_claimed(self):
         aggregate = self.get_claim_receipts().aggregate(Sum("amount"))
-        _sum = aggregate.get('amount__sum')
+        _sum = aggregate.get("amount__sum")
         if not _sum:
             return 0
         return _sum
@@ -51,15 +52,17 @@ class SimpleCreditStrategy(CreditStrategy):
 
 
 class WeeklyCreditStrategy(SimpleCreditStrategy):
-
     def __int__(self, chain: Chain, bright_user: BrightUser):
         self.chain = chain
         self.bright_user = bright_user
 
     def get_claim_receipts(self):
-        return ClaimReceipt.objects.filter(chain=self.chain, bright_user=self.bright_user,
-                                           _status=ClaimReceipt.VERIFIED,
-                                           datetime__gte=self.get_last_monday())
+        return ClaimReceipt.objects.filter(
+            chain=self.chain,
+            bright_user=self.bright_user,
+            _status=ClaimReceipt.VERIFIED,
+            datetime__gte=self.get_last_monday(),
+        )
 
     @staticmethod
     def get_last_monday():
@@ -74,7 +77,9 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
         if last_monday_midnight > now:
             last_monday_midnight -= week
 
-        return timezone.make_aware(datetime.datetime.fromtimestamp(last_monday_midnight))
+        return timezone.make_aware(
+            datetime.datetime.fromtimestamp(last_monday_midnight)
+        )
 
 
 class CreditStrategyFactory:

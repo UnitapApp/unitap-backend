@@ -22,26 +22,33 @@ def update_pending_receipts_status():  # periodic task
 
 
 def has_pending_receipt_with_tx_hash(chain):
-    return ClaimReceipt.objects.filter(~Q(tx_hash=None), chain=chain, _status=ClaimReceipt.PENDING).exists()
+    return ClaimReceipt.objects.filter(
+        ~Q(tx_hash=None), chain=chain, _status=ClaimReceipt.PENDING
+    ).exists()
 
 
 @shared_task
 def proccess_chain_pending_receipts(chain_id):
     with transaction.atomic():
-        chain = Chain.objects.select_for_update().get(pk=chain_id)  # lock based on chain
+        chain = Chain.objects.select_for_update().get(
+            pk=chain_id
+        )  # lock based on chain
 
         # all pending receipts with a tx_hash must be resolved before new transactions can be made
         if has_pending_receipt_with_tx_hash(chain):
             return
 
-        receipts = ClaimReceipt.objects.filter(chain=chain,
-                                                _status=ClaimReceipt.PENDING,
-                                                tx_hash=None)
+        receipts = ClaimReceipt.objects.filter(
+            chain=chain, _status=ClaimReceipt.PENDING, tx_hash=None
+        )
         if receipts.count() == 0:
             return
 
         # generate transfer data in batches of 32
-        data = [{'to': receipt.bright_user.address, 'amount': receipt.amount} for receipt in receipts[:32]]
+        data = [
+            {"to": receipt.bright_user.address, "amount": receipt.amount}
+            for receipt in receipts[:32]
+        ]
 
         manager = EVMFundManager(chain)
         tx_hash = manager.multi_transfer(data)
