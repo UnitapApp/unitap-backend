@@ -24,7 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get_total_weekly_claims_remaining(self, instance):
         gs = GlobalSettings.objects.first()
         if gs is not None:
-            return LimitedChainClaimManager.get_total_weekly_claims(instance) - gs.weekly_chain_claim_limit
+            return gs.weekly_chain_claim_limit - LimitedChainClaimManager.get_total_weekly_claims(instance)
 
     def create(self, validated_data):
         address = validated_data["address"]
