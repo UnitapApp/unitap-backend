@@ -1,14 +1,21 @@
 from rest_framework import serializers
+from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt
 
 
 class UserSerializer(serializers.ModelSerializer):
+    
+    total_weekly_claims = serializers.SerializerMethodField()
+
     class Meta:
         model = BrightUser
-        fields = ['pk', 'context_id', "address", "verification_url", "verification_status"]
+        fields = ['pk', 'context_id', "address", "verification_url", "verification_status", "total_weekly_claims"]
         read_only_fields = ['context_id']
+
+    def get_total_weekly_claims(self, instance):
+        return LimitedChainClaimManager.get_total_weekly_claims(instance)
 
     def create(self, validated_data):
         address = validated_data['address']

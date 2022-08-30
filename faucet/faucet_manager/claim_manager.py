@@ -59,14 +59,19 @@ class LimitedChainClaimManager(SimpleClaimManager):
     def get_weekly_limit(self):
         limit = GlobalSettings.objects.first().weekly_chain_claim_limit
         return limit
-    def assert_pre_claim_conditions(self, amount, bright_user):
-        super().assert_pre_claim_conditions(amount, bright_user)
+    
+    @staticmethod
+    def get_total_weekly_claims(bright_user):
         last_monday = WeeklyCreditStrategy.get_last_monday()
-        total_claims = ClaimReceipt.objects.filter(
+        return ClaimReceipt.objects.filter(
             bright_user=bright_user,
             _status__in=[BrightUser.PENDING, BrightUser.VERIFIED],
             datetime__gte=last_monday
         ).count()
+
+    def assert_pre_claim_conditions(self, amount, bright_user):
+        super().assert_pre_claim_conditions(amount, bright_user)
+        total_claims = self.get_total_weekly_claims(bright_user)
         assert total_claims < self.get_weekly_limit()
 
 
