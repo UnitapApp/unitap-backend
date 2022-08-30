@@ -2,7 +2,7 @@ from rest_framework import serializers
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
-from faucet.models import BrightUser, Chain, ClaimReceipt
+from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,6 +21,13 @@ class UserSerializer(serializers.ModelSerializer):
         address = validated_data['address']
         bright_user = BrightUser.objects.get_or_create(address)
         return bright_user
+
+
+class GlobalSettingsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GlobalSettings
+        fields = ['weekly_chain_claim_limit', ]
 
 
 class ChainSerializer(serializers.ModelSerializer):

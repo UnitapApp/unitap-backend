@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory
-from faucet.models import BrightUser, Chain, ClaimReceipt
-from faucet.serializers import ReceiptSerializer, UserSerializer, ChainSerializer
+from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
+from faucet.serializers import GlobalSettingsSerializer, ReceiptSerializer, UserSerializer, ChainSerializer
 
 
 class CreateUserView(CreateAPIView):
@@ -81,6 +81,14 @@ class ChainListView(ListAPIView):
     """
     serializer_class = ChainSerializer
     queryset = Chain.objects.all().order_by('order')
+
+
+class GlobalSettingsView(RetrieveAPIView):
+
+    serializer_class = GlobalSettingsSerializer
+
+    def get_object(self):
+        return GlobalSettings.objects.first()
 
 
 class ClaimMaxView(APIView):

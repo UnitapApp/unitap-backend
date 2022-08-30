@@ -1,6 +1,6 @@
 from django.urls import path
 
-from faucet.views import CreateUserView, GetVerificationUrlView, ChainListView, ClaimMaxView, LastClaimView, ListClaims, UserInfoView, error500
+from faucet.views import CreateUserView, GetVerificationUrlView, ChainListView, ClaimMaxView, GlobalSettingsView, LastClaimView, ListClaims, UserInfoView, error500
 
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -30,6 +30,7 @@ urlpatterns = [
     path("chain/list/<address>/", ChainListView.as_view(), name="chain-list-address"),
     path("chain/<int:chain_pk>/claim-max/<address>/", ClaimMaxView.as_view(), name="claim-max"),
 
+    path("settings/", GlobalSettingsView.as_view()),
 
     path("swagger/", schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path("redoc/", schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
