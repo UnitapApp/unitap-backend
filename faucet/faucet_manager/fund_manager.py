@@ -8,7 +8,6 @@ from faucet.models import Chain, BrightUser
 
 
 class EVMFundManager:
-
     def __init__(self, chain: Chain):
         self.chain = chain
         self.abi = manager_abi
@@ -38,12 +37,12 @@ class EVMFundManager:
     def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
         self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return tx['hash'].hex()
+        return tx["hash"].hex()
 
     def multi_transfer(self, data):
         tx = self.multi_eth_transfer_signed_tx(data)
         self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return tx['hash'].hex()
+        return tx["hash"].hex()
 
     def single_eth_transfer_signed_tx(self, amount: int, to: str):
         tx_function = self.contract.functions.withdrawEth(amount, to)
@@ -55,20 +54,22 @@ class EVMFundManager:
 
     def prepare_tx_for_broadcast(self, tx_function):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
-        gas_estimation = tx_function.estimateGas({'from': self.account.address})
-        tx_data = tx_function.buildTransaction({
-            'nonce': nonce,
-            'from': self.account.address,
-            'gas': gas_estimation,
-            'gasPrice': self.w3.eth.gas_price
-        })
+        gas_estimation = tx_function.estimateGas({"from": self.account.address})
+        tx_data = tx_function.buildTransaction(
+            {
+                "nonce": nonce,
+                "from": self.account.address,
+                "gas": gas_estimation,
+                "gasPrice": self.w3.eth.gas_price,
+            }
+        )
         signed_tx = self.w3.eth.account.sign_transaction(tx_data, self.account.key)
         return signed_tx
 
     def is_tx_verified(self, tx_hash):
         try:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
-            if receipt['status'] == 1:
+            if receipt["status"] == 1:
                 return True
             return False
         except TimeExhausted:

@@ -10,9 +10,13 @@ from rest_framework.test import APITestCase
 
 from brightIDfaucet.settings import DEBUG
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
-from faucet.faucet_manager.credit_strategy import CreditStrategyFactory, SimpleCreditStrategy, WeeklyCreditStrategy
+from faucet.faucet_manager.credit_strategy import (
+    CreditStrategyFactory,
+    SimpleCreditStrategy,
+    WeeklyCreditStrategy,
+)
 from faucet.faucet_manager.fund_manager import EVMFundManager
-from faucet.models import BrightUser, Chain, ClaimReceipt, WalletAccount
+from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings, WalletAccount
 from unittest.mock import patch
 
 from faucet.serializers import ReceiptSerializer
@@ -28,51 +32,80 @@ test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b
 test_chain_id = 1337
 
 
-@patch("faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor", lambda a, b: True)
-def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> BrightUser:
+@patch(
+    "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
+    lambda a, b: True,
+)
+def create_new_user(
+    _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
+) -> BrightUser:
     return BrightUser.objects.get_or_create(_address)
 
 
-@patch("faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor", lambda a, b: True)
+@patch(
+    "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
+    lambda a, b: True,
+)
 def create_verified_user() -> BrightUser:
     user = create_new_user("0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e")
     user._verification_status = BrightUser.VERIFIED
+    user._last_verified_datetime = timezone.now()
     user.save()
     return user
 
 
 def create_xDai_chain(wallet) -> Chain:
-    return Chain.objects.create(chain_name="Gnosis Chain",
-                                wallet=wallet,
-                                rpc_url_private=test_rpc_url_private,
-                                fund_manager_address=fund_manager,
-                                native_currency_name="xdai", symbol="XDAI",
-                                chain_id="100", max_claim_amount=x_dai_max_claim)
+    return Chain.objects.create(
+        chain_name="Gnosis Chain",
+        wallet=wallet,
+        rpc_url_private=test_rpc_url_private,
+        fund_manager_address=fund_manager,
+        native_currency_name="xdai",
+        symbol="XDAI",
+        chain_id="100",
+        max_claim_amount=x_dai_max_claim,
+    )
 
 
 def create_test_chain(wallet) -> Chain:
-    return Chain.objects.create(chain_name="Ethereum", native_currency_name="ethereum", symbol="ETH",
-                                rpc_url_private=test_rpc_url_private,
-                                wallet=wallet,
-                                fund_manager_address=fund_manager,
-                                chain_id=test_chain_id, max_claim_amount=t_chain_max)
+    return Chain.objects.create(
+        chain_name="Ethereum",
+        native_currency_name="ethereum",
+        symbol="ETH",
+        rpc_url_private=test_rpc_url_private,
+        wallet=wallet,
+        fund_manager_address=fund_manager,
+        chain_id=test_chain_id,
+        max_claim_amount=t_chain_max,
+    )
 
 
 def create_idChain_chain(wallet) -> Chain:
-    return Chain.objects.create(chain_name="IDChain",
-                                wallet=wallet,
-                                fund_manager_address=fund_manager,
-                                native_currency_name="eidi", symbol="eidi", chain_id="74",
-                                max_claim_amount=eidi_max_claim)
+    return Chain.objects.create(
+        chain_name="IDChain",
+        wallet=wallet,
+        fund_manager_address=fund_manager,
+        native_currency_name="eidi",
+        symbol="eidi",
+        chain_id="74",
+        max_claim_amount=eidi_max_claim,
+    )
 
 
 def bright_interface_mock(status_mock=False, link_mock="http://<no-link>"):
     def inner(func):
-        @patch("faucet.faucet_manager.bright_id_interface.BrightIDInterface.get_verification_status",
-               lambda a, b: status_mock)
-        @patch("faucet.faucet_manager.bright_id_interface.BrightIDInterface.get_verification_link",
-               lambda a, b: link_mock)
-        @patch("faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor", lambda a, b: True)
+        @patch(
+            "faucet.faucet_manager.bright_id_interface.BrightIDInterface.get_verification_status",
+            lambda a, b: status_mock,
+        )
+        @patch(
+            "faucet.faucet_manager.bright_id_interface.BrightIDInterface.get_verification_link",
+            lambda a, b: link_mock,
+        )
+        @patch(
+            "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
+            lambda a, b: True,
+        )
         def wrapper(*args, **kwarg):
             func(*args, **kwarg)
 
@@ -82,31 +115,29 @@ def bright_interface_mock(status_mock=False, link_mock="http://<no-link>"):
 
 
 class TestWalletAccount(APITestCase):
-
     def setUp(self) -> None:
         self.key = test_wallet_key
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
 
     def test_create_wallet(self):
         self.assertEqual(self.wallet.main_key, self.key)
 
 
 class TestCreateAccount(APITestCase):
-
     @bright_interface_mock
     def test_create_bright_user(self):
         endpoint = reverse("FAUCET:create-user")
-        response = self.client.post(endpoint, data={
-            'address': address
-        })
+        response = self.client.post(endpoint, data={"address": address})
         self.assertEqual(response.status_code, 201)
-        self.assertIsNotNone(json.loads(response.content).get('contextId'))
-        self.assertEqual(json.loads(response.content).get('address'), address)
+        self.assertIsNotNone(json.loads(response.content).get("contextId"))
+        self.assertEqual(json.loads(response.content).get("address"), address)
 
     @bright_interface_mock
     def test_get_user_info(self):
         user = create_new_user()
-        endpoint = reverse("FAUCET:user-info", kwargs={'address': user.address})
+        endpoint = reverse("FAUCET:user-info", kwargs={"address": user.address})
         response = self.client.get(endpoint)
 
         self.assertEqual(response.status_code, 200)
@@ -114,12 +145,8 @@ class TestCreateAccount(APITestCase):
     @bright_interface_mock
     def test_should_fail_to_create_duplicate_address(self):
         endpoint = reverse("FAUCET:create-user")
-        response_1 = self.client.post(endpoint, data={
-            'address': address
-        })
-        response_2 = self.client.post(endpoint, data={
-            'address': address
-        })
+        response_1 = self.client.post(endpoint, data={"address": address})
+        response_2 = self.client.post(endpoint, data={"address": address})
 
         self.assertEqual(response_1.status_code, 201)
         self.assertEqual(response_2.status_code, 400)
@@ -138,8 +165,7 @@ class TestCreateAccount(APITestCase):
 
     @bright_interface_mock
     def test_get_verification_url(self):
-        endpoint = reverse("FAUCET:get-verification-url",
-                           kwargs={'address': address})
+        endpoint = reverse("FAUCET:get-verification-url", kwargs={"address": address})
         response_1 = self.client.get(endpoint)
         self.assertEqual(response_1.status_code, 200)
         self.assertAlmostEqual(response_1.json()["verificationUrl"], "http://<no-link>")
@@ -147,7 +173,9 @@ class TestCreateAccount(APITestCase):
 
 class TestChainInfo(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
         self.new_user = create_new_user()
         self.xdai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
@@ -166,33 +194,38 @@ class TestChainInfo(APITestCase):
         chains_list = json.loads(chains.content)
 
         for chain_data in chains_list:
-            self.assertEqual(chain_data['claimed'], "N/A")
-            self.assertEqual(chain_data['unclaimed'], 'N/A')
-            if chain_data['symbol'] == "XDAI":
-                self.assertEqual(chain_data['maxClaimAmount'], x_dai_max_claim)
-            elif chain_data['symbol'] == "eidi":
-                self.assertEqual(chain_data['maxClaimAmount'], eidi_max_claim)
+            self.assertEqual(chain_data["claimed"], "N/A")
+            self.assertEqual(chain_data["unclaimed"], "N/A")
+            if chain_data["symbol"] == "XDAI":
+                self.assertEqual(chain_data["maxClaimAmount"], x_dai_max_claim)
+            elif chain_data["symbol"] == "eidi":
+                self.assertEqual(chain_data["maxClaimAmount"], eidi_max_claim)
 
-    @patch("faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor", lambda a, b: True)
+    @patch(
+        "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
+        lambda a, b: True,
+    )
     def test_chain_list_with_address(self):
-        endpoint = reverse("FAUCET:chain-list-address", kwargs={'address': address})
+        endpoint = reverse("FAUCET:chain-list-address", kwargs={"address": address})
         chain_list_response = self.client.get(endpoint)
         chain_list = json.loads(chain_list_response.content)
 
         for chain_data in chain_list:
-            self.assertEqual(chain_data['claimed'], 0)
-            self.assertEqual(chain_data['unclaimed'], chain_data['maxClaimAmount'])
+            self.assertEqual(chain_data["claimed"], 0)
+            self.assertEqual(chain_data["unclaimed"], chain_data["maxClaimAmount"])
 
 
 class TestClaim(APITestCase):
-
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
         self.new_user = create_new_user()
         self.verified_user = create_verified_user()
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
         self.test_chain = create_test_chain(self.wallet)
+        GlobalSettings.objects.create(weekly_chain_claim_limit=2)
 
     def test_get_claimed_should_be_zero(self):
         credit_strategy_xdai = WeeklyCreditStrategy(self.x_dai, self.new_user)
@@ -205,11 +238,13 @@ class TestClaim(APITestCase):
 
     def test_x_dai_claimed_be_zero_eth_be_100(self):
         claim_amount = 100
-        ClaimReceipt.objects.create(chain=self.idChain,
-                                    bright_user=self.new_user,
-                                    datetime=timezone.now(),
-                                    _status=ClaimReceipt.VERIFIED,
-                                    amount=claim_amount)
+        ClaimReceipt.objects.create(
+            chain=self.idChain,
+            bright_user=self.new_user,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            amount=claim_amount,
+        )
 
         credit_strategy_xdai = WeeklyCreditStrategy(self.x_dai, self.new_user)
         credit_strategy_id_chain = WeeklyCreditStrategy(self.idChain, self.new_user)
@@ -217,10 +252,14 @@ class TestClaim(APITestCase):
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
         self.assertEqual(credit_strategy_id_chain.get_claimed(), claim_amount)
         self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
-        self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount)
+        self.assertEqual(
+            credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount
+        )
 
     def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
-        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.new_user))
+        claim_manager_x_dai = SimpleClaimManager(
+            WeeklyCreditStrategy(self.x_dai, self.new_user)
+        )
 
         try:
             claim_manager_x_dai.claim(x_dai_max_claim + 10)
@@ -231,7 +270,9 @@ class TestClaim(APITestCase):
     @bright_interface_mock
     def test_claim_unverified_user_should_fail(self):
         claim_amount = 100
-        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.new_user))
+        claim_manager_x_dai = SimpleClaimManager(
+            WeeklyCreditStrategy(self.x_dai, self.new_user)
+        )
 
         try:
             claim_manager_x_dai.claim(claim_amount)
@@ -241,32 +282,39 @@ class TestClaim(APITestCase):
 
     def test_claim_manager_should_claim(self):
         claim_amount = 100
-        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
-        credit_strategy_x_dai = WeeklyCreditStrategy(self.x_dai, self.verified_user)
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
+        credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
 
         r = claim_manager_x_dai.claim(claim_amount)
         r._status = ClaimReceipt.VERIFIED
         r.save()
 
         self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
-        self.assertEqual(credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount)
+        self.assertEqual(
+            credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount
+        )
 
     def test_only_one_pending_claim(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         claim_manager_x_dai.claim(claim_amount_1)
 
         try:
             claim_manager_x_dai.claim(claim_amount_2)
-            self.assertEqual(True, False)
         except AssertionError:
             self.assertEqual(True, True)
 
     def test_second_claim_after_first_verifies(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
@@ -275,11 +323,32 @@ class TestClaim(APITestCase):
     def test_second_claim_after_first_fails(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = SimpleClaimManager(WeeklyCreditStrategy(self.x_dai, self.verified_user))
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
         claim_manager_x_dai.claim(claim_amount_2)
+
+    def test_claim_should_fail_if_limit_reached(self):
+        claim_amount_1 = 10
+        claim_amount_2 = 5
+        claim_amount_3 = 1
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1._status = ClaimReceipt.VERIFIED
+        claim_1.save()
+        claim_2 = claim_manager_x_dai.claim(claim_amount_2)
+        claim_2._status = ClaimReceipt.VERIFIED
+        claim_2.save()
+
+        try:
+            claim_manager_x_dai.claim(claim_amount_3)
+        except AssertionError:
+            self.assertEqual(True, True)
 
     @skipIf(not DEBUG, "only on debug")
     def test_transfer(self):
@@ -289,98 +358,123 @@ class TestClaim(APITestCase):
 
     @skipIf(not DEBUG, "only on debug")
     def test_simple_claim_manager_transfer(self):
-        manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
+        manager = SimpleClaimManager(
+            SimpleCreditStrategy(self.test_chain, self.verified_user)
+        )
         receipt = manager.claim(100)
+
 
 class TestClaimAPI(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
 
         self.new_user = create_new_user()
         self.verified_user = create_verified_user()
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
         self.test_chain = create_test_chain(self.wallet)
+        GlobalSettings.objects.create(weekly_chain_claim_limit=2)
 
     @bright_interface_mock
     def test_claim_max_api_should_fail_if_not_verified(self):
-        endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.new_user.address,
-                                                       'chain_pk': self.x_dai.pk})
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"address": self.new_user.address, "chain_pk": self.x_dai.pk},
+        )
         response = self.client.post(endpoint)
         self.assertEqual(response.status_code, 406)
 
     def test_claim_max_api_should_claim_all(self):
-        endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.verified_user.address,
-                                                       'chain_pk': self.x_dai.pk})
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"address": self.verified_user.address, "chain_pk": self.x_dai.pk},
+        )
 
         response = self.client.post(endpoint)
         claim_receipt = json.loads(response.content)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(claim_receipt['amount'], self.x_dai.max_claim_amount)
+        self.assertEqual(claim_receipt["amount"], self.x_dai.max_claim_amount)
 
     def test_claim_max_twice_should_fail(self):
-        endpoint = reverse("FAUCET:claim-max", kwargs={'address': self.verified_user.address,
-                                                       'chain_pk': self.x_dai.pk})
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"address": self.verified_user.address, "chain_pk": self.x_dai.pk},
+        )
         response_1 = self.client.post(endpoint)
         self.assertEqual(response_1.status_code, 200)
 
         response_2 = self.client.post(endpoint)
         self.assertEqual(response_2.status_code, 403)
 
-
     def test_get_last_claim_of_user(self):
-        endpoint = reverse("FAUCET:last-claim", kwargs={'address': self.verified_user.address})
-        
-        ClaimReceipt.objects.create(chain=self.test_chain, 
-        tx_hash="0x1111111111",
-        amount=1500,
-        datetime=timezone.now(),
-        _status=ClaimReceipt.REJECTED,
-        bright_user=self.verified_user)
+        endpoint = reverse(
+            "FAUCET:last-claim", kwargs={"address": self.verified_user.address}
+        )
 
-        last_claim = ClaimReceipt.objects.create(chain=self.test_chain, 
-        tx_hash="0x0000000000",
-        amount=1000,
-        datetime=timezone.now(),
-        _status=ClaimReceipt.VERIFIED,
-        bright_user=self.verified_user)
+        ClaimReceipt.objects.create(
+            chain=self.test_chain,
+            tx_hash="0x1111111111",
+            amount=1500,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.REJECTED,
+            bright_user=self.verified_user,
+        )
+
+        last_claim = ClaimReceipt.objects.create(
+            chain=self.test_chain,
+            tx_hash="0x0000000000",
+            amount=1000,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            bright_user=self.verified_user,
+        )
 
         response = self.client.get(endpoint)
         self.assertEqual(response.status_code, 200)
         claim_data = json.loads(response.content)
 
-        self.assertEqual(claim_data['pk'], last_claim.pk)
-        self.assertEqual(claim_data['status'], last_claim._status)
-        self.assertEqual(claim_data['txHash'], last_claim.tx_hash)
-        self.assertEqual(claim_data['chain'], last_claim.chain.pk)
-    
+        self.assertEqual(claim_data["pk"], last_claim.pk)
+        self.assertEqual(claim_data["status"], last_claim._status)
+        self.assertEqual(claim_data["txHash"], last_claim.tx_hash)
+        self.assertEqual(claim_data["chain"], last_claim.chain.pk)
+
     def test_get_claim_list(self):
-        endpoint = reverse("FAUCET:claims", kwargs={'address': self.verified_user.address})
+        endpoint = reverse(
+            "FAUCET:claims", kwargs={"address": self.verified_user.address}
+        )
 
-        c1 = ClaimReceipt.objects.create(chain=self.test_chain, 
-        tx_hash="0x1111111111",
-        amount=1500,
-        datetime=timezone.now(),
-        _status=ClaimReceipt.REJECTED,
-        bright_user=self.verified_user)
+        c1 = ClaimReceipt.objects.create(
+            chain=self.test_chain,
+            tx_hash="0x1111111111",
+            amount=1500,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.REJECTED,
+            bright_user=self.verified_user,
+        )
 
-        c2 = ClaimReceipt.objects.create(chain=self.test_chain, 
-        tx_hash="0x0000000000",
-        amount=1000,
-        datetime=timezone.now(),
-        _status=ClaimReceipt.VERIFIED,
-        bright_user=self.verified_user)
-
+        c2 = ClaimReceipt.objects.create(
+            chain=self.test_chain,
+            tx_hash="0x0000000000",
+            amount=1000,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            bright_user=self.verified_user,
+        )
 
         response = self.client.get(endpoint)
         data = json.loads(response.content)
-        self.assertEqual(data[0]['pk'], c2.pk)
-        self.assertEqual(data[1]['pk'], c1.pk)
+        self.assertEqual(data[0]["pk"], c2.pk)
+        self.assertEqual(data[1]["pk"], c1.pk)
+
 
 class TestWeeklyCreditStrategy(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
         self.verified_user = create_verified_user()
         self.test_chain = create_test_chain(self.wallet)
         self.strategy = WeeklyCreditStrategy(self.test_chain, self.verified_user)
@@ -391,10 +485,14 @@ class TestWeeklyCreditStrategy(APITestCase):
         self.assertGreaterEqual(now, last_monday)
 
     def create_claim_receipt(self, date, amount=10):
-        ClaimReceipt.objects.create(chain=self.test_chain, bright_user=self.verified_user,
-                                    _status=ClaimReceipt.VERIFIED,
-                                    amount=amount,
-                                    datetime=date, tx_hash="test-hash")
+        ClaimReceipt.objects.create(
+            chain=self.test_chain,
+            bright_user=self.verified_user,
+            _status=ClaimReceipt.VERIFIED,
+            amount=amount,
+            datetime=date,
+            tx_hash="test-hash",
+        )
 
     def test_last_week_claims(self):
         last_monday = WeeklyCreditStrategy.get_last_monday()
@@ -421,4 +519,3 @@ class TestWeeklyCreditStrategy(APITestCase):
 
         unclaimed = self.strategy.get_unclaimed()
         self.assertEqual(unclaimed, t_chain_max - 100)
-

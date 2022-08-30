@@ -5,8 +5,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory
-from faucet.models import BrightUser, Chain, ClaimReceipt
-from faucet.serializers import ReceiptSerializer, UserSerializer, ChainSerializer
+from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
+from faucet.serializers import (
+    GlobalSettingsSerializer,
+    ReceiptSerializer,
+    UserSerializer,
+    ChainSerializer,
+)
 
 
 class CreateUserView(CreateAPIView):
@@ -15,6 +20,7 @@ class CreateUserView(CreateAPIView):
 
     this user can be verified using verification_link
     """
+
     serializer_class = UserSerializer
 
 
@@ -24,9 +30,17 @@ class LastClaimView(RetrieveAPIView):
 
     def get_object(self):
         try:
-            return ClaimReceipt.objects.filter(bright_user__address=self.kwargs.get('address')).order_by('pk').last()
+            return (
+                ClaimReceipt.objects.filter(
+                    bright_user__address=self.kwargs.get("address")
+                )
+                .order_by("pk")
+                .last()
+            )
         except ClaimReceipt.DoesNotExist:
-            raise Http404(f"Claim Receipt with address {self.kwargs.get('address')} does not exist")
+            raise Http404(
+                f"Claim Receipt with address {self.kwargs.get('address')} does not exist"
+            )
 
 
 class ListClaims(ListAPIView):
@@ -34,21 +48,22 @@ class ListClaims(ListAPIView):
     serializer_class = ReceiptSerializer
 
     filterset_fields = {
-        'chain': {'exact'},
-        '_status': {'exact'},
-        'datetime': {'exact', 'gte', 'lte'}
+        "chain": {"exact"},
+        "_status": {"exact"},
+        "datetime": {"exact", "gte", "lte"},
     }
 
     def get_queryset(self):
-        return ClaimReceipt.objects.filter(bright_user__address=self.kwargs.get('address')).order_by('-pk')
-        
-        
+        return ClaimReceipt.objects.filter(
+            bright_user__address=self.kwargs.get("address")
+        ).order_by("-pk")
 
 
 class UserInfoView(RetrieveAPIView):
     """
     User info of the given address
     """
+
     serializer_class = UserSerializer
     queryset = BrightUser.objects.all()
 
@@ -60,10 +75,11 @@ class GetVerificationUrlView(RetrieveAPIView):
     """
     Return the bright verification url
     """
+
     serializer_class = UserSerializer
 
     def get_object(self):
-        address = self.kwargs.get('address')
+        address = self.kwargs.get("address")
         try:
             return BrightUser.objects.get(address=address)
         except BrightUser.DoesNotExist:
@@ -79,8 +95,17 @@ class ChainListView(ListAPIView):
 
     this endpoint returns detailed user specific info if supplied with an address
     """
+
     serializer_class = ChainSerializer
-    queryset = Chain.objects.all().order_by('order')
+    queryset = Chain.objects.all().order_by("order")
+
+
+class GlobalSettingsView(RetrieveAPIView):
+
+    serializer_class = GlobalSettingsSerializer
+
+    def get_object(self):
+        return GlobalSettings.objects.first()
 
 
 class ClaimMaxView(APIView):
@@ -91,7 +116,7 @@ class ClaimMaxView(APIView):
     """
 
     def get_user(self) -> BrightUser:
-        address = self.kwargs.get('address', None)
+        address = self.kwargs.get("address", None)
         try:
             return BrightUser.objects.get(address=address)
         except BrightUser.DoesNotExist:
@@ -103,7 +128,7 @@ class ClaimMaxView(APIView):
             raise rest_framework.exceptions.NotAcceptable
 
     def get_chain(self) -> Chain:
-        chain_pk = self.kwargs.get('chain_pk', None)
+        chain_pk = self.kwargs.get("chain_pk", None)
         try:
             return Chain.objects.get(pk=chain_pk)
         except Chain.DoesNotExist:
