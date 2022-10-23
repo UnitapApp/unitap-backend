@@ -8,8 +8,7 @@ COPY . .
 RUN mkdir db
 RUN mkdir static
 RUN mkdir media
-RUN python manage.py collectstatic --noinput
-RUN python manage.py migrate
+RUN chmod +x start.sh
 
 EXPOSE 5678
-CMD uwsgi --socket 0.0.0.0:5678 --protocol=http -w brightIDfaucet.wsgi
+CMD ./start.sh
