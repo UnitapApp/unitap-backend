@@ -26,7 +26,7 @@ you might need "sudo" privilege to run the following.
 run the following command from projects root directory to build a docker image from this repo and run it:
 
 ```shell
-$ docker compose up -d
+docker compose up -d
 ```
 
 #### create a superuser:
@@ -34,7 +34,7 @@ $ docker compose up -d
 find unitap-backend image container ID:
 
 ```shell
-$ docker ps | grep unitap-backend
+docker ps | grep unitap-backend
 ```
 
 sample output:
@@ -46,13 +46,13 @@ sample output:
 **_61a36aae8213_** is the container id. Open a shell inside this container:
 
 ```shell
-$ docker exec -it 61a36aae8213 /bin/bash
+docker exec -it 61a36aae8213 /bin/bash
 ```
 
 create a superuser:
 
 ```shell
-$ python manage.py createsuperuser
+python manage.py createsuperuser
 ```
 
 you can exit the terminal now. You should now be able to visit the site on `http://127.0.0.1:5678/admin/` and use the superuser credentials to login.
@@ -62,27 +62,27 @@ you can exit the terminal now. You should now be able to visit the site on `http
 create a new virtualenv and activate it:
 
 ```shell
-$ python3.8 -m virtualenv .venv
-$ source .venv/bin/activate
+python3.8 -m virtualenv .venv
+source .venv/bin/activate
 ```
 
 install requirements:
 
 ```shell
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 run migrations:
 
 ```shell
-$ mkdir db # make sure db folder exists
-$ python manage.py migrate
+mkdir db # make sure db folder exists
+python manage.py migrate
 ```
 
 run server:
 
 ```shell
-$ python manage.py runserver
+python manage.py runserver
 ```
 
 ### running tests
@@ -100,6 +100,6 @@ test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b
 run tests:
 
 ```shell
-$ ganache-cli -d -p 7545
-$ python manage.py test
+ganache-cli -d -p 7545
+python manage.py test
 ```
