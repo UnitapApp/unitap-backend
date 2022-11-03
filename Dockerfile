@@ -6,9 +6,9 @@ RUN pip install pip --upgrade
 RUN pip install -r requirements.txt
 COPY . .
 RUN mkdir db
-RUN mkdir static
+RUN mkdir -p static
 RUN mkdir media
-RUN chmod +x start.sh
+RUN chmod +x start_dev.sh
 
 EXPOSE 5678
-CMD ./start.sh
+CMD ./start_dev.sh

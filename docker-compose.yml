@@ -18,6 +18,8 @@ services:
     depends_on:
       - database
       - redis
+    volumes:
+      - .:/code
   
   database:
     image: postgres:14.1-alpine
