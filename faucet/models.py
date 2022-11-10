@@ -183,6 +183,7 @@ class Chain(models.Model):
     explorer_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
     logo_url = models.URLField(max_length=255, blank=True, null=True)
+    modal_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url_private = models.URLField(max_length=255)
 
     max_claim_amount = models.BigIntegerField()

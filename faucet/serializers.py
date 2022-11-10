@@ -24,7 +24,10 @@ class UserSerializer(serializers.ModelSerializer):
     def get_total_weekly_claims_remaining(self, instance):
         gs = GlobalSettings.objects.first()
         if gs is not None:
-            return gs.weekly_chain_claim_limit - LimitedChainClaimManager.get_total_weekly_claims(instance)
+            return (
+                gs.weekly_chain_claim_limit
+                - LimitedChainClaimManager.get_total_weekly_claims(instance)
+            )
 
     def create(self, validated_data):
         address = validated_data["address"]
@@ -57,6 +60,7 @@ class ChainSerializer(serializers.ModelSerializer):
             "explorer_url",
             "rpc_url",
             "logo_url",
+            "modal_url",
             "max_claim_amount",
             "claimed",
             "unclaimed",
