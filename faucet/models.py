@@ -9,6 +9,9 @@ from web3.exceptions import TimeExhausted
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
+# import django transaction
+from django.db import transaction
+
 
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -98,8 +101,14 @@ class ClaimReceipt(models.Model):
     PENDING = "0"
     VERIFIED = "1"
     REJECTED = "2"
+    UPDATING = "3"
 
-    states = ((PENDING, "Pending"), (VERIFIED, "Verified"), (REJECTED, "Rejected"))
+    states = (
+        (PENDING, "Pending"),
+        (VERIFIED, "Verified"),
+        (REJECTED, "Rejected"),
+        (UPDATING, "Updating"),
+    )
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
     bright_user = models.ForeignKey(
@@ -129,20 +138,34 @@ class ClaimReceipt(models.Model):
         return self._status
 
     def update_status(self):
-        if self._has_tx_hash():
+        with transaction.atomic():
+            _self = ClaimReceipt.objects.select_for_update().get(pk=self.pk)
+            if _self._state == self.UPDATING:
+                return
+
+            _current_status = _self._status
+            _self._status = self.UPDATING
+            _self.save()
+
+        if _self._has_tx_hash():
             try:
                 from faucet.faucet_manager.fund_manager import EVMFundManager
 
-                if EVMFundManager(self.chain).is_tx_verified(self.tx_hash):
-                    self._status = ClaimReceipt.VERIFIED
+                if EVMFundManager(_self.chain).is_tx_verified(_self.tx_hash):
+                    _self._status = ClaimReceipt.VERIFIED
                 else:
-                    self._status = ClaimReceipt.REJECTED
+                    _self._status = ClaimReceipt.REJECTED
             except TimeExhausted:
-                if self.is_expired():
-                    self._status = ClaimReceipt.REJECTED
-        elif self.is_expired():
-            self._status = ClaimReceipt.REJECTED
-        self.save()
+                if _self.is_expired():
+                    _self._status = ClaimReceipt.REJECTED
+        elif _self.is_expired():
+            _self._status = ClaimReceipt.REJECTED
+
+        # remove updating status if it's still there
+        if _self._status == self.UPDATING:
+            _self._status = _current_status
+
+        _self.save()
 
 
 class Chain(models.Model):

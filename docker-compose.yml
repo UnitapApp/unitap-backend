@@ -42,6 +42,13 @@ services:
     volumes:
       - cache:/data
 
+  ganache:
+    image: trufflesuite/ganache-cli
+    restart: always
+    expose:
+      - 7545
+    command: ganache-cli -d -p 7545
+
 volumes:
   db:
     driver: local
