@@ -4,92 +4,85 @@ BrightID users can claim free gas tokens on supported chains.
 
 ## Quick start
 
-create a `.env` file inside `brightIDfaucet` directory and add the following
+create a `.env` file and add the following
 
 ```bash
+POSTGRES_DB="unitap"
+POSTGRES_USER="postgres"
+POSTGRES_PASSWORD="postgres"
 FIELD_KEY="rnPAm1QKx8hepMhqV0IKJxB9tdR_hhU4-0EVTGVXQg0="
-SECRET_KEY='django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5'
-DEBUG=False
-SENTRY_DSN = "DEBUG-DSN"
-DATABASE_URL="sqlite:///db/db.sqlite3"
+SECRET_KEY="django-insecure-!=_mi0j#rhk7c9p-0wg-3me6y&fk$+fahz6fh)k1n#&@s(9vf5"
+BRIGHT_PRIVATE_KEY=""
+DEBUG="True"
+SENTRY_DSN="DEBUG-DSN"
 ```
 
 _read more about `DATABASE_URL` in the [dj-database-url](https://github.com/kennethreitz/dj-database-url#url-schema) docs_
 
-### Using Docker
+### Using Docker Compose
 
 you might need "sudo" privilege to run the following.
 
-run the following command from projects root directory to build a docker image:
+run the following command from projects root directory to build a docker image from this repo and run it:
 
 ```shell
-$ docker build . -t bright_faucet:latest
+docker compose up -d
 ```
 
-start the container:
+#### create a superuser:
+
+find unitap-backend image container ID:
 
 ```shell
-$ docker run -d -p [PORT]:5678 -v [DB-FOLDER]:/code/db/ -v [STATIC-FOLDER]:/code/static/ bright_faucet:latest
-5eb97c398fdf6d28d3e9644ff762e7cb2dfbe716e6d2e8f1f6f43506533e8fdf
+docker ps | grep unitap-backend
 ```
 
-- [PORT]: the port that you want to be able to access the container from, example: 8080
-- [DB-FOLDER]: a location to hold database files
-- [STATIC-FOLDER]: a location to hold static files
-- the output of the command is the container id
+sample output:
 
-open up a shell terminal inside the container:
-
-```shell
-$ docker exec -it [container_id] /bin/bash
+```
+61a36aae8213   unitap-backend         "/bin/sh -c ./start.…"   6 minutes ago    Up About a minute   0.0.0.0:5678->5678/tcp   brightidfaucet-backend-1
 ```
 
-inside the terminal, first run the migrations:
+**_61a36aae8213_** is the container id. Open a shell inside this container:
 
 ```shell
-$ python manage.py migrate
-```
-
-collect static files:
-
-```shell
-$ python manage.py collectstatic
+docker exec -it 61a36aae8213 /bin/bash
 ```
 
 create a superuser:
 
 ```shell
-$ python manage.py createsuperuser
+python manage.py createsuperuser
 ```
 
-you can exit the terminal now. You should now be able to visit the site on `http://127.0.0.1:[PORT]`
+you can exit the terminal now. You should now be able to visit the site on `http://127.0.0.1:5678/admin/` and use the superuser credentials to login.
 
 ### Using Local Virtual Environment
 
 create a new virtualenv and activate it:
 
 ```shell
-$ python3.8 -m virtualenv .venv
-$ source .venv/bin/activate
+python3.8 -m virtualenv .venv
+source .venv/bin/activate
 ```
 
 install requirements:
 
 ```shell
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 run migrations:
 
 ```shell
-$ mkdir db # make sure db folder exists
-$ python manage.py migrate
+mkdir db # make sure db folder exists
+python manage.py migrate
 ```
 
 run server:
 
 ```shell
-$ python manage.py runserver
+python manage.py runserver
 ```
 
 ### running tests
@@ -107,6 +100,6 @@ test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b
 run tests:
 
 ```shell
-$ ganache-cli -d -p 7545
-$ python manage.py test
+ganache-cli -d -p 7545
+python manage.py test
 ```

@@ -6,10 +6,9 @@ RUN pip install pip --upgrade
 RUN pip install -r requirements.txt
 COPY . .
 RUN mkdir db
-RUN mkdir static
+RUN mkdir -p static
 RUN mkdir media
-RUN python manage.py collectstatic --noinput
-RUN python manage.py migrate
+RUN chmod +x start_dev.sh
 
 EXPOSE 5678
-CMD uwsgi --socket 0.0.0.0:5678 --protocol=http -w brightIDfaucet.wsgi
+CMD ./start_dev.sh

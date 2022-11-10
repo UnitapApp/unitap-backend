@@ -44,10 +44,15 @@ def proccess_chain_pending_receipts(chain_id):
         if receipts.count() == 0:
             return
 
+        receipts = receipts.order_by("-pk")
+        first_receipt_pk = receipts.first().pk
+        last_receipt_pk = first_receipt_pk + 32
+        receipts = receipts.filter(pk__lt=last_receipt_pk)
+
         # generate transfer data in batches of 32
         data = [
             {"to": receipt.bright_user.address, "amount": receipt.amount}
-            for receipt in receipts[:32]
+            for receipt in receipts
         ]
 
         manager = EVMFundManager(chain)
