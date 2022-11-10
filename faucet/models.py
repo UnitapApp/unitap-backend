@@ -137,6 +137,10 @@ class ClaimReceipt(models.Model):
             self.update_status()
         return self._status
 
+    @property
+    def age(self):
+        return timezone.now() - self.datetime
+
     def update_status(self):
         with transaction.atomic():
             _self = ClaimReceipt.objects.select_for_update().get(pk=self.pk)

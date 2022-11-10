@@ -12,7 +12,7 @@ class BrightUserAdmin(admin.ModelAdmin):
 
 
 class ClaimReceiptAdmin(admin.ModelAdmin):
-    list_display = ["pk", "tx_hash", "chain", "bright_user", "_status"]
+    list_display = ["pk", "tx_hash", "chain", "bright_user", "_status", "age"]
 
 
 class WalletAccountAdmin(admin.ModelAdmin):
