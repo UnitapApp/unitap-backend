@@ -104,13 +104,10 @@ class CreditStrategyFactory:
 
     def get_strategy_class(self):
         if self.chain.chain_id == "42161":
-            print("Arbitrum")
             return ArbitrumCreditStrategy
-        print("Simple")
         return WeeklyCreditStrategy
 
     def get_strategy(self) -> CreditStrategy:
-        print("hereeee")
         _Strategy = self.get_strategy_class()
         assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
         return _Strategy(self.chain, self.bright_user)
