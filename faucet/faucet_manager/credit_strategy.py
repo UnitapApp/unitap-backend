@@ -7,6 +7,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from brightIDfaucet import settings
+from faucet.faucet_manager.brightid_user_registry import BrightIdUserRegistry
 from faucet.models import ClaimReceipt, BrightUser, Chain
 
 
@@ -82,15 +83,34 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
         )
 
 
+class ArbitrumCreditStrategy(WeeklyCreditStrategy):
+    def get_unclaimed(self):
+        contract_address = "0x631a12430F94207De980D9b6A744AEB4093DCeC1"
+        max_claim_amount = self.chain.max_claim_amount
+        is_verified_user = BrightIdUserRegistry(
+            self.chain, contract_address
+        ).is_verified_user(self.bright_user.address)
+
+        if is_verified_user:
+            max_claim_amount = 5000000000000000
+
+        return max_claim_amount - self.get_claimed()
+
+
 class CreditStrategyFactory:
     def __init__(self, chain, bright_user):
         self.chain = chain
         self.bright_user = bright_user
 
     def get_strategy_class(self):
+        if self.chain.chain_id == "42161":
+            print("Arbitrum")
+            return ArbitrumCreditStrategy
+        print("Simple")
         return WeeklyCreditStrategy
 
     def get_strategy(self) -> CreditStrategy:
+        print("hereeee")
         _Strategy = self.get_strategy_class()
         assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
         return _Strategy(self.chain, self.bright_user)
