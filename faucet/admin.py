@@ -3,7 +3,15 @@ from .models import *
 
 
 class ChainAdmin(admin.ModelAdmin):
-    list_display = ["pk", "chain_name", "chain_id", "symbol", "order"]
+    list_display = [
+        "pk",
+        "chain_name",
+        "chain_id",
+        "symbol",
+        "order",
+        "total_claims",
+        "total_claims_since_last_monday",
+    ]
     list_editable = ["order"]
 
 

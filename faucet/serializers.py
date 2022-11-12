@@ -65,6 +65,8 @@ class ChainSerializer(serializers.ModelSerializer):
             "claimed",
             "unclaimed",
             "order",
+            "total_claims",
+            "total_claims_since_last_monday",
         ]
 
     def get_claimed(self, chain) -> int:

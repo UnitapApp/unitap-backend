@@ -200,6 +200,20 @@ class Chain(models.Model):
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
 
+    @property
+    def total_claims(self):
+        return ClaimReceipt.objects.filter(
+            chain=self, _status=ClaimReceipt.VERIFIED
+        ).count()
+
+    @property
+    def total_claims_since_last_monday(self):
+        return ClaimReceipt.objects.filter(
+            chain=self,
+            _status=ClaimReceipt.VERIFIED,
+            datetime__gte=timezone.now() - timedelta(days=timezone.now().weekday()),
+        ).count()
+
 
 class GlobalSettings(models.Model):
     weekly_chain_claim_limit = models.IntegerField(default=10)
