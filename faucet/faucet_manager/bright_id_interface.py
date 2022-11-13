@@ -5,6 +5,8 @@ import requests
 import base64
 import ed25519
 
+# http://node.brightid.org/brightid/v6/verifications/unitap/53735351-050d-4284-a362-620b1992be9a
+
 
 class BrightIDInterface:
     def __init__(self, app_name):
@@ -20,7 +22,11 @@ class BrightIDInterface:
         ).json()
         if "error" in response:
             return False
-        return True
+        data = response.get("data")
+        if not data or len(data) == 0:
+            return False
+        unique = data[0].get("unique", False)
+        return unique
 
     def sponsor(self, context_id, network="node"):
         from brightIDfaucet.settings import BRIGHT_PRIVATE_KEY
