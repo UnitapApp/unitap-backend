@@ -205,19 +205,26 @@ class Chain(models.Model):
     @property
     def gas_price(self):
         if not self.rpc_url_private:
-            return 0
+            return self.max_gas_price + 1
 
-        from faucet.faucet_manager.fund_manager import EVMFundManager
+        try:
+            from faucet.faucet_manager.fund_manager import EVMFundManager
 
-        return EVMFundManager(self).w3.eth.gas_price
+            return EVMFundManager(self).w3.eth.gas_price
+        except:
+            return self.max_gas_price + 1
 
     @property
     def is_gas_price_too_high(self):
         if not self.rpc_url_private:
-            return False
-        from faucet.faucet_manager.fund_manager import EVMFundManager
+            return True
 
-        return EVMFundManager(self).is_gas_price_too_high
+        try:
+            from faucet.faucet_manager.fund_manager import EVMFundManager
+
+            return EVMFundManager(self).is_gas_price_too_high
+        except:
+            return True
 
     @property
     def total_claims(self):
