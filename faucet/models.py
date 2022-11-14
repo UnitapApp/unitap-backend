@@ -203,6 +203,15 @@ class Chain(models.Model):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
 
     @property
+    def gas_price(self):
+        if not self.rpc_url_private:
+            return 0
+
+        from faucet.faucet_manager.fund_manager import EVMFundManager
+
+        return EVMFundManager(self).w3.eth.gas_price
+
+    @property
     def is_gas_price_too_high(self):
         if not self.rpc_url_private:
             return False
