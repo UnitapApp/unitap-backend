@@ -234,10 +234,13 @@ class Chain(models.Model):
 
     @property
     def total_claims_since_last_monday(self):
+        # import weekly claim manager
+        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+
         return ClaimReceipt.objects.filter(
             chain=self,
             _status=ClaimReceipt.VERIFIED,
-            datetime__gte=timezone.now() - timedelta(days=timezone.now().weekday()),
+            datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).count()
 
 
