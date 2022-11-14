@@ -56,8 +56,11 @@ def proccess_chain_pending_receipts(chain_id):
         ]
 
         manager = EVMFundManager(chain)
-        tx_hash = manager.multi_transfer(data)
-        receipts.update(tx_hash=tx_hash)
+        try:
+            tx_hash = manager.multi_transfer(data)
+            receipts.update(tx_hash=tx_hash)
+        except EVMFundManager.GasPriceTooHigh:
+            return
 
 
 @shared_task

@@ -11,6 +11,8 @@ class ChainAdmin(admin.ModelAdmin):
         "order",
         "total_claims",
         "total_claims_since_last_monday",
+        "gas_price",
+        "is_gas_price_too_high",
     ]
     list_editable = ["order"]
 

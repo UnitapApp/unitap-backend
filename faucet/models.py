@@ -195,10 +195,36 @@ class Chain(models.Model):
         WalletAccount, related_name="chains", on_delete=models.PROTECT
     )
 
+    max_gas_price = models.BigIntegerField(default=250000000000)
+
     order = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
+
+    @property
+    def gas_price(self):
+        if not self.rpc_url_private:
+            return self.max_gas_price + 1
+
+        try:
+            from faucet.faucet_manager.fund_manager import EVMFundManager
+
+            return EVMFundManager(self).w3.eth.gas_price
+        except:
+            return self.max_gas_price + 1
+
+    @property
+    def is_gas_price_too_high(self):
+        if not self.rpc_url_private:
+            return True
+
+        try:
+            from faucet.faucet_manager.fund_manager import EVMFundManager
+
+            return EVMFundManager(self).is_gas_price_too_high
+        except:
+            return True
 
     @property
     def total_claims(self):
@@ -208,10 +234,13 @@ class Chain(models.Model):
 
     @property
     def total_claims_since_last_monday(self):
+        # import weekly claim manager
+        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+
         return ClaimReceipt.objects.filter(
             chain=self,
             _status=ClaimReceipt.VERIFIED,
-            datetime__gte=timezone.now() - timedelta(days=timezone.now().weekday()),
+            datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).count()
 
 
