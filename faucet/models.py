@@ -195,10 +195,20 @@ class Chain(models.Model):
         WalletAccount, related_name="chains", on_delete=models.PROTECT
     )
 
+    max_gas_price = models.BigIntegerField(default=250000000000)
+
     order = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
+
+    @property
+    def is_gas_price_too_high(self):
+        if not self.rpc_url_private:
+            return False
+        from faucet.faucet_manager.fund_manager import EVMFundManager
+
+        return EVMFundManager(self).is_gas_price_too_high
 
     @property
     def total_claims(self):

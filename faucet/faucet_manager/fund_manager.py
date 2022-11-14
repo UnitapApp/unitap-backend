@@ -12,6 +12,9 @@ class EVMFundManager:
         self.chain = chain
         self.abi = manager_abi
 
+    class GasPriceTooHigh(Exception):
+        pass
+
     @property
     def w3(self) -> Web3:
         assert self.chain.rpc_url_private is not None
@@ -22,6 +25,13 @@ class EVMFundManager:
             _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
             return _w3
         raise Exception(f"Could not connect to rpc {self.chain.rpc_url_private}")
+
+    @property
+    def is_gas_price_too_high(self):
+        gas_price = self.w3.eth.gas_price
+        if gas_price > self.chain.max_gas_price:
+            return True
+        return False
 
     @property
     def account(self) -> LocalAccount:
@@ -55,6 +65,10 @@ class EVMFundManager:
     def prepare_tx_for_broadcast(self, tx_function):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
         gas_estimation = tx_function.estimateGas({"from": self.account.address})
+
+        if self.is_gas_price_too_high:
+            raise self.GasPriceTooHigh()
+
         tx_data = tx_function.buildTransaction(
             {
                 "nonce": nonce,
