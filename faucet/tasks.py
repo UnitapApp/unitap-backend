@@ -61,6 +61,8 @@ def proccess_chain_pending_receipts(chain_id):
             receipts.update(tx_hash=tx_hash)
         except EVMFundManager.GasPriceTooHigh:
             return
+        except ValueError:
+            return
 
 
 @shared_task
