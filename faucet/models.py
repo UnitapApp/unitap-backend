@@ -133,9 +133,9 @@ class ClaimReceipt(models.Model):
         return self.tx_hash is not None
 
     def status(self):
+        return self._status
         if not self._verified_or_rejected():
             self.update_status()
-        return self._status
 
     @property
     def age(self):
