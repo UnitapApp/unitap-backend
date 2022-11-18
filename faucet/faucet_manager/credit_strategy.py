@@ -103,9 +103,9 @@ class CreditStrategyFactory:
         self.bright_user = bright_user
 
     def get_strategy_class(self):
+        return WeeklyCreditStrategy
         if self.chain.chain_id == "42161":
             return ArbitrumCreditStrategy
-        return WeeklyCreditStrategy
 
     def get_strategy(self) -> CreditStrategy:
         _Strategy = self.get_strategy_class()
