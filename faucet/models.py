@@ -101,13 +101,11 @@ class ClaimReceipt(models.Model):
     PENDING = "0"
     VERIFIED = "1"
     REJECTED = "2"
-    UPDATING = "3"
 
     states = (
         (PENDING, "Pending"),
         (VERIFIED, "Verified"),
         (REJECTED, "Rejected"),
-        (UPDATING, "Updating"),
     )
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
@@ -119,57 +117,26 @@ class ClaimReceipt(models.Model):
 
     amount = models.BigIntegerField()
     datetime = models.DateTimeField()
-    tx_hash = models.CharField(max_length=100, blank=True, null=True)
-
-    def is_expired(self):
-        return timezone.now() - self.datetime > timedelta(
-            minutes=self.MAX_PENDING_DURATION
-        )
-
-    def _verified_or_rejected(self):
-        return self._status in [self.VERIFIED, self.REJECTED]
-
-    def _has_tx_hash(self):
-        return self.tx_hash is not None
+    batch = models.ForeignKey(
+        "TransactionBatch",
+        related_name="claims",
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+    )
 
     def status(self):
         return self._status
-        if not self._verified_or_rejected():
-            self.update_status()
 
     @property
     def age(self):
         return timezone.now() - self.datetime
 
-    def update_status(self):
-        with transaction.atomic():
-            _self = ClaimReceipt.objects.select_for_update().get(pk=self.pk)
-            if _self._state == self.UPDATING:
-                return
-
-            _current_status = _self._status
-            _self._status = self.UPDATING
-            _self.save()
-
-        if _self._has_tx_hash():
-            try:
-                from faucet.faucet_manager.fund_manager import EVMFundManager
-
-                if EVMFundManager(_self.chain).is_tx_verified(_self.tx_hash):
-                    _self._status = ClaimReceipt.VERIFIED
-                else:
-                    _self._status = ClaimReceipt.REJECTED
-            except TimeExhausted:
-                if _self.is_expired():
-                    _self._status = ClaimReceipt.REJECTED
-        elif _self.is_expired():
-            _self._status = ClaimReceipt.REJECTED
-
-        # remove updating status if it's still there
-        if _self._status == self.UPDATING:
-            _self._status = _current_status
-
-        _self.save()
+    @property
+    def tx_hash(self):
+        if self.batch:
+            return self.batch.tx_hash
+        return None
 
 
 class Chain(models.Model):
@@ -246,3 +213,37 @@ class Chain(models.Model):
 
 class GlobalSettings(models.Model):
     weekly_chain_claim_limit = models.IntegerField(default=10)
+
+
+class TransactionBatch(models.Model):
+    chain = models.ForeignKey(Chain, related_name="batches", on_delete=models.PROTECT)
+    datetime = models.DateTimeField(auto_now_add=True)
+    tx_hash = models.CharField(max_length=255, blank=True, null=True)
+
+    _status = models.CharField(
+        max_length=1, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+    )
+
+    @property
+    def should_be_processed(self):
+        return all(
+            [
+                self._status == ClaimReceipt.PENDING,
+                self.tx_hash is None,
+            ]
+        )
+
+    @property
+    def status_should_be_updated(self):
+        return all(
+            [
+                self._status == ClaimReceipt.PENDING,
+                self.tx_hash is not None,
+            ]
+        )
+
+    @property
+    def is_expired(self):
+        return timezone.now() - self.datetime > timedelta(
+            minutes=ClaimReceipt.MAX_PENDING_DURATION
+        )

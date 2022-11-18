@@ -11,15 +11,20 @@ from rest_framework.test import APITestCase
 from brightIDfaucet.settings import DEBUG
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import (
-    CreditStrategyFactory,
     SimpleCreditStrategy,
     WeeklyCreditStrategy,
 )
 from faucet.faucet_manager.fund_manager import EVMFundManager
-from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings, WalletAccount
+from faucet.models import (
+    BrightUser,
+    Chain,
+    ClaimReceipt,
+    GlobalSettings,
+    WalletAccount,
+    TransactionBatch,
+)
 from unittest.mock import patch
 
-from faucet.serializers import ReceiptSerializer
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
@@ -414,18 +419,26 @@ class TestClaimAPI(APITestCase):
             "FAUCET:last-claim", kwargs={"address": self.verified_user.address}
         )
 
+        rejected_batch = TransactionBatch.objects.create(
+            chain=self.test_chain, tx_hash="0x1111111111", _status=ClaimReceipt.REJECTED
+        )
+
         ClaimReceipt.objects.create(
             chain=self.test_chain,
-            tx_hash="0x1111111111",
+            batch=rejected_batch,
             amount=1500,
             datetime=timezone.now(),
             _status=ClaimReceipt.REJECTED,
             bright_user=self.verified_user,
         )
 
+        verified_batch = TransactionBatch.objects.create(
+            chain=self.test_chain, tx_hash="0x0000000000", _status=ClaimReceipt.VERIFIED
+        )
+
         last_claim = ClaimReceipt.objects.create(
             chain=self.test_chain,
-            tx_hash="0x0000000000",
+            batch=verified_batch,
             amount=1000,
             datetime=timezone.now(),
             _status=ClaimReceipt.VERIFIED,
@@ -446,18 +459,26 @@ class TestClaimAPI(APITestCase):
             "FAUCET:claims", kwargs={"address": self.verified_user.address}
         )
 
+        rejected_batch = TransactionBatch.objects.create(
+            chain=self.test_chain, tx_hash="0x1111111111", _status=ClaimReceipt.REJECTED
+        )
+
         c1 = ClaimReceipt.objects.create(
             chain=self.test_chain,
-            tx_hash="0x1111111111",
+            batch=rejected_batch,
             amount=1500,
             datetime=timezone.now(),
             _status=ClaimReceipt.REJECTED,
             bright_user=self.verified_user,
         )
 
+        verified_batch = TransactionBatch.objects.create(
+            chain=self.test_chain, tx_hash="0x0000000000", _status=ClaimReceipt.VERIFIED
+        )
+
         c2 = ClaimReceipt.objects.create(
             chain=self.test_chain,
-            tx_hash="0x0000000000",
+            batch=verified_batch,
             amount=1000,
             datetime=timezone.now(),
             _status=ClaimReceipt.VERIFIED,
@@ -485,13 +506,16 @@ class TestWeeklyCreditStrategy(APITestCase):
         self.assertGreaterEqual(now, last_monday)
 
     def create_claim_receipt(self, date, amount=10):
+        verified_batch = TransactionBatch.objects.create(
+            chain=self.test_chain, tx_hash="test-hash", _status=ClaimReceipt.VERIFIED
+        )
         ClaimReceipt.objects.create(
             chain=self.test_chain,
             bright_user=self.verified_user,
             _status=ClaimReceipt.VERIFIED,
             amount=amount,
             datetime=date,
-            tx_hash="test-hash",
+            batch=verified_batch,
         )
 
     def test_last_week_claims(self):

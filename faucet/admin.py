@@ -20,7 +20,11 @@ class BrightUserAdmin(admin.ModelAdmin):
 
 
 class ClaimReceiptAdmin(admin.ModelAdmin):
-    list_display = ["pk", "tx_hash", "chain", "bright_user", "_status", "age"]
+    list_display = ["pk", "batch__tx_hash", "chain", "bright_user", "_status", "age"]
+
+    def batch__tx_hash(self, obj):
+        if obj.batch:
+            return obj.batch.tx_hash
 
 
 class WalletAccountAdmin(admin.ModelAdmin):
@@ -34,8 +38,13 @@ class GlobalSettingsAdmin(admin.ModelAdmin):
     ]
 
 
+class TransactionBatchAdmin(admin.ModelAdmin):
+    list_display = ["pk", "_status", "tx_hash"]
+
+
 admin.site.register(WalletAccount, WalletAccountAdmin)
 admin.site.register(Chain, ChainAdmin)
 admin.site.register(BrightUser, BrightUserAdmin)
 admin.site.register(ClaimReceipt, ClaimReceiptAdmin)
 admin.site.register(GlobalSettings, GlobalSettingsAdmin)
+admin.site.register(TransactionBatch, TransactionBatchAdmin)
