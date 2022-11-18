@@ -44,9 +44,10 @@ def process_batch(batch_pk):
 
 @shared_task
 def proccess_pending_batches():
-    for _batch in TransactionBatch.objects.filter(
+    batches = TransactionBatch.objects.filter(
         _status=ClaimReceipt.PENDING, tx_hash=None
-    ):
+    )
+    for _batch in batches:
         process_batch.delay(_batch.pk)
 
 
@@ -73,9 +74,10 @@ def update_pending_batch_with_tx_hash(batch_pk):
 
 @shared_task
 def update_pending_batches_with_tx_hash_status():
-    for _batch in TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING).exclude(
+    batches = TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING).exclude(
         tx_hash=None
-    ):
+    )
+    for _batch in batches:
         update_pending_batch_with_tx_hash.delay(_batch.pk)
 
 
@@ -113,5 +115,6 @@ def process_chain_pending_claims(chain_id):
 
 @shared_task
 def process_pending_claims():  # periodic task
-    for _chain in Chain.objects.all():
+    chains = Chain.objects.all()
+    for _chain in chains:
         process_chain_pending_claims.delay(_chain.pk)
