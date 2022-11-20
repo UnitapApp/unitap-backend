@@ -74,11 +74,11 @@ def update_pending_batch_with_tx_hash(batch_pk):
                     batch._status = ClaimReceipt.VERIFIED
 
         except TransactionBatch.DoesNotExist:
-            capture_exception(e)
-        except TimeExhausted as e:
-            capture_exception(e)
-        except Exception as e:
-            capture_exception(e)
+            pass
+        except TimeExhausted:
+            pass
+        except:
+            capture_exception()
         finally:
             save_and_close_batch(batch)
 
@@ -89,7 +89,6 @@ def update_pending_batches_with_tx_hash_status():
         tx_hash=None, updating=True
     )
     batches.update(updating=True)
-    print("Updating batches", [b.pk for b in batches])
     for _batch in batches:
         update_pending_batch_with_tx_hash.delay(_batch.pk)
 
