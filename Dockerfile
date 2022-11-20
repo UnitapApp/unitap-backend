@@ -8,7 +8,9 @@ COPY . .
 RUN mkdir db
 RUN mkdir -p static
 RUN mkdir media
+RUN sed -i 's/\r$//' start_dev.sh
 RUN chmod +x start_dev.sh
 
 EXPOSE 5678
+ADD start_dev.sh /code
 CMD ./start_dev.sh
