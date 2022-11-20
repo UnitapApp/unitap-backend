@@ -40,7 +40,15 @@ class GlobalSettingsAdmin(admin.ModelAdmin):
 
 
 class TransactionBatchAdmin(admin.ModelAdmin):
-    list_display = ["pk", "_status", "tx_hash", "updating", "chain", "age"]
+    list_display = [
+        "pk",
+        "_status",
+        "tx_hash",
+        "updating",
+        "chain",
+        "age",
+        "is_expired",
+    ]
     search_fields = ["tx_hash"]
     list_filter = ["chain", "_status", "updating"]
 
