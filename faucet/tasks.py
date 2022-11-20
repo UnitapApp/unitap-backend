@@ -5,6 +5,7 @@ from web3.exceptions import TimeExhausted
 
 from .models import Chain, ClaimReceipt, TransactionBatch
 from .faucet_manager.fund_manager import EVMFundManager
+from sentry_sdk import capture_exception
 
 
 def has_pending_batch(chain):
@@ -53,30 +54,45 @@ def proccess_pending_batches():
 
 @shared_task
 def update_pending_batch_with_tx_hash(batch_pk):
-    try:
-        # only one onging update per batch
-        with transaction.atomic():
-            batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
+    # only one onging update per batch
+
+    def save_and_close_batch(_batch):
+        _batch.updating = False
+        _batch.save()
+        _batch.claims.update(_status=batch._status)
+        print("closing batch ", _batch.pk)
+
+    with transaction.atomic():
+        batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
+        try:
             if batch.status_should_be_updated:
+                print("Updating batch ", batch_pk)
                 manager = EVMFundManager(batch.chain)
                 if manager.is_tx_verified(batch.tx_hash):
                     batch._status = ClaimReceipt.VERIFIED
                 elif batch.is_expired:
                     batch._status = ClaimReceipt.REJECTED
-                batch.save()
-                batch.claims.update(_status=batch._status)
+            else:
+                print("No need to update batch", batch_pk)
 
-    except TransactionBatch.DoesNotExist:
-        pass
-    except TimeExhausted:
-        pass
+        except TransactionBatch.DoesNotExist:
+            capture_exception(e)
+        except TimeExhausted as e:
+            capture_exception(e)
+        except Exception as e:
+            save_and_close_batch(batch)
+            capture_exception(e)
+        finally:
+            save_and_close_batch(batch)
 
 
 @shared_task
 def update_pending_batches_with_tx_hash_status():
     batches = TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING).exclude(
-        tx_hash=None
+        tx_hash=None, updating=True
     )
+    batches.update(updating=True)
+    print("Updating batches", [b.pk for b in batches])
     for _batch in batches:
         update_pending_batch_with_tx_hash.delay(_batch.pk)
 

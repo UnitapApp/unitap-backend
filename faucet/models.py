@@ -224,6 +224,8 @@ class TransactionBatch(models.Model):
         max_length=1, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
     )
 
+    updating = models.BooleanField(default=False)
+
     @property
     def should_be_processed(self):
         return all(
