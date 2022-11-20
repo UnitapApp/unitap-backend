@@ -39,7 +39,7 @@ class GlobalSettingsAdmin(admin.ModelAdmin):
 
 
 class TransactionBatchAdmin(admin.ModelAdmin):
-    list_display = ["pk", "_status", "tx_hash", "updating"]
+    list_display = ["pk", "_status", "tx_hash", "updating", "chain", "age"]
 
 
 admin.site.register(WalletAccount, WalletAccountAdmin)

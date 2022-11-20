@@ -227,6 +227,10 @@ class TransactionBatch(models.Model):
     updating = models.BooleanField(default=False)
 
     @property
+    def age(self):
+        return timezone.now() - self.datetime
+
+    @property
     def should_be_processed(self):
         return all(
             [
