@@ -78,7 +78,7 @@ def update_pending_batch_with_tx_hash(batch_pk):
         except TimeExhausted:
             pass
         except:
-            capture_exception()
+            pass
         finally:
             save_and_close_batch(batch)
 
