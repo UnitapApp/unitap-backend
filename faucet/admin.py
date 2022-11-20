@@ -17,6 +17,7 @@ class ChainAdmin(admin.ModelAdmin):
 
 class BrightUserAdmin(admin.ModelAdmin):
     list_display = ["pk", "address", "context_id"]
+    search_fields = ["address", "context_id"]
 
 
 class ClaimReceiptAdmin(admin.ModelAdmin):
@@ -40,6 +41,7 @@ class GlobalSettingsAdmin(admin.ModelAdmin):
 
 class TransactionBatchAdmin(admin.ModelAdmin):
     list_display = ["pk", "_status", "tx_hash", "updating", "chain", "age"]
+    search_fields = ["tx_hash"]
 
 
 admin.site.register(WalletAccount, WalletAccountAdmin)
