@@ -235,7 +235,7 @@ class TransactionBatch(models.Model):
         return all(
             [
                 self._status == ClaimReceipt.PENDING,
-                self.tx_hash is None,
+                not self.tx_hash,
             ]
         )
 
@@ -250,6 +250,4 @@ class TransactionBatch(models.Model):
 
     @property
     def is_expired(self):
-        return timezone.now() - self.datetime > timedelta(
-            minutes=ClaimReceipt.MAX_PENDING_DURATION
-        )
+        return self.age > timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION)

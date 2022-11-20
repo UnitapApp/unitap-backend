@@ -66,21 +66,18 @@ def update_pending_batch_with_tx_hash(batch_pk):
         batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
         try:
             if batch.status_should_be_updated:
-                print("Updating batch ", batch_pk)
                 manager = EVMFundManager(batch.chain)
-                if manager.is_tx_verified(batch.tx_hash):
-                    batch._status = ClaimReceipt.VERIFIED
-                elif batch.is_expired:
+
+                if batch.is_expired:
                     batch._status = ClaimReceipt.REJECTED
-            else:
-                print("No need to update batch", batch_pk)
+                elif manager.is_tx_verified(batch.tx_hash):
+                    batch._status = ClaimReceipt.VERIFIED
 
         except TransactionBatch.DoesNotExist:
             capture_exception(e)
         except TimeExhausted as e:
             capture_exception(e)
         except Exception as e:
-            save_and_close_batch(batch)
             capture_exception(e)
         finally:
             save_and_close_batch(batch)
