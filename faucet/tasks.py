@@ -86,8 +86,7 @@ def update_pending_batch_with_tx_hash(batch_pk):
 @shared_task
 def update_pending_batches_with_tx_hash_status():
     batches = TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING).exclude(
-        tx_hash=None, updating=True
-    )
+        tx_hash=None).exclude(updating=True)
     batches.update(updating=True)
     for _batch in batches:
         update_pending_batch_with_tx_hash.delay(_batch.pk)
