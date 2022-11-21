@@ -9,6 +9,7 @@ from faucet.views import (
     LastClaimView,
     ListClaims,
     UserInfoView,
+    ChainFund,
     error500,
 )
 
@@ -45,6 +46,7 @@ urlpatterns = [
         ClaimMaxView.as_view(),
         name="claim-max",
     ),
+    path("chain/fund/<int:chain_pk>", ChainFund.as_view(), name="chain-fund"),
     path("settings/", GlobalSettingsView.as_view()),
     path(
         "swagger/",

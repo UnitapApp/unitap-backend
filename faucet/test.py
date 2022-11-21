@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from django.urls import reverse
 from django.utils import timezone
+from rest_framework import status
 from rest_framework.test import APITestCase
 
 from brightIDfaucet.settings import DEBUG
@@ -205,6 +206,12 @@ class TestChainInfo(APITestCase):
                 self.assertEqual(chain_data["maxClaimAmount"], x_dai_max_claim)
             elif chain_data["symbol"] == "eidi":
                 self.assertEqual(chain_data["maxClaimAmount"], eidi_max_claim)
+
+    def test_chain_fund(self):
+        endpoint = reverse("FAUCET:chain-fund",  kwargs={"chain_pk": self.idChain.pk})
+        fund_response = self.client.get(endpoint)
+        self.assertEqual(fund_response.status_code, status.HTTP_200_OK)
+
 
     @patch(
         "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",

@@ -11,6 +11,7 @@ from faucet.serializers import (
     ReceiptSerializer,
     UserSerializer,
     ChainSerializer,
+    ChainFundSerializer
 )
 
 
@@ -25,7 +26,6 @@ class CreateUserView(CreateAPIView):
 
 
 class LastClaimView(RetrieveAPIView):
-
     serializer_class = ReceiptSerializer
 
     def get_object(self):
@@ -44,7 +44,6 @@ class LastClaimView(RetrieveAPIView):
 
 
 class ListClaims(ListAPIView):
-
     serializer_class = ReceiptSerializer
 
     filterset_fields = {
@@ -101,7 +100,6 @@ class ChainListView(ListAPIView):
 
 
 class GlobalSettingsView(RetrieveAPIView):
-
     serializer_class = GlobalSettingsSerializer
 
     def get_object(self):
@@ -152,6 +150,29 @@ class ClaimMaxView(APIView):
         self.check_user_is_verified()
         receipt = self.claim_max()
         return Response(ReceiptSerializer(instance=receipt).data)
+
+
+class ChainFund(APIView):
+    def get_object(self, chain_pk):
+        try:
+            return Chain.objects.get(pk=chain_pk)
+        except Chain.DoesNotExist:
+            raise Http404()
+
+    def get(self, request, chain_pk):
+        from web3 import Web3
+        chain = self.get_object(chain_pk)
+        eth_exponent = 10 ** 8
+        RPC = Web3(Web3.HTTPProvider(chain.rpc_url))
+        wallet_fund = RPC.eth.get_balance(chain.fund_manager_address) / eth_exponent
+        data = ChainFundSerializer(data={
+            'pk': chain.pk,
+            'chainId': chain.chain_id,
+            'fund': wallet_fund,
+            'is_empty': wallet_fund == 0.0
+        })
+        data.is_valid(True)
+        return Response(data.validated_data)
 
 
 def error500(request):
