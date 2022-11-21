@@ -1,3 +1,5 @@
+from abc import ABC
+
 from rest_framework import serializers
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
@@ -6,7 +8,6 @@ from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     total_weekly_claims_remaining = serializers.SerializerMethodField()
 
     class Meta:
@@ -25,8 +26,8 @@ class UserSerializer(serializers.ModelSerializer):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             return (
-                gs.weekly_chain_claim_limit
-                - LimitedChainClaimManager.get_total_weekly_claims(instance)
+                    gs.weekly_chain_claim_limit
+                    - LimitedChainClaimManager.get_total_weekly_claims(instance)
             )
 
     def create(self, validated_data):
@@ -88,3 +89,10 @@ class ReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClaimReceipt
         fields = ["pk", "tx_hash", "chain", "datetime", "amount", "status"]
+
+
+class ChainFundSerializer(serializers.Serializer):
+    pk = serializers.IntegerField()
+    chainId = serializers.IntegerField()
+    fund = serializers.FloatField()
+    is_empty = serializers.BooleanField()
