@@ -60,7 +60,6 @@ def update_pending_batch_with_tx_hash(batch_pk):
         _batch.updating = False
         _batch.save()
         _batch.claims.update(_status=batch._status)
-        print("closing batch ", _batch.pk)
 
     with transaction.atomic():
         batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
@@ -68,26 +67,32 @@ def update_pending_batch_with_tx_hash(batch_pk):
             if batch.status_should_be_updated:
                 manager = EVMFundManager(batch.chain)
 
-                if batch.is_expired:
-                    batch._status = ClaimReceipt.REJECTED
-                elif manager.is_tx_verified(batch.tx_hash):
+                if manager.is_tx_verified(batch.tx_hash):
                     batch._status = ClaimReceipt.VERIFIED
+                elif batch.is_expired:
+                    batch._status = ClaimReceipt.REJECTED
+            else:
+                return
 
         except TransactionBatch.DoesNotExist:
             pass
         except TimeExhausted:
             pass
         except:
-            pass
+            capture_exception()
         finally:
             save_and_close_batch(batch)
 
 
 @shared_task
 def update_pending_batches_with_tx_hash_status():
-    batches = TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING).exclude(
-        tx_hash=None).exclude(updating=True)
-    batches.update(updating=True)
+    batches_queryset = (
+        TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING)
+        .exclude(tx_hash=None)
+        .exclude(updating=True)
+    )
+    batches = list(batches_queryset)
+    batches_queryset.update(updating=True)
     for _batch in batches:
         update_pending_batch_with_tx_hash.delay(_batch.pk)
 
