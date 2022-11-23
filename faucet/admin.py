@@ -48,6 +48,8 @@ class TransactionBatchAdmin(admin.ModelAdmin):
         "chain",
         "age",
         "is_expired",
+        "claims_count",
+        "claims_amount",
     ]
     search_fields = ["tx_hash"]
     list_filter = ["chain", "_status", "updating"]

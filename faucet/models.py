@@ -227,6 +227,14 @@ class TransactionBatch(models.Model):
     updating = models.BooleanField(default=False)
 
     @property
+    def claims_count(self):
+        return self.claims.count()
+
+    @property
+    def claims_amount(self):
+        return sum([c.amount for c in self.claims.all()])
+
+    @property
     def age(self):
         return timezone.now() - self.datetime
 
