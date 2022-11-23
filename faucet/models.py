@@ -232,7 +232,7 @@ class TransactionBatch(models.Model):
 
     @property
     def claims_amount(self):
-        return sum([c.amount for c in self.claims.all()])
+        return sum([c.amount for c in self.claims.all()]) / 1e18
 
     @property
     def age(self):
