@@ -71,10 +71,9 @@ def update_pending_batch_with_tx_hash(batch_pk):
                     batch._status = ClaimReceipt.VERIFIED
                 elif batch.is_expired:
                     batch._status = ClaimReceipt.REJECTED
-            else:
-                return
-
         except:
+            if batch.is_expired:
+                batch._status = ClaimReceipt.REJECTED
             capture_exception()
         finally:
             save_and_close_batch(batch)
