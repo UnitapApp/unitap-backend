@@ -74,7 +74,7 @@ class EVMFundManager:
                 "nonce": nonce,
                 "from": self.account.address,
                 "gas": gas_estimation,
-                "gasPrice": self.w3.eth.gas_price,
+                "gasPrice": self.w3.eth.gas_price * self.chain.gas_multiplier,
             }
         )
         signed_tx = self.w3.eth.account.sign_transaction(tx_data, self.account.key)

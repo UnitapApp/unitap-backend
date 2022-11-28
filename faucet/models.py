@@ -163,6 +163,7 @@ class Chain(models.Model):
     )
 
     max_gas_price = models.BigIntegerField(default=250000000000)
+    gas_multiplier = models.FloatField(default=1)
 
     order = models.IntegerField(default=0)
 
