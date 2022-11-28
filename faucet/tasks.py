@@ -74,10 +74,6 @@ def update_pending_batch_with_tx_hash(batch_pk):
             else:
                 return
 
-        except TransactionBatch.DoesNotExist:
-            pass
-        except TimeExhausted:
-            pass
         except:
             capture_exception()
         finally:
@@ -117,7 +113,7 @@ def process_chain_pending_claims(chain_id):
         if receipts.count() == 0:
             return
 
-        receipts = receipts.order_by("-pk")
+        receipts = receipts.order_by("pk")
         first_receipt_pk = receipts.first().pk
         last_receipt_pk = first_receipt_pk + 32
         receipts = receipts.filter(pk__lt=last_receipt_pk)
