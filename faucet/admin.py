@@ -8,9 +8,8 @@ class ChainAdmin(admin.ModelAdmin):
         "chain_name",
         "chain_id",
         "symbol",
+        "needs_funding",
         "order",
-        "total_claims",
-        "total_claims_since_last_monday",
     ]
     list_editable = ["order"]
 

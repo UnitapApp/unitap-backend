@@ -27,6 +27,10 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.update_pending_batches_with_tx_hash_status",
         "schedule": 3,
     },
+    "update-needs-funding": {
+        "task": "faucet.tasks.update_needs_funding_status",
+        "schedule": 120,
+    },
 }
 
 # Load task modules from all registered Django apps.

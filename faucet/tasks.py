@@ -129,3 +129,28 @@ def process_pending_claims():  # periodic task
     chains = Chain.objects.all()
     for _chain in chains:
         process_chain_pending_claims.delay(_chain.pk)
+
+
+@shared_task
+def update_needs_funding_status_chain(chain_id):
+
+    try:
+        with transaction.atomic():
+            chain = Chain.objects.select_for_update().get(pk=chain_id)
+
+            # if has enough funds and enough fees, needs_funding is False
+            if chain.has_enough_funds and chain.has_enough_fees:
+                chain.needs_funding = False
+                chain.save()
+            else:
+                chain.needs_funding = True
+                chain.save()
+    except:
+        capture_exception()
+
+
+@shared_task
+def update_needs_funding_status():  # periodic task
+    chains = Chain.objects.all()
+    for _chain in chains:
+        update_needs_funding_status_chain.delay(_chain.pk)

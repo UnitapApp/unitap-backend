@@ -165,10 +165,42 @@ class Chain(models.Model):
     max_gas_price = models.BigIntegerField(default=250000000000)
     gas_multiplier = models.FloatField(default=1)
 
+    needs_funding = models.BooleanField(default=False)
+
     order = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
+
+    @property
+    def has_enough_funds(self):
+        return self.get_manager_balance() > self.max_claim_amount * 32
+
+    def get_manager_balance(self):
+        if not self.rpc_url_private:
+            return 0
+
+        try:
+            from faucet.faucet_manager.fund_manager import EVMFundManager
+
+            return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
+        except:
+            return 0
+
+    def get_wallet_balance(self):
+        if not self.rpc_url_private:
+            return 0
+
+        try:
+            from faucet.faucet_manager.fund_manager import EVMFundManager
+
+            return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
+        except:
+            return 0
+
+    @property
+    def has_enough_fees(self):
+        return self.get_wallet_balance() > self.gas_price * 100000
 
     @property
     def gas_price(self):
