@@ -140,6 +140,10 @@ class ClaimReceipt(models.Model):
 
 
 class Chain(models.Model):
+    EVM = "EVM"
+
+    chain_types = ((EVM, "EVM"),)
+
     chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
 
@@ -151,6 +155,7 @@ class Chain(models.Model):
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
     logo_url = models.URLField(max_length=255, blank=True, null=True)
     modal_url = models.URLField(max_length=255, blank=True, null=True)
+    gas_image_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url_private = models.URLField(max_length=255)
 
     max_claim_amount = models.BigIntegerField()
@@ -166,7 +171,8 @@ class Chain(models.Model):
     gas_multiplier = models.FloatField(default=1)
 
     needs_funding = models.BooleanField(default=False)
-
+    is_testnet = models.BooleanField(default=False)
+    chain_type = models.CharField(max_length=3, choices=chain_types, default=EVM)
     order = models.IntegerField(default=0)
 
     def __str__(self):

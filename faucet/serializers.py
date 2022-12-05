@@ -61,6 +61,7 @@ class ChainSerializer(serializers.ModelSerializer):
             "rpc_url",
             "logo_url",
             "modal_url",
+            "gas_image_url",
             "max_claim_amount",
             "claimed",
             "unclaimed",
@@ -68,6 +69,8 @@ class ChainSerializer(serializers.ModelSerializer):
             "total_claims",
             "total_claims_since_last_monday",
             "needs_funding",
+            "is_testnet",
+            "chain_type",
         ]
 
     def get_claimed(self, chain) -> int:
