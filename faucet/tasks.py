@@ -112,10 +112,7 @@ def process_chain_pending_claims(chain_id):
         if receipts.count() == 0:
             return
 
-        receipts = receipts.order_by("pk")
-        first_receipt_pk = receipts.first().pk
-        last_receipt_pk = first_receipt_pk + 32
-        receipts = receipts.filter(pk__lt=last_receipt_pk)
+        receipts = receipts.order_by("pk")[:32]
 
         # if there are no pending batches, create a new batch
         batch = TransactionBatch.objects.create(chain=chain)
