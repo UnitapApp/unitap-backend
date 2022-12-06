@@ -134,7 +134,9 @@ def process_chain_pending_claims(chain_id):
         batch = TransactionBatch.objects.create(chain=chain)
 
         # assign the batch to the receipts
-        receipts.update(batch=batch)
+        for receipt in receipts:
+            receipt.batch = batch
+            receipt.save()
 
 
 @shared_task
