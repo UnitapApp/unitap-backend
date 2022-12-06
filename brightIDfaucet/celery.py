@@ -31,6 +31,14 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.update_needs_funding_status",
         "schedule": 120,
     },
+    "reject-expired-pending-claims": {
+        "task": "faucet.tasks.reject_expired_pending_claims",
+        "schedule": 120,
+    },
+    "clear-updating-status": {
+        "task": "faucet.tasks.clear_updating_status",
+        "schedule": 900,
+    },
 }
 
 # Load task modules from all registered Django apps.

@@ -6,6 +6,7 @@ from web3.exceptions import TimeExhausted
 from .models import Chain, ClaimReceipt, TransactionBatch
 from .faucet_manager.fund_manager import EVMFundManager
 from sentry_sdk import capture_exception
+from django.utils import timezone
 
 
 def has_pending_batch(chain):
@@ -77,6 +78,21 @@ def update_pending_batch_with_tx_hash(batch_pk):
             capture_exception()
         finally:
             save_and_close_batch(batch)
+
+
+@shared_task
+def reject_expired_pending_claims():
+    ClaimReceipt.objects.filter(
+        batch=None,
+        _status=ClaimReceipt.PENDING,
+        datetime__lte=timezone.now()
+        - timezone.timedelta(hours=ClaimReceipt.MAX_PENDING_DURATION),
+    ).update(_status=ClaimReceipt.REJECTED)
+
+
+@shared_task
+def clear_updating_status():
+    TransactionBatch.objects.filter(updating=True).update(updating=False)
 
 
 @shared_task
