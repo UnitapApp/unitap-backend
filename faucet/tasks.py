@@ -86,7 +86,7 @@ def reject_expired_pending_claims():
         batch=None,
         _status=ClaimReceipt.PENDING,
         datetime__lte=timezone.now()
-        - timezone.timedelta(hours=ClaimReceipt.MAX_PENDING_DURATION),
+        - timezone.timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION),
     ).update(_status=ClaimReceipt.REJECTED)
 
 
