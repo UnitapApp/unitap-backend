@@ -97,7 +97,7 @@ class ChainListView(ListAPIView):
     """
 
     serializer_class = ChainSerializer
-    queryset = Chain.objects.all().order_by("order")
+    queryset = Chain.objects.filter(is_active=True).order_by("order")
 
 
 class GlobalSettingsView(RetrieveAPIView):

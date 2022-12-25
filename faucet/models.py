@@ -175,6 +175,8 @@ class Chain(models.Model):
     chain_type = models.CharField(max_length=3, choices=chain_types, default=EVM)
     order = models.IntegerField(default=0)
 
+    is_active = models.BooleanField(default=True)
+
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
 
