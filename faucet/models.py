@@ -6,6 +6,7 @@ from encrypted_model_fields.fields import EncryptedCharField
 import binascii
 from bip_utils import Bip44Coins, Bip44
 from web3.exceptions import TimeExhausted
+from django.conf import settings
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -38,6 +39,11 @@ class BrightUserManager(models.Manager):
             return super().get_queryset().get(address=address)
         except BrightUser.DoesNotExist:
             _user = BrightUser(address=address, _sponsored=True)
+
+            # if it's debug save the object
+            if settings.DEBUG:
+                _user.save()
+                return _user
 
             # don't create user if sponsorship fails
             # so user can retry connecting their wallet
