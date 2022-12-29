@@ -45,7 +45,9 @@ class Command(BaseCommand):
 
             # get the transaction batch if it exists
             try:
-                new_batch = TransactionBatch.objects.get(tx_hash=tx_hash, chain=chain)
+                new_batch = TransactionBatch.objects.get(
+                    tx_hash=tx_hash, chain=chain, _status=ClaimReceipt.VERIFIED
+                )
             except TransactionBatch.DoesNotExist:
                 # create a new transaction batch
                 new_batch = TransactionBatch.objects.create(
@@ -82,6 +84,7 @@ class Command(BaseCommand):
                         amount=amount,
                         chain=chain,
                         batch__tx_hash=tx_hash,
+                        _status=ClaimReceipt.VERIFIED,
                     )
                 except ClaimReceipt.DoesNotExist:
 
