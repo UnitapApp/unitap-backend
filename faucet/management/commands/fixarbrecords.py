@@ -45,9 +45,13 @@ class Command(BaseCommand):
 
             # get the transaction batch if it exists
             try:
-                new_batch = TransactionBatch.objects.get(
+                new_batch = TransactionBatch.objects.filter(
                     tx_hash=tx_hash, chain=chain, _status=ClaimReceipt.VERIFIED
-                )
+                ).first()
+
+                if not new_batch:
+                    raise TransactionBatch.DoesNotExist
+
             except TransactionBatch.DoesNotExist:
                 # create a new transaction batch
                 new_batch = TransactionBatch.objects.create(
@@ -79,13 +83,17 @@ class Command(BaseCommand):
 
                 try:
                     # if this does not fail, the record already exists
-                    ClaimReceipt.objects.get(
+                    r = ClaimReceipt.objects.filter(
                         bright_user=user,
                         amount=amount,
                         chain=chain,
                         batch__tx_hash=tx_hash,
                         _status=ClaimReceipt.VERIFIED,
-                    )
+                    ).first()
+
+                    if not r:
+                        raise ClaimReceipt.DoesNotExist
+
                 except ClaimReceipt.DoesNotExist:
 
                     new_receipt = ClaimReceipt.objects.create(
