@@ -16,8 +16,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from faucet.views import artwork_view
+
 admin.site.site_header = "Unitap Administration"
 admin.site.index_title = "Unitap Administration"
 admin.site.site_title = "Unitap Administration"
 
-urlpatterns = [path("admin/", admin.site.urls), path("api/v1/", include("faucet.urls"))]
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("pass/art/<int:token_id>/", artwork_view),
+    path("api/v1/", include("faucet.urls")),
+]

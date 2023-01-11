@@ -1,3 +1,5 @@
+from django.http import FileResponse
+import os
 import rest_framework.exceptions
 from django.http import Http404
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
@@ -12,6 +14,9 @@ from faucet.serializers import (
     UserSerializer,
     ChainSerializer,
 )
+
+# import BASE_DIR from django settings
+from django.conf import settings
 
 
 class CreateUserView(CreateAPIView):
@@ -152,6 +157,11 @@ class ClaimMaxView(APIView):
         self.check_user_is_verified()
         receipt = self.claim_max()
         return Response(ReceiptSerializer(instance=receipt).data)
+
+
+def artwork_view(request, token_id):
+    video_file = os.path.join(settings.BASE_DIR, f"faucet/artwork.mp4")
+    return FileResponse(open(video_file, "rb"), content_type="video/mp4")
 
 
 def error500(request):
