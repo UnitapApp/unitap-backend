@@ -1,3 +1,4 @@
+import json
 from django.http import FileResponse
 import os
 import rest_framework.exceptions
@@ -6,6 +7,9 @@ from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.http import HttpResponse
+
+from django.urls import reverse
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
 from faucet.serializers import (
@@ -159,9 +163,25 @@ class ClaimMaxView(APIView):
         return Response(ReceiptSerializer(instance=receipt).data)
 
 
-def artwork_view(request, token_id):
+def artwork_video(request):
     video_file = os.path.join(settings.BASE_DIR, f"faucet/artwork.mp4")
     return FileResponse(open(video_file, "rb"), content_type="video/mp4")
+
+
+def artwork_view(request, token_id):
+
+    # the artwork video file is server under a view called artwork-video
+    artwork_video_url = request.build_absolute_uri(reverse("FAUCET:artwork-video"))
+
+    response = {
+        "name": "Unitap Pass",
+        "description": "Unitap is an onboarding tool for networks and communities and a gateway for users to web3. https://unitap.app . Unitap Pass is a VIP pass for Unitap. Holders will enjoy various benefits as Unitap grows.",
+        "image": artwork_video_url,
+        "animation_url": artwork_video_url,
+    }
+
+    response_text = json.dumps(response)
+    return HttpResponse(response_text, content_type="application/json")
 
 
 def error500(request):
