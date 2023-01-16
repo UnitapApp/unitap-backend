@@ -139,7 +139,7 @@ def process_chain_pending_claims(chain_id):  # locks chain
 
 @shared_task
 def process_pending_claims():  # periodic task
-    chains = Chain.objects.all()
+    chains = Chain.objects.filter(is_active=True)
     for _chain in chains:
         process_chain_pending_claims.delay(_chain.pk)
 
