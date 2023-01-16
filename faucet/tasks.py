@@ -36,10 +36,8 @@ def process_batch(batch_pk):
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
-                except EVMFundManager.GasPriceTooHigh:
-                    return
-                except ValueError:
-                    return
+                except:
+                    capture_exception()
     except TransactionBatch.DoesNotExist:
         pass
 
@@ -109,7 +107,7 @@ def update_pending_batches_with_tx_hash_status():
 
 
 @shared_task
-def process_chain_pending_claims(chain_id):
+def process_chain_pending_claims(chain_id):  # locks chain
     with transaction.atomic():
         chain = Chain.objects.select_for_update().get(
             pk=chain_id
@@ -150,16 +148,15 @@ def process_pending_claims():  # periodic task
 def update_needs_funding_status_chain(chain_id):
 
     try:
-        with transaction.atomic():
-            chain = Chain.objects.select_for_update().get(pk=chain_id)
+        chain = Chain.objects.get(pk=chain_id)
+        # if has enough funds and enough fees, needs_funding is False
 
-            # if has enough funds and enough fees, needs_funding is False
-            if chain.has_enough_funds and chain.has_enough_fees:
-                chain.needs_funding = False
-                chain.save()
-            else:
-                chain.needs_funding = True
-                chain.save()
+        chain.needs_funding = True
+
+        if chain.has_enough_funds and chain.has_enough_fees:
+            chain.needs_funding = False
+
+        chain.save()
     except:
         capture_exception()
 
