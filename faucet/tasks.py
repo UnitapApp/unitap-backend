@@ -24,6 +24,13 @@ def process_batch(batch_pk):
     try:
         with transaction.atomic():
             batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
+
+            if batch.is_expired:
+                batch._status = ClaimReceipt.REJECTED
+                batch.save()
+                batch.claims.update(_status=batch._status)
+                return
+
             if batch.should_be_processed:
                 data = [
                     {"to": receipt.bright_user.address, "amount": receipt.amount}
@@ -53,7 +60,7 @@ def proccess_pending_batches():
 
 @shared_task
 def update_pending_batch_with_tx_hash(batch_pk):
-    # only one onging update per batch
+    # only one on going update per batch
 
     def save_and_close_batch(_batch):
         _batch.updating = False
