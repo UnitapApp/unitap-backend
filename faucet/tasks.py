@@ -25,6 +25,9 @@ def process_batch(batch_pk):
         with transaction.atomic():
             batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
 
+            if batch._status in [ClaimReceipt.VERIFIED, ClaimReceipt.REJECTED]:
+                return
+
             if batch.is_expired:
                 batch._status = ClaimReceipt.REJECTED
                 batch.save()
