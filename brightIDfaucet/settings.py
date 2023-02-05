@@ -100,15 +100,25 @@ WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
 # Database
 DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
+#         "LOCATION": "",
+#         "username": "",
+#         "password": "",
+#     }
+# }
+
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
-        "LOCATION": MEMCACHED_URL,
-        "username": MEMCACHED_USERNAME,
-        "password": MEMCACHED_PASSWORD,
+        "BACKEND": "django_bmemcached.memcached.BMemcached",
+        "LOCATION": MEMCACHED_URL.split(","),
+        "OPTIONS": {
+            "username": MEMCACHED_USERNAME,
+            "password": MEMCACHED_PASSWORD,
+        },
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
