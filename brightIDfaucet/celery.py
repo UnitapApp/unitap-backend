@@ -16,15 +16,15 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.conf.beat_schedule = {
     "process-pending-claims": {
         "task": "faucet.tasks.process_pending_claims",
-        "schedule": 30,
+        "schedule": 3,
     },
     "process-pending-batches": {
         "task": "faucet.tasks.process_pending_batches",
-        "schedule": 30,
+        "schedule": 3,
     },
     "update-processed-batches": {
         "task": "faucet.tasks.update_pending_batches_with_tx_hash_status",
-        "schedule": 30,
+        "schedule": 3,
     },
     "update-needs-funding": {
         "task": "faucet.tasks.update_needs_funding_status",

@@ -47,9 +47,6 @@ def process_batch(self, batch_pk):
 
     try:
         with memcache_lock(id, self.app.oid) as acquired:
-            if not acquired:
-                print("Could not acquire process lock")
-                return
 
             print("Processing Batch")
 
@@ -98,9 +95,6 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
     id = f"{self.name}-LOCK-{batch_pk}"
 
     with memcache_lock(id, self.app.oid) as acquired:
-        if not acquired:
-            print("Could not acquire update lock")
-            return
 
         print("Updating Batch")
 
