@@ -42,8 +42,14 @@ def process_batch(self, batch_pk):
     Process a batch of claims and send the funds to the users
     creates an on-chain transaction
     """
+
+    id = f"{self.name}-LOCK-{batch_pk}"
+
     try:
-        with memcache_lock(f"{self.name}-LOCK-{batch_pk}", self.app.oid):
+        with memcache_lock(id, self.app.oid) as acquired:
+            if not acquired:
+                return
+
             batch = TransactionBatch.objects.get(pk=batch_pk)
 
             if batch.should_be_processed:
@@ -66,6 +72,8 @@ def process_batch(self, batch_pk):
                     batch.save()
                 except:
                     capture_exception()
+
+            cache.delete(id)
     except TransactionBatch.DoesNotExist:
         pass
 
@@ -83,7 +91,12 @@ def process_pending_batches():
 def update_pending_batch_with_tx_hash(self, batch_pk):
     # only one ongoing update per batch
 
-    with memcache_lock(f"{self.name}-LOCK-{batch_pk}", self.app.oid):
+    id = f"{self.name}-LOCK-{batch_pk}"
+
+    with memcache_lock(id, self.app.oid) as acquired:
+        if not acquired:
+            return
+
         batch = TransactionBatch.objects.get(pk=batch_pk)
         try:
             if batch.status_should_be_updated:
@@ -100,6 +113,8 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
         finally:
             batch.save()
             batch.claims.update(_status=batch._status)
+
+        cache.delete(id)
 
 
 @shared_task
