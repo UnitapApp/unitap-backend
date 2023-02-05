@@ -11,6 +11,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       - REDIS_URL=redis://redis:6379
+      - MEMCACHEDCLOUD_SERVERS=memcached:11211
     expose:
       - 5678
     ports:
@@ -42,6 +43,11 @@ services:
     volumes:
       - cache:/data
 
+  memcached:
+    container_name: memcached
+    image: memcached:latest
+    ports:
+        - "11211:11211"
   ganache:
     image: trufflesuite/ganache-cli
     restart: always

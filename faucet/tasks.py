@@ -1,12 +1,33 @@
+import time
+from contextlib import contextmanager
+
 from celery import shared_task
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
-from web3.exceptions import TimeExhausted
-
-from .models import Chain, ClaimReceipt, TransactionBatch
-from .faucet_manager.fund_manager import EVMFundManager
-from sentry_sdk import capture_exception
 from django.utils import timezone
+from sentry_sdk import capture_exception
+
+from .faucet_manager.fund_manager import EVMFundManager
+from .models import Chain, ClaimReceipt, TransactionBatch
+
+
+@contextmanager
+def memcache_lock(lock_id, oid, lock_expire=60):
+    timeout_at = time.monotonic() + lock_expire
+    # cache.add fails if the key already exists
+    status = cache.add(lock_id, oid, lock_expire)
+    try:
+        yield status
+    finally:
+        # memcache delete is very slow, but we have to use it to take
+        # advantage of using add() for atomic locking
+        if time.monotonic() < timeout_at and status:
+            # don't release the lock if we exceeded the timeout
+            # to lessen the chance of releasing an expired lock
+            # owned by someone else
+            # also don't release the lock if we didn't acquire it
+            cache.delete(lock_id)
 
 
 def has_pending_batch(chain):
@@ -15,34 +36,31 @@ def has_pending_batch(chain):
     ).exists()
 
 
-@shared_task
-def process_batch(batch_pk):
+@shared_task(bind=True)
+def process_batch(self, batch_pk):
     """
     Process a batch of claims and send the funds to the users
     creates an on-chain transaction
     """
     try:
-        with transaction.atomic():
-            batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
-
-            if batch._status in [ClaimReceipt.VERIFIED, ClaimReceipt.REJECTED]:
-                return
-
-            if batch.is_expired:
-                batch._status = ClaimReceipt.REJECTED
-                batch.save()
-                batch.claims.update(_status=batch._status)
-                return
+        with memcache_lock(f"{self.name}-LOCK-{batch_pk}", self.app.oid):
+            batch = TransactionBatch.objects.get(pk=batch_pk)
 
             if batch.should_be_processed:
+
+                if batch.is_expired:
+                    batch._status = ClaimReceipt.REJECTED
+                    batch.save()
+                    batch.claims.update(_status=batch._status)
+                    return
+
                 data = [
                     {"to": receipt.bright_user.address, "amount": receipt.amount}
                     for receipt in batch.claims.all()
                 ]
 
-                manager = EVMFundManager(batch.chain)
-
                 try:
+                    manager = EVMFundManager(batch.chain)
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
@@ -53,7 +71,7 @@ def process_batch(batch_pk):
 
 
 @shared_task
-def proccess_pending_batches():
+def process_pending_batches():
     batches = TransactionBatch.objects.filter(
         _status=ClaimReceipt.PENDING, tx_hash=None
     )
@@ -61,17 +79,12 @@ def proccess_pending_batches():
         process_batch.delay(_batch.pk)
 
 
-@shared_task
-def update_pending_batch_with_tx_hash(batch_pk):
-    # only one on going update per batch
+@shared_task(bind=True)
+def update_pending_batch_with_tx_hash(self, batch_pk):
+    # only one ongoing update per batch
 
-    def save_and_close_batch(_batch):
-        _batch.updating = False
-        _batch.save()
-        _batch.claims.update(_status=batch._status)
-
-    with transaction.atomic():
-        batch = TransactionBatch.objects.select_for_update().get(pk=batch_pk)
+    with memcache_lock(f"{self.name}-LOCK-{batch_pk}", self.app.oid):
+        batch = TransactionBatch.objects.get(pk=batch_pk)
         try:
             if batch.status_should_be_updated:
                 manager = EVMFundManager(batch.chain)
@@ -85,7 +98,8 @@ def update_pending_batch_with_tx_hash(batch_pk):
                 batch._status = ClaimReceipt.REJECTED
             capture_exception()
         finally:
-            save_and_close_batch(batch)
+            batch.save()
+            batch.claims.update(_status=batch._status)
 
 
 @shared_task
@@ -99,20 +113,13 @@ def reject_expired_pending_claims():
 
 
 @shared_task
-def clear_updating_status():
-    TransactionBatch.objects.filter(updating=True).update(updating=False)
-
-
-@shared_task
 def update_pending_batches_with_tx_hash_status():
     batches_queryset = (
         TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING)
         .exclude(tx_hash=None)
         .exclude(updating=True)
     )
-    batches = list(batches_queryset)
-    batches_queryset.update(updating=True)
-    for _batch in batches:
+    for _batch in batches_queryset:
         update_pending_batch_with_tx_hash.delay(_batch.pk)
 
 
@@ -156,7 +163,6 @@ def process_pending_claims():  # periodic task
 
 @shared_task
 def update_needs_funding_status_chain(chain_id):
-
     try:
         chain = Chain.objects.get(pk=chain_id)
         # if has enough funds and enough fees, needs_funding is False

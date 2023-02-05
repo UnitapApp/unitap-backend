@@ -214,7 +214,7 @@ class Chain(models.Model):
 
     @property
     def has_enough_fees(self):
-        return self.get_wallet_balance() > self.gas_price * 100000
+        return self.get_wallet_balance() > self.gas_price * 200000
 
     @property
     def gas_price(self):

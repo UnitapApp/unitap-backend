@@ -26,6 +26,9 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN")
 DEBUG = str2bool(os.environ.get("DEBUG"))
 DATABASE_URL = os.environ.get("DATABASE_URL")
 REDIS_URL = os.environ.get("REDIS_URL")
+MEMCACHED_URL = os.environ.get("MEMCACHEDCLOUD_SERVERS")
+MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
+MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
 
 if SENTRY_DSN != "DEBUG-DSN":  # setup sentry only on production
     sentry_sdk.init(
@@ -96,6 +99,15 @@ WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
 
 # Database
 DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
+        "LOCATION": MEMCACHED_URL,
+        "username": MEMCACHED_USERNAME,
+        "password": MEMCACHED_PASSWORD,
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
