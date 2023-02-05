@@ -48,7 +48,10 @@ def process_batch(self, batch_pk):
     try:
         with memcache_lock(id, self.app.oid) as acquired:
             if not acquired:
+                print("Could not acquire process lock")
                 return
+
+            print("Processing Batch")
 
             batch = TransactionBatch.objects.get(pk=batch_pk)
 
@@ -70,8 +73,9 @@ def process_batch(self, batch_pk):
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
-                except:
+                except Exception as e:
                     capture_exception()
+                    print(str(e))
 
             cache.delete(id)
     except TransactionBatch.DoesNotExist:
@@ -95,7 +99,10 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
 
     with memcache_lock(id, self.app.oid) as acquired:
         if not acquired:
+            print("Could not acquire update lock")
             return
+
+        print("Updating Batch")
 
         batch = TransactionBatch.objects.get(pk=batch_pk)
         try:
@@ -106,10 +113,11 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
                     batch._status = ClaimReceipt.VERIFIED
                 elif batch.is_expired:
                     batch._status = ClaimReceipt.REJECTED
-        except:
+        except Exception as e:
             if batch.is_expired:
                 batch._status = ClaimReceipt.REJECTED
             capture_exception()
+            print(str(e))
         finally:
             batch.save()
             batch.claims.update(_status=batch._status)
