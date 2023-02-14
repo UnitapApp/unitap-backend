@@ -59,7 +59,7 @@ class BrightUser(models.Model):
     states = ((PENDING, "Pending"), (VERIFIED, "Verified"))
 
     address = models.CharField(max_length=45, unique=True)
-    context_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    context_id = models.CharField(max_length=120, default=uuid.uuid4, unique=True)
 
     _verification_status = models.CharField(
         max_length=1, choices=states, default=PENDING
@@ -80,11 +80,7 @@ class BrightUser(models.Model):
 
     @property
     def verification_status(self):
-        _now = timezone.now()
-        _delta = _now - self._last_verified_datetime
-        _max_delta = timedelta(days=7)
-
-        if self._verification_status == self.VERIFIED and _delta <= _max_delta:
+        if self._verification_status == self.VERIFIED:
             return self.VERIFIED
         return self.get_verification_status()
 

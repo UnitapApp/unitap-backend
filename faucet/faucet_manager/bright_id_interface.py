@@ -13,31 +13,51 @@ class BrightIDInterface:
         self.app_name = app_name
 
     def get_verification_link(self, context_id, network="app"):
-        return f"https://{network}.brightid.org/link-verification/{self.app_name}/{context_id}"
+        return f"https://{network}.brightid.org/link-verification/http:%2F%2Fnode.brightid.org/{self.app_name}/{context_id}"
 
-    def get_verification_status(self, context_id, network="node"):
-        response = requests.get(
-            f"http://{network}.brightid.org/brightid/"
-            f"v6/verifications/{self.app_name}/{context_id}"
-        ).json()
-        if "error" in response:
+    def _is_unique(self, context_id):
+        """
+        return a tuple, the first element is a boolean indicating if the user is unique
+        the second element is the list of context ids that the user has been verified by
+        """
+
+        url = f"https://app.brightid.org/node/v5/verifications/{self.app_name}/{context_id}"
+        response = requests.get(url).json()
+
+        if "error" in response.keys():
             return False
         data = response.get("data")
-        if not data or len(data) == 0:
+        if not data:
             return False
-        unique = data[0].get("unique", False)
-        return unique
+        return data.get("unique", False), data.get("contextIds", [])
+
+    def get_verification_status(self, context_id, network="node"):
+        unique, contextIds = self._is_unique(context_id)
+
+        if unique:
+            # if the given context id is unique, then it is verified
+            return True
+        elif not contextIds:
+            # if the given context id is not unique,
+            # but it has no more context ids to check,
+            #  then it is not verified
+            return False
+        elif self._is_unique(contextIds[0])[0]:
+            # the first element in the contextIds list must be unique to be verified
+            return True
+        else:
+            return False
 
     def sponsor(self, context_id, network="node"):
         from brightIDfaucet.settings import BRIGHT_PRIVATE_KEY
 
-        URL = f"http://{network}.brightid.org/brightid/v6/operations"
+        URL = f"http://{network}.brightid.org/brightid/v/operations"
         op = {
+            "v": 5,
             "name": "Sponsor",
             "app": self.app_name,
-            "appUserId": context_id,
             "timestamp": int(time.time() * 1000),
-            "v": 6,
+            "contextId": context_id,
         }
         signing_key = ed25519.SigningKey(base64.b64decode(BRIGHT_PRIVATE_KEY))
         message = json.dumps(op, sort_keys=True, separators=(",", ":")).encode("ascii")
