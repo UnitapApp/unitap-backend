@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "faucet.apps.FaucetConfig",
+    "authentication.apps.AuthenticationConfig",
     "rest_framework",
     "encrypted_model_fields",
     "drf_yasg",
