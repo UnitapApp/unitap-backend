@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils import timezone
 from sentry_sdk import capture_exception
 
-from .faucet_manager.fund_manager import EVMFundManager
+from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
 from .models import Chain, ClaimReceipt, TransactionBatch
 
 
@@ -69,7 +69,12 @@ def process_batch(self, batch_pk):
                 ]
 
                 try:
-                    manager = EVMFundManager(batch.chain)
+                    if batch.chain.chain_type == Chain.EVM:
+                        manager = EVMFundManager(batch.chain)
+                    elif batch.chain.chain_type == Chain.SOL:
+                        manager = SolanaFundManager(batch.chain)
+                    else:
+                        raise Exception("Invalid chain type to process batch")
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
@@ -107,7 +112,12 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
         batch = TransactionBatch.objects.get(pk=batch_pk)
         try:
             if batch.status_should_be_updated:
-                manager = EVMFundManager(batch.chain)
+                if batch.chain.chain_type == Chain.EVM:
+                    manager = EVMFundManager(batch.chain)
+                elif batch.chain.chain_type == Chain.SOL:
+                    manager = SolanaFundManager(batch.chain)
+                else:
+                    raise Exception("Invalid chain type to update pending batch")
 
                 if manager.is_tx_verified(batch.tx_hash):
                     batch._status = ClaimReceipt.VERIFIED

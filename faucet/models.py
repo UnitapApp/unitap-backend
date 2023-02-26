@@ -20,10 +20,13 @@ class WalletAccount(models.Model):
 
     @property
     def address(self):
-        node = Bip44.FromPrivateKey(
-            binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
-        )
-        return node.PublicKey().ToAddress()
+        try:
+            node = Bip44.FromPrivateKey(
+                binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
+            )
+            return node.PublicKey().ToAddress()
+        except Exception as e:
+            pass
 
     def __str__(self) -> str:
         return "%s - %s" % (self.name, self.address)
@@ -143,8 +146,9 @@ class ClaimReceipt(models.Model):
 
 class Chain(models.Model):
     EVM = "EVM"
+    SOL = "SOL"
 
-    chain_types = ((EVM, "EVM"),)
+    chain_types = ((EVM, "EVM"),(SOL, "SOL"))
 
     chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
