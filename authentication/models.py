@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from faucet.models import Chain
 from django.contrib.auth.models import User
+from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 
 
 class ProfileManager(models.Manager):
@@ -11,22 +12,40 @@ class ProfileManager(models.Manager):
         except Profile.DoesNotExist:
             _user = User.objects.create_user(username=first_context_id)
             _profile = Profile(user=_user, initial_context_id=first_context_id)
-            # get verifications from brightId
+            _profile.is_aura_verified()
+            _profile.is_meet_verified()
             _profile.save()
             return _profile
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     initial_context_id = models.UUIDField(default=uuid.uuid4, unique=True)
 
+    objects = ProfileManager()
+
+    # TODO ask if these make bad things happen in admin panel
     @property
     def is_meet_verified(self):
-        return True
+        (
+            is_verified,
+            context_ids,
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
+            self.initial_context_id, "Meet"
+        )
+
+        return is_verified
 
     @property
     def is_aura_verified(self):
-        return True
+        (
+            is_verified,
+            context_ids,
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
+            self.initial_context_id, "Aura"
+        )
+
+        return is_verified
 
 
 class EVMWallet(models.Model):

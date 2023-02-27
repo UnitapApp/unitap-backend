@@ -13,7 +13,7 @@ from authentication.models import (
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
-
+from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 
 # from authentication.helpers import verify_signature
 from authentication.serializers import ProfileSerializer
@@ -36,16 +36,23 @@ class LoginView(ObtainAuthToken):
         if not verified_signature:
             return HttpResponse({"message": "Invalid signature"}, status=403)
 
-        # get list of context ids from brightId
-        # bright_response = requests.get(
-        #     f"https://aura-node.brightid.org/brightid/v5/verifications/unitapTest/2?verification=Aura"
-        # )
-        # # decode response
-        # bright_response = bright_response.json()
-        # ls = bright_response["data"]["contextIds"]
-        # print(ls)
+        (
+            is_meet_verified,
+            meet_context_ids,
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(address, "Meet")
+        (
+            is_aura_verified,
+            aura_context_ids,
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(address, "Aura")
 
-        first_context_id = 1
+        if meet_context_ids is not None:
+            context_ids = meet_context_ids
+        elif aura_context_ids is not None:
+            context_ids = aura_context_ids
+        else:
+            return HttpResponse({"message": "User is nothing verified"}, status=403)
+
+        first_context_id = context_ids[-1]
         profile = Profile.objects.get_or_create(initial_context_id=first_context_id)
         user = profile.user
 
