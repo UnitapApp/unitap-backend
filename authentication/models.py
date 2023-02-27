@@ -12,15 +12,15 @@ class ProfileManager(models.Manager):
         except Profile.DoesNotExist:
             _user = User.objects.create_user(username=first_context_id)
             _profile = Profile(user=_user, initial_context_id=first_context_id)
-            _profile.is_aura_verified()
-            _profile.is_meet_verified()
+            _profile.is_aura_verified
+            _profile.is_meet_verified
             _profile.save()
             return _profile
 
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    initial_context_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    initial_context_id = models.CharField(max_length=512, unique=True)
 
     objects = ProfileManager()
 

@@ -13,28 +13,26 @@ from authentication.models import (
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
-from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
-
-# from authentication.helpers import verify_signature
-from authentication.serializers import ProfileSerializer
+from authentication.helpers import (
+    BRIGHTID_SOULDBOUND_INTERFACE,
+    verify_signature_eth_scheme,
+)
 
 
 class LoginView(ObtainAuthToken):
-    def verify_signature(self, address, signed_message):
-        # decrypt signed message using Ethereum signature scheme.
-        # message = encode_defunct(text=address)
-
-        return True
-
     def post(self, request, *args, **kwargs):
-        address = request.GET.get("address")
-        signature = request.GET.get("signature")
+        # TODO or should it be address, signature?
+        address = request.data.get("username")
+        signature = request.data.get("password")
+
+        # print("address", address)
+        # print("signature", signature)
 
         # verify signature
-        verified_signature = self.verify_signature(address, signature)
+        verified_signature = verify_signature_eth_scheme(address, signature)
 
         if not verified_signature:
-            return HttpResponse({"message": "Invalid signature"}, status=403)
+            return Response({"message": "Invalid signature"}, status=403)
 
         (
             is_meet_verified,
@@ -50,14 +48,15 @@ class LoginView(ObtainAuthToken):
         elif aura_context_ids is not None:
             context_ids = aura_context_ids
         else:
-            return HttpResponse({"message": "User is nothing verified"}, status=403)
+            return Response({"message": "User is nothing verified"}, status=403)
 
         first_context_id = context_ids[-1]
-        profile = Profile.objects.get_or_create(initial_context_id=first_context_id)
+        profile = Profile.objects.get_or_create(first_context_id=first_context_id)
         user = profile.user
 
         # get auth token for the user
-        token = Token.objects.get_or_create(user=user)
+        token, bol = Token.objects.get_or_create(user=user)
+        print("token", token)
 
         # return token
         return Response({"token": token.key}, status=200)
