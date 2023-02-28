@@ -66,7 +66,7 @@ class SetEVMWalletAddressView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        address = request.GET.get("address")
+        address = request.data.get("address")
         # get user profile
         profile = request.user.profile
         try:
@@ -84,7 +84,7 @@ class SetSolanaWalletAddressView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        address = request.GET.get("address")
+        address = request.data.get("address")
         # get user profile
         profile = request.user.profile
         try:
@@ -104,7 +104,7 @@ class SetBitcoinLightningWalletAddressView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        address = request.GET.get("address")
+        address = request.data.get("address")
         # get user profile
         profile = request.user.profile
         try:
