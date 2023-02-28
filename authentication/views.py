@@ -134,7 +134,7 @@ class GetEVMWalletAddressView(RetrieveAPIView):
             return Response({"address": evm_wallet.address}, status=200)
 
         except EVMWallet.DoesNotExist:
-            return Response({"message": "EVM wallet address not set"}, status=403)
+            return Response({"message": "EVM wallet address not set"}, status=404)
 
 
 class GetSolanaWalletAddressView(RetrieveAPIView):
@@ -149,7 +149,7 @@ class GetSolanaWalletAddressView(RetrieveAPIView):
             return Response({"address": solana_wallet.address}, status=200)
 
         except SolanaWallet.DoesNotExist:
-            return Response({"message": "Solana wallet address not set"}, status=403)
+            return Response({"message": "Solana wallet address not set"}, status=404)
 
 
 class GetBitcoinLightningWalletAddressView(RetrieveAPIView):
@@ -167,7 +167,7 @@ class GetBitcoinLightningWalletAddressView(RetrieveAPIView):
 
         except BitcoinLightningWallet.DoesNotExist:
             return Response(
-                {"message": "Bitcoin Lightning wallet address not set"}, status=403
+                {"message": "Bitcoin Lightning wallet address not set"}, status=404
             )
 
 

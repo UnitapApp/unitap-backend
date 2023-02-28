@@ -1,11 +1,5 @@
 from django.urls import path
-from authentication.views import (
-    LoginView,
-    SetEVMWalletAddressView,
-    SetSolanaWalletAddressView,
-    SetBitcoinLightningWalletAddressView,
-)
-
+from authentication.views import *
 
 app_name = "AUTHENTICATION"
 
@@ -25,5 +19,20 @@ urlpatterns = [
         "user/set-bl-wallet/",
         SetBitcoinLightningWalletAddressView.as_view(),
         name="set-bl-wallet-user",
+    ),
+    path(
+        "user/get-bl-wallet/",
+        GetBitcoinLightningWalletAddressView.as_view(),
+        name="get-bl-wallet-user",
+    ),
+    path(
+        "user/get-evm-wallet/",
+        GetEVMWalletAddressView.as_view(),
+        name="get-evm-wallet-user",
+    ),
+    path(
+        "user/get-solana-wallet/",
+        GetSolanaWalletAddressView.as_view(),
+        name="get-solana-wallet-user",
     ),
 ]
