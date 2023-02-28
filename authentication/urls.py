@@ -6,49 +6,19 @@ app_name = "AUTHENTICATION"
 urlpatterns = [
     path("user/login/", LoginView.as_view(), name="login-user"),
     path(
-        "user/set-evm-wallet/",
-        SetEVMWalletAddressView.as_view(),
-        name="set-evm-wallet-user",
+        "user/set-wallet/",
+        SetWalletAddressView.as_view(),
+        name="set-wallet-user",
     ),
     path(
-        "user/set-solana-wallet/",
-        SetSolanaWalletAddressView.as_view(),
-        name="set-solana-wallet-user",
+        "user/get-wallet/",
+        GetWalletAddressView.as_view(),
+        name="get-wallet-user",
     ),
     path(
-        "user/set-lightning-wallet/",
-        SetBitcoinLightningWalletAddressView.as_view(),
-        name="set-lightning-wallet-user",
-    ),
-    path(
-        "user/get-lightning-wallet/",
-        GetBitcoinLightningWalletAddressView.as_view(),
-        name="get-lightning-wallet-user",
-    ),
-    path(
-        "user/get-evm-wallet/",
-        GetEVMWalletAddressView.as_view(),
-        name="get-evm-wallet-user",
-    ),
-    path(
-        "user/get-solana-wallet/",
-        GetSolanaWalletAddressView.as_view(),
-        name="get-solana-wallet-user",
-    ),
-    path(
-        "user/delete-solana-wallet/",
-        DeleteSolanaWalletAddressView.as_view(),
-        name="delete-solana-wallet-user",
-    ),
-    path(
-        "user/delete-lightning-wallet/",
-        DeleteBitcoinLightningWalletAddressView.as_view(),
-        name="delete-lightning-wallet-user",
-    ),
-    path(
-        "user/delete-evm-wallet/",
-        DeleteEVMWalletAddressView.as_view(),
-        name="delete-evm-wallet-user",
+        "user/delete-wallet/",
+        DeleteWalletAddressView.as_view(),
+        name="delete-wallet-user",
     ),
     path(
         "user/get-wallets/",
