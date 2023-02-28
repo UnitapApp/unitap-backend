@@ -35,4 +35,19 @@ urlpatterns = [
         GetSolanaWalletAddressView.as_view(),
         name="get-solana-wallet-user",
     ),
+    path(
+        "user/delete-solana-wallet/",
+        DeleteSolanaWalletAddressView.as_view(),
+        name="delete-solana-wallet-user",
+    ),
+    path(
+        "user/delete-bl-wallet/",
+        DeleteBitcoinLightningWalletAddressView.as_view(),
+        name="delete-bl-wallet-user",
+    ),
+    path(
+        "user/delete-evm-wallet/",
+        DeleteEVMWalletAddressView.as_view(),
+        name="delete-evm-wallet-user",
+    ),
 ]
