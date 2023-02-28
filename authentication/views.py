@@ -223,3 +223,42 @@ class DeleteBitcoinLightningWalletAddressView(RetrieveAPIView):
             return Response(
                 {"message": "Bitcoin Lightning wallet address not set"}, status=404
             )
+
+
+class GetWalletsView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # get user profile
+        profile = request.user.profile
+        try:
+            # get EVM wallet
+            evm_wallet = EVMWallet.objects.get(profile=profile)
+            evm_wallet_address = evm_wallet.address
+        except EVMWallet.DoesNotExist:
+            evm_wallet_address = None
+
+        try:
+            # get Solana wallet
+            solana_wallet = SolanaWallet.objects.get(profile=profile)
+            solana_wallet_address = solana_wallet.address
+        except SolanaWallet.DoesNotExist:
+            solana_wallet_address = None
+
+        try:
+            # get Bitcoin Lightning wallet
+            bitcoin_lightning_wallet = BitcoinLightningWallet.objects.get(
+                profile=profile
+            )
+            bitcoin_lightning_wallet_address = bitcoin_lightning_wallet.address
+        except BitcoinLightningWallet.DoesNotExist:
+            bitcoin_lightning_wallet_address = None
+
+        return Response(
+            {
+                "evm_wallet_address": evm_wallet_address,
+                "solana_wallet_address": solana_wallet_address,
+                "bitcoin_lightning_wallet_address": bitcoin_lightning_wallet_address,
+            },
+            status=200,
+        )

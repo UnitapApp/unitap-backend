@@ -16,14 +16,14 @@ urlpatterns = [
         name="set-solana-wallet-user",
     ),
     path(
-        "user/set-bl-wallet/",
+        "user/set-lightning-wallet/",
         SetBitcoinLightningWalletAddressView.as_view(),
-        name="set-bl-wallet-user",
+        name="set-lightning-wallet-user",
     ),
     path(
-        "user/get-bl-wallet/",
+        "user/get-lightning-wallet/",
         GetBitcoinLightningWalletAddressView.as_view(),
-        name="get-bl-wallet-user",
+        name="get-lightning-wallet-user",
     ),
     path(
         "user/get-evm-wallet/",
@@ -41,13 +41,18 @@ urlpatterns = [
         name="delete-solana-wallet-user",
     ),
     path(
-        "user/delete-bl-wallet/",
+        "user/delete-lightning-wallet/",
         DeleteBitcoinLightningWalletAddressView.as_view(),
-        name="delete-bl-wallet-user",
+        name="delete-lightning-wallet-user",
     ),
     path(
         "user/delete-evm-wallet/",
         DeleteEVMWalletAddressView.as_view(),
         name="delete-evm-wallet-user",
+    ),
+    path(
+        "user/get-wallets/",
+        GetWalletsView.as_view(),
+        name="get-wallets-user",
     ),
 ]

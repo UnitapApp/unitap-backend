@@ -49,7 +49,9 @@ class Profile(models.Model):
 
 
 class EVMWallet(models.Model):
-    profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    profile = models.OneToOneField(
+        Profile, on_delete=models.CASCADE, related_name="evm_wallet"
+    )
     address = models.CharField(max_length=45, unique=True)
     added_on = models.DateTimeField(auto_now_add=True)
 
@@ -58,7 +60,9 @@ class EVMWallet(models.Model):
 
 
 class SolanaWallet(models.Model):
-    profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    profile = models.OneToOneField(
+        Profile, on_delete=models.CASCADE, related_name="solana_wallet"
+    )
     address = models.CharField(max_length=45, unique=True)
     added_on = models.DateTimeField(auto_now_add=True)
 
@@ -67,7 +71,9 @@ class SolanaWallet(models.Model):
 
 
 class BitcoinLightningWallet(models.Model):
-    profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    profile = models.OneToOneField(
+        Profile, on_delete=models.CASCADE, related_name="lightning_wallet"
+    )
     address = models.CharField(max_length=45, unique=True)
     added_on = models.DateTimeField(auto_now_add=True)
 
