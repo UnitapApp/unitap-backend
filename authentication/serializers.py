@@ -1,46 +1,26 @@
 from authentication.models import (
-    Profile,
-    EVMWallet,
-    SolanaWallet,
-    BitcoinLightningWallet,
+    UserProfile,
+    Wallet,
 )
 from rest_framework import serializers
 
 
-# class ProfileSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Profile
-#         fields = [
-#             "pk",
-#             "initial_context_id",
-#         ]
-
-
-class EVMWalletSerializer(serializers.ModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = EVMWallet
+        model = UserProfile
         fields = [
             "pk",
-            "address",
-            "added_on",
+            "initial_context_id",
+            "is_meet_verified",
+            "is_aura_verified",
         ]
 
 
-class SolanaWalletSerializer(serializers.ModelSerializer):
+class WalletSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SolanaWallet
+        model = Wallet
         fields = [
             "pk",
+            "wallet_type",
             "address",
-            "added_on",
-        ]
-
-
-class BitcoinLightningWalletSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BitcoinLightningWallet
-        fields = [
-            "pk",
-            "address",
-            "added_on",
         ]

@@ -10,22 +10,10 @@ class ProfileAdmin(admin.ModelAdmin):
     search_fields = ["initial_context_id"]
 
 
-class EVMWalletAdmin(admin.ModelAdmin):
-    list_display = ["pk", "profile", "address", "added_on"]
-    search_fields = ["profile", "address"]
+class WalletAdmin(admin.ModelAdmin):
+    list_display = ["pk", "wallet_type", "user_profile"]
+    search_fields = ["profile__initial_context_id", "wallet_type"]
 
 
-class SolanaWalletAdmin(admin.ModelAdmin):
-    list_display = ["pk", "profile", "address", "added_on"]
-    search_fields = ["profile", "address"]
-
-
-class BitcoinLightningWalletAdmin(admin.ModelAdmin):
-    list_display = ["pk", "profile", "address", "added_on"]
-    search_fields = ["profile", "address"]
-
-
-admin.site.register(EVMWallet, EVMWalletAdmin)
-admin.site.register(SolanaWallet, SolanaWalletAdmin)
-admin.site.register(BitcoinLightningWallet, BitcoinLightningWalletAdmin)
-admin.site.register(Profile, ProfileAdmin)
+admin.site.register(Wallet, WalletAdmin)
+admin.site.register(UserProfile, ProfileAdmin)

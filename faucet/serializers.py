@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from authentication.models import UserProfile
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
@@ -6,7 +7,6 @@ from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     total_weekly_claims_remaining = serializers.SerializerMethodField()
 
     class Meta:
@@ -74,18 +74,18 @@ class ChainSerializer(serializers.ModelSerializer):
         ]
 
     def get_claimed(self, chain) -> int:
-        address = self.context["view"].kwargs.get("address")
-        if not address:
+        user = self.context["request"].user
+        if not user:
             return "N/A"
-        bright_user = BrightUser.objects.get_or_create(address)
-        return CreditStrategyFactory(chain, bright_user).get_strategy().get_claimed()
+        user_profile = user.profile
+        return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
 
     def get_unclaimed(self, chain) -> int:
-        address = self.context["view"].kwargs.get("address")
-        if not address:
+        user = self.context["request"].user
+        if not user:
             return "N/A"
-        bright_user = BrightUser.objects.get_or_create(address)
-        return CreditStrategyFactory(chain, bright_user).get_strategy().get_unclaimed()
+        user_profile = user.profile
+        return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
 
 
 class ReceiptSerializer(serializers.ModelSerializer):

@@ -5,6 +5,7 @@ import datetime
 
 from django.db.models import Sum
 from django.utils import timezone
+from authentication.models import UserProfile
 
 from brightIDfaucet import settings
 from faucet.faucet_manager.brightid_user_registry import BrightIdUserRegistry
@@ -12,9 +13,9 @@ from faucet.models import ClaimReceipt, BrightUser, Chain
 
 
 class CreditStrategy(ABC):
-    def __int__(self, chain: Chain, bright_user: BrightUser):
+    def __int__(self, chain: Chain, user_profile: UserProfile):
         self.chain = chain
-        self.bright_user = bright_user
+        self.user_profile = user_profile
 
     @abc.abstractmethod
     def get_claim_receipts(self):
@@ -30,14 +31,14 @@ class CreditStrategy(ABC):
 
 
 class SimpleCreditStrategy(CreditStrategy):
-    def __init__(self, chain, bright_user):
+    def __init__(self, chain, user_profile):
         self.chain = chain
-        self.bright_user = bright_user
+        self.user_profile = user_profile
 
     def get_claim_receipts(self):
         return ClaimReceipt.objects.filter(
             chain=self.chain,
-            bright_user=self.bright_user,
+            user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
         )
 
@@ -53,14 +54,14 @@ class SimpleCreditStrategy(CreditStrategy):
 
 
 class WeeklyCreditStrategy(SimpleCreditStrategy):
-    def __int__(self, chain: Chain, bright_user: BrightUser):
+    def __int__(self, chain: Chain, user_profile: UserProfile):
         self.chain = chain
-        self.bright_user = bright_user
+        self.user_profile = user_profile
 
     def get_claim_receipts(self):
         return ClaimReceipt.objects.filter(
             chain=self.chain,
-            bright_user=self.bright_user,
+            user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
             datetime__gte=self.get_last_monday(),
         )
@@ -89,7 +90,7 @@ class ArbitrumCreditStrategy(WeeklyCreditStrategy):
         max_claim_amount = self.chain.max_claim_amount
         is_verified_user = BrightIdUserRegistry(
             self.chain, contract_address
-        ).is_verified_user(self.bright_user.address)
+        ).is_verified_user(self.user_profile.wallets.get(wallet_type="EVM").address)
 
         if is_verified_user:
             max_claim_amount = 5000000000000000
@@ -98,9 +99,9 @@ class ArbitrumCreditStrategy(WeeklyCreditStrategy):
 
 
 class CreditStrategyFactory:
-    def __init__(self, chain, bright_user):
+    def __init__(self, chain, user_profile):
         self.chain = chain
-        self.bright_user = bright_user
+        self.user_profile = user_profile
 
     def get_strategy_class(self):
         return WeeklyCreditStrategy
@@ -110,4 +111,4 @@ class CreditStrategyFactory:
     def get_strategy(self) -> CreditStrategy:
         _Strategy = self.get_strategy_class()
         assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
-        return _Strategy(self.chain, self.bright_user)
+        return _Strategy(self.chain, self.user_profile)

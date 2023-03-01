@@ -25,4 +25,5 @@ urlpatterns = [
         GetWalletsView.as_view(),
         name="get-wallets-user",
     ),
+    path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
 ]

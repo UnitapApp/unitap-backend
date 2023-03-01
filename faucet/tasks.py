@@ -63,7 +63,7 @@ def process_batch(self, batch_pk):
                     batch.claims.update(_status=batch._status)
                     return
 
-                data = [
+                data = [ # TODO  use EVM
                     {"to": receipt.bright_user.address, "amount": receipt.amount}
                     for receipt in batch.claims.all()
                 ]

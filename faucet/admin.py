@@ -20,7 +20,7 @@ class BrightUserAdmin(admin.ModelAdmin):
 
 
 class ClaimReceiptAdmin(admin.ModelAdmin):
-    list_display = ["pk", "batch__tx_hash", "chain", "bright_user", "_status", "age"]
+    list_display = ["pk", "batch__tx_hash", "chain", "user_profile", "_status", "age"]
     list_filter = ["chain", "_status"]
 
     def batch__tx_hash(self, obj):

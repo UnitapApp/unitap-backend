@@ -8,14 +8,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.http import HttpResponse
-
+from rest_framework.permissions import IsAuthenticated
 from django.urls import reverse
-from faucet.faucet_manager.claim_manager import ClaimManagerFactory
-from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
+from authentication.models import UserProfile
+from faucet.faucet_manager.claim_manager import (
+    ClaimManagerFactory,
+    LimitedChainClaimManager,
+)
+from faucet.models import Chain, ClaimReceipt, GlobalSettings
 from faucet.serializers import (
     GlobalSettingsSerializer,
     ReceiptSerializer,
-    UserSerializer,
     ChainSerializer,
 )
 
@@ -23,37 +26,35 @@ from faucet.serializers import (
 from django.conf import settings
 
 
-class CreateUserView(CreateAPIView):
-    """
-    Create an unverified user with the given address
+# class CreateUserView(CreateAPIView):
+#     """
+#     Create an unverified user with the given address
 
-    this user can be verified using verification_link
-    """
+#     this user can be verified using verification_link
+#     """
 
-    serializer_class = UserSerializer
+#     serializer_class = UserSerializer
 
 
 class LastClaimView(RetrieveAPIView):
-
     serializer_class = ReceiptSerializer
 
+    permission_classes = [IsAuthenticated]
+
     def get_object(self):
+        user_profile = self.request.user.profile
         try:
             return (
-                ClaimReceipt.objects.filter(
-                    bright_user__address=self.kwargs.get("address")
-                )
+                ClaimReceipt.objects.filter(user_profile=user_profile)
                 .order_by("pk")
                 .last()
             )
         except ClaimReceipt.DoesNotExist:
-            raise Http404(
-                f"Claim Receipt with address {self.kwargs.get('address')} does not exist"
-            )
+            raise Http404("Claim Receipt for this user does not exist")
 
 
 class ListClaims(ListAPIView):
-
+    permission_classes = [IsAuthenticated]
     serializer_class = ReceiptSerializer
 
     filterset_fields = {
@@ -63,39 +64,58 @@ class ListClaims(ListAPIView):
     }
 
     def get_queryset(self):
-        return ClaimReceipt.objects.filter(
-            bright_user__address=self.kwargs.get("address")
-        ).order_by("-pk")
+        user_profile = self.request.user.profile
+        return ClaimReceipt.objects.filter(user_profile=user_profile).order_by("-pk")
 
 
-class UserInfoView(RetrieveAPIView):
+# class UserInfoView(RetrieveAPIView):
+#     """
+#     User info of the given address
+#     """
+
+#     serializer_class = UserSerializer
+#     queryset = BrightUser.objects.all()
+
+#     lookup_field = "address"
+#     lookup_url_kwarg = "address"
+
+
+class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
     """
-    User info of the given address
+    Return the total weekly claims remaining for the given user
     """
 
-    serializer_class = UserSerializer
-    queryset = BrightUser.objects.all()
+    permission_classes = [IsAuthenticated]
 
-    lookup_field = "address"
-    lookup_url_kwarg = "address"
+    def get(self, request, *args, **kwargs):
+        user_profile = request.user.profile
+        gs = GlobalSettings.objects.first()
+        if gs is not None:
+            result = (
+                gs.weekly_chain_claim_limit
+                - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
+            )
+            return Response({"total_weekly_claims_remaining": result}, status=200)
+        else:
+            raise Http404("Global Settings Not Found")
 
 
-class GetVerificationUrlView(RetrieveAPIView):
-    """
-    Return the bright verification url
-    """
+# class GetVerificationUrlView(RetrieveAPIView):
+#     """
+#     Return the bright verification url
+#     """
 
-    serializer_class = UserSerializer
+#     serializer_class = UserSerializer
 
-    def get_object(self):
-        address = self.kwargs.get("address")
-        try:
-            return BrightUser.objects.get(address=address)
-        except BrightUser.DoesNotExist:
-            if address is not None:
-                return BrightUser.objects.get_or_create(address)
+#     def get_object(self):
+#         address = self.kwargs.get("address")
+#         try:
+#             return BrightUser.objects.get(address=address)
+#         except BrightUser.DoesNotExist:
+#             if address is not None:
+#                 return BrightUser.objects.get_or_create(address)
 
-            raise Http404
+#             raise Http404
 
 
 class ChainListView(ListAPIView):
@@ -110,7 +130,6 @@ class ChainListView(ListAPIView):
 
 
 class GlobalSettingsView(RetrieveAPIView):
-
     serializer_class = GlobalSettingsSerializer
 
     def get_object(self):
@@ -124,15 +143,14 @@ class ClaimMaxView(APIView):
     **user must be verified**
     """
 
-    def get_user(self) -> BrightUser:
-        address = self.kwargs.get("address", None)
-        try:
-            return BrightUser.objects.get(address=address)
-        except BrightUser.DoesNotExist:
-            raise Http404(f"Bright User With Address {address} Does not Exist")
+    permission_classes = [IsAuthenticated]
 
-    def check_user_is_verified(self):
-        _is_verified = self.get_user().verification_status == BrightUser.VERIFIED
+    def get_user(self) -> UserProfile:
+        return self.request.user.profile
+
+    # TODO
+    def check_user_is_verified(self, type="Meet"):
+        _is_verified = self.get_user().is_meet_verified
         if not _is_verified:
             raise rest_framework.exceptions.NotAcceptable
 
@@ -169,7 +187,6 @@ def artwork_video(request):
 
 
 def artwork_view(request, token_id):
-
     # the artwork video file is server under a view called artwork-video
     artwork_video_url = request.build_absolute_uri(reverse("FAUCET:artwork-video"))
 

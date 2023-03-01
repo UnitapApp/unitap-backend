@@ -1,14 +1,15 @@
-# from eth_account.messages import encode_defunct
-
-
-def verify_signature_eth_scheme(address, signed_message):
-    # decrypt signed message using Ethereum signature scheme.
-    # message = encode_defunct(text=address)
-
-    return True
-
-
 import requests
+from eth_account.messages import encode_defunct
+import web3 as w3
+
+
+def verify_signature_eth_scheme(address, signature):
+    digest = encode_defunct(text=address)
+    signer = w3.eth.account.recover_message(digest, signature=signature)
+    if signer == address:
+        return True
+    else:
+        return False
 
 
 class BrightIDSoulboundAPIInterface:
