@@ -47,8 +47,11 @@ class LoginView(ObtainAuthToken):
         token, bol = Token.objects.get_or_create(user=user)
         print("token", token)
 
-        # return token
-        return Response({"token": token.key}, status=200)
+        # return Response({"token": token.key}, status=200)
+        # return token and profile using profile serializer for profile
+        return Response(
+            {"token": token.key, "profile": ProfileSerializer(profile).data}, status=200
+        )
 
 
 class SetWalletAddressView(CreateAPIView):
