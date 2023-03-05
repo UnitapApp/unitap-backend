@@ -12,24 +12,22 @@ from authentication.serializers import ProfileSerializer, WalletSerializer
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
 
-class SponsorshipView(CreateAPIView):
-    def post(self, request, *args, **kwargs):
-        address = request.data.get("address")
-
-        if BRIGHT_ID_INTERFACE.sponsor(str(address)):
-            return Response({"message": "Sponsorship successful"}, status=200)
-        else:
-            return Response({"message": "Sponsorship failed"}, status=403)
-
-
 class LoginView(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         # TODO or should it be address, signature?
         address = request.data.get("username")
         signature = request.data.get("password")
 
+        # check sponsorship
+        is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
+
+        if not is_sponsored:
+            return Response({"message": "User is not sponsored"}, status=403)
+
         # verify signature
         verified_signature = verify_signature_eth_scheme(address, signature)
+
+        # TODO check sponsorship
 
         if not verified_signature:
             return Response({"message": "Invalid signature"}, status=403)

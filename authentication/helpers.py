@@ -40,5 +40,21 @@ class BrightIDSoulboundAPIInterface:
         except KeyError:
             return False, None
 
+    def check_sponsorship(self, context_id):
+        endpoint = f"https://app.brightid.org/node/v5/sponsorships/{context_id}"
+        bright_response = requests.get(endpoint)
+        bright_response = bright_response.json()
+
+        try:
+            if bright_response["data"] is not None:
+                if bright_response["data"]["appHasAuthorized"] is True:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        except KeyError:
+            return False
+    
 
 BRIGHTID_SOULDBOUND_INTERFACE = BrightIDSoulboundAPIInterface("unitapTest")

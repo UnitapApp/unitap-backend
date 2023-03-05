@@ -15,6 +15,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             "is_aura_verified",
         ]
 
+        # TODO add wallets and check verifications should be here or not
+
 
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:
