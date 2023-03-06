@@ -1,11 +1,12 @@
 import requests
 from eth_account.messages import encode_defunct
-import web3 as w3
+from web3 import Web3
+from eth_account import Account
 
 
 def verify_signature_eth_scheme(address, signature):
     digest = encode_defunct(text=address)
-    signer = w3.eth.account.recover_message(digest, signature=signature)
+    signer = Account.recover_message(digest, signature=signature)
     if signer == address:
         return True
     else:
@@ -30,7 +31,7 @@ class BrightIDSoulboundAPIInterface:
         bright_response = requests.get(endpoint)
         # decode response
         bright_response = bright_response.json()
-        print("bright_response: ", bright_response)
+        # print("bright_response: ", bright_response)
 
         try:
             if bright_response["data"] is not None:
@@ -55,6 +56,6 @@ class BrightIDSoulboundAPIInterface:
                 return False
         except KeyError:
             return False
-    
+
 
 BRIGHTID_SOULDBOUND_INTERFACE = BrightIDSoulboundAPIInterface("unitapTest")

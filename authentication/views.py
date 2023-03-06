@@ -18,11 +18,15 @@ class LoginView(ObtainAuthToken):
         address = request.data.get("username")
         signature = request.data.get("password")
 
-        # check sponsorship
-        is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
 
-        if not is_sponsored:
-            return Response({"message": "User is not sponsored"}, status=403)
+        # if BRIGHT_ID_INTERFACE.sponsor(str(address)) is not True:
+        #     return Response({"message": "User is not sponsored1"}, status=403)
+
+        # # check sponsorship
+        # is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
+
+        # if not is_sponsored:
+        #     return Response({"message": "User is not sponsored2"}, status=403)
 
         # verify signature
         verified_signature = verify_signature_eth_scheme(address, signature)
