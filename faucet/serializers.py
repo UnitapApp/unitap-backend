@@ -75,14 +75,16 @@ class ChainSerializer(serializers.ModelSerializer):
 
     def get_claimed(self, chain) -> int:
         user = self.context["request"].user
-        if not user:
+
+        if not user.is_authenticated:
             return "N/A"
         user_profile = user.profile
         return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
 
     def get_unclaimed(self, chain) -> int:
         user = self.context["request"].user
-        if not user:
+
+        if not user.is_authenticated:
             return "N/A"
         user_profile = user.profile
         return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
