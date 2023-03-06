@@ -18,7 +18,6 @@ class LoginView(ObtainAuthToken):
         address = request.data.get("username")
         signature = request.data.get("password")
 
-
         # if BRIGHT_ID_INTERFACE.sponsor(str(address)) is not True:
         #     return Response({"message": "User is not sponsored1"}, status=403)
 
@@ -45,12 +44,16 @@ class LoginView(ObtainAuthToken):
             aura_context_ids,
         ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(address, "Aura")
 
+        is_nothing_verified = True
+
         if meet_context_ids is not None:
             context_ids = meet_context_ids
+            is_nothing_verified = False
         elif aura_context_ids is not None:
             context_ids = aura_context_ids
+            is_nothing_verified = False
         else:
-            return Response({"message": "User is nothing verified"}, status=403)
+            context_ids = [address]
 
         first_context_id = context_ids[-1]
         profile = UserProfile.objects.get_or_create(first_context_id=first_context_id)
