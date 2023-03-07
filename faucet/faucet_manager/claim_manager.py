@@ -1,6 +1,7 @@
 import abc
 from abc import ABC
 from django.utils import timezone
+from authentication.models import UserProfile
 
 from faucet.faucet_manager.credit_strategy import (
     CreditStrategy,
@@ -32,7 +33,7 @@ class SimpleClaimManager(ClaimManager):
 
     def claim(self, amount):
         with transaction.atomic():
-            user_profile = BrightUser.objects.select_for_update().get(
+            user_profile = UserProfile.objects.select_for_update().get(
                 pk=self.credit_strategy.user_profile.pk
             )
             self.assert_pre_claim_conditions(amount, user_profile)

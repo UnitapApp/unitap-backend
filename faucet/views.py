@@ -148,11 +148,21 @@ class ClaimMaxView(APIView):
     def get_user(self) -> UserProfile:
         return self.request.user.profile
 
-    # TODO
     def check_user_is_verified(self, type="Meet"):
         _is_verified = self.get_user().is_meet_verified
         if not _is_verified:
             raise rest_framework.exceptions.NotAcceptable
+
+    def wallet_address_is_set(self):
+        _wallets = self.get_user().wallets
+        _address = self.request.data.get("address", None)
+        if not _wallets.exists() and _address is None:
+            print("No Wallets and No Address")
+            raise rest_framework.exceptions.NotAcceptable
+        if self.get_chain().chain_type == "NONEVM" and _address is None:
+            print("No NONEVM Address")
+            raise rest_framework.exceptions.NotAcceptable
+        return True
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get("chain_pk", None)

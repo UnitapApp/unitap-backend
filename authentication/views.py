@@ -156,5 +156,15 @@ class GetProfileView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
 
-    def get_object(self):
-        return self.request.user.profile
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        token, bol = Token.objects.get_or_create(user=user)
+        print("token", token)
+
+        # return Response({"token": token.key}, status=200)
+        # return token and profile using profile serializer for profile
+        return Response(
+            {"token": token.key, "profile": ProfileSerializer(user.profile).data},
+            status=200,
+        )

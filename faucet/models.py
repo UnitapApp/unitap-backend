@@ -148,8 +148,9 @@ class ClaimReceipt(models.Model):
 
 class Chain(models.Model):
     EVM = "EVM"
+    NON_EVM = "NONEVM"
 
-    chain_types = ((EVM, "EVM"),)
+    chain_types = ((EVM, "EVM"), (NON_EVM, "Non-EVM"))
 
     chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
@@ -179,7 +180,7 @@ class Chain(models.Model):
 
     needs_funding = models.BooleanField(default=False)
     is_testnet = models.BooleanField(default=False)
-    chain_type = models.CharField(max_length=3, choices=chain_types, default=EVM)
+    chain_type = models.CharField(max_length=10, choices=chain_types, default=EVM)
     order = models.IntegerField(default=0)
 
     is_active = models.BooleanField(default=True)

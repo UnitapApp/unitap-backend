@@ -8,6 +8,8 @@ from django.db.models import Q
 from django.utils import timezone
 from sentry_sdk import capture_exception
 
+from authentication.models import Wallet
+
 from .faucet_manager.fund_manager import EVMFundManager
 from .models import Chain, ClaimReceipt, TransactionBatch
 
@@ -56,15 +58,19 @@ def process_batch(self, batch_pk):
             batch = TransactionBatch.objects.get(pk=batch_pk)
 
             if batch.should_be_processed:
-
                 if batch.is_expired:
                     batch._status = ClaimReceipt.REJECTED
                     batch.save()
                     batch.claims.update(_status=batch._status)
                     return
 
-                data = [ # TODO  use EVM
-                    {"to": receipt.bright_user.address, "amount": receipt.amount}
+                data = [  # TODO  use EVM
+                    {
+                        "to": Wallet.objects.get(
+                            user_profile=receipt.user_profile, wallet_type="EVM"
+                        ),
+                        "amount": receipt.amount,
+                    }
                     for receipt in batch.claims.all()
                 ]
 
