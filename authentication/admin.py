@@ -15,5 +15,11 @@ class WalletAdmin(admin.ModelAdmin):
     search_fields = ["profile__initial_context_id", "wallet_type"]
 
 
+class TemporaryWalletAdmin(admin.ModelAdmin):
+    list_display = ["pk", "address", "user_profile"]
+    search_fields = ["profile__initial_context_id", "address"]
+
+
 admin.site.register(Wallet, WalletAdmin)
 admin.site.register(UserProfile, ProfileAdmin)
+admin.site.register(TemporaryWalletAddress, TemporaryWalletAdmin)
