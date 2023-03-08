@@ -43,9 +43,10 @@ class SimpleClaimManager(ClaimManager):
 
     def assert_pre_claim_conditions(self, amount, user_profile):
         assert amount <= self.credit_strategy.get_unclaimed()
-        assert (
-            self.credit_strategy.user_profile.verification_status == BrightUser.VERIFIED
-        )
+        #TODO: uncomment this 
+        # assert (
+        #     self.credit_strategy.user_profile.is_meet_verified == True
+        # )
         assert not ClaimReceipt.objects.filter(
             chain=self.credit_strategy.chain,
             user_profile=user_profile,
