@@ -64,13 +64,13 @@ def process_batch(self, batch_pk):
                     batch.claims.update(_status=batch._status)
                     return
 
-                data = [  # TODO  use EVM
+                data = [
                     {
                         "to": Wallet.objects.get(
                             user_profile=receipt.user_profile, wallet_type="EVM"
                         ).address
                         if receipt.chain.chain_type == "EVM"
-                        else " ",
+                        else receipt.user_profile.temporary_wallet.address,
                         "amount": receipt.amount,
                     }
                     for receipt in batch.claims.all()
