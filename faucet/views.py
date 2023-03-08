@@ -156,15 +156,23 @@ class ClaimMaxView(APIView):
             raise rest_framework.exceptions.NotAcceptable
 
     def wallet_address_is_set(self):
-        _wallets = self.get_user().wallets
-        _address = self.request.data.get("address", None)
-        if not _wallets.exists() and _address is None:
-            print("No Wallets and No Address")
-            raise rest_framework.exceptions.NotAcceptable
-        if self.get_chain().chain_type == "NONEVM" and _address is None:
-            print("No NONEVM Address")
-            raise rest_framework.exceptions.NotAcceptable
-        return True
+        chain = self.get_chain()
+        if chain.chain_type == "EVM":
+            try:
+                _wallet = self.get_user().wallets.get(wallet_type="EVM")
+                return True
+            except Exception as e:
+                print("EVM wallet not set")
+                raise rest_framework.exceptions.NotAcceptable
+        elif chain.chain_type == "NONEVM":
+            try:
+                _address = self.request.data.get("address")
+                if _address is None:
+                    raise Exception("address not provided")
+                return True
+            except Exception as e:
+                print("Nonevm wallet not set")
+                raise rest_framework.exceptions.NotAcceptable
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get("chain_pk", None)
@@ -189,6 +197,11 @@ class ClaimMaxView(APIView):
 
     def post(self, request, *args, **kwargs):
         self.check_user_is_verified()
+        self.wallet_address_is_set()
+        if self.get_chain().chain_type == "NONEVM":
+            self.get_user().set_temporary_wallet_address(
+                self.request.data.get("address")
+            )
         receipt = self.claim_max()
         return Response(ReceiptSerializer(instance=receipt).data)
 

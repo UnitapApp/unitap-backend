@@ -68,7 +68,9 @@ def process_batch(self, batch_pk):
                     {
                         "to": Wallet.objects.get(
                             user_profile=receipt.user_profile, wallet_type="EVM"
-                        ).address,
+                        ).address
+                        if receipt.chain.chain_type == "EVM"
+                        else " ",
                         "amount": receipt.amount,
                     }
                     for receipt in batch.claims.all()

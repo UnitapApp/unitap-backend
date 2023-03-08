@@ -45,6 +45,12 @@ class UserProfile(models.Model):
 
         return is_verified
 
+    def set_temporary_wallet_address(self, address):
+        if self.temporary_wallet.exists():
+            self.temporary_wallet.first().delete()
+        TemporaryWalletAddress.objects.create(user_profile=self, address=address)
+        return True
+
 
 class Wallet(models.Model):
     WALLET_TYPES = (
@@ -63,3 +69,14 @@ class Wallet(models.Model):
 
     def __str__(self):
         return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"
+
+
+class TemporaryWalletAddress(models.Model):
+    address = models.CharField(max_length=512, unique=True)
+    user_profile = models.OneToOneField(
+        UserProfile, on_delete=models.CASCADE, related_name="temporary_wallet"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Temporary {self.address} Wallet for profile with contextId {self.user_profile.initial_context_id}"
