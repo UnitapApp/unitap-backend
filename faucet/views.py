@@ -192,12 +192,12 @@ class ClaimMaxView(APIView):
             assert max_credit > 0
             return manager.claim(max_credit)
         except AssertionError as e:
+            print("no credit left")
             raise rest_framework.exceptions.PermissionDenied
         except ValueError as e:
             raise rest_framework.exceptions.APIException(e)
 
     def post(self, request, *args, **kwargs):
-        print("request.data: ", request.data)
         self.check_user_is_verified()
         self.wallet_address_is_set()
         if self.get_chain().chain_type == "NONEVM":
