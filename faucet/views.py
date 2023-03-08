@@ -167,6 +167,7 @@ class ClaimMaxView(APIView):
         elif chain.chain_type == "NONEVM":
             try:
                 _address = self.request.data.get("address")
+                print("NONEVM address: ", _address)
                 if _address is None:
                     raise Exception("address not provided")
                 return True
@@ -196,6 +197,7 @@ class ClaimMaxView(APIView):
             raise rest_framework.exceptions.APIException(e)
 
     def post(self, request, *args, **kwargs):
+        print("request.data: ", request.data)
         self.check_user_is_verified()
         self.wallet_address_is_set()
         if self.get_chain().chain_type == "NONEVM":
