@@ -46,8 +46,11 @@ class UserProfile(models.Model):
         return is_verified
 
     def set_temporary_wallet_address(self, address):
-        if self.temporary_wallet.exists():
-            self.temporary_wallet.first().delete()
+        try:
+            if self.temporary_wallet.exists():
+                self.temporary_wallet.first().delete()
+        except TemporaryWalletAddress.DoesNotExist:
+            pass
         TemporaryWalletAddress.objects.create(user_profile=self, address=address)
         return True
 
