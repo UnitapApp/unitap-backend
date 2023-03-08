@@ -151,6 +151,7 @@ class ClaimMaxView(APIView):
     def check_user_is_verified(self, type="Meet"):
         _is_verified = self.get_user().is_meet_verified
         if not _is_verified:
+            print("user not Meet verified")
             raise rest_framework.exceptions.NotAcceptable
 
     def wallet_address_is_set(self):
