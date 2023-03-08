@@ -39,8 +39,8 @@ urlpatterns = [
     #     GetVerificationUrlView.as_view(),
     #     name="get-verification-url",
     # ),
-    path("user/last-claim", LastClaimView.as_view(), name="last-claim"),
-    path("user/claims", ListClaims.as_view(), name="claims"),
+    path("user/last-claim/", LastClaimView.as_view(), name="last-claim"),
+    path("user/claims/", ListClaims.as_view(), name="claims"),
     path(
         "chain/list/", ChainListView.as_view(), name="chain-list"
     ),  # can have auth token for more user specific info
