@@ -47,8 +47,8 @@ class UserProfile(models.Model):
 
     def set_temporary_wallet_address(self, address):
         try:
-            if self.temporary_wallet.exists():
-                self.temporary_wallet.first().delete()
+            if hasattr(self, "temporary_wallet"):
+                self.temporary_wallet.delete()
         except TemporaryWalletAddress.DoesNotExist:
             pass
         TemporaryWalletAddress.objects.create(user_profile=self, address=address)
