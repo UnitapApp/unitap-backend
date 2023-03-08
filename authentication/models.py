@@ -62,4 +62,4 @@ class Wallet(models.Model):
         unique_together = (("wallet_type", "user_profile"),)
 
     def __str__(self):
-        return f"{self.wallet_type} Wallet for profile with contextId {self.profile.initial_context_id}"
+        return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"
