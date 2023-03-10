@@ -26,7 +26,7 @@ class LoginView(ObtainAuthToken):
                 return Response({"message": "try again later."}, status=403)
             else:
                 return Response(
-                    {"message": "User is not sponsored. try again later."}, status=403
+                    {"message": "User is being sponsored. try again later."}, status=409
                 )
 
         verified_signature = verify_signature_eth_scheme(address, signature)
