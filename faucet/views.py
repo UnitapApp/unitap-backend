@@ -149,7 +149,8 @@ class ClaimMaxView(APIView):
         return self.request.user.profile
 
     def check_user_is_verified(self, type="Meet"):
-        # _is_verified = self.get_user().is_meet_verified TODO uncomment this
+        #TODO uncomment this
+        _is_verified = self.get_user().is_meet_verified
         _is_verified = True
         if not _is_verified:
             print("user not Meet verified")

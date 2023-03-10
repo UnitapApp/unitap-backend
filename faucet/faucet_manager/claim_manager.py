@@ -44,9 +44,9 @@ class SimpleClaimManager(ClaimManager):
     def assert_pre_claim_conditions(self, amount, user_profile):
         assert amount <= self.credit_strategy.get_unclaimed()
         #TODO: uncomment this 
-        # assert (
-        #     self.credit_strategy.user_profile.is_meet_verified == True
-        # )
+        assert (
+            self.credit_strategy.user_profile.is_meet_verified == True
+        )
         assert not ClaimReceipt.objects.filter(
             chain=self.credit_strategy.chain,
             user_profile=user_profile,
@@ -76,7 +76,7 @@ class LimitedChainClaimManager(SimpleClaimManager):
         last_monday = WeeklyCreditStrategy.get_last_monday()
         return ClaimReceipt.objects.filter(
             user_profile=user_profile,
-            _status__in=[BrightUser.PENDING, BrightUser.VERIFIED],  # TODO ASK SINA
+            _status__in=[BrightUser.PENDING, BrightUser.VERIFIED],
             datetime__gte=last_monday,
         ).count()
 

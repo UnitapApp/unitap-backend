@@ -5,11 +5,15 @@ from eth_account import Account
 
 
 def verify_signature_eth_scheme(address, signature):
-    digest = encode_defunct(text=address)
-    signer = Account.recover_message(digest, signature=signature)
-    if signer == address:
-        return True
-    else:
+    try:
+        digest = encode_defunct(text=address)
+        signer = Account.recover_message(digest, signature=signature)
+        if signer == address:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print("error in verify_signature_eth_scheme: ", e)
         return False
 
 
@@ -27,7 +31,7 @@ class BrightIDSoulboundAPIInterface:
 
         # get list of context ids from brightId
         endpoint = f"https://aura-node.brightid.org/brightid/v5/verifications/{self.app}/{context_id}?verification={verification_type}"
-        print("endpoint: ", endpoint)
+        # print("endpoint: ", endpoint)
         bright_response = requests.get(endpoint)
         # decode response
         bright_response = bright_response.json()

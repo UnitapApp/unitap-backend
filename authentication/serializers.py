@@ -3,6 +3,9 @@ from authentication.models import (
     Wallet,
 )
 from rest_framework import serializers
+from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
+
+from faucet.models import GlobalSettings
 
 
 class WalletSerializer(serializers.ModelSerializer):
@@ -17,6 +20,7 @@ class WalletSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     wallets = WalletSerializer(many=True, read_only=True)
+    total_weekly_claims_remaining = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -25,7 +29,14 @@ class ProfileSerializer(serializers.ModelSerializer):
             "initial_context_id",
             "is_meet_verified",
             "is_aura_verified",
+            "total_weekly_claims_remaining",
             "wallets",
         ]
 
-        # TODO add wallets and check verifications should be here or not
+    def get_total_weekly_claims_remaining(self, instance):
+        gs = GlobalSettings.objects.first()
+        if gs is not None:
+            return (
+                gs.weekly_chain_claim_limit
+                - LimitedChainClaimManager.get_total_weekly_claims(instance)
+            )

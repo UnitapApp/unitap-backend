@@ -1,3 +1,4 @@
+import time
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from authentication.models import UserProfile, Wallet
@@ -14,24 +15,21 @@ from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
 class LoginView(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
-        # TODO or should it be address, signature?
-        address = request.data.get("username")
-        signature = request.data.get("password")
+        address = request.data.get("username", None)
+        signature = request.data.get("password", None)
+        if not address or not signature:
+            return Response({"message": "Invalid request"}, status=403)
 
-        # if BRIGHT_ID_INTERFACE.sponsor(str(address)) is not True:
-        #     return Response({"message": "User is not sponsored1"}, status=403)
+        is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
+        if not is_sponsored:
+            if BRIGHT_ID_INTERFACE.sponsor(str(address)) is not True:
+                return Response({"message": "try again later."}, status=403)
+            else:
+                return Response(
+                    {"message": "User is not sponsored. try again later."}, status=403
+                )
 
-        # # check sponsorship
-        # is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
-
-        # if not is_sponsored:
-        #     return Response({"message": "User is not sponsored2"}, status=403)
-
-        # verify signature
         verified_signature = verify_signature_eth_scheme(address, signature)
-
-        # TODO check sponsorship
-
         if not verified_signature:
             return Response({"message": "Invalid signature"}, status=403)
 
@@ -52,8 +50,11 @@ class LoginView(ObtainAuthToken):
         elif aura_context_ids is not None:
             context_ids = aura_context_ids
             is_nothing_verified = False
-        else:
-            context_ids = [address]
+
+        if is_nothing_verified:
+            return Response(
+                {"message": "User is not verified. try again later."}, status=403
+            )
 
         first_context_id = context_ids[-1]
         profile = UserProfile.objects.get_or_create(first_context_id=first_context_id)
@@ -74,8 +75,10 @@ class SetWalletAddressView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        address = request.data.get("address")
-        wallet_type = request.data.get("wallet_type")
+        address = request.data.get("address", None)
+        wallet_type = request.data.get("wallet_type", None)
+        if not address or not wallet_type:
+            return Response({"message": "Invalid request"}, status=403)
 
         # get user profile
         user_profile = request.user.profile
@@ -86,7 +89,7 @@ class SetWalletAddressView(CreateAPIView):
             return Response(
                 {"message": f"{wallet_type} wallet address already set"}, status=403
             )
-        # TODO check for duplicate addresses
+        # TODO change wallet creation
         except Wallet.DoesNotExist:
             # create wallet
             Wallet.objects.create(
@@ -101,7 +104,9 @@ class GetWalletAddressView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type")
+        wallet_type = request.data.get("wallet_type", None)
+        if not wallet_type:
+            return Response({"message": "Invalid request"}, status=403)
 
         # get user profile
         user_profile = request.user.profile
@@ -123,7 +128,9 @@ class DeleteWalletAddressView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type")
+        wallet_type = request.data.get("wallet_type", None)
+        if not wallet_type:
+            return Response({"message": "Invalid request"}, status=403)
 
         # get user profile
         user_profile = request.user.profile
