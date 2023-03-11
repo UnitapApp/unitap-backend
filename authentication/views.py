@@ -61,13 +61,13 @@ class LoginView(ObtainAuthToken):
         elif aura_context_ids is not None:
             context_ids = aura_context_ids
             is_nothing_verified = False
-        else:
-            context_ids = [address]
+        # else:
+        #     context_ids = [address]
 
-        # if is_nothing_verified:
-        #     return Response(
-        #         {"message": "User is not verified. try again later."}, status=403
-        #     )
+        if is_nothing_verified:
+            return Response(
+                {"message": "User is not verified. please verify."}, status=403
+            )
 
         first_context_id = context_ids[-1]
         profile = UserProfile.objects.get_or_create(first_context_id=first_context_id)

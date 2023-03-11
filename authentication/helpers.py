@@ -51,7 +51,9 @@ class BrightIDSoulboundAPIInterface:
             return False, None
 
     def check_sponsorship(self, context_id):
-        endpoint = f"https://app.brightid.org/node/v5/sponsorships/{context_id}"
+        endpoint = (
+            f"https://app.brightid.org/node/v5/sponsorships/{context_id}"
+        )
         bright_response = requests.get(endpoint)
         bright_response = bright_response.json()
 
