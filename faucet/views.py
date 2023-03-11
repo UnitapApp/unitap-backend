@@ -195,6 +195,7 @@ class ClaimMaxView(APIView):
             assert max_credit > 0
             return manager.claim(max_credit)
         except AssertionError as e:
+            print(e)
             print("no credit left")
             raise rest_framework.exceptions.PermissionDenied
         except ValueError as e:
