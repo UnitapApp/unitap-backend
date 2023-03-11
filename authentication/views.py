@@ -97,19 +97,16 @@ class SetWalletAddressView(CreateAPIView):
 
         try:
             # check if wallet already exists
-            Wallet.objects.get(user_profile=user_profile, wallet_type=wallet_type)
-            return Response(
-                {"message": f"{wallet_type} wallet address already set"}, status=403
-            )
+            w = Wallet.objects.get(user_profile=user_profile, wallet_type=wallet_type)
+            w.delete()
         # TODO change wallet creation
         except Wallet.DoesNotExist:
-            # create wallet
-            Wallet.objects.create(
-                user_profile=user_profile, wallet_type=wallet_type, address=address
-            )
-            return Response(
-                {"message": f"{wallet_type} wallet address set"}, status=200
-            )
+            pass
+
+        Wallet.objects.create(
+            user_profile=user_profile, wallet_type=wallet_type, address=address
+        )
+        return Response({"message": f"{wallet_type} wallet address set"}, status=200)
 
 
 class GetWalletAddressView(RetrieveAPIView):
