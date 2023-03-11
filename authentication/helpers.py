@@ -51,7 +51,7 @@ class BrightIDSoulboundAPIInterface:
             return False, None
 
     def check_sponsorship(self, context_id):
-        endpoint = f"https://app.brightid.org/node/v5/sponsorships/{context_id}"
+        endpoint = f"https://app.brightid.org/node/v6/sponsorships/{context_id}"
         bright_response = requests.get(endpoint)
         bright_response = bright_response.json()
 
@@ -69,13 +69,14 @@ class BrightIDSoulboundAPIInterface:
     def sponsor(self, context_id):
         from brightIDfaucet.settings import BRIGHT_PRIVATE_KEY
 
-        URL = "https://app.brightid.org/node/v5/operations"
+        URL = "https://app.brightid.org/node/v6/operations"
         op = {
             "name": "Sponsor",
-            "app": self.app,
-            "contextId": context_id,
+            "app": self.ap,
+            "appUserId": context_id,
+            # "contextId": context_id,
             "timestamp": int(time.time() * 1000),
-            "v": 5,
+            "v": 6,
         }
         signing_key = ed25519.SigningKey(base64.b64decode(BRIGHT_PRIVATE_KEY))
         message = json.dumps(op, sort_keys=True, separators=(",", ":")).encode("ascii")
