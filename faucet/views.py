@@ -149,7 +149,7 @@ class ClaimMaxView(APIView):
         return self.request.user.profile
 
     def check_user_is_verified(self, type="Meet"):
-        #TODO uncomment this
+        # TODO uncomment this
         _is_verified = self.get_user().is_meet_verified
         _is_verified = True
         if not _is_verified:
@@ -190,6 +190,8 @@ class ClaimMaxView(APIView):
         manager = self.get_claim_manager()
         max_credit = manager.get_credit_strategy().get_unclaimed()
         try:
+            print("max_credit", max_credit)
+            print("assertion", max_credit > 0)
             assert max_credit > 0
             return manager.claim(max_credit)
         except AssertionError as e:
