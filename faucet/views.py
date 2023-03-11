@@ -1,4 +1,5 @@
 import json
+import logging
 from django.http import FileResponse
 import os
 import rest_framework.exceptions
@@ -195,7 +196,7 @@ class ClaimMaxView(APIView):
             assert max_credit > 0
             return manager.claim(max_credit)
         except AssertionError as e:
-            print(e)
+            logging.exception("amirerfan")
             print("no credit left")
             raise rest_framework.exceptions.PermissionDenied
         except ValueError as e:
