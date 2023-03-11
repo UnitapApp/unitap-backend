@@ -1,4 +1,9 @@
 import requests
+import json
+import time
+import requests
+import base64
+import ed25519
 from eth_account.messages import encode_defunct
 from web3 import Web3
 from eth_account import Account
@@ -60,6 +65,27 @@ class BrightIDSoulboundAPIInterface:
                 return False
         except KeyError:
             return False
+
+    def sponsor(self, context_id):
+        from brightIDfaucet.settings import BRIGHT_PRIVATE_KEY
+
+        URL = "https://app.brightid.org/node/v5/operations"
+        op = {
+            "name": "Sponsor",
+            "app": self.app,
+            "contextId": context_id,
+            "timestamp": int(time.time() * 1000),
+            "v": 5,
+        }
+        signing_key = ed25519.SigningKey(base64.b64decode(BRIGHT_PRIVATE_KEY))
+        message = json.dumps(op, sort_keys=True, separators=(",", ":")).encode("ascii")
+        sig = signing_key.sign(message)
+        op["sig"] = base64.b64encode(sig).decode("ascii")
+        r = requests.post(URL, json.dumps(op))
+        print("res: ", r.json())
+        if r.status_code != 200 or "error" in r.json():
+            return False
+        return True
 
 
 BRIGHTID_SOULDBOUND_INTERFACE = BrightIDSoulboundAPIInterface("unitapTest")

@@ -26,4 +26,6 @@ urlpatterns = [
         name="get-wallets-user",
     ),
     path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
+    path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
+
 ]

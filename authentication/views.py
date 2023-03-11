@@ -10,7 +10,18 @@ from authentication.helpers import (
     verify_signature_eth_scheme,
 )
 from authentication.serializers import ProfileSerializer, WalletSerializer
-from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
+
+
+class SponsorView(CreateAPIView):
+    def post(self, request, *args, **kwargs):
+        address = request.data.get("address", None)
+        if not address:
+            return Response({"message": "Invalid request"}, status=403)
+
+        if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
+            return Response({"message": "something went wrong."}, status=403)
+
+        return Response({"message": "User is being sponsored."}, status=200)
 
 
 class LoginView(ObtainAuthToken):
@@ -22,7 +33,7 @@ class LoginView(ObtainAuthToken):
 
         is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
         if not is_sponsored:
-            if BRIGHT_ID_INTERFACE.sponsor(str(address)) is not True:
+            if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
                 return Response({"message": "try again later."}, status=403)
             else:
                 return Response(
@@ -66,7 +77,6 @@ class LoginView(ObtainAuthToken):
         token, bol = Token.objects.get_or_create(user=user)
         print("token", token)
 
-        # return Response({"token": token.key}, status=200)
         # return token and profile using profile serializer for profile
         return Response(
             {"token": token.key, "profile": ProfileSerializer(profile).data}, status=200
