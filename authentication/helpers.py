@@ -72,7 +72,7 @@ class BrightIDSoulboundAPIInterface:
         URL = "https://app.brightid.org/node/v6/operations"
         op = {
             "name": "Sponsor",
-            "app": self.ap,
+            "app": self.app,
             "appUserId": context_id,
             # "contextId": context_id,
             "timestamp": int(time.time() * 1000),
