@@ -58,7 +58,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "faucet.apps.FaucetConfig",
+    "authentication.apps.AuthenticationConfig",
     "rest_framework",
+    "rest_framework.authtoken",
     "encrypted_model_fields",
     "drf_yasg",
     "corsheaders",
@@ -180,6 +182,9 @@ MEDIA_URL = os.path.join(BASE_DIR, "/media/")
 APPEND_SLASH = True
 
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+    ],
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_RENDERER_CLASSES": (
         "djangorestframework_camel_case.render.CamelCaseJSONRenderer",

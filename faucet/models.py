@@ -7,6 +7,7 @@ import binascii
 from bip_utils import Bip44Coins, Bip44
 from web3.exceptions import TimeExhausted
 from django.conf import settings
+from authentication.models import UserProfile
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -115,8 +116,8 @@ class ClaimReceipt(models.Model):
     )
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
-    bright_user = models.ForeignKey(
-        BrightUser, related_name="claims", on_delete=models.PROTECT
+    user_profile = models.ForeignKey(
+        UserProfile, related_name="claims", on_delete=models.PROTECT
     )
 
     _status = models.CharField(max_length=1, choices=states, default=PENDING)
@@ -147,8 +148,9 @@ class ClaimReceipt(models.Model):
 
 class Chain(models.Model):
     EVM = "EVM"
+    NON_EVM = "NONEVM"
 
-    chain_types = ((EVM, "EVM"),)
+    chain_types = ((EVM, "EVM"), (NON_EVM, "Non-EVM"))
 
     chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
@@ -178,7 +180,7 @@ class Chain(models.Model):
 
     needs_funding = models.BooleanField(default=False)
     is_testnet = models.BooleanField(default=False)
-    chain_type = models.CharField(max_length=3, choices=chain_types, default=EVM)
+    chain_type = models.CharField(max_length=10, choices=chain_types, default=EVM)
     order = models.IntegerField(default=0)
 
     is_active = models.BooleanField(default=True)
