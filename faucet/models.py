@@ -130,7 +130,6 @@ class ClaimReceipt(models.Model):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        blank=True,
     )
 
     _status = models.CharField(max_length=1, choices=states, default=PENDING)
