@@ -26,6 +26,12 @@ class BrightIDSoulboundAPIInterface:
     def __init__(self, app) -> None:
         self.app = app
 
+    def create_verification_link(self, contextId):
+        return f"https://app.brightid.org/link-verification/http:%2F%2Fnode.brightid.org/{self.app}/{str(contextId).lower()}"
+
+    def create_qr_content(self, contextId):
+        return f"brightid://link-verification/http:%2f%2fnode.brightid.org/{self.app}/{str(contextId).lower()}"  # TODO
+
     def get_verification_status(self, context_id, verification):
         if verification == "BrightID" or verification == "Meet":
             verification_type = "BrightID"
@@ -35,7 +41,7 @@ class BrightIDSoulboundAPIInterface:
             raise ValueError("Invalid verification type")
 
         # get list of context ids from brightId
-        endpoint = f"https://aura-node.brightid.org/brightid/v5/verifications/{self.app}/{str(context_id).lower()}?verification={verification_type}"
+        endpoint = f"http://node.brightid.org/brightid/v5/verifications/{self.app}/{context_id}?verification={verification_type}"
         # print("endpoint: ", endpoint)
         bright_response = requests.get(endpoint)
         # decode response

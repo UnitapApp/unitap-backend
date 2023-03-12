@@ -18,13 +18,32 @@ class SponsorView(CreateAPIView):
         if not address:
             return Response({"message": "Invalid request"}, status=403)
 
+        verification_link = BRIGHTID_SOULDBOUND_INTERFACE.create_verification_link(
+            address
+        )
+        qr_content = BRIGHTID_SOULDBOUND_INTERFACE.create_qr_content(address)
+
         if BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address):
-            return Response({"message": "User is already sponsored."}, status=200)
+            return Response(
+                {
+                    "message": "User is already sponsored.",
+                    "verification_link": verification_link,
+                    "qr_content": qr_content,
+                },
+                status=200,
+            )
 
         if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
             return Response({"message": "something went wrong."}, status=403)
 
-        return Response({"message": "User is being sponsored."}, status=200)
+        return Response(
+            {
+                "message": "User is being sponsored.",
+                "verification_link": verification_link,
+                "qr_content": qr_content,
+            },
+            status=200,
+        )
 
 
 class LoginView(ObtainAuthToken):
