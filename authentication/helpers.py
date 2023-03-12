@@ -91,4 +91,4 @@ class BrightIDSoulboundAPIInterface:
         return True
 
 
-BRIGHTID_SOULDBOUND_INTERFACE = BrightIDSoulboundAPIInterface("unitapTest")
+BRIGHTID_SOULDBOUND_INTERFACE = BrightIDSoulboundAPIInterface("unitap")
