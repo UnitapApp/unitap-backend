@@ -117,7 +117,20 @@ class ClaimReceipt(models.Model):
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
     user_profile = models.ForeignKey(
-        UserProfile, related_name="claims", on_delete=models.PROTECT
+        UserProfile,
+        related_name="claims",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+
+    bright_user = models.ForeignKey(
+        BrightUser,
+        related_name="claims",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        blank=True,
     )
 
     _status = models.CharField(max_length=1, choices=states, default=PENDING)
