@@ -18,6 +18,9 @@ class SponsorView(CreateAPIView):
         if not address:
             return Response({"message": "Invalid request"}, status=403)
 
+        if BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address):
+            return Response({"message": "User is already sponsored."}, status=200)
+
         if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
             return Response({"message": "something went wrong."}, status=403)
 
