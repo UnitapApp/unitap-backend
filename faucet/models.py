@@ -122,8 +122,9 @@ class ClaimReceipt(models.Model):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
+        default=None,
     )
-
+    
     bright_user = models.ForeignKey(
         BrightUser,
         related_name="claims",
