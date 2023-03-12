@@ -8,6 +8,7 @@ class ChainAdmin(admin.ModelAdmin):
         "chain_name",
         "chain_id",
         "symbol",
+        "chain_type",
         "needs_funding",
         "order",
     ]
