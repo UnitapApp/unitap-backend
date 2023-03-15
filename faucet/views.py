@@ -16,6 +16,7 @@ from faucet.faucet_manager.claim_manager import (
     ClaimManagerFactory,
     LimitedChainClaimManager,
 )
+from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 from faucet.models import Chain, ClaimReceipt, GlobalSettings
 from faucet.serializers import (
     GlobalSettingsSerializer,
@@ -66,7 +67,10 @@ class ListClaims(ListAPIView):
 
     def get_queryset(self):
         user_profile = self.request.user.profile
-        return ClaimReceipt.objects.filter(user_profile=user_profile).order_by("-pk")
+        return ClaimReceipt.objects.filter(
+            user_profile=user_profile,
+            datetime__gte=WeeklyCreditStrategy.get_last_monday(),
+        ).order_by("-pk")
 
 
 # class UserInfoView(RetrieveAPIView):
