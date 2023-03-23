@@ -28,16 +28,6 @@ from faucet.serializers import (
 from django.conf import settings
 
 
-# class CreateUserView(CreateAPIView):
-#     """
-#     Create an unverified user with the given address
-
-#     this user can be verified using verification_link
-#     """
-
-#     serializer_class = UserSerializer
-
-
 class LastClaimView(RetrieveAPIView):
     serializer_class = ReceiptSerializer
 
@@ -73,18 +63,6 @@ class ListClaims(ListAPIView):
         ).order_by("-pk")
 
 
-# class UserInfoView(RetrieveAPIView):
-#     """
-#     User info of the given address
-#     """
-
-#     serializer_class = UserSerializer
-#     queryset = BrightUser.objects.all()
-
-#     lookup_field = "address"
-#     lookup_url_kwarg = "address"
-
-
 class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
     """
     Return the total weekly claims remaining for the given user
@@ -103,24 +81,6 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
             return Response({"total_weekly_claims_remaining": result}, status=200)
         else:
             raise Http404("Global Settings Not Found")
-
-
-# class GetVerificationUrlView(RetrieveAPIView):
-#     """
-#     Return the bright verification url
-#     """
-
-#     serializer_class = UserSerializer
-
-#     def get_object(self):
-#         address = self.kwargs.get("address")
-#         try:
-#             return BrightUser.objects.get(address=address)
-#         except BrightUser.DoesNotExist:
-#             if address is not None:
-#                 return BrightUser.objects.get_or_create(address)
-
-#             raise Http404
 
 
 class ChainListView(ListAPIView):
@@ -154,12 +114,10 @@ class ClaimMaxView(APIView):
         return self.request.user.profile
 
     def check_user_is_verified(self, type="Meet"):
-        # TODO uncomment this
         _is_verified = self.get_user().is_meet_verified
         _is_verified = True
         if not _is_verified:
-            print("user not Meet verified")
-            raise rest_framework.exceptions.NotAcceptable
+            return Response({"message": "user is not Meet verified"}, status=403)
 
     def wallet_address_is_set(self):
         chain = self.get_chain()
@@ -168,8 +126,8 @@ class ClaimMaxView(APIView):
                 _wallet = self.get_user().wallets.get(wallet_type="EVM")
                 return True
             except Exception as e:
-                print("EVM wallet not set")
-                raise rest_framework.exceptions.NotAcceptable
+                return Response({"message": "EVM wallet not set"}, status=403)
+
         elif chain.chain_type == "NONEVM":
             try:
                 _address = self.request.data.get("address")
@@ -178,8 +136,7 @@ class ClaimMaxView(APIView):
                     raise Exception("address not provided")
                 return True
             except Exception as e:
-                print("Nonevm wallet not set")
-                raise rest_framework.exceptions.NotAcceptable
+                return Response({"message": "address not provided"}, status=403)
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get("chain_pk", None)
@@ -195,14 +152,10 @@ class ClaimMaxView(APIView):
         manager = self.get_claim_manager()
         max_credit = manager.get_credit_strategy().get_unclaimed()
         try:
-            print("max_credit", max_credit)
-            print("assertion", max_credit > 0)
             assert max_credit > 0
             return manager.claim(max_credit)
         except AssertionError as e:
-            logging.exception("amirerfan")
-            print("no credit left")
-            raise rest_framework.exceptions.PermissionDenied
+            return Response({"message": "no credit left"}, status=403)
         except ValueError as e:
             raise rest_framework.exceptions.APIException(e)
 

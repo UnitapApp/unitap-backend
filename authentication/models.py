@@ -68,7 +68,7 @@ class Wallet(models.Model):
         ("EVM", "EVM Wallet"),
         ("Solana", "Solana Wallet"),
         ("Lightning", "Lightning Wallet"),
-        ("Non-EVM", "Non-EVM Wallet"),
+        ("NONEVM", "Non-EVM Wallet"),
     )
     wallet_type = models.CharField(choices=WALLET_TYPES, max_length=10)
     user_profile = models.ForeignKey(
