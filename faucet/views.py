@@ -120,23 +120,21 @@ class ClaimMaxView(APIView):
             return Response({"message": "user is not Meet verified"}, status=403)
 
     def wallet_address_is_set(self):
-        chain = self.get_chain()
-        if chain.chain_type == "EVM":
-            try:
-                _wallet = self.get_user().wallets.get(wallet_type="EVM")
-                return True
-            except Exception as e:
-                return Response({"message": "EVM wallet not set"}, status=403)
+        passive_address = self.request.data.get("address", None)
+        if (
+            passive_address is not None
+            or passive_address is not " "
+            or passive_address is not ""
+        ):
+            return True, passive_address
 
-        elif chain.chain_type == "NONEVM":
-            try:
-                _address = self.request.data.get("address")
-                print("NONEVM address: ", _address)
-                if _address is None:
-                    raise Exception("address not provided")
-                return True
-            except Exception as e:
-                return Response({"message": "address not provided"}, status=403)
+        chain = self.get_chain()
+
+        try:
+            _wallet = self.get_user().wallets.get(wallet_type=chain.chain_type)
+            return True, None
+        except Exception as e:
+            return Response({"message": "wallet address not set"}, status=403)
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get("chain_pk", None)
@@ -148,12 +146,12 @@ class ClaimMaxView(APIView):
     def get_claim_manager(self):
         return ClaimManagerFactory(self.get_chain(), self.get_user()).get_manager()
 
-    def claim_max(self) -> ClaimReceipt:
+    def claim_max(self, passive_address) -> ClaimReceipt:
         manager = self.get_claim_manager()
         max_credit = manager.get_credit_strategy().get_unclaimed()
         try:
             assert max_credit > 0
-            return manager.claim(max_credit)
+            return manager.claim(max_credit, passive_address=passive_address)
         except AssertionError as e:
             return Response({"message": "no credit left"}, status=403)
         except ValueError as e:
@@ -161,12 +159,8 @@ class ClaimMaxView(APIView):
 
     def post(self, request, *args, **kwargs):
         self.check_user_is_verified()
-        self.wallet_address_is_set()
-        if self.get_chain().chain_type == "NONEVM":
-            self.get_user().set_temporary_wallet_address(
-                self.request.data.get("address")
-            )
-        receipt = self.claim_max()
+        s, passive_address = self.wallet_address_is_set()
+        receipt = self.claim_max(passive_address)
         return Response(ReceiptSerializer(instance=receipt).data)
 
 

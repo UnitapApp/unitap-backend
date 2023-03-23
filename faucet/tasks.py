@@ -66,11 +66,14 @@ def process_batch(self, batch_pk):
 
                 data = [
                     {
-                        "to": Wallet.objects.get(
-                            user_profile=receipt.user_profile, wallet_type="EVM"
-                        ).address
-                        if receipt.chain.chain_type == "EVM"
-                        else receipt.user_profile.temporary_wallet.address,
+                        "to": receipt.passive_address
+                        if receipt.passive_address is not None
+                        or receipt.passive_address != ""
+                        or receipt.passive_address != " "
+                        else Wallet.objects.get(
+                            user_profile=receipt.user_profile,
+                            wallet_type=batch.chain.chain_type,
+                        ).address,
                         "amount": receipt.amount,
                     }
                     for receipt in batch.claims.all()

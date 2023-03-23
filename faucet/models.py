@@ -124,7 +124,7 @@ class ClaimReceipt(models.Model):
         blank=True,
         default=None,
     )
-    
+
     bright_user = models.ForeignKey(
         BrightUser,
         related_name="claims",
@@ -134,6 +134,8 @@ class ClaimReceipt(models.Model):
     )
 
     _status = models.CharField(max_length=1, choices=states, default=PENDING)
+
+    passive_address = models.CharField(max_length=512, null=True, blank=True)
 
     amount = models.BigIntegerField()
     datetime = models.DateTimeField()
