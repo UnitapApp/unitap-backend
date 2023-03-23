@@ -56,7 +56,7 @@ class LoginView(ObtainAuthToken):
         is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
         if not is_sponsored:
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
-                return Response({"message": "try again later."}, status=403)
+                return Response({"message": "too many requests. try again later."}, status=403)
             else:
                 return Response(
                     {"message": "User is being sponsored. try again later."}, status=409

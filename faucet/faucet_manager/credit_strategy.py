@@ -92,7 +92,7 @@ class ArbitrumCreditStrategy(WeeklyCreditStrategy):
         max_claim_amount = self.chain.max_claim_amount
         is_verified_user = BrightIdUserRegistry(
             self.chain, contract_address
-        ).is_verified_user(self.user_profile.wallets.get(wallet_type="EVM").address)
+        ).is_verified_user(self.user_profile.initial_context_id)
 
         if is_verified_user:
             max_claim_amount = 5000000000000000

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
+from django.utils import timezone
 
 
 class ProfileManager(models.Manager):
@@ -19,10 +20,17 @@ class ProfileManager(models.Manager):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="profile")
     initial_context_id = models.CharField(max_length=512, unique=True)
+    # set a time of creation with default to now
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     objects = ProfileManager()
 
-    # TODO ask if these make bad things happen in admin panel
+    @property
+    def age(self):
+        if self.created_at is None:
+            return -1
+        return timezone.now() - self.created_at
+
     @property
     def is_meet_verified(self):
         (
@@ -60,6 +68,7 @@ class Wallet(models.Model):
         ("EVM", "EVM Wallet"),
         ("Solana", "Solana Wallet"),
         ("Lightning", "Lightning Wallet"),
+        ("Non-EVM", "Non-EVM Wallet"),
     )
     wallet_type = models.CharField(choices=WALLET_TYPES, max_length=10)
     user_profile = models.ForeignKey(

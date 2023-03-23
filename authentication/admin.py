@@ -6,7 +6,7 @@ from authentication.models import *
 
 
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ["pk", "initial_context_id"]
+    list_display = ["pk", "initial_context_id", "age"]
     search_fields = ["initial_context_id"]
 
 
