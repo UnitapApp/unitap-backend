@@ -1,4 +1,5 @@
 import time
+from django.db import IntegrityError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from authentication.models import UserProfile, Wallet
@@ -56,7 +57,9 @@ class LoginView(ObtainAuthToken):
         is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
         if not is_sponsored:
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
-                return Response({"message": "too many requests. try again later."}, status=403)
+                return Response(
+                    {"message": "too many requests. try again later."}, status=403
+                )
             else:
                 return Response(
                     {"message": "User is being sponsored. try again later."}, status=409
@@ -114,11 +117,9 @@ class SetWalletAddressView(CreateAPIView):
         if not address or not wallet_type:
             return Response({"message": "Invalid request"}, status=403)
 
-        # get user profile
         user_profile = request.user.profile
 
         try:
-            # check if wallet already exists
             w = Wallet.objects.get(user_profile=user_profile, wallet_type=wallet_type)
             w.address = address
             w.save()
@@ -127,14 +128,22 @@ class SetWalletAddressView(CreateAPIView):
                 {"message": f"{wallet_type} wallet address updated"}, status=200
             )
 
-        # TODO change wallet creation
         except Wallet.DoesNotExist:
-            Wallet.objects.create(
-                user_profile=user_profile, wallet_type=wallet_type, address=address
-            )
-            return Response(
-                {"message": f"{wallet_type} wallet address set"}, status=200
-            )
+            try:
+                Wallet.objects.create(
+                    user_profile=user_profile, wallet_type=wallet_type, address=address
+                )
+                return Response(
+                    {"message": f"{wallet_type} wallet address set"}, status=200
+                )
+            # catch unique constraint error
+            except IntegrityError:
+                return Response(
+                    {
+                        "message": f"{wallet_type} wallet address is not unique. use another address"
+                    },
+                    status=403,
+                )
 
 
 class GetWalletAddressView(RetrieveAPIView):
