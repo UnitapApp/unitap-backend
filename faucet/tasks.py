@@ -38,6 +38,12 @@ def has_pending_batch(chain):
     ).exists()
 
 
+def passive_address_is_not_none(address):
+    if address is not None or address != "" or address != " ":
+        return True
+    return False
+
+
 @shared_task(bind=True)
 def process_batch(self, batch_pk):
     """
@@ -67,9 +73,7 @@ def process_batch(self, batch_pk):
                 data = [
                     {
                         "to": receipt.passive_address
-                        if receipt.passive_address is not None
-                        or receipt.passive_address != ""
-                        or receipt.passive_address != " "
+                        if passive_address_is_not_none(receipt.passive_address)
                         else Wallet.objects.get(
                             user_profile=receipt.user_profile,
                             wallet_type=batch.chain.chain_type,
