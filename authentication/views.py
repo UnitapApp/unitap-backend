@@ -101,17 +101,17 @@ class LoginView(ObtainAuthToken):
         #     )
 
         if is_meet_verified == False and is_aura_verified == False:
-            if meet_context_ids == 3:
+            if meet_context_ids == 3:  # is not verified
                 context_ids = address
-            elif aura_context_ids == 4:
+            elif aura_context_ids == 4:  # is not linked
                 return Response(
                     {
-                        "message": "Something went wrong with the linking process. please link brightID to unitap.\nIf the problem persists, clear your browser cache and try again."
+                        "message": "Something went wrong with the linking process. please link BrightID with Unitap.\nIf the problem persists, clear your browser cache and try again."
                     },
                     status=403,
                 )
 
-        if is_meet_verified == True or is_aura_verified == True:
+        elif is_meet_verified == True or is_aura_verified == True:
             if meet_context_ids is not None:
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:
