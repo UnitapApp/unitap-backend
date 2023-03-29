@@ -58,11 +58,17 @@ class LoginView(ObtainAuthToken):
         if not is_sponsored:
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
                 return Response(
-                    {"message": "too many requests. try again later."}, status=403
+                    {
+                        "message": "We are in the process of sponsoring you. Please try again in five minutes."
+                    },
+                    status=403,
                 )
             else:
                 return Response(
-                    {"message": "User is being sponsored. try again later."}, status=409
+                    {
+                        "message": "We have requested to sponsor you on BrightID. Please try again in five minutes."
+                    },
+                    status=409,
                 )
 
         verified_signature = verify_signature_eth_scheme(address, signature)
@@ -78,21 +84,38 @@ class LoginView(ObtainAuthToken):
             aura_context_ids,
         ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(address, "Aura")
 
-        is_nothing_verified = True
+        # is_nothing_verified = True
 
-        if meet_context_ids is not None:
-            context_ids = meet_context_ids
-            is_nothing_verified = False
-        elif aura_context_ids is not None:
-            context_ids = aura_context_ids
-            is_nothing_verified = False
-        # else:
-        #     context_ids = [address]
+        # if meet_context_ids is not None:
+        #     context_ids = meet_context_ids
+        #     is_nothing_verified = False
+        # elif aura_context_ids is not None:
+        #     context_ids = aura_context_ids
+        #     is_nothing_verified = False
+        # # else:
+        # #     context_ids = [address]
 
-        if is_nothing_verified:
-            return Response(
-                {"message": "User is not verified. please verify."}, status=403
-            )
+        # if is_nothing_verified:
+        #     return Response(
+        #         {"message": "User is not verified. please verify."}, status=403
+        #     )
+
+        if is_meet_verified == False and is_aura_verified == False:
+            if meet_context_ids == 3:
+                context_ids = address
+            elif aura_context_ids == 4:
+                return Response(
+                    {
+                        "message": "Something went wrong with the linking process. please link brightID to unitap.\nIf the problem persists, clear your browser cache and try again."
+                    },
+                    status=403,
+                )
+
+        if is_meet_verified == True or is_aura_verified == True:
+            if meet_context_ids is not None:
+                context_ids = meet_context_ids
+            elif aura_context_ids is not None:
+                context_ids = aura_context_ids
 
         first_context_id = context_ids[-1]
         profile = UserProfile.objects.get_or_create(first_context_id=first_context_id)

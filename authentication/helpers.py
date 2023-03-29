@@ -41,7 +41,7 @@ class BrightIDSoulboundAPIInterface:
             raise ValueError("Invalid verification type")
 
         # get list of context ids from brightId
-        endpoint = f"http://node.brightid.org/brightid/v5/verifications/{self.app}/{context_id}?verification={verification_type}"
+        endpoint = f"https://aura-node.brightid.org/brightid/v5/verifications/{self.app}/{context_id}?verification={verification_type}"
         # print("endpoint: ", endpoint)
         bright_response = requests.get(endpoint)
         # decode response
@@ -72,7 +72,7 @@ class BrightIDSoulboundAPIInterface:
             else:
                 return False
         except KeyError:
-            return False
+            return False, bright_response["errorNum"]
 
     def sponsor(self, context_id):
         from brightIDfaucet.settings import BRIGHT_PRIVATE_KEY
