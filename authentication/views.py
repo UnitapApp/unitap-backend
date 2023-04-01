@@ -106,6 +106,7 @@ class LoginView(ObtainAuthToken):
         print("aura verified: ", is_aura_verified)
         print("meet contexts: ", meet_context_ids)
         print("aura contexts: ", aura_context_ids)
+        print("address: ", address)
 
         if is_meet_verified == False and is_aura_verified == False:
             if meet_context_ids == 3:  # is not verified

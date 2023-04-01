@@ -52,9 +52,9 @@ class BrightIDSoulboundAPIInterface:
             if bright_response["data"] is not None:
                 return True, bright_response["data"]["contextIds"]
             else:
-                return False, None
+                return False, bright_response["errorNum"]
         except KeyError:
-            return False, None
+            return False, bright_response["errorNum"]
 
     def check_sponsorship(self, context_id):
         endpoint = (
