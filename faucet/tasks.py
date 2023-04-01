@@ -83,6 +83,8 @@ def process_batch(self, batch_pk):
                     for receipt in batch.claims.all()
                 ]
 
+                print(data)
+
                 try:
                     manager = EVMFundManager(batch.chain)
                     tx_hash = manager.multi_transfer(data)
