@@ -28,6 +28,10 @@ from faucet.serializers import (
 from django.conf import settings
 
 
+class CustomException(Exception):
+    pass
+
+
 class LastClaimView(RetrieveAPIView):
     serializer_class = ReceiptSerializer
 
@@ -117,7 +121,8 @@ class ClaimMaxView(APIView):
         _is_verified = self.get_user().is_meet_verified
         # _is_verified = True
         if not _is_verified:
-            return Response({"message": "You are not BrighID verified"}, status=403)
+            # return Response({"message": "You are not BrighID verified"}, status=403)
+            raise CustomException("You are not BrighID verified")
 
     def wallet_address_is_set(self):
         passive_address = self.request.data.get("address", None)
@@ -132,7 +137,8 @@ class ClaimMaxView(APIView):
             )
             return True, None
         except Exception as e:
-            return Response({"message": "wallet address not set"}, status=403)
+            raise CustomException("wallet address not set")
+            # return Response({"message": "wallet address not set"}, status=403)
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get("chain_pk", None)
@@ -151,13 +157,18 @@ class ClaimMaxView(APIView):
             assert max_credit > 0
             return manager.claim(max_credit, passive_address=passive_address)
         except AssertionError as e:
-            return Response({"message": "no credit left"}, status=403)
+            # return Response({"message": "no credit left"}, status=403)
+            raise CustomException("no credit left")
         except ValueError as e:
             raise rest_framework.exceptions.APIException(e)
 
     def post(self, request, *args, **kwargs):
-        self.check_user_is_verified()
-        s, passive_address = self.wallet_address_is_set()
+        try:
+            self.check_user_is_verified()
+            s, passive_address = self.wallet_address_is_set()
+        except CustomException as e:
+            return Response({"message": str(e)}, status=403)
+
         receipt = self.claim_max(passive_address)
         return Response(ReceiptSerializer(instance=receipt).data)
 
