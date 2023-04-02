@@ -85,7 +85,7 @@ def process_batch(self, batch_pk):
                 data = [
                     {
                         "to": receipt.passive_address
-                        if passive_address_is_not_none(receipt.passive_address)
+                        if receipt.passive_address is not None
                         else Wallet.objects.get(
                             user_profile=receipt.user_profile,
                             wallet_type=batch.chain.chain_type,
