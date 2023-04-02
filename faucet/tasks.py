@@ -70,6 +70,7 @@ def process_batch(self, batch_pk):
                     batch.claims.update(_status=batch._status)
                     return
 
+                #########
                 data = []
                 for receipt in batch.claims.all():
                     print("passive: ", receipt.passive_address)
@@ -80,7 +81,7 @@ def process_batch(self, batch_pk):
                             wallet_type=batch.chain.chain_type,
                         ).address,
                     )
-
+                #########
                 data = [
                     {
                         "to": receipt.passive_address
@@ -93,7 +94,7 @@ def process_batch(self, batch_pk):
                     }
                     for receipt in batch.claims.all()
                 ]
-
+                #####
                 print(data)
 
                 try:
