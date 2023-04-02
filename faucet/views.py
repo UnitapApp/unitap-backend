@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated
 from django.urls import reverse
-from authentication.models import UserProfile
+from authentication.models import UserProfile, Wallet
 from faucet.faucet_manager.claim_manager import (
     ClaimManagerFactory,
     LimitedChainClaimManager,
@@ -115,23 +115,21 @@ class ClaimMaxView(APIView):
 
     def check_user_is_verified(self, type="Meet"):
         _is_verified = self.get_user().is_meet_verified
-        _is_verified = True
+        # _is_verified = True
         if not _is_verified:
-            return Response({"message": "user is not Meet verified"}, status=403)
+            return Response({"message": "You are not BrighID verified"}, status=403)
 
     def wallet_address_is_set(self):
         passive_address = self.request.data.get("address", None)
-        if (
-            passive_address is not None
-            or passive_address is not " "
-            or passive_address is not ""
-        ):
+        if passive_address is not None:
             return True, passive_address
 
         chain = self.get_chain()
 
         try:
-            _wallet = self.get_user().wallets.get(wallet_type=chain.chain_type)
+            _wallet = Wallet.objects.get(
+                user_profile=self.get_user(), wallet_type=chain.chain_type
+            )
             return True, None
         except Exception as e:
             return Response({"message": "wallet address not set"}, status=403)
