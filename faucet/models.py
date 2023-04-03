@@ -21,10 +21,13 @@ class WalletAccount(models.Model):
 
     @property
     def address(self):
-        node = Bip44.FromPrivateKey(
-            binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
-        )
-        return node.PublicKey().ToAddress()
+        try:
+            node = Bip44.FromPrivateKey(
+                binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
+            )
+            return node.PublicKey().ToAddress()
+        except:
+            pass
 
     def __str__(self) -> str:
         return "%s - %s" % (self.name, self.address)
