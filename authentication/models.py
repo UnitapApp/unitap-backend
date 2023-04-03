@@ -64,7 +64,7 @@ class NetworkTypes:
         (EVM, "EVM"),
         (SOLANA, "Solana"),
         (LIGHTNING, "Lightning"),
-        (NONEVM, "Non-EVM"),
+        (NONEVM, "NONEVM"),
     )
 
 
