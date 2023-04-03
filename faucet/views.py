@@ -106,7 +106,7 @@ class ChainListView(ListAPIView):
     def get_queryset(self):
         queryset = Chain.objects.filter(is_active=True)
         sorted_queryset = sorted(
-            queryset, key=lambda obj: obj.total_claims_since_last_round
+            queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
         )
         return sorted_queryset
 
