@@ -95,13 +95,20 @@ class ChainListView(ListAPIView):
     """
 
     serializer_class = ChainSerializer
+
     # queryset = Chain.objects.filter(is_active=True).order_by(
     #     "total_claims_since_last_round"
     # )
-    queryset = sorted(
-        Chain.objects.filter(is_active=True),
-        key=lambda obj: obj.total_claims_since_last_round,
-    )
+    # queryset = sorted(
+    #     Chain.objects.filter(is_active=True),
+    #     key=lambda obj: obj.total_claims_since_last_round,
+    # )
+    def get_queryset(self):
+        queryset = Chain.objects.filter(is_active=True)
+        sorted_queryset = sorted(
+            queryset, key=lambda obj: obj.total_claims_since_last_round
+        )
+        return sorted_queryset
 
 
 class GlobalSettingsView(RetrieveAPIView):
