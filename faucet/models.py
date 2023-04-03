@@ -299,7 +299,7 @@ class TransactionBatch(models.Model):
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     _status = models.CharField(
-        max_length=1, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+        max_length=10, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
     )
 
     updating = models.BooleanField(default=False)
