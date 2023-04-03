@@ -26,7 +26,6 @@ class ClaimReceiptAdmin(admin.ModelAdmin):
         "batch__tx_hash",
         "chain",
         "user_profile",
-        "bright_user",
         "_status",
         "age",
     ]
