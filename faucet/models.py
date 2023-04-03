@@ -262,7 +262,6 @@ class Chain(models.Model):
 
     @property
     def total_claims_since_last_monday(self):
-        # import weekly claim manager
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
         return ClaimReceipt.objects.filter(
@@ -270,6 +269,21 @@ class Chain(models.Model):
             _status=ClaimReceipt.VERIFIED,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).count()
+
+    @property
+    def total_claims_for_last_round(self):
+        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+
+        return ClaimReceipt.objects.filter(
+            chain=self,
+            _status=ClaimReceipt.VERIFIED,
+            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
+            datetime__lte=WeeklyCreditStrategy.get_last_monday(),
+        ).count()
+
+    @property
+    def total_claims_since_last_round(self):
+        return self.total_claims_for_last_round + self.total_claims_since_last_monday
 
 
 class GlobalSettings(models.Model):
