@@ -136,7 +136,7 @@ class ClaimReceipt(models.Model):
         blank=True,
     )
 
-    _status = models.CharField(max_length=1, choices=states, default=PENDING)
+    _status = models.CharField(max_length=10, choices=states, default=PENDING)
 
     passive_address = models.CharField(max_length=512, null=True, blank=True)
 
