@@ -54,14 +54,22 @@ class UserProfile(models.Model):
         return is_verified
 
 
-class Wallet(models.Model):
-    WALLET_TYPES = (
-        ("EVM", "EVM"),
-        ("Solana", "Solana"),
-        ("Lightning", "Lightning"),
-        ("NONEVM", "Non-EVM"),
+class NetworkTypes:
+    EVM = "EVM"
+    SOLANA = "Solana"
+    LIGHTNING = "Lightning"
+    NONEVM = "Non-EVM"
+
+    networks = (
+        (EVM, "EVM"),
+        (SOLANA, "Solana"),
+        (LIGHTNING, "Lightning"),
+        (NONEVM, "Non-EVM"),
     )
-    wallet_type = models.CharField(choices=WALLET_TYPES, max_length=10)
+
+
+class Wallet(models.Model):
+    wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
     )

@@ -7,7 +7,7 @@ import binascii
 from bip_utils import Bip44Coins, Bip44
 from web3.exceptions import TimeExhausted
 from django.conf import settings
-from authentication.models import UserProfile, Wallet
+from authentication.models import NetworkTypes, UserProfile, Wallet
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -194,7 +194,7 @@ class Chain(models.Model):
     needs_funding = models.BooleanField(default=False)
     is_testnet = models.BooleanField(default=False)
     chain_type = models.CharField(
-        max_length=10, choices=Wallet.WALLET_TYPES, default="EVM"
+        max_length=10, choices=NetworkTypes.networks, default=NetworkTypes.EVM
     )
     order = models.IntegerField(default=0)
 
