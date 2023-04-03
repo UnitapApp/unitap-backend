@@ -5,6 +5,14 @@ from web3.gas_strategies.rpc import rpc_gas_price_strategy
 from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
 from faucet.models import Chain, BrightUser
+from solana.rpc.api import Client
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solders.signature import Signature
+from solders.transaction_status import TransactionConfirmationStatus
+from .anchor_client.accounts.lock_account import LockAccount
+from .anchor_client import instructions
+from .solana_client import SolanaClient
 
 
 class EVMFundManager:
@@ -87,4 +95,98 @@ class EVMFundManager:
                 return True
             return False
         except TimeExhausted:
+            raise
+
+
+class SolanaFundManager:
+    def __init__(self, chain: Chain):
+        self.chain = chain
+        self.abi = manager_abi
+
+    @property
+    def w3(self) -> Client:
+        assert self.chain.rpc_url_private is not None
+        _w3 = Client(self.chain.rpc_url_private)
+        if _w3.is_connected():
+            return _w3
+        raise Exception(f"Could not connect to rpc {self.chain.rpc_url_private}")
+
+    @property
+    def account(self) -> Keypair:
+        return Keypair.from_base58_string(self.chain.wallet.main_key)
+
+    @property
+    def program_id(self) -> Pubkey:
+        return Pubkey.from_string(self.chain.fund_manager_address)
+
+    @property
+    def lock_account_seed(self) -> bytes:
+        return bytes("locker", "utf-8")
+
+    @property
+    def lock_account_address(self) -> Pubkey:
+        lock_account_address, nonce = Pubkey.find_program_address(
+            [self.lock_account_seed], self.program_id
+        )
+        return lock_account_address
+
+    @property
+    def lock_account(self) -> LocalAccount:
+        lock_account_info = self.w3.get_account_info(self.lock_account_address)
+        if lock_account_info.value:
+            return LockAccount.decode(lock_account_info.value.data)
+        return None
+
+    @property
+    def is_initialized(self):
+        if self.lock_account:
+            return self.lock_account.initialized
+        return False
+
+    @property
+    def owner(self):
+        if self.lock_account:
+            return self.lock_account.owner
+        return None
+
+    @property
+    def solana_client(self):
+        return SolanaClient(self.w3, self.account)
+
+    def multi_transfer(self, data):
+        total_withdraw_amount = sum(item["amount"] for item in data)
+        if self.is_initialized:
+            instruction = instructions.withdraw(
+                {"amount": total_withdraw_amount},
+                {"lock_account": self.lock_account_address, "owner": self.owner},
+            )
+            if not self.solana_client.call_program(instruction):
+                raise Exception("Could not withdraw assets from solana contract")
+            signature = self.solana_client.transfer_many_lamports(
+                self.owner,
+                [
+                    (Pubkey.from_string(item["to"]), int(item["amount"]))
+                    for item in data
+                ],
+            )
+            if not signature:
+                raise Exception("Transfering lamports to receivers failed")
+            return str(signature)
+        else:
+            raise Exception("The program is not initialized yet")
+
+    def is_tx_verified(self, tx_hash):
+        try:
+            confirmation_status = (
+                self.w3.get_signature_statuses([Signature.from_string(tx_hash)])
+                .value[0]
+                .confirmation_status
+            )
+            return confirmation_status in [
+                TransactionConfirmationStatus.Confirmed,
+                TransactionConfirmationStatus.Finalized,
+            ]
+        except TimeExhausted:
+            raise
+        except Exception:
             raise

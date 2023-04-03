@@ -10,7 +10,7 @@ from sentry_sdk import capture_exception
 
 from authentication.models import Wallet
 
-from .faucet_manager.fund_manager import EVMFundManager
+from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
 from .models import Chain, ClaimReceipt, TransactionBatch
 
 
