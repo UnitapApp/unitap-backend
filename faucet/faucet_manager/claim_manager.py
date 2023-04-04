@@ -48,7 +48,7 @@ class SimpleClaimManager(ClaimManager):
         assert not ClaimReceipt.objects.filter(
             chain=self.credit_strategy.chain,
             user_profile=user_profile,
-            _status=BrightUser.PENDING,
+            _status=ClaimReceipt.PENDING,
         ).exists()
 
     def create_pending_claim_receipt(self, amount, passive_address):
