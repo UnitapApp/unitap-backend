@@ -108,9 +108,9 @@ class ChainListView(ListAPIView):
         sorted_queryset = sorted(
             queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
         )
-        return Chain.objects.filter(pk__in=sorted_queryset).prefetch_related(
-            "claimreceipt_set"
-        )
+        return Chain.objects.filter(
+            pk__in=[c.pk for c in sorted_queryset]
+        ).prefetch_related("claimreceipt_set")
 
 
 class GlobalSettingsView(RetrieveAPIView):
