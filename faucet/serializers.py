@@ -77,7 +77,7 @@ class ChainSerializer(serializers.ModelSerializer):
         ]
 
     def get_total_claims(self, chain) -> int:
-        return chain.claimreceipt_set.filter(_status=ClaimReceipt.VERIFIED).count()
+        return chain.claims_set.filter(_status=ClaimReceipt.VERIFIED).count()
 
     def get_claimed(self, chain) -> int:
         user = self.context["request"].user
