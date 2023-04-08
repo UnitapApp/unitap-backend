@@ -110,7 +110,7 @@ class ChainListView(ListAPIView):
         )
         return Chain.objects.filter(
             pk__in=[c.pk for c in sorted_queryset]
-        ).prefetch_related("claims_set")
+        ).prefetch_related("claims")
 
 
 class GlobalSettingsView(RetrieveAPIView):
