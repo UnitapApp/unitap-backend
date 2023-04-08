@@ -46,6 +46,7 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
 class ChainSerializer(serializers.ModelSerializer):
     claimed = serializers.SerializerMethodField()
     unclaimed = serializers.SerializerMethodField()
+    total_claims = serializers.SerializerMethodField()
 
     class Meta:
         model = Chain
@@ -72,8 +73,11 @@ class ChainSerializer(serializers.ModelSerializer):
             "needs_funding",
             "is_testnet",
             "chain_type",
-            "block_scan_address"
+            "block_scan_address",
         ]
+
+    def get_total_claims(self, chain) -> int:
+        return chain.claimreceipt_set.filter(_status=ClaimReceipt.VERIFIED).count()
 
     def get_claimed(self, chain) -> int:
         user = self.context["request"].user

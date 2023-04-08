@@ -266,11 +266,11 @@ class Chain(models.Model):
         except:
             return True
 
-    @property
-    def total_claims(self):
-        return ClaimReceipt.objects.filter(
-            chain=self, _status=ClaimReceipt.VERIFIED
-        ).count()
+    # @property
+    # def total_claims(self):
+    #     return ClaimReceipt.objects.filter(
+    #         chain=self, _status=ClaimReceipt.VERIFIED
+    #     ).count()
 
     @property
     def total_claims_since_last_monday(self):
