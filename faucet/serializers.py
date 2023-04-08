@@ -72,6 +72,7 @@ class ChainSerializer(serializers.ModelSerializer):
             "needs_funding",
             "is_testnet",
             "chain_type",
+            "block_scan_address"
         ]
 
     def get_claimed(self, chain) -> int:
