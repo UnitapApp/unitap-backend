@@ -207,6 +207,15 @@ class Chain(models.Model):
     def has_enough_funds(self):
         return self.get_manager_balance() > self.max_claim_amount * 32
 
+    @property
+    def block_scan_address(self):
+        address = ""
+        if self.explorer_url[-1] == "/":
+            address = self.explorer_url + f"address/{self.fund_manager_address}"
+        else:
+            address = self.explorer_url + f"/address/{self.fund_manager_address}"
+        return address
+
     def get_manager_balance(self):
         if not self.rpc_url_private:
             return 0
