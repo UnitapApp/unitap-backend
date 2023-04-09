@@ -111,7 +111,7 @@ class ChainListView(ListAPIView):
     def get_queryset(self):
         queryset = (
             Chain.objects.filter(is_active=True)
-            .order_by("-total_claims_since_last_round_sort")
+            .order_by(total_claims_for_last_round_sort)
             .prefetch_related("claims")
         )
         return queryset
