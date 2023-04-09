@@ -109,11 +109,8 @@ class ChainListView(ListAPIView):
     #     key=lambda obj: obj.total_claims_since_last_round,
     # )
     def get_queryset(self):
-        queryset = (
-            Chain.objects.filter(is_active=True)
-            .order_by(total_claims_for_last_round_sort)
-            .prefetch_related("claims")
-        )
+        queryset = Chain.objects.filter(is_active=True).prefetch_related("claims")
+        print(queryset)
         return queryset
         # sorted_queryset = sorted(
         #     queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
