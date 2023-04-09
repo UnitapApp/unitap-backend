@@ -43,6 +43,31 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
         ]
 
 
+class SmallChainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chain
+        fields = [
+            "pk",
+            "chain_name",
+            "chain_id",
+            "fund_manager_address",
+            "native_currency_name",
+            "symbol",
+            "decimals",
+            "explorer_url",
+            "rpc_url",
+            "logo_url",
+            "modal_url",
+            "gas_image_url",
+            "max_claim_amount",
+            "order",
+            "needs_funding",
+            "is_testnet",
+            "chain_type",
+            "block_scan_address",
+        ]
+
+
 class ChainSerializer(serializers.ModelSerializer):
     claimed = serializers.SerializerMethodField()
     unclaimed = serializers.SerializerMethodField()
@@ -97,6 +122,8 @@ class ChainSerializer(serializers.ModelSerializer):
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
+    chain = SmallChainSerializer()
+
     class Meta:
         model = ClaimReceipt
         fields = ["pk", "tx_hash", "chain", "datetime", "amount", "status"]
