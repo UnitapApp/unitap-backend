@@ -110,8 +110,8 @@ class ChainListView(ListAPIView):
         )
         return (
             Chain.objects.filter(pk__in=[c.pk for c in sorted_queryset])
-            .prefetch_related("claims")
             .order_by("order")
+            .prefetch_related("claims")
         )
 
 
