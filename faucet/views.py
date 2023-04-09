@@ -87,11 +87,6 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
             raise Http404("Global Settings Not Found")
 
 
-# helper function for chain list view
-def total_claims_for_last_round_sort(obj: Chain):
-    return obj.total_claims_for_last_round
-
-
 class ChainListView(ListAPIView):
     """
     list of supported chains
@@ -101,25 +96,13 @@ class ChainListView(ListAPIView):
 
     serializer_class = ChainSerializer
 
-    # queryset = Chain.objects.filter(is_active=True).order_by(
-    #     "total_claims_since_last_round"
-    # )
-    # queryset = sorted(
-    #     Chain.objects.filter(is_active=True),
-    #     key=lambda obj: obj.total_claims_since_last_round,
-    # )
     def get_queryset(self):
         queryset = Chain.objects.filter(is_active=True).prefetch_related("claims")
-        print(queryset)
-        return queryset
-        # sorted_queryset = sorted(
-        #     queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
-        # )
-        # return (
-        #     Chain.objects.filter(pk__in=[c.pk for c in sorted_queryset])
-        #     .order_by("order")
-        #     .prefetch_related("claims")
-        # )
+
+        sorted_queryset = sorted(
+            queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
+        )
+        return sorted_queryset
 
 
 class GlobalSettingsView(RetrieveAPIView):

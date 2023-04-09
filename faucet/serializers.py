@@ -71,7 +71,7 @@ class SmallChainSerializer(serializers.ModelSerializer):
 class ChainSerializer(serializers.ModelSerializer):
     claimed = serializers.SerializerMethodField()
     unclaimed = serializers.SerializerMethodField()
-    total_claims = serializers.SerializerMethodField()
+    # total_claims = serializers.SerializerMethodField()
 
     class Meta:
         model = Chain
@@ -101,8 +101,8 @@ class ChainSerializer(serializers.ModelSerializer):
             "block_scan_address",
         ]
 
-    def get_total_claims(self, chain) -> int:
-        return chain.claims.filter(_status=ClaimReceipt.VERIFIED).count()
+    # def get_total_claims(self, chain) -> int:
+    #     return chain.claims.filter(_status=ClaimReceipt.VERIFIED).count()
 
     def get_claimed(self, chain) -> int:
         user = self.context["request"].user

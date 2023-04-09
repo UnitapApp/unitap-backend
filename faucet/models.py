@@ -266,18 +266,18 @@ class Chain(models.Model):
         except:
             return True
 
-    # @property
-    # def total_claims(self):
-    #     return ClaimReceipt.objects.filter(
-    #         chain=self, _status=ClaimReceipt.VERIFIED
-    #     ).count()
+    @property
+    def total_claims(self):
+        return self.claims.filter(_status=ClaimReceipt.VERIFIED).count()
+        # return ClaimReceipt.objects.filter(
+        #     chain=self, _status=ClaimReceipt.VERIFIED
+        # ).count()
 
     @property
     def total_claims_since_last_monday(self):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
-            chain=self,
+        return self.claims.filter(
             _status=ClaimReceipt.VERIFIED,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).count()
@@ -286,8 +286,7 @@ class Chain(models.Model):
     def total_claims_for_last_round(self):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
-            chain=self,
+        return self.claims.filter(
             _status=ClaimReceipt.VERIFIED,
             datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
             datetime__lte=WeeklyCreditStrategy.get_last_monday(),
