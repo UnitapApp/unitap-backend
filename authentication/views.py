@@ -6,6 +6,7 @@ from authentication.models import UserProfile, Wallet
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
     verify_signature_eth_scheme,
@@ -47,7 +48,7 @@ class SponsorView(CreateAPIView):
         )
 
 
-class LoginView(ObtainAuthToken):
+class LoginView(APIView):
     serializer_class = ProfileSerializer
 
     def post(self, request, *args, **kwargs):
