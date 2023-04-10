@@ -48,6 +48,8 @@ class SponsorView(CreateAPIView):
 
 
 class LoginView(ObtainAuthToken):
+    serializer_class = ProfileSerializer
+
     def post(self, request, *args, **kwargs):
         address = request.data.get("username", None)
         signature = request.data.get("password", None)
@@ -136,10 +138,7 @@ class LoginView(ObtainAuthToken):
         token, bol = Token.objects.get_or_create(user=user)
         print("token", token)
 
-        # return token and profile using profile serializer for profile
-        return Response(
-            {"token": token.key, "profile": ProfileSerializer(profile).data}, status=200
-        )
+        return Response(ProfileSerializer(profile).data, status=200)
 
 
 class SetWalletAddressView(CreateAPIView):
@@ -243,15 +242,18 @@ class GetProfileView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
 
-    def get(self, request, *args, **kwargs):
-        user = request.user
+    # def get(self, request, *args, **kwargs):
+    #     user = request.user
 
-        token, bol = Token.objects.get_or_create(user=user)
-        print("token", token)
+    #     token, bol = Token.objects.get_or_create(user=user)
+    #     print("token", token)
 
-        # return Response({"token": token.key}, status=200)
-        # return token and profile using profile serializer for profile
-        return Response(
-            {"token": token.key, "profile": ProfileSerializer(user.profile).data},
-            status=200,
-        )
+    #     # return Response({"token": token.key}, status=200)
+    #     # return token and profile using profile serializer for profile
+    #     return Response(
+    #         {"token": token.key, "profile": ProfileSerializer(user.profile).data},
+    #         status=200,
+    #     )
+
+    def get_queryset(self):
+        return self.request.user.profile
