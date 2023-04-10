@@ -11,9 +11,19 @@ class MaxCapExceed(ProgramError):
     msg = "PERIODIC_MAX_CAP_EXCEEDED"
 
 
-CustomError = typing.Union[MaxCapExceed]
+class InvalidValue(ProgramError):
+    def __init__(self) -> None:
+        super().__init__(6001, "INVALID_VALUE")
+
+    code = 6001
+    name = "InvalidValue"
+    msg = "INVALID_VALUE"
+
+
+CustomError = typing.Union[MaxCapExceed, InvalidValue]
 CUSTOM_ERROR_MAP: dict[int, CustomError] = {
     6000: MaxCapExceed(),
+    6001: InvalidValue(),
 }
 
 
