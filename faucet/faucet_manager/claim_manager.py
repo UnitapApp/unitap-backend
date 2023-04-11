@@ -75,7 +75,12 @@ class LimitedChainClaimManager(SimpleClaimManager):
         last_monday = WeeklyCreditStrategy.get_last_monday()
         return ClaimReceipt.objects.filter(
             user_profile=user_profile,
-            _status__in=[ClaimReceipt.PENDING, ClaimReceipt.VERIFIED],
+            _status__in=[
+                ClaimReceipt.PENDING,
+                ClaimReceipt.VERIFIED,
+                BrightUser.PENDING,
+                BrightUser.VERIFIED,
+            ],
             datetime__gte=last_monday,
         ).count()
 
