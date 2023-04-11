@@ -268,10 +268,10 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        return self.claims.filter(_status=ClaimReceipt.VERIFIED).count()
-        # return ClaimReceipt.objects.filter(
-        #     chain=self, _status=ClaimReceipt.VERIFIED
-        # ).count()
+        # return self.claims.filter(_status=ClaimReceipt.VERIFIED).count()
+        return ClaimReceipt.objects.filter(
+            chain=self, _status=ClaimReceipt.VERIFIED
+        ).count()
 
     @property
     def total_claims_since_last_monday(self):
