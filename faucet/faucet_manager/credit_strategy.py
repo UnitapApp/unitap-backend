@@ -81,6 +81,16 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
         if last_monday_midnight > now:
             last_monday_midnight -= week
 
+        print(
+            "timetime: ",
+            timezone.make_aware(datetime.datetime.fromtimestamp(last_monday_midnight)),
+        )
+
+        print("last monday: ", last_monday_midnight)
+
+        # print the difference between the last monday and now
+        print("difference: ", now - last_monday_midnight)
+
         return timezone.make_aware(
             datetime.datetime.fromtimestamp(last_monday_midnight)
         )
