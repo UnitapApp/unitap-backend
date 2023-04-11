@@ -97,7 +97,8 @@ class ChainListView(ListAPIView):
     serializer_class = ChainSerializer
 
     def get_queryset(self):
-        queryset = Chain.objects.filter(is_active=True).prefetch_related("claims")
+        queryset = Chain.objects.filter(is_active=True)
+        # .prefetch_related("claims")
 
         sorted_queryset = sorted(
             queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
