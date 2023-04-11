@@ -270,7 +270,7 @@ class Chain(models.Model):
     def total_claims(self):
         # return self.claims.filter(_status=ClaimReceipt.VERIFIED).count()
         return ClaimReceipt.objects.filter(
-            chain=self, _status=ClaimReceipt.VERIFIED
+            chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
 
     @property
@@ -278,8 +278,8 @@ class Chain(models.Model):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
         return self.claims.filter(
-            _status=ClaimReceipt.VERIFIED,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
+            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
 
     @property
@@ -287,9 +287,9 @@ class Chain(models.Model):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
         return self.claims.filter(
-            _status=ClaimReceipt.VERIFIED,
             datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
             datetime__lte=WeeklyCreditStrategy.get_last_monday(),
+            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
 
     @property
