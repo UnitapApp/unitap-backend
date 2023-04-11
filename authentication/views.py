@@ -1,10 +1,12 @@
 import time
+from django.db import IntegrityError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from authentication.models import UserProfile, Wallet
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
     verify_signature_eth_scheme,
@@ -46,7 +48,9 @@ class SponsorView(CreateAPIView):
         )
 
 
-class LoginView(ObtainAuthToken):
+class LoginView(APIView):
+    serializer_class = ProfileSerializer
+
     def post(self, request, *args, **kwargs):
         address = request.data.get("username", None)
         signature = request.data.get("password", None)
@@ -56,10 +60,18 @@ class LoginView(ObtainAuthToken):
         is_sponsored = BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address)
         if not is_sponsored:
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
-                return Response({"message": "try again later."}, status=403)
+                return Response(
+                    {
+                        "message": "We are in the process of sponsoring you. Please try again in five minutes."
+                    },
+                    status=403,
+                )
             else:
                 return Response(
-                    {"message": "User is being sponsored. try again later."}, status=409
+                    {
+                        "message": "We have requested to sponsor you on BrightID. Please try again in five minutes."
+                    },
+                    status=409,
                 )
 
         verified_signature = verify_signature_eth_scheme(address, signature)
@@ -75,21 +87,49 @@ class LoginView(ObtainAuthToken):
             aura_context_ids,
         ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(address, "Aura")
 
-        is_nothing_verified = True
+        # is_nothing_verified = True
 
-        if meet_context_ids is not None:
-            context_ids = meet_context_ids
-            is_nothing_verified = False
-        elif aura_context_ids is not None:
-            context_ids = aura_context_ids
-            is_nothing_verified = False
-        # else:
-        #     context_ids = [address]
+        # if meet_context_ids is not None:
+        #     context_ids = meet_context_ids
+        #     is_nothing_verified = False
+        # elif aura_context_ids is not None:
+        #     context_ids = aura_context_ids
+        #     is_nothing_verified = False
+        # # else:
+        # #     context_ids = [address]
 
-        if is_nothing_verified:
-            return Response(
-                {"message": "User is not verified. please verify."}, status=403
-            )
+        # if is_nothing_verified:
+        #     return Response(
+        #         {"message": "User is not verified. please verify."}, status=403
+        #     )
+
+        context_ids = []
+
+        print("meet verified: ", is_meet_verified)
+        print("aura verified: ", is_aura_verified)
+        print("meet contexts: ", meet_context_ids)
+        print("aura contexts: ", aura_context_ids)
+        print("address: ", address)
+
+        if is_meet_verified == False and is_aura_verified == False:
+            if meet_context_ids == 3:  # is not verified
+                print("333333333333")
+                context_ids = address
+            elif aura_context_ids == 4:  # is not linked
+                print("444444444444")
+                return Response(
+                    {
+                        "message": "Something went wrong with the linking process. please link BrightID with Unitap.\nIf the problem persists, clear your browser cache and try again."
+                    },
+                    status=403,
+                )
+
+        elif is_meet_verified == True or is_aura_verified == True:
+            if meet_context_ids is not None:
+                print("5555555555555")
+                context_ids = meet_context_ids
+            elif aura_context_ids is not None:
+                context_ids = aura_context_ids
 
         first_context_id = context_ids[-1]
         profile = UserProfile.objects.get_or_create(first_context_id=first_context_id)
@@ -99,10 +139,7 @@ class LoginView(ObtainAuthToken):
         token, bol = Token.objects.get_or_create(user=user)
         print("token", token)
 
-        # return token and profile using profile serializer for profile
-        return Response(
-            {"token": token.key, "profile": ProfileSerializer(profile).data}, status=200
-        )
+        return Response(ProfileSerializer(profile).data, status=200)
 
 
 class SetWalletAddressView(CreateAPIView):
@@ -114,11 +151,9 @@ class SetWalletAddressView(CreateAPIView):
         if not address or not wallet_type:
             return Response({"message": "Invalid request"}, status=403)
 
-        # get user profile
         user_profile = request.user.profile
 
         try:
-            # check if wallet already exists
             w = Wallet.objects.get(user_profile=user_profile, wallet_type=wallet_type)
             w.address = address
             w.save()
@@ -127,14 +162,22 @@ class SetWalletAddressView(CreateAPIView):
                 {"message": f"{wallet_type} wallet address updated"}, status=200
             )
 
-        # TODO change wallet creation
         except Wallet.DoesNotExist:
-            Wallet.objects.create(
-                user_profile=user_profile, wallet_type=wallet_type, address=address
-            )
-            return Response(
-                {"message": f"{wallet_type} wallet address set"}, status=200
-            )
+            try:
+                Wallet.objects.create(
+                    user_profile=user_profile, wallet_type=wallet_type, address=address
+                )
+                return Response(
+                    {"message": f"{wallet_type} wallet address set"}, status=200
+                )
+            # catch unique constraint error
+            except IntegrityError:
+                return Response(
+                    {
+                        "message": f"{wallet_type} wallet address is not unique. use another address"
+                    },
+                    status=403,
+                )
 
 
 class GetWalletAddressView(RetrieveAPIView):
@@ -200,15 +243,18 @@ class GetProfileView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
 
-    def get(self, request, *args, **kwargs):
-        user = request.user
+    # def get(self, request, *args, **kwargs):
+    #     user = request.user
 
-        token, bol = Token.objects.get_or_create(user=user)
-        print("token", token)
+    #     token, bol = Token.objects.get_or_create(user=user)
+    #     print("token", token)
 
-        # return Response({"token": token.key}, status=200)
-        # return token and profile using profile serializer for profile
-        return Response(
-            {"token": token.key, "profile": ProfileSerializer(user.profile).data},
-            status=200,
-        )
+    #     # return Response({"token": token.key}, status=200)
+    #     # return token and profile using profile serializer for profile
+    #     return Response(
+    #         {"token": token.key, "profile": ProfileSerializer(user.profile).data},
+    #         status=200,
+    #     )
+
+    def get_object(self):
+        return self.request.user.profile

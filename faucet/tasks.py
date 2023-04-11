@@ -8,9 +8,9 @@ from django.db.models import Q
 from django.utils import timezone
 from sentry_sdk import capture_exception
 
-from authentication.models import Wallet
+from authentication.models import NetworkTypes, Wallet
 
-from .faucet_manager.fund_manager import EVMFundManager
+from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
 from .models import Chain, ClaimReceipt, TransactionBatch
 
 
@@ -36,6 +36,12 @@ def has_pending_batch(chain):
     return TransactionBatch.objects.filter(
         chain=chain, _status=ClaimReceipt.PENDING
     ).exists()
+
+
+def passive_address_is_not_none(address):
+    if address is not None or address != "" or address != " ":
+        return True
+    return False
 
 
 @shared_task(bind=True)
@@ -66,18 +72,29 @@ def process_batch(self, batch_pk):
 
                 data = [
                     {
-                        "to": Wallet.objects.get(
-                            user_profile=receipt.user_profile, wallet_type="EVM"
-                        ).address
-                        if receipt.chain.chain_type == "EVM"
-                        else receipt.user_profile.temporary_wallet.address,
+                        "to": receipt.passive_address
+                        if receipt.passive_address is not None
+                        else Wallet.objects.get(
+                            user_profile=receipt.user_profile,
+                            wallet_type=batch.chain.chain_type,
+                        ).address,
                         "amount": receipt.amount,
                     }
                     for receipt in batch.claims.all()
                 ]
+                #####
+                print(data)
 
                 try:
-                    manager = EVMFundManager(batch.chain)
+                    if batch.chain.chain_type == NetworkTypes.SOLANA:
+                        manager = SolanaFundManager(batch.chain)
+                    elif (
+                        batch.chain.chain_type == NetworkTypes.EVM
+                        or batch.chain.chain_type == NetworkTypes.NONEVM
+                    ):
+                        manager = EVMFundManager(batch.chain)
+                    else:
+                        raise Exception("Invalid chain type to process batch")
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
@@ -115,7 +132,15 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
         batch = TransactionBatch.objects.get(pk=batch_pk)
         try:
             if batch.status_should_be_updated:
-                manager = EVMFundManager(batch.chain)
+                if batch.chain.chain_type == NetworkTypes.SOLANA:
+                    manager = SolanaFundManager(batch.chain)
+                elif (
+                    batch.chain.chain_type == NetworkTypes.EVM
+                    or batch.chain.chain_type == NetworkTypes.NONEVM
+                ):
+                    manager = EVMFundManager(batch.chain)
+                else:
+                    raise Exception("Invalid chain type to update pending batch")
 
                 if manager.is_tx_verified(batch.tx_hash):
                     batch._status = ClaimReceipt.VERIFIED

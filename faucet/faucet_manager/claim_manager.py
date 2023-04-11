@@ -15,7 +15,7 @@ from django.db import transaction
 
 class ClaimManager(ABC):
     @abc.abstractmethod
-    def claim(self, amount) -> ClaimReceipt:
+    def claim(self, amount, passive_address=None) -> ClaimReceipt:
         pass
 
     @abc.abstractmethod
@@ -31,35 +31,34 @@ class SimpleClaimManager(ClaimManager):
     def fund_manager(self):
         return EVMFundManager(self.credit_strategy.chain)
 
-    def claim(self, amount):
+    def claim(self, amount, passive_address=None):
         with transaction.atomic():
             user_profile = UserProfile.objects.select_for_update().get(
                 pk=self.credit_strategy.user_profile.pk
             )
             self.assert_pre_claim_conditions(amount, user_profile)
             return self.create_pending_claim_receipt(
-                amount
+                amount, passive_address
             )  # all pending claims will be processed periodically
 
     def assert_pre_claim_conditions(self, amount, user_profile):
         assert amount <= self.credit_strategy.get_unclaimed()
-        #TODO: uncomment this 
-        assert (
-            self.credit_strategy.user_profile.is_meet_verified == True
-        )
+        # TODO: uncomment this
+        assert self.credit_strategy.user_profile.is_meet_verified == True
         assert not ClaimReceipt.objects.filter(
             chain=self.credit_strategy.chain,
             user_profile=user_profile,
-            _status=BrightUser.PENDING,
+            _status=ClaimReceipt.PENDING,
         ).exists()
 
-    def create_pending_claim_receipt(self, amount):
+    def create_pending_claim_receipt(self, amount, passive_address):
         return ClaimReceipt.objects.create(
             chain=self.credit_strategy.chain,
             user_profile=self.credit_strategy.user_profile,
             datetime=timezone.now(),
             amount=amount,
             _status=ClaimReceipt.PENDING,
+            passive_address=passive_address,
         )
 
     def get_credit_strategy(self) -> CreditStrategy:

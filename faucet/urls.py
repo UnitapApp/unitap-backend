@@ -28,23 +28,16 @@ schema_view = get_schema_view(
 app_name = "FAUCET"
 
 urlpatterns = [
-    # path("user/create/", CreateUserView.as_view(), name="create-user"),
     path(
         "user/remainig-claims/",
         GetTotalWeeklyClaimsRemainingView.as_view(),
         name="remaining-claims",
     ),
-    # path(
-    #     "user/<address>/verification-url/",
-    #     GetVerificationUrlView.as_view(),
-    #     name="get-verification-url",
-    # ),
     path("user/last-claim/", LastClaimView.as_view(), name="last-claim"),
     path("user/claims/", ListClaims.as_view(), name="claims"),
     path(
         "chain/list/", ChainListView.as_view(), name="chain-list"
     ),  # can have auth token for more user specific info
-    # path("chain/list/", ChainListView.as_view(), name="chain-list-address"),
     path(
         "chain/<int:chain_pk>/claim-max/",
         ClaimMaxView.as_view(),

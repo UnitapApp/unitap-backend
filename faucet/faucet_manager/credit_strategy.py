@@ -85,6 +85,23 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
             datetime.datetime.fromtimestamp(last_monday_midnight)
         )
 
+    @staticmethod
+    def get_second_last_monday():
+        now = int(time())
+        day = 86400  # seconds in a day
+        week = 7 * day
+        weeks = now // week  # number of weeks since epoch
+        monday = 345600  # first monday midnight
+        last_monday_midnight = monday + (weeks * week)
+
+        # last monday could be off by one week
+        if last_monday_midnight > now:
+            last_monday_midnight -= week
+
+        return timezone.make_aware(
+            datetime.datetime.fromtimestamp(last_monday_midnight - week)
+        )
+
 
 class ArbitrumCreditStrategy(WeeklyCreditStrategy):
     def get_unclaimed(self):
@@ -92,7 +109,7 @@ class ArbitrumCreditStrategy(WeeklyCreditStrategy):
         max_claim_amount = self.chain.max_claim_amount
         is_verified_user = BrightIdUserRegistry(
             self.chain, contract_address
-        ).is_verified_user(self.user_profile.wallets.get(wallet_type="EVM").address)
+        ).is_verified_user(self.user_profile.initial_context_id)
 
         if is_verified_user:
             max_claim_amount = 5000000000000000

@@ -9,6 +9,7 @@ class IsMeetVerified(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user.profile.is_meet_verified)
 
+
 class IsAuraVerified(BasePermission):
     """
     Allows access only to Aura verified users.

@@ -26,5 +26,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("pass/art/<int:token_id>/", artwork_view),
     path("api/v1/", include("faucet.urls")),
-    path("api/test/", include("authentication.urls")),
+    path("api/auth/", include("authentication.urls")),
 ]

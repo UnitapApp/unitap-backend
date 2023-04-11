@@ -7,7 +7,7 @@ import binascii
 from bip_utils import Bip44Coins, Bip44
 from web3.exceptions import TimeExhausted
 from django.conf import settings
-from authentication.models import UserProfile
+from authentication.models import NetworkTypes, UserProfile, Wallet
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -21,10 +21,13 @@ class WalletAccount(models.Model):
 
     @property
     def address(self):
-        node = Bip44.FromPrivateKey(
-            binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
-        )
-        return node.PublicKey().ToAddress()
+        try:
+            node = Bip44.FromPrivateKey(
+                binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
+            )
+            return node.PublicKey().ToAddress()
+        except:
+            pass
 
     def __str__(self) -> str:
         return "%s - %s" % (self.name, self.address)
@@ -105,9 +108,9 @@ class BrightUser(models.Model):
 
 class ClaimReceipt(models.Model):
     MAX_PENDING_DURATION = 15  # minutes
-    PENDING = "0"
-    VERIFIED = "1"
-    REJECTED = "2"
+    PENDING = "Pending"
+    VERIFIED = "Verified"
+    REJECTED = "Rejected"
 
     states = (
         (PENDING, "Pending"),
@@ -124,7 +127,7 @@ class ClaimReceipt(models.Model):
         blank=True,
         default=None,
     )
-    
+
     bright_user = models.ForeignKey(
         BrightUser,
         related_name="claims",
@@ -133,7 +136,9 @@ class ClaimReceipt(models.Model):
         blank=True,
     )
 
-    _status = models.CharField(max_length=1, choices=states, default=PENDING)
+    _status = models.CharField(max_length=10, choices=states, default=PENDING)
+
+    passive_address = models.CharField(max_length=512, null=True, blank=True)
 
     amount = models.BigIntegerField()
     datetime = models.DateTimeField()
@@ -160,11 +165,6 @@ class ClaimReceipt(models.Model):
 
 
 class Chain(models.Model):
-    EVM = "EVM"
-    NON_EVM = "NONEVM"
-
-    chain_types = ((EVM, "EVM"), (NON_EVM, "Non-EVM"))
-
     chain_name = models.CharField(max_length=255)
     chain_id = models.CharField(max_length=255, unique=True)
 
@@ -193,7 +193,9 @@ class Chain(models.Model):
 
     needs_funding = models.BooleanField(default=False)
     is_testnet = models.BooleanField(default=False)
-    chain_type = models.CharField(max_length=10, choices=chain_types, default=EVM)
+    chain_type = models.CharField(
+        max_length=10, choices=NetworkTypes.networks, default=NetworkTypes.EVM
+    )
     order = models.IntegerField(default=0)
 
     is_active = models.BooleanField(default=True)
@@ -204,6 +206,15 @@ class Chain(models.Model):
     @property
     def has_enough_funds(self):
         return self.get_manager_balance() > self.max_claim_amount * 32
+
+    @property
+    def block_scan_address(self):
+        address = ""
+        if self.explorer_url[-1] == "/":
+            address = self.explorer_url + f"address/{self.fund_manager_address}"
+        else:
+            address = self.explorer_url + f"/address/{self.fund_manager_address}"
+        return address
 
     def get_manager_balance(self):
         if not self.rpc_url_private:
@@ -257,20 +268,33 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        return ClaimReceipt.objects.filter(
-            chain=self, _status=ClaimReceipt.VERIFIED
-        ).count()
+        return self.claims.filter(_status=ClaimReceipt.VERIFIED).count()
+        # return ClaimReceipt.objects.filter(
+        #     chain=self, _status=ClaimReceipt.VERIFIED
+        # ).count()
 
     @property
     def total_claims_since_last_monday(self):
-        # import weekly claim manager
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
-            chain=self,
+        return self.claims.filter(
             _status=ClaimReceipt.VERIFIED,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).count()
+
+    @property
+    def total_claims_for_last_round(self):
+        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+
+        return self.claims.filter(
+            _status=ClaimReceipt.VERIFIED,
+            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
+            datetime__lte=WeeklyCreditStrategy.get_last_monday(),
+        ).count()
+
+    @property
+    def total_claims_since_last_round(self):
+        return self.total_claims_for_last_round + self.total_claims_since_last_monday
 
 
 class GlobalSettings(models.Model):
@@ -283,7 +307,7 @@ class TransactionBatch(models.Model):
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     _status = models.CharField(
-        max_length=1, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+        max_length=10, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
     )
 
     updating = models.BooleanField(default=False)

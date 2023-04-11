@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
+from django.utils import timezone
 
 
 class ProfileManager(models.Manager):
@@ -19,10 +20,17 @@ class ProfileManager(models.Manager):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="profile")
     initial_context_id = models.CharField(max_length=512, unique=True)
+    # set a time of creation with default to now
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     objects = ProfileManager()
 
-    # TODO ask if these make bad things happen in admin panel
+    @property
+    def age(self):
+        if self.created_at is None:
+            return -1
+        return timezone.now() - self.created_at
+
     @property
     def is_meet_verified(self):
         (
@@ -45,23 +53,23 @@ class UserProfile(models.Model):
 
         return is_verified
 
-    def set_temporary_wallet_address(self, address):
-        try:
-            if hasattr(self, "temporary_wallet"):
-                self.temporary_wallet.delete()
-        except TemporaryWalletAddress.DoesNotExist:
-            pass
-        TemporaryWalletAddress.objects.create(user_profile=self, address=address)
-        return True
+
+class NetworkTypes:
+    EVM = "EVM"
+    SOLANA = "Solana"
+    LIGHTNING = "Lightning"
+    NONEVM = "NONEVM"
+
+    networks = (
+        (EVM, "EVM"),
+        (SOLANA, "Solana"),
+        (LIGHTNING, "Lightning"),
+        (NONEVM, "NONEVM"),
+    )
 
 
 class Wallet(models.Model):
-    WALLET_TYPES = (
-        ("EVM", "EVM Wallet"),
-        ("Solana", "Solana Wallet"),
-        ("Lightning", "Lightning Wallet"),
-    )
-    wallet_type = models.CharField(choices=WALLET_TYPES, max_length=10)
+    wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
     )
@@ -72,14 +80,3 @@ class Wallet(models.Model):
 
     def __str__(self):
         return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"
-
-
-class TemporaryWalletAddress(models.Model):
-    address = models.CharField(max_length=512, unique=True)
-    user_profile = models.OneToOneField(
-        UserProfile, on_delete=models.CASCADE, related_name="temporary_wallet"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Temporary {self.address} Wallet for profile with contextId {self.user_profile.initial_context_id}"
