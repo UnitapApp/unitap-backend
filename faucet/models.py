@@ -142,6 +142,7 @@ class ClaimReceipt(models.Model):
 
     amount = models.BigIntegerField()
     datetime = models.DateTimeField()
+    last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
     batch = models.ForeignKey(
         "TransactionBatch",
         related_name="claims",

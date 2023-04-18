@@ -122,4 +122,12 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClaimReceipt
-        fields = ["pk", "tx_hash", "chain", "datetime", "amount", "status"]
+        fields = [
+            "pk",
+            "tx_hash",
+            "chain",
+            "datetime",
+            "amount",
+            "status",
+            "last_updated",
+        ]
