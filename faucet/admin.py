@@ -28,6 +28,7 @@ class ClaimReceiptAdmin(admin.ModelAdmin):
         "user_profile",
         "_status",
         "age",
+        "last_updated",
     ]
     list_filter = ["chain", "_status"]
 
