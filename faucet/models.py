@@ -245,6 +245,9 @@ class Chain(models.Model):
             return 0
 
         try:
+            print("chain type: ", self.chain_type)
+            print("chain type is EVM: ", self.chain_type==NetworkTypes.EVM)
+            print("chain type is Solana: ", self.chain_type==NetworkTypes.SOLANA)
             from faucet.faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
 
             if self.chain_type == NetworkTypes.EVM:
