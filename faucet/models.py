@@ -8,6 +8,8 @@ from bip_utils import Bip44Coins, Bip44
 from web3.exceptions import TimeExhausted
 from django.conf import settings
 from authentication.models import NetworkTypes, UserProfile, Wallet
+from solders.pubkey import Pubkey
+from solders.keypair import Keypair
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -27,7 +29,11 @@ class WalletAccount(models.Model):
             )
             return node.PublicKey().ToAddress()
         except:
-            pass
+            try:
+                keypair = Keypair.from_base58_string(self.private_key)
+                return str(keypair.pubkey())
+            except:
+                pass
 
     def __str__(self) -> str:
         return "%s - %s" % (self.name, self.address)
@@ -222,9 +228,16 @@ class Chain(models.Model):
             return 0
 
         try:
-            from faucet.faucet_manager.fund_manager import EVMFundManager
+            from faucet.faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
 
-            return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
+            if self.chain_type == NetworkTypes.EVM:
+                return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
+            elif self.chain_type == NetworkTypes.SOLANA:
+                fund_manager = SolanaFundManager(self)
+                v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
+                print("Solana Manager Balance: ", v)
+                return v
+            raise Exception("Invalid chain type")
         except:
             return 0
 
@@ -233,10 +246,22 @@ class Chain(models.Model):
             return 0
 
         try:
-            from faucet.faucet_manager.fund_manager import EVMFundManager
+            print("in wallet 1")
+            from faucet.faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
 
-            return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
+            if self.chain_type == NetworkTypes.EVM:
+                print("in wallet 2")
+                return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
+            elif self.chain_type == NetworkTypes.SOLANA:
+                print("in wallet 3")
+                fund_manager = SolanaFundManager(self)
+                v = fund_manager.w3.get_balance(
+                    Pubkey.from_string(self.wallet.address)).value
+                print("Solana Wallet Balance: ",v)
+                return v
+            raise Exception("Invalid chain type")
         except:
+            print("in wallet 4")
             return 0
 
     @property
