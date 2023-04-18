@@ -233,7 +233,9 @@ class Chain(models.Model):
                 return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
-                return fund_manager.w3.get_balance(fund_manager.lock_account_address).value
+                v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
+                print("Solana Manager Balance: ", v)
+                return v
             raise Exception("Invalid chain type")
         except:
             return 0
@@ -249,8 +251,10 @@ class Chain(models.Model):
                 return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
-                return fund_manager.w3.get_balance(
+                v = fund_manager.w3.get_balance(
                     Pubkey.from_string(self.wallet.address)).value
+                print("Solana Wallet Balance: ",v)
+                return v
             raise Exception("Invalid chain type")
         except:
             return 0
