@@ -228,7 +228,10 @@ class Chain(models.Model):
             return 0
 
         try:
-            from faucet.faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
+            from faucet.faucet_manager.fund_manager import (
+                EVMFundManager,
+                SolanaFundManager,
+            )
 
             if self.chain_type == NetworkTypes.EVM:
                 return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
@@ -246,22 +249,24 @@ class Chain(models.Model):
             return 0
 
         try:
-            print("in wallet 1")
-            from faucet.faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
+            from faucet.faucet_manager.fund_manager import (
+                EVMFundManager,
+                SolanaFundManager,
+            )
 
             if self.chain_type == NetworkTypes.EVM:
-                print("in wallet 2")
                 return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
-                print("in wallet 3")
+                print("in solana Wallet")
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(
-                    Pubkey.from_string(self.wallet.address)).value
-                print("Solana Wallet Balance: ",v)
+                    Pubkey.from_string(self.wallet.address)
+                ).value
+                print("Solana Wallet Balance: ", v)
                 return v
             raise Exception("Invalid chain type")
         except:
-            print("in wallet 4")
+            print("Exception in get_wallet_balance")
             return 0
 
     @property

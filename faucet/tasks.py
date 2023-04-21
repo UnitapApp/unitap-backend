@@ -237,6 +237,6 @@ def update_needs_funding_status_chain(chain_id):
 
 @shared_task
 def update_needs_funding_status():  # periodic task
-    chains = Chain.objects.all()
+    chains = Chain.objects.filter(is_active=True)
     for _chain in chains:
         update_needs_funding_status_chain.delay(_chain.pk)
