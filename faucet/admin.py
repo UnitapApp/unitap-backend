@@ -20,6 +20,13 @@ class BrightUserAdmin(admin.ModelAdmin):
     search_fields = ["address", "context_id"]
 
 
+def last_updated_with_seconds(obj):
+    return obj.last_updated.strftime("%B %d, %Y, %I:%M:%S %p")
+
+
+last_updated_with_seconds.short_description = "Last Updated"
+
+
 class ClaimReceiptAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
@@ -28,7 +35,7 @@ class ClaimReceiptAdmin(admin.ModelAdmin):
         "user_profile",
         "_status",
         "age",
-        "last_updated",
+        last_updated_with_seconds,
     ]
     list_filter = ["chain", "_status"]
 
