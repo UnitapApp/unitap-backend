@@ -238,7 +238,6 @@ class Chain(models.Model):
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
-                print("Solana Manager Balance: ", v)
                 return v
             raise Exception("Invalid chain type")
         except:
@@ -257,16 +256,13 @@ class Chain(models.Model):
             if self.chain_type == NetworkTypes.EVM:
                 return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
-                print("in solana Wallet")
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(
                     Pubkey.from_string(self.wallet.address)
                 ).value
-                print("Solana Wallet Balance: ", v)
                 return v
             raise Exception("Invalid chain type")
         except:
-            print("Exception in get_wallet_balance")
             return 0
 
     @property
