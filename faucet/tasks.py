@@ -223,8 +223,6 @@ def update_needs_funding_status_chain(chain_id):
         chain = Chain.objects.get(pk=chain_id)
         # if has enough funds and enough fees, needs_funding is False
 
-        print("checking funds for chains ", chain.chain_name, chain.chain_type)
-
         chain.needs_funding = True
 
         if chain.has_enough_funds and chain.has_enough_fees:
