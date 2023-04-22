@@ -55,6 +55,7 @@ class ChainBalanceSerializer(serializers.ModelSerializer):
             "chain_name",
             "chain_id",
             "symbol",
+            "decimals",
             "needs_funding",
             "has_enough_fees",
             "has_enough_funds",
