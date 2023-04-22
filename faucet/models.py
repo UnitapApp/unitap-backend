@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 from django.db import models
 import uuid
 from django.utils import timezone
@@ -212,7 +213,10 @@ class Chain(models.Model):
 
     @property
     def has_enough_funds(self):
-        return self.get_manager_balance() > self.max_claim_amount * 32
+        if self.get_manager_balance() > self.max_claim_amount * 32:
+            return True
+        logging.warning(f"Chain {self.chain_name} has insufficient funds in contract")
+        return False
 
     @property
     def block_scan_address(self):
@@ -267,7 +271,10 @@ class Chain(models.Model):
 
     @property
     def has_enough_fees(self):
-        return self.get_wallet_balance() > self.gas_price * 200000
+        if self.get_wallet_balance() > self.gas_price * 200000:
+            return True
+        logging.warning(f"Chain {self.chain_name} has insufficient fees in wallet")
+        return False
 
     @property
     def gas_price(self):
