@@ -243,6 +243,7 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or self.chain_id == 500:
+                print(f"chain id is {self.chain_id}")
                 if self.chain_id == 500:
                     logging.debug("chain XDC NONEVM is here")
                 return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
