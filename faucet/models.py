@@ -233,6 +233,7 @@ class Chain(models.Model):
         return self.get_manager_balance()
 
     def get_manager_balance(self):
+        logging.debug(f"first chain id is {self.chain_id}")
         if not self.rpc_url_private:
             return 0
 
@@ -242,13 +243,16 @@ class Chain(models.Model):
                 SolanaFundManager,
             )
 
+            logging.debug(f"second  chain id is {self.chain_id}")
+
             if self.chain_type == NetworkTypes.EVM or self.chain_id == 500:
-                print(f"chain id is {self.chain_id}")
+                logging.debug(f"third chain id is {self.chain_id}")
                 if self.chain_id == 500:
                     logging.debug("chain XDC NONEVM is here")
                 return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
 
             elif self.chain_type == NetworkTypes.SOLANA:
+                logging.debug(f"fourth chain id is {self.chain_id}")
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
                 return v
