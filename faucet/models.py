@@ -213,7 +213,7 @@ class Chain(models.Model):
 
     @property
     def has_enough_funds(self):
-        if self.get_manager_balance() > self.max_claim_amount * 32:
+        if self.get_manager_balance() > self.max_claim_amount * 8:
             return True
         logging.warning(f"Chain {self.chain_name} has insufficient funds in contract")
         return False
@@ -238,6 +238,8 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or self.chain_id == 500:
+                if self.chain_id == 500:
+                    logging.debug("chain XDC NONEVM is here")
                 return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
 
             elif self.chain_type == NetworkTypes.SOLANA:
