@@ -94,8 +94,6 @@ class SmallChainSerializer(serializers.ModelSerializer):
             "modal_url",
             "gas_image_url",
             "max_claim_amount",
-            "order",
-            "needs_funding",
             "is_testnet",
             "chain_type",
             "block_scan_address",

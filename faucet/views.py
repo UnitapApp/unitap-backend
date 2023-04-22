@@ -23,6 +23,7 @@ from faucet.serializers import (
     GlobalSettingsSerializer,
     ReceiptSerializer,
     ChainSerializer,
+    SmallChainSerializer,
 )
 
 # import BASE_DIR from django settings
@@ -107,6 +108,16 @@ class ChainListView(ListAPIView):
         return sorted_queryset
 
 
+class SmallChainListView(ListAPIView):
+    """
+    list of supported chains with minimum details
+
+    """
+
+    serializer_class = SmallChainSerializer
+    queryset = Chain.objects.filter(is_active=True)
+
+
 class GlobalSettingsView(RetrieveAPIView):
     serializer_class = GlobalSettingsSerializer
 
@@ -182,9 +193,14 @@ class ClaimMaxView(APIView):
         return Response(ReceiptSerializer(instance=receipt).data)
 
 
-class ChainBalanceView(ListAPIView):
+class ChainBalanceView(RetrieveAPIView):
     serializer_class = ChainBalanceSerializer
-    queryset = Chain.objects.filter(is_active=True)
+
+    def get_object(self):
+        chain_pk = self.kwargs.get("chain_pk", None)
+        if chain_pk is None:
+            raise Http404("Chain ID not provided")
+        return Chain.objects.get(pk=chain_pk)
 
 
 def artwork_video(request):

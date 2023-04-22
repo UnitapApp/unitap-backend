@@ -10,6 +10,7 @@ from faucet.views import (
     artwork_video,
     error500,
     ChainBalanceView,
+    SmallChainListView,
 )
 
 from drf_yasg.views import get_schema_view
@@ -39,6 +40,7 @@ urlpatterns = [
     path(
         "chain/list/", ChainListView.as_view(), name="chain-list"
     ),  # can have auth token for more user specific info
+    path("chain/small-list/", SmallChainListView.as_view(), name="chain-list"),
     path(
         "chain/<int:chain_pk>/claim-max/",
         ClaimMaxView.as_view(),
@@ -53,5 +55,9 @@ urlpatterns = [
     path("artwork/video/", artwork_video, name="artwork-video"),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     path("error500", error500),
-    path("chain/balances/", ChainBalanceView.as_view(), name="chain-balances"),
+    path(
+        "chain/<int:chain_pk>/balance/",
+        ChainBalanceView.as_view(),
+        name="chain-balance",
+    ),
 ]
