@@ -227,6 +227,10 @@ class Chain(models.Model):
             address = self.explorer_url + f"/address/{self.fund_manager_address}"
         return address
 
+    @property
+    def manager_balance(self):
+        return self.get_manager_balance()
+
     def get_manager_balance(self):
         if not self.rpc_url_private:
             return 0
@@ -250,6 +254,10 @@ class Chain(models.Model):
             raise Exception("Invalid chain type")
         except:
             return 0
+
+    @property
+    def wallet_balance(self):
+        return self.get_wallet_balance()
 
     def get_wallet_balance(self):
         if not self.rpc_url_private:

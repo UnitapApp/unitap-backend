@@ -19,6 +19,7 @@ from faucet.faucet_manager.claim_manager import (
 from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 from faucet.models import Chain, ClaimReceipt, GlobalSettings
 from faucet.serializers import (
+    ChainBalanceSerializer,
     GlobalSettingsSerializer,
     ReceiptSerializer,
     ChainSerializer,
@@ -179,6 +180,11 @@ class ClaimMaxView(APIView):
 
         receipt = self.claim_max(passive_address)
         return Response(ReceiptSerializer(instance=receipt).data)
+
+
+class ChainBalanceView(ListAPIView):
+    serializer_class = ChainBalanceSerializer
+    queryset = Chain.objects.filter(is_active=True)
 
 
 def artwork_video(request):

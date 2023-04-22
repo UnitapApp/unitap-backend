@@ -9,6 +9,7 @@ from faucet.views import (
     GetTotalWeeklyClaimsRemainingView,
     artwork_video,
     error500,
+    ChainBalanceView,
 )
 
 from drf_yasg.views import get_schema_view
@@ -52,4 +53,5 @@ urlpatterns = [
     path("artwork/video/", artwork_video, name="artwork-video"),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     path("error500", error500),
+    path("chain/balances/", ChainBalanceView.as_view(), name="chain-balances"),
 ]
