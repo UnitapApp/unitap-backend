@@ -245,7 +245,7 @@ class Chain(models.Model):
 
             logging.debug(f"second  chain id is {self.chain_id}")
 
-            if self.chain_type == NetworkTypes.EVM or self.chain_id == 500:
+            if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
                 logging.debug(f"third chain id is {self.chain_id}")
                 if self.chain_id == 500:
                     logging.debug("chain XDC NONEVM is here")
