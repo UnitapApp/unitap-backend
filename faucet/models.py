@@ -237,12 +237,14 @@ class Chain(models.Model):
                 SolanaFundManager,
             )
 
-            if self.chain_type == NetworkTypes.EVM:
+            if self.chain_type == NetworkTypes.EVM or self.chain_id == 500:
                 return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
+
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
                 return v
+
             raise Exception("Invalid chain type")
         except:
             return 0
