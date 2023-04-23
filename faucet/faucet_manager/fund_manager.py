@@ -31,13 +31,16 @@ class EVMFundManager:
     @property
     def w3(self) -> Web3:
         assert self.chain.rpc_url_private is not None
-        _w3 = Web3(Web3.HTTPProvider(self.chain.rpc_url_private))
-        if self.chain.poa:
-            _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-        if _w3.isConnected():
-            _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
-            return _w3
-        raise Exception(f"Could not connect to rpc {self.chain.rpc_url_private}")
+        try:
+            _w3 = Web3(Web3.HTTPProvider(self.chain.rpc_url_private))
+            if self.chain.poa:
+                _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            if _w3.isConnected():
+                _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
+                return _w3
+        except Exception as e:
+            logging.error(e)
+            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
 
     @property
     def is_gas_price_too_high(self):
@@ -120,10 +123,13 @@ class SolanaFundManager:
     @property
     def w3(self) -> Client:
         assert self.chain.rpc_url_private is not None
-        _w3 = Client(self.chain.rpc_url_private)
-        if _w3.is_connected():
-            return _w3
-        raise Exception(f"Could not connect to rpc {self.chain.rpc_url_private}")
+        try:
+            _w3 = Client(self.chain.rpc_url_private)
+            if _w3.is_connected():
+                return _w3
+        except Exception as e:
+            logging.error(e)
+            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
 
     @property
     def account(self) -> Keypair:
