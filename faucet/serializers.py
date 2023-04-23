@@ -43,6 +43,40 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
         ]
 
 
+class ChainBalanceSerializer(serializers.ModelSerializer):
+    wallet = serializers.SerializerMethodField()
+    contract_balance = serializers.SerializerMethodField()
+    wallet_balance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Chain
+        fields = [
+            "pk",
+            "chain_name",
+            "chain_id",
+            "symbol",
+            "decimals",
+            "needs_funding",
+            "has_enough_fees",
+            "has_enough_funds",
+            "contract_balance",
+            "wallet_balance",
+            "is_testnet",
+            "chain_type",
+            "block_scan_address",
+            "wallet",
+        ]
+
+    def get_wallet(self, chain):
+        return chain.wallet.address
+
+    def get_contract_balance(self, chain):
+        return chain.manager_balance
+
+    def get_wallet_balance(self, chain):
+        return chain.wallet_balance
+
+
 class SmallChainSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chain
@@ -60,8 +94,6 @@ class SmallChainSerializer(serializers.ModelSerializer):
             "modal_url",
             "gas_image_url",
             "max_claim_amount",
-            "order",
-            "needs_funding",
             "is_testnet",
             "chain_type",
             "block_scan_address",

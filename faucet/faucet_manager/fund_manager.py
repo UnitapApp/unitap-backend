@@ -1,3 +1,4 @@
+import logging
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
 from web3.exceptions import TimeExhausted
@@ -6,6 +7,8 @@ from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
 from faucet.models import Chain, BrightUser
 from solana.rpc.api import Client
+from solana.rpc.core import RPCException
+from solana.transaction import Transaction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.signature import Signature
@@ -152,6 +155,17 @@ class SolanaFundManager:
     @property
     def solana_client(self):
         return SolanaClient(self.w3, self.account)
+    
+    def is_gas_price_too_high(self, instruction):
+        txn = Transaction().add(instruction)
+        try:
+            fee = self.w3.get_fee_for_message(txn.compile_message()).value
+        except RPCException:
+            logging.warning("Solana RPCException to get fee for message")
+            fee = 0
+        if fee > self.chain.max_gas_price:
+            return True
+        return False
 
     def multi_transfer(self, data):
         total_withdraw_amount = sum(item["amount"] for item in data)
@@ -160,6 +174,8 @@ class SolanaFundManager:
                 {"amount": total_withdraw_amount},
                 {"lock_account": self.lock_account_address, "owner": self.owner},
             )
+            if self.is_gas_price_too_high(instruction):
+                raise Exception("GasPriceTooHigh")
             if not self.solana_client.call_program(instruction):
                 raise Exception("Could not withdraw assets from solana contract")
             signature = self.solana_client.transfer_many_lamports(

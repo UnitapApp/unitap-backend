@@ -198,6 +198,7 @@ class Chain(models.Model):
 
     max_gas_price = models.BigIntegerField(default=250000000000)
     gas_multiplier = models.FloatField(default=1)
+    enough_fee_multiplier = models.BigIntegerField(default=200000)
 
     needs_funding = models.BooleanField(default=False)
     is_testnet = models.BooleanField(default=False)
@@ -227,6 +228,10 @@ class Chain(models.Model):
             address = self.explorer_url + f"/address/{self.fund_manager_address}"
         return address
 
+    @property
+    def manager_balance(self):
+        return self.get_manager_balance()
+
     def get_manager_balance(self):
         if not self.rpc_url_private:
             return 0
@@ -237,9 +242,9 @@ class Chain(models.Model):
                 SolanaFundManager,
             )
 
-            if self.chain_type == NetworkTypes.EVM or self.chain_id == 500:
+            if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
                 if self.chain_id == 500:
-                    logging.debug("chain XDC NONEVM is here")
+                    logging.debug("chain XDC NONEVM is checking its balances")
                 return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
 
             elif self.chain_type == NetworkTypes.SOLANA:
@@ -251,6 +256,10 @@ class Chain(models.Model):
         except:
             return 0
 
+    @property
+    def wallet_balance(self):
+        return self.get_wallet_balance()
+
     def get_wallet_balance(self):
         if not self.rpc_url_private:
             return 0
@@ -261,7 +270,7 @@ class Chain(models.Model):
                 SolanaFundManager,
             )
 
-            if self.chain_type == NetworkTypes.EVM or self.chain_id == 500:
+            if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
                 return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
@@ -275,7 +284,7 @@ class Chain(models.Model):
 
     @property
     def has_enough_fees(self):
-        if self.get_wallet_balance() > self.gas_price * 200000:
+        if self.get_wallet_balance() > self.gas_price * self.enough_fee_multiplier:
             return True
         logging.warning(f"Chain {self.chain_name} has insufficient fees in wallet")
         return False
