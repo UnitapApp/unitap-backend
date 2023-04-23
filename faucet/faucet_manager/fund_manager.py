@@ -7,7 +7,7 @@ from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
 from faucet.models import Chain, BrightUser
 from solana.rpc.api import Client
-from solana.rpc.core import RPCException
+from solana.rpc.core import RPCException, RPCNoResultException
 from solana.transaction import Transaction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
@@ -161,7 +161,10 @@ class SolanaFundManager:
         try:
             fee = self.w3.get_fee_for_message(txn.compile_message()).value
         except RPCException:
-            logging.warning("Solana RPCException to get fee for message")
+            logging.warning("Solana raised the RPCException at get_fee_for_message()")
+            fee = 0
+        except RPCNoResultException:
+            logging.warning("Solana raised the RPCNoResultException at get_fee_for_message()")
             fee = 0
         if fee > self.chain.max_gas_price:
             return True
@@ -186,7 +189,7 @@ class SolanaFundManager:
                 ],
             )
             if not signature:
-                raise Exception("Transfering lamports to receivers failed")
+                raise Exception("Transferring lamports to the receivers failed")
             return str(signature)
         else:
             raise Exception("The program is not initialized yet")
@@ -202,7 +205,11 @@ class SolanaFundManager:
                 TransactionConfirmationStatus.Confirmed,
                 TransactionConfirmationStatus.Finalized,
             ]
-        except TimeExhausted:
-            raise
+        except RPCException:
+            logging.warning("Solana raised the RPCException at get_signature_statuses()")
+            return False
+        except RPCNoResultException:
+            logging.warning("Solana raised the RPCNoResultException at get_signature_statuses()")
+            return False
         except Exception:
             raise
