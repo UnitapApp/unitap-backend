@@ -18,13 +18,15 @@ from .anchor_client import instructions
 from .solana_client import SolanaClient
 
 
+class FundMangerException:
+    class GasPriceTooHigh(Exception):
+        pass
+    class RPCError(Exception):
+        pass
 class EVMFundManager:
     def __init__(self, chain: Chain):
         self.chain = chain
         self.abi = manager_abi
-
-    class GasPriceTooHigh(Exception):
-        pass
 
     @property
     def w3(self) -> Web3:
@@ -39,11 +41,14 @@ class EVMFundManager:
 
     @property
     def is_gas_price_too_high(self):
-        gas_price = self.w3.eth.gas_price
-        if gas_price > self.chain.max_gas_price:
+        try:
+            gas_price = self.w3.eth.gas_price
+            if gas_price > self.chain.max_gas_price:
+                return True
+            return False
+        except Exception as e:
+            logging.error(e)
             return True
-        return False
-
     @property
     def account(self) -> LocalAccount:
         return self.w3.eth.account.privateKeyToAccount(self.chain.wallet.main_key)
@@ -57,13 +62,19 @@ class EVMFundManager:
 
     def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
-        self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return tx["hash"].hex()
+        try:
+            self.w3.eth.send_raw_transaction(tx.rawTransaction)
+            return tx["hash"].hex()
+        except Exception as e:
+            raise FundMangerException.RPCError(str(e))
 
     def multi_transfer(self, data):
         tx = self.multi_eth_transfer_signed_tx(data)
-        self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return tx["hash"].hex()
+        try:
+            self.w3.eth.send_raw_transaction(tx.rawTransaction)
+            return tx["hash"].hex()
+        except Exception as e:
+            raise FundMangerException.RPCError(str(e))
 
     def single_eth_transfer_signed_tx(self, amount: int, to: str):
         tx_function = self.contract.functions.withdrawEth(amount, to)
@@ -78,7 +89,7 @@ class EVMFundManager:
         gas_estimation = tx_function.estimateGas({"from": self.account.address})
 
         if self.is_gas_price_too_high:
-            raise self.GasPriceTooHigh()
+            raise FundMangerException.GasPriceTooHigh()
 
         tx_data = tx_function.buildTransaction(
             {
@@ -160,15 +171,12 @@ class SolanaFundManager:
         txn = Transaction().add(instruction)
         try:
             fee = self.w3.get_fee_for_message(txn.compile_message()).value
-        except RPCException:
-            logging.warning("Solana raised the RPCException at get_fee_for_message()")
-            fee = 0
-        except RPCNoResultException:
-            logging.warning("Solana raised the RPCNoResultException at get_fee_for_message()")
-            fee = 0
-        if fee > self.chain.max_gas_price:
+            if fee > self.chain.max_gas_price:
+                return True
+            return False
+        except Exception as e:
+            logging.warning(e)
             return True
-        return False
 
     def multi_transfer(self, data):
         total_withdraw_amount = sum(item["amount"] for item in data)
@@ -178,7 +186,7 @@ class SolanaFundManager:
                 {"lock_account": self.lock_account_address, "owner": self.owner},
             )
             if self.is_gas_price_too_high(instruction):
-                raise Exception("GasPriceTooHigh")
+                raise FundMangerException.GasPriceTooHigh()
             if not self.solana_client.call_program(instruction):
                 raise Exception("Could not withdraw assets from solana contract")
             signature = self.solana_client.transfer_many_lamports(
