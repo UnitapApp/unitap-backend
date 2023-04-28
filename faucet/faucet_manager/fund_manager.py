@@ -131,6 +131,7 @@ class SolanaFundManager:
         lock_account_address, nonce = Pubkey.find_program_address(
             [self.lock_account_seed], self.program_id
         )
+
         return lock_account_address
 
     @property
@@ -176,6 +177,7 @@ class SolanaFundManager:
             )
             if self.is_gas_price_too_high(instruction):
                 raise Exception("GasPriceTooHigh")
+
             if not self.solana_client.call_program(instruction):
                 raise Exception("Could not withdraw assets from solana contract")
             signature = self.solana_client.transfer_many_lamports(
@@ -184,6 +186,7 @@ class SolanaFundManager:
                     (Pubkey.from_string(item["to"]), int(item["amount"]))
                     for item in data
                 ],
+
             )
             if not signature:
                 raise Exception("Transfering lamports to receivers failed")
@@ -201,8 +204,10 @@ class SolanaFundManager:
             return confirmation_status in [
                 TransactionConfirmationStatus.Confirmed,
                 TransactionConfirmationStatus.Finalized,
+
             ]
         except TimeExhausted:
             raise
         except Exception:
             raise
+

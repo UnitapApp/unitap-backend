@@ -48,7 +48,7 @@ if SENTRY_DSN != "DEBUG-DSN":  # setup sentry only on production
     )
 
 # brightID application id
-APP_NAME = "unitap"
+APP_NAME = "unitapTest"
 
 ALLOWED_HOSTS = ["*"]
 

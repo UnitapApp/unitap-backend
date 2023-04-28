@@ -9,7 +9,6 @@ from django.utils import timezone
 from sentry_sdk import capture_exception
 
 from authentication.models import NetworkTypes, Wallet
-
 from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager
 from .models import Chain, ClaimReceipt, TransactionBatch
 
@@ -93,6 +92,7 @@ def process_batch(self, batch_pk):
                         or batch.chain.chain_type == NetworkTypes.NONEVM
                     ):
                         manager = EVMFundManager(batch.chain)
+
                     else:
                         raise Exception("Invalid chain type to process batch")
                     tx_hash = manager.multi_transfer(data)
@@ -139,6 +139,7 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
                     or batch.chain.chain_type == NetworkTypes.NONEVM
                 ):
                     manager = EVMFundManager(batch.chain)
+
                 else:
                     raise Exception("Invalid chain type to update pending batch")
 

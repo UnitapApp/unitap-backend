@@ -27,6 +27,7 @@ class SolanaClient:
     def transfer_lamports(self, sender: Pubkey, receiver: Pubkey, amount: int):
         instruction = transfer(
             TransferParams(from_pubkey=sender, to_pubkey=receiver, lamports=amount)
+
         )
         txn = Transaction().add(instruction)
 
@@ -43,6 +44,7 @@ class SolanaClient:
         for rec in receivers:
             instruction = transfer(
                 TransferParams(from_pubkey=sender, to_pubkey=rec[0], lamports=rec[1])
+
             )
             txn.add(instruction)
 

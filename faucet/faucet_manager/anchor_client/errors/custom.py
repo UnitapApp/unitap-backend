@@ -24,6 +24,7 @@ CustomError = typing.Union[MaxCapExceed, InvalidValue]
 CUSTOM_ERROR_MAP: dict[int, CustomError] = {
     6000: MaxCapExceed(),
     6001: InvalidValue(),
+
 }
 
 
