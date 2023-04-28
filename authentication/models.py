@@ -59,12 +59,14 @@ class NetworkTypes:
     SOLANA = "Solana"
     LIGHTNING = "Lightning"
     NONEVM = "NONEVM"
+    NONEVMXDC = "NONEVMXDC"
 
     networks = (
         (EVM, "EVM"),
         (SOLANA, "Solana"),
         (LIGHTNING, "Lightning"),
         (NONEVM, "NONEVM"),
+        (NONEVMXDC, "NONEVMXDC"),
     )
 
 
