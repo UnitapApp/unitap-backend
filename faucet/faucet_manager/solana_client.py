@@ -1,3 +1,4 @@
+import logging
 from typing import Sequence, Tuple
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
@@ -5,7 +6,7 @@ from solders.system_program import transfer, TransferParams
 from solana.transaction import Transaction
 from solana.rpc.api import Client
 from solana.exceptions import SolanaExceptionBase
-from solana.rpc.core import RPCException
+from solana.rpc.core import RPCException, RPCNoResultException
 
 
 class SolanaClient:
@@ -19,9 +20,11 @@ class SolanaClient:
         try:
             return self.rpc_client.send_transaction(txn, self.signer).value
         except SolanaExceptionBase as exc:
-            print(exc.error_msg)
+            logging.error(exc.error_msg)
         except RPCException as exc:
-            print(exc)
+            logging.error(exc)
+        except RPCNoResultException as exc:
+            logging.error(exc)
         return False
 
     def transfer_lamports(self, sender: Pubkey, receiver: Pubkey, amount: int):
@@ -33,7 +36,11 @@ class SolanaClient:
         try:
             return self.rpc_client.send_transaction(txn, self.signer).value
         except SolanaExceptionBase as exc:
-            print(exc.error_msg)
+            logging.error(exc.error_msg)
+        except RPCException as exc:
+            logging.error(exc)
+        except RPCNoResultException as exc:
+            logging.error(exc)
         return False
 
     def transfer_many_lamports(
@@ -49,7 +56,9 @@ class SolanaClient:
         try:
             return self.rpc_client.send_transaction(txn, self.signer).value
         except SolanaExceptionBase as exc:
-            print(exc.error_msg)
+            logging.error(exc.error_msg)
         except RPCException as exc:
-            print(exc)
+            logging.error(exc)
+        except RPCNoResultException as exc:
+            logging.error(exc)
         return False
