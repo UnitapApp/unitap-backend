@@ -11,6 +11,11 @@ urlpatterns = [
         name="set-username",
     ),
     path(
+        "user/check-username/",
+        CheckUsernameView.as_view(),
+        name="check-username",
+    ),
+    path(
         "user/set-wallet/",
         SetWalletAddressView.as_view(),
         name="set-wallet-user",
@@ -32,5 +37,4 @@ urlpatterns = [
     ),
     path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
     path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
-
 ]
