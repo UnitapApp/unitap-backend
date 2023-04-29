@@ -142,6 +142,24 @@ class LoginView(APIView):
         return Response(ProfileSerializer(profile).data, status=200)
 
 
+class SetUsernameView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get("username", None)
+        if not username:
+            return Response({"message": "Invalid request"}, status=403)
+
+        user_profile = request.user.profile
+        try:
+            user_profile.username = username
+            user_profile.save()
+            return Response({"message": "Username Set"}, status=200)
+
+        except IntegrityError:
+            return Response({"message": "This username already exists.\ntry another one."}, status=403)
+
+
 class SetWalletAddressView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
