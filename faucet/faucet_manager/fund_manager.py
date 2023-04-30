@@ -177,6 +177,8 @@ class SolanaFundManager:
         txn = Transaction().add(instruction)
         try:
             fee = self.w3.get_fee_for_message(txn.compile_message()).value
+            if not fee:
+                fee = 5000
             if fee > self.chain.max_gas_price:
                 return True
             return False
