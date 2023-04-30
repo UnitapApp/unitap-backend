@@ -192,6 +192,7 @@ class SolanaFundManager:
             instruction = instructions.withdraw(
                 {"amount": total_withdraw_amount},
                 {"lock_account": self.lock_account_address, "owner": self.owner},
+                self.program_id
             )
             if self.is_gas_price_too_high(instruction):
                 raise FundMangerException.GasPriceTooHigh()
