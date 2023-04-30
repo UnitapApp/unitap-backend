@@ -70,6 +70,17 @@ class TransactionBatchAdmin(admin.ModelAdmin):
     search_fields = ["tx_hash"]
     list_filter = ["chain", "_status", "updating"]
 
+class LightningConfigAdmin(admin.ModelAdmin):
+    readonly_fields=["claimed_amount", "current_round"]
+    list_display = [
+        "pk",
+        "period",
+        "period_max_cap",
+        "claimed_amount",
+        "current_round"
+    ]
+    pass
+
 
 admin.site.register(WalletAccount, WalletAccountAdmin)
 admin.site.register(Chain, ChainAdmin)
@@ -77,3 +88,4 @@ admin.site.register(BrightUser, BrightUserAdmin)
 admin.site.register(ClaimReceipt, ClaimReceiptAdmin)
 admin.site.register(GlobalSettings, GlobalSettingsAdmin)
 admin.site.register(TransactionBatch, TransactionBatchAdmin)
+admin.site.register(LightningConfig, LightningConfigAdmin)

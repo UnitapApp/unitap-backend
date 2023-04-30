@@ -1,11 +1,16 @@
+import time
+import os
 import logging
+from django.core.cache import cache
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
 from web3.exceptions import TimeExhausted
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
-from faucet.models import Chain, BrightUser
+from faucet.models import Chain, BrightUser, LightningConfig
+from faucet.helpers import memcache_lock
+from faucet.constants import *
 from solana.rpc.api import Client
 from solana.rpc.core import RPCException
 from solana.transaction import Transaction
@@ -16,6 +21,7 @@ from solders.transaction_status import TransactionConfirmationStatus
 from .anchor_client.accounts.lock_account import LockAccount
 from .anchor_client import instructions
 from .solana_client import SolanaClient
+from .lnpay_client import LNPayClient
 
 
 class EVMFundManager:
@@ -206,3 +212,70 @@ class SolanaFundManager:
             raise
         except Exception:
             raise
+
+class LightningFundManager:
+    def __init__(self, chain: Chain):
+        self.chain = chain
+
+    @property
+    def config(self) -> LightningConfig:
+        config = LightningConfig.objects.first()
+        assert config is not None, "There is no Lightning config"
+        return config
+    
+    @property
+    def api_key(self):
+        return self.chain.wallet.main_key
+    
+    @property
+    def lnpay_client(self):
+        return LNPayClient(
+            self.chain.rpc_url_private, 
+            self.api_key, 
+            self.chain.fund_manager_address
+        )
+    
+    def __check_max_cap_exceeds(self, amount) -> bool:
+        try:
+            config = self.config
+            active_round = (int(time.time() * 1000) / config.period) * config.period
+            if active_round != config.current_round:
+                config.claimed_amount = 0
+                config.current_round = active_round
+                config.save()
+
+            return config.claimed_amount + amount > config.period_max_cap
+        except Exception as ex:
+            logging.error(ex)
+            return True
+
+    def multi_transfer(self, data):
+        client = self.lnpay_client
+
+        with memcache_lock(MEMCACHE_LIGHTNING_LOCK_KEY, os.getpid()) as acquired:
+            assert not acquired, \
+                "Could not acquire Lightning multi-transfer lock"
+            
+            item = data[0]
+            assert not self.__check_max_cap_exceeds(item['amount']), \
+                "Lightning periodic max cap exceeded"
+
+            pay_result = client.pay_invoice(item["to"])
+
+            if result:
+                result = pay_result['lnTx']['id']
+
+                config = self.config
+                config.claimed_amount += item['amount']
+                config.save()
+
+                cache.delete(MEMCACHE_LIGHTNING_LOCK_KEY)
+
+                return result
+            else:
+                cache.delete(MEMCACHE_LIGHTNING_LOCK_KEY)
+                raise Exception("Lightning: Could not pay the invoice")
+
+    def is_tx_verified(self, tx_hash):
+        invoice_status = self.lnpay_client.get_invoice_status(tx_hash)
+        return invoice_status['settled'] == 1

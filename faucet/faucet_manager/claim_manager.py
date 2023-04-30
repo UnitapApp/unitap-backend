@@ -1,7 +1,10 @@
+import logging
 import abc
 from abc import ABC
 from django.utils import timezone
 from authentication.models import UserProfile
+from authentication.models import NetworkTypes
+from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from faucet.faucet_manager.credit_strategy import (
     CreditStrategy,
@@ -89,6 +92,16 @@ class LimitedChainClaimManager(SimpleClaimManager):
         total_claims = self.get_total_weekly_claims(user_profile)
         assert total_claims < self.get_weekly_limit()
 
+class LightningClaimManger(LimitedChainClaimManager):
+    def claim(self, amount, invoice):
+        try:
+            decoded_invoice = LNPayClient.decode_invoice(invoice)
+        except Exception as e:
+            logging.error(e)
+            raise AssertionError("Could not decode the invoice")
+        assert decoded_invoice['num_satoshis'] == amount, "Invalid amount"
+        return super().claim(amount, invoice)
+
 
 class ClaimManagerFactory:
     def __init__(self, chain, user_profile):
@@ -96,6 +109,8 @@ class ClaimManagerFactory:
         self.user_profile = user_profile
 
     def get_manager_class(self):
+        if self.chain.chain_type == NetworkTypes.LIGHTNING:
+            return LightningClaimManger
         return LimitedChainClaimManager
 
     def get_manager(self) -> ClaimManager:

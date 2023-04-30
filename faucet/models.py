@@ -11,6 +11,7 @@ from django.conf import settings
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
+from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -251,6 +252,13 @@ class Chain(models.Model):
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
                 return v
+            elif self.chain_type == NetworkTypes.LIGHTNING:
+                lnpay_client = LNPayClient(
+                    self.rpc_url_private, 
+                    self.wallet.main_key, 
+                    self.fund_manager_address
+                )
+                return lnpay_client.get_balance()
 
             raise Exception("Invalid chain type")
         except:
@@ -278,6 +286,13 @@ class Chain(models.Model):
                     Pubkey.from_string(self.wallet.address)
                 ).value
                 return v
+            elif self.chain_type == NetworkTypes.LIGHTNING:
+                lnpay_client = LNPayClient(
+                    self.rpc_url_private, 
+                    self.wallet.main_key, 
+                    self.fund_manager_address
+                )
+                return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
         except:
             return 0
@@ -392,3 +407,16 @@ class TransactionBatch(models.Model):
     @property
     def is_expired(self):
         return self.age > timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION)
+    
+
+class LightningConfig(models.Model):
+    period = models.IntegerField(default=64800)
+    period_max_cap = models.BigIntegerField()
+    claimed_amount = models.BigIntegerField(default=0)
+    current_round = models.IntegerField(null=True)
+
+    def save(self, *args, **kwargs):
+       self.pk = 1
+       super().save(*args, **kwargs)
+
+
