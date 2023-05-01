@@ -3,7 +3,6 @@ from authentication.models import (
     UserProfile,
     Wallet,
 )
-from django.core.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
@@ -13,6 +12,10 @@ from faucet.models import GlobalSettings
 
 class UsernameRequestSerializer(serializers.Serializer):
     username = serializers.CharField(required=True, max_length=24)
+
+
+class AddressRequestSerializer(serializers.Serializer):
+    address = serializers.CharField(required=True, max_length=150)
 
 
 class MessageResponseSerializer(serializers.Serializer):
