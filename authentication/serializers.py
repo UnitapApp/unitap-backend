@@ -1,12 +1,31 @@
+from django.db import IntegrityError
 from authentication.models import (
     UserProfile,
     Wallet,
 )
+from django.core.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
 from faucet.models import GlobalSettings
+
+
+class SetUsernameSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True, max_length=150)
+
+    def save(self, user_profile):
+        username = self.validated_data.get("username")
+
+        try:
+            user_profile.username = username
+            user_profile.save()
+            return {"message": "Username Set"}
+
+        except IntegrityError:
+            raise ValidationError(
+                {"message": "This username already exists. Try another one."}
+            )
 
 
 class WalletSerializer(serializers.ModelSerializer):
