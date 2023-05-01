@@ -11,21 +11,35 @@ from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 from faucet.models import GlobalSettings
 
 
-class SetUsernameSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True, max_length=150)
+class UsernameRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True, max_length=24)
 
-    def save(self, user_profile):
-        username = self.validated_data.get("username")
 
-        try:
-            user_profile.username = username
-            user_profile.save()
-            return {"message": "Username Set"}
+class MessageResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
 
-        except IntegrityError:
-            raise ValidationError(
-                {"message": "This username already exists. Try another one."}
-            )
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        pass
+
+
+# class SetUsernameSerializer(serializers.Serializer):
+#     username = UsernameRequestSerializer.username
+
+#     def save(self, user_profile):
+#         username = self.validated_data.get("username")
+
+#         try:
+#             user_profile.username = username
+#             user_profile.save()
+#             return {"message": "Username Set"}
+
+#         except IntegrityError:
+#             raise ValidationError(
+#                 {"message": "This username already exists. Try another one."}
+#             )
 
 
 class WalletSerializer(serializers.ModelSerializer):
