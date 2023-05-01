@@ -12,17 +12,18 @@ from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
     verify_signature_eth_scheme,
 )
+from drf_yasg import openapi
 from authentication.serializers import (
     UsernameRequestSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
-    SetUsernameSerializer,
     WalletSerializer,
 )
 
 
 class SponsorView(CreateAPIView):
     def post(self, request, *args, **kwargs):
+
         address = request.data.get("address", None)
         if not address:
             return Response({"message": "Invalid request"}, status=403)
@@ -130,11 +131,17 @@ class SetUsernameView(CreateAPIView):
     @swagger_auto_schema(
         request_body=UsernameRequestSerializer,
         responses={
-            200: MessageResponseSerializer(description="Username successfully Set"),
-            403: MessageResponseSerializer(
-                descriptio="This username already exists.\ntry another one."
+            200: openapi.Response(
+                description="Username successfully Set",
+                schema=MessageResponseSerializer(),
             ),
-            400: MessageResponseSerializer(descritption="Bad Request"),
+            400: openapi.Response(
+                description="Bad request", schema=MessageResponseSerializer()
+            ),
+            403: openapi.Response(
+                description="This username already exists.\ntry another one.",
+                schema=MessageResponseSerializer(),
+            ),
         },
     )
     def post(self, request, *args, **kwargs):
@@ -148,7 +155,9 @@ class SetUsernameView(CreateAPIView):
                 user_profile.username = username
                 user_profile.save()
                 return Response(
-                    MessageResponseSerializer({"message": "Username successfully Set"}),
+                    MessageResponseSerializer(
+                        {"message": "Username successfully Set"}
+                    ).data,
                     status=200,
                 )
 
@@ -156,7 +165,7 @@ class SetUsernameView(CreateAPIView):
                 return Response(
                     MessageResponseSerializer(
                         {"message": "This username already exists.\ntry another one."}
-                    ),
+                    ).data,
                     status=403,
                 )
 
@@ -167,18 +176,46 @@ class SetUsernameView(CreateAPIView):
 class CheckUsernameView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        request_body=UsernameRequestSerializer,
+        responses={
+            200: openapi.Response(
+                description="Username is available",
+                schema=MessageResponseSerializer(),
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=MessageResponseSerializer(),
+            ),
+            403: openapi.Response(
+                description="This username already exists.\ntry another one.",
+                schema=MessageResponseSerializer(),
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
-        username = request.data.get("username", None)
-        if not username:
-            return Response({"message": "Invalid request"}, status=403)
+        request_serializer = UsernameRequestSerializer(data=request.data)
 
-        if UserProfile.objects.filter(username=username).exists():
-            return Response(
-                {"message": "This username already exists.\ntry another one."},
-                status=403,
-            )
+        if request_serializer.is_valid():
+            username = request_serializer.validated_data.get("username")
 
-        return Response({"message": "Username is available."}, status=200)
+            if UserProfile.objects.filter(username=username).exists():
+                return Response(
+                    MessageResponseSerializer(
+                        {"message": "This username already exists.\ntry another one."}
+                    ).data,
+                    status=403,
+                )
+            else:
+                return Response(
+                    MessageResponseSerializer(
+                        {"message": "Username is available"}
+                    ).data,
+                    status=200,
+                )
+
+        else:
+            return Response(request_serializer.errors, status=400)
 
 
 class SetWalletAddressView(CreateAPIView):
