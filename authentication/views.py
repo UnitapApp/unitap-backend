@@ -11,7 +11,7 @@ from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
     verify_signature_eth_scheme,
 )
-from authentication.serializers import ProfileSerializer, WalletSerializer
+from authentication.serializers import ProfileSerializer, SetUsernameSerializer, WalletSerializer
 
 
 class SponsorView(CreateAPIView):
@@ -142,25 +142,41 @@ class LoginView(APIView):
         return Response(ProfileSerializer(profile).data, status=200)
 
 
-class SetUsernameView(CreateAPIView):
+# class SetUsernameView(CreateAPIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request, *args, **kwargs):
+#         username = request.data.get("username", None)
+#         if not username:
+#             return Response({"message": "Invalid request"}, status=403)
+
+#         user_profile = request.user.profile
+#         try:
+#             user_profile.username = username
+#             user_profile.save()
+#             return Response({"message": "Username Set"}, status=200)
+
+#         except IntegrityError:
+#             return Response(
+#                 {"message": "This username already exists.\ntry another one."},
+#                 status=403,
+#             )
+
+class SetUsernameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        username = request.data.get("username", None)
-        if not username:
-            return Response({"message": "Invalid request"}, status=403)
+        serializer = SetUsernameSerializer(data=request.data)
 
-        user_profile = request.user.profile
-        try:
-            user_profile.username = username
-            user_profile.save()
-            return Response({"message": "Username Set"}, status=200)
+        if serializer.is_valid():
+            try:
+                response_data = serializer.save(user_profile=request.user.profile)
+                return Response(response_data, status=200)
 
-        except IntegrityError:
-            return Response(
-                {"message": "This username already exists.\ntry another one."},
-                status=403,
-            )
+            except serializer.ValidationError as e:
+                return Response(e.detail, status=403)
+        else:
+            return Response(serializer.errors, status=400)
 
 
 class CheckUsernameView(CreateAPIView):
