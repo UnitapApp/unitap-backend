@@ -127,6 +127,16 @@ class LoginView(APIView):
 class SetUsernameView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        request_body=UsernameRequestSerializer,
+        responses={
+            200: MessageResponseSerializer(description="Username successfully Set"),
+            403: MessageResponseSerializer(
+                descriptio="This username already exists.\ntry another one."
+            ),
+            400: MessageResponseSerializer(descritption="Bad Request"),
+        },
+    )
     def post(self, request, *args, **kwargs):
         request_serializer = UsernameRequestSerializer(data=request.data)
 
@@ -138,7 +148,8 @@ class SetUsernameView(CreateAPIView):
                 user_profile.username = username
                 user_profile.save()
                 return Response(
-                    MessageResponseSerializer({"message": "Username Set"}), status=200
+                    MessageResponseSerializer({"message": "Username successfully Set"}),
+                    status=200,
                 )
 
             except IntegrityError:
