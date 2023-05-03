@@ -93,14 +93,19 @@ class LimitedChainClaimManager(SimpleClaimManager):
         assert total_claims < self.get_weekly_limit()
 
 class LightningClaimManger(LimitedChainClaimManager):
-    def claim(self, amount, invoice):
+    def claim(self, amount, passive_address):
         try:
-            decoded_invoice = LNPayClient.decode_invoice(invoice)
+            lnpay_client = LNPayClient(
+                self.credit_strategy.chain.rpc_url_private, 
+                self.credit_strategy.chain.wallet.main_key, 
+                self.credit_strategy.chain.fund_manager_address
+            )
+            decoded_invoice = lnpay_client.decode_invoice(passive_address)
         except Exception as e:
             logging.error(e)
             raise AssertionError("Could not decode the invoice")
-        assert decoded_invoice['num_satoshis'] == amount, "Invalid amount"
-        return super().claim(amount, invoice)
+        assert int(decoded_invoice['num_satoshis']) == amount, "Invalid amount"
+        return super().claim(amount, passive_address)
 
 
 class ClaimManagerFactory:

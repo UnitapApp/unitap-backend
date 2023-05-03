@@ -28,9 +28,9 @@ class LNPayClient:
             return False
         return pay_result
     
-    @classmethod
-    def decode_invoice(cls, invoice: str) -> json:
-        return get_request(f"/v1/node/default/payments/decodeinvoice?payment_request={invoice}")
+    def decode_invoice(self, invoice: str) -> json:
+        return get_request(
+            f"node/default/payments/decodeinvoice?payment_request={invoice}")
     
     def get_balance(self):
         info = self.wallet.get_info()
