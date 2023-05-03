@@ -238,7 +238,7 @@ class LightningFundManager:
     def __check_max_cap_exceeds(self, amount) -> bool:
         try:
             config = self.config
-            active_round = (int(time.time() * 1000) / config.period) * config.period
+            active_round = int(int(time.time()) / config.period) * config.period
             if active_round != config.current_round:
                 config.claimed_amount = 0
                 config.current_round = active_round
@@ -253,28 +253,30 @@ class LightningFundManager:
         client = self.lnpay_client
 
         with memcache_lock(MEMCACHE_LIGHTNING_LOCK_KEY, os.getpid()) as acquired:
-            assert not acquired, \
+            assert acquired, \
                 "Could not acquire Lightning multi-transfer lock"
             
             item = data[0]
             assert not self.__check_max_cap_exceeds(item['amount']), \
                 "Lightning periodic max cap exceeded"
+            try:
+                pay_result = client.pay_invoice(item["to"])
 
-            pay_result = client.pay_invoice(item["to"])
+                if pay_result:
+                    result = pay_result['lnTx']['id']
 
-            if result:
-                result = pay_result['lnTx']['id']
+                    config = self.config
+                    config.claimed_amount += item['amount']
+                    config.save()
 
-                config = self.config
-                config.claimed_amount += item['amount']
-                config.save()
+                    cache.delete(MEMCACHE_LIGHTNING_LOCK_KEY)
 
+                    return result
+                else:
+                    raise Exception("Lightning: Could not pay the invoice")
+            except Exception as exc:
                 cache.delete(MEMCACHE_LIGHTNING_LOCK_KEY)
-
-                return result
-            else:
-                cache.delete(MEMCACHE_LIGHTNING_LOCK_KEY)
-                raise Exception("Lightning: Could not pay the invoice")
+                raise exc
 
     def is_tx_verified(self, tx_hash):
         invoice_status = self.lnpay_client.get_invoice_status(tx_hash)
