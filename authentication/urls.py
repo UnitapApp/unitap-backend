@@ -6,6 +6,16 @@ app_name = "AUTHENTICATION"
 urlpatterns = [
     path("user/login/", LoginView.as_view(), name="login-user"),
     path(
+        "user/set-username/",
+        SetUsernameView.as_view(),
+        name="set-username",
+    ),
+    path(
+        "user/check-username/",
+        CheckUsernameView.as_view(),
+        name="check-username",
+    ),
+    path(
         "user/set-wallet/",
         SetWalletAddressView.as_view(),
         name="set-wallet-user",
@@ -27,5 +37,4 @@ urlpatterns = [
     ),
     path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
     path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
-
 ]

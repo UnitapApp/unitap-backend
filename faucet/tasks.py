@@ -1,4 +1,5 @@
 import time
+import logging
 from contextlib import contextmanager
 
 from celery import shared_task
@@ -10,8 +11,7 @@ from sentry_sdk import capture_exception
 
 from authentication.models import NetworkTypes, Wallet
 
-from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager,\
-    LightningFundManager
+from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager,LightningFundManager, FundMangerException
 from .models import Chain, ClaimReceipt, TransactionBatch
 
 
@@ -101,6 +101,10 @@ def process_batch(self, batch_pk):
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
+                except FundMangerException.GasPriceTooHigh as e:
+                    logging.error(e)
+                except FundMangerException.RPCError as e:
+                    logging.error(e)
                 except Exception as e:
                     capture_exception()
                     print(str(e))

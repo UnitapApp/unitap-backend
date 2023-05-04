@@ -20,7 +20,9 @@ class ProfileManager(models.Manager):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="profile")
     initial_context_id = models.CharField(max_length=512, unique=True)
-    # set a time of creation with default to now
+
+    username = models.CharField(max_length=24, null=True, blank=True, unique=True)
+
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     objects = ProfileManager()
@@ -59,12 +61,14 @@ class NetworkTypes:
     SOLANA = "Solana"
     LIGHTNING = "Lightning"
     NONEVM = "NONEVM"
+    NONEVMXDC = "NONEVMXDC"
 
     networks = (
         (EVM, "EVM"),
         (SOLANA, "Solana"),
         (LIGHTNING, "Lightning"),
         (NONEVM, "NONEVM"),
+        (NONEVMXDC, "NONEVMXDC"),
     )
 
 

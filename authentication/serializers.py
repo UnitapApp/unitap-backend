@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from authentication.models import (
     UserProfile,
     Wallet,
@@ -7,6 +8,41 @@ from rest_framework import serializers
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
 from faucet.models import GlobalSettings
+
+
+class UsernameRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True, max_length=24)
+
+
+class AddressRequestSerializer(serializers.Serializer):
+    address = serializers.CharField(required=True, max_length=150)
+
+
+class MessageResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        pass
+
+
+# class SetUsernameSerializer(serializers.Serializer):
+#     username = UsernameRequestSerializer.username
+
+#     def save(self, user_profile):
+#         username = self.validated_data.get("username")
+
+#         try:
+#             user_profile.username = username
+#             user_profile.save()
+#             return {"message": "Username Set"}
+
+#         except IntegrityError:
+#             raise ValidationError(
+#                 {"message": "This username already exists. Try another one."}
+#             )
 
 
 class WalletSerializer(serializers.ModelSerializer):
