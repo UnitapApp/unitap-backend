@@ -1,3 +1,4 @@
+requests==2.27.1
 aiohttp==3.8.1
 aiosignal==1.2.0
 amqp==5.1.1
@@ -114,7 +115,6 @@ python-dotenv==0.20.0
 python-memcached==1.59
 pytz==2022.1
 redis==4.3.3
-requests==2.27.1
 rfc3986==1.5.0
 rlp==2.0.1
 ruamel.yaml==0.17.21
