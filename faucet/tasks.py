@@ -11,8 +11,11 @@ from sentry_sdk import capture_exception
 
 from authentication.models import NetworkTypes, Wallet
 
-from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager,\
-    FundMangerException
+from .faucet_manager.fund_manager import (
+    EVMFundManager,
+    SolanaFundManager,
+    FundMangerException,
+)
 from .models import Chain, ClaimReceipt, TransactionBatch
 
 
@@ -96,7 +99,9 @@ def process_batch(self, batch_pk):
                     ):
                         manager = EVMFundManager(batch.chain)
                     else:
-                        raise Exception("Invalid chain type to process batch")
+                        raise Exception(
+                            f"Invalid chain type to process batch, chain type {batch.chain.chain_type}"
+                        )
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
