@@ -21,6 +21,9 @@ from django.db import transaction
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     private_key = EncryptedCharField(max_length=100)
+    network_type = models.CharField(
+        choices=NetworkTypes.networks, max_length=10, default=NetworkTypes.EVM
+    )
 
     @property
     def address(self):

@@ -7,15 +7,23 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_yasg.utils import swagger_auto_schema
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
     verify_signature_eth_scheme,
 )
-from authentication.serializers import ProfileSerializer, WalletSerializer
+from drf_yasg import openapi
+from authentication.serializers import (
+    UsernameRequestSerializer,
+    MessageResponseSerializer,
+    ProfileSerializer,
+    WalletSerializer,
+)
 
 
 class SponsorView(CreateAPIView):
     def post(self, request, *args, **kwargs):
+
         address = request.data.get("address", None)
         if not address:
             return Response({"message": "Invalid request"}, status=403)
@@ -87,36 +95,12 @@ class LoginView(APIView):
             aura_context_ids,
         ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(address, "Aura")
 
-        # is_nothing_verified = True
-
-        # if meet_context_ids is not None:
-        #     context_ids = meet_context_ids
-        #     is_nothing_verified = False
-        # elif aura_context_ids is not None:
-        #     context_ids = aura_context_ids
-        #     is_nothing_verified = False
-        # # else:
-        # #     context_ids = [address]
-
-        # if is_nothing_verified:
-        #     return Response(
-        #         {"message": "User is not verified. please verify."}, status=403
-        #     )
-
         context_ids = []
-
-        print("meet verified: ", is_meet_verified)
-        print("aura verified: ", is_aura_verified)
-        print("meet contexts: ", meet_context_ids)
-        print("aura contexts: ", aura_context_ids)
-        print("address: ", address)
 
         if is_meet_verified == False and is_aura_verified == False:
             if meet_context_ids == 3:  # is not verified
-                print("333333333333")
                 context_ids = address
             elif aura_context_ids == 4:  # is not linked
-                print("444444444444")
                 return Response(
                     {
                         "message": "Something went wrong with the linking process. please link BrightID with Unitap.\nIf the problem persists, clear your browser cache and try again."
@@ -126,7 +110,6 @@ class LoginView(APIView):
 
         elif is_meet_verified == True or is_aura_verified == True:
             if meet_context_ids is not None:
-                print("5555555555555")
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:
                 context_ids = aura_context_ids
@@ -140,6 +123,99 @@ class LoginView(APIView):
         print("token", token)
 
         return Response(ProfileSerializer(profile).data, status=200)
+
+
+class SetUsernameView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=UsernameRequestSerializer,
+        responses={
+            200: openapi.Response(
+                description="Username successfully Set",
+                schema=MessageResponseSerializer(),
+            ),
+            400: openapi.Response(
+                description="Bad request", schema=MessageResponseSerializer()
+            ),
+            403: openapi.Response(
+                description="This username already exists.\ntry another one.",
+                schema=MessageResponseSerializer(),
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        request_serializer = UsernameRequestSerializer(data=request.data)
+
+        if request_serializer.is_valid():
+            username = request_serializer.validated_data.get("username")
+            user_profile = request.user.profile
+
+            try:
+                user_profile.username = username
+                user_profile.save()
+                return Response(
+                    MessageResponseSerializer(
+                        {"message": "Username successfully Set"}
+                    ).data,
+                    status=200,
+                )
+
+            except IntegrityError:
+                return Response(
+                    MessageResponseSerializer(
+                        {"message": "This username already exists.\ntry another one."}
+                    ).data,
+                    status=403,
+                )
+
+        else:
+            return Response(request_serializer.errors, status=400)
+
+
+class CheckUsernameView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=UsernameRequestSerializer,
+        responses={
+            200: openapi.Response(
+                description="Username is available",
+                schema=MessageResponseSerializer(),
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=MessageResponseSerializer(),
+            ),
+            403: openapi.Response(
+                description="This username already exists.\ntry another one.",
+                schema=MessageResponseSerializer(),
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        request_serializer = UsernameRequestSerializer(data=request.data)
+
+        if request_serializer.is_valid():
+            username = request_serializer.validated_data.get("username")
+
+            if UserProfile.objects.filter(username=username).exists():
+                return Response(
+                    MessageResponseSerializer(
+                        {"message": "This username already exists.\ntry another one."}
+                    ).data,
+                    status=403,
+                )
+            else:
+                return Response(
+                    MessageResponseSerializer(
+                        {"message": "Username is available"}
+                    ).data,
+                    status=200,
+                )
+
+        else:
+            return Response(request_serializer.errors, status=400)
 
 
 class SetWalletAddressView(CreateAPIView):

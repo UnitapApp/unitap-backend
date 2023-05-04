@@ -7,7 +7,7 @@ from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
 from faucet.models import Chain, BrightUser
 from solana.rpc.api import Client
-from solana.rpc.core import RPCException
+from solana.rpc.core import RPCException, RPCNoResultException
 from solana.transaction import Transaction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
@@ -18,32 +18,40 @@ from .anchor_client import instructions
 from .solana_client import SolanaClient
 
 
+class FundMangerException:
+    class GasPriceTooHigh(Exception):
+        pass
+    class RPCError(Exception):
+        pass
 class EVMFundManager:
     def __init__(self, chain: Chain):
         self.chain = chain
         self.abi = manager_abi
 
-    class GasPriceTooHigh(Exception):
-        pass
-
     @property
     def w3(self) -> Web3:
         assert self.chain.rpc_url_private is not None
-        _w3 = Web3(Web3.HTTPProvider(self.chain.rpc_url_private))
-        if self.chain.poa:
-            _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-        if _w3.isConnected():
-            _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
-            return _w3
-        raise Exception(f"Could not connect to rpc {self.chain.rpc_url_private}")
+        try:
+            _w3 = Web3(Web3.HTTPProvider(self.chain.rpc_url_private))
+            if self.chain.poa:
+                _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            if _w3.isConnected():
+                _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
+                return _w3
+        except Exception as e:
+            logging.error(e)
+            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
 
     @property
     def is_gas_price_too_high(self):
-        gas_price = self.w3.eth.gas_price
-        if gas_price > self.chain.max_gas_price:
+        try:
+            gas_price = self.w3.eth.gas_price
+            if gas_price > self.chain.max_gas_price:
+                return True
+            return False
+        except Exception as e:
+            logging.error(e)
             return True
-        return False
-
     @property
     def account(self) -> LocalAccount:
         return self.w3.eth.account.privateKeyToAccount(self.chain.wallet.main_key)
@@ -57,13 +65,19 @@ class EVMFundManager:
 
     def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
-        self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return tx["hash"].hex()
+        try:
+            self.w3.eth.send_raw_transaction(tx.rawTransaction)
+            return tx["hash"].hex()
+        except Exception as e:
+            raise FundMangerException.RPCError(str(e))
 
     def multi_transfer(self, data):
         tx = self.multi_eth_transfer_signed_tx(data)
-        self.w3.eth.send_raw_transaction(tx.rawTransaction)
-        return tx["hash"].hex()
+        try:
+            self.w3.eth.send_raw_transaction(tx.rawTransaction)
+            return tx["hash"].hex()
+        except Exception as e:
+            raise FundMangerException.RPCError(str(e))
 
     def single_eth_transfer_signed_tx(self, amount: int, to: str):
         tx_function = self.contract.functions.withdrawEth(amount, to)
@@ -78,7 +92,7 @@ class EVMFundManager:
         gas_estimation = tx_function.estimateGas({"from": self.account.address})
 
         if self.is_gas_price_too_high:
-            raise self.GasPriceTooHigh()
+            raise FundMangerException.GasPriceTooHigh()
 
         tx_data = tx_function.buildTransaction(
             {
@@ -109,10 +123,13 @@ class SolanaFundManager:
     @property
     def w3(self) -> Client:
         assert self.chain.rpc_url_private is not None
-        _w3 = Client(self.chain.rpc_url_private)
-        if _w3.is_connected():
-            return _w3
-        raise Exception(f"Could not connect to rpc {self.chain.rpc_url_private}")
+        try:
+            _w3 = Client(self.chain.rpc_url_private)
+            if _w3.is_connected():
+                return _w3
+        except Exception as e:
+            logging.error(e)
+            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
 
     @property
     def account(self) -> Keypair:
@@ -160,12 +177,14 @@ class SolanaFundManager:
         txn = Transaction().add(instruction)
         try:
             fee = self.w3.get_fee_for_message(txn.compile_message()).value
-        except RPCException:
-            logging.warning("Solana RPCException to get fee for message")
-            fee = 0
-        if fee > self.chain.max_gas_price:
+            if not fee:
+                fee = 5000
+            if fee > self.chain.max_gas_price:
+                return True
+            return False
+        except Exception as e:
+            logging.warning(e)
             return True
-        return False
 
     def multi_transfer(self, data):
         total_withdraw_amount = sum(item["amount"] for item in data)
@@ -173,9 +192,10 @@ class SolanaFundManager:
             instruction = instructions.withdraw(
                 {"amount": total_withdraw_amount},
                 {"lock_account": self.lock_account_address, "owner": self.owner},
+                self.program_id
             )
             if self.is_gas_price_too_high(instruction):
-                raise Exception("GasPriceTooHigh")
+                raise FundMangerException.GasPriceTooHigh()
             if not self.solana_client.call_program(instruction):
                 raise Exception("Could not withdraw assets from solana contract")
             signature = self.solana_client.transfer_many_lamports(
@@ -186,7 +206,7 @@ class SolanaFundManager:
                 ],
             )
             if not signature:
-                raise Exception("Transfering lamports to receivers failed")
+                raise Exception("Transferring lamports to the receivers failed")
             return str(signature)
         else:
             raise Exception("The program is not initialized yet")
@@ -202,7 +222,11 @@ class SolanaFundManager:
                 TransactionConfirmationStatus.Confirmed,
                 TransactionConfirmationStatus.Finalized,
             ]
-        except TimeExhausted:
-            raise
+        except RPCException:
+            logging.warning("Solana raised the RPCException at get_signature_statuses()")
+            return False
+        except RPCNoResultException:
+            logging.warning("Solana raised the RPCNoResultException at get_signature_statuses()")
+            return False
         except Exception:
             raise
