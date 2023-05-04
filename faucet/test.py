@@ -50,16 +50,16 @@ def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> Us
     return p
 
 
-# @patch(
-#     "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
-#     lambda a, b: True,
-# )
-# def create_verified_user() -> BrightUser:
-#     user = create_new_user("0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e")
-#     user._verification_status = BrightUser.VERIFIED
-#     user._last_verified_datetime = timezone.now()
-#     user.save()
-#     return user
+@patch(
+    "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
+    lambda a, b: True,
+)
+def create_verified_user() -> UserProfile:
+    user = create_new_user("0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e")
+    user._verification_status = ClaimReceipt.VERIFIED
+    user._last_verified_datetime = timezone.now()
+    user.save()
+    return user
 
 
 def create_xDai_chain(wallet) -> Chain:
@@ -233,110 +233,108 @@ class TestChainInfo(APITestCase):
     #         self.assertEqual(chain_data["claimed"], 0)
     #         self.assertEqual(chain_data["unclaimed"], chain_data["maxClaimAmount"])
 
-# class TestClaim(APITestCase):
-#     def setUp(self) -> None:
-#         self.wallet = WalletAccount.objects.create(
-#             name="Test Wallet", private_key=test_wallet_key
-#         )
-#         self.new_user = create_new_user()
-#         self.verified_user = create_verified_user()
-#         self.x_dai = create_xDai_chain(self.wallet)
-#         self.idChain = create_idChain_chain(self.wallet)
-#         self.test_chain = create_test_chain(self.wallet)
-#         GlobalSettings.objects.create(weekly_chain_claim_limit=2)
+
+class TestClaim(APITestCase):
+    def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+        self.new_user = create_new_user()
+        self.verified_user = create_verified_user()
+        self.x_dai = create_xDai_chain(self.wallet)
+        self.idChain = create_idChain_chain(self.wallet)
+        self.test_chain = create_test_chain(self.wallet)
+        GlobalSettings.objects.create(weekly_chain_claim_limit=2)
+
+    def test_get_claimed_should_be_zero(self):
+        credit_strategy_xdai = WeeklyCreditStrategy(self.x_dai, self.new_user)
+        credit_strategy_id_chain = WeeklyCreditStrategy(self.idChain, self.new_user)
+
+        self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
+        self.assertEqual(credit_strategy_id_chain.get_claimed(), 0)
+        self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
+        self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim)
+
+    def test_x_dai_claimed_be_zero_eth_be_100(self):
+        claim_amount = 100
+        ClaimReceipt.objects.create(
+            chain=self.idChain,
+            user_profile=self.new_user,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            amount=claim_amount,
+        )
+
+        credit_strategy_xdai = WeeklyCreditStrategy(self.x_dai, self.new_user)
+        credit_strategy_id_chain = WeeklyCreditStrategy(self.idChain, self.new_user)
+
+        self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
+        self.assertEqual(credit_strategy_id_chain.get_claimed(), claim_amount)
+        self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
+        self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount)
+
+    def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
+        claim_manager_x_dai = SimpleClaimManager(
+            WeeklyCreditStrategy(self.x_dai, self.new_user)
+        )
+
+        try:
+            claim_manager_x_dai.claim(x_dai_max_claim + 10)
+            self.assertEqual(True, False)
+        except AssertionError:
+            self.assertEqual(True, True)
+
+    @bright_interface_mock
+    def test_claim_unverified_user_should_fail(self):
+        claim_amount = 100
+        claim_manager_x_dai = SimpleClaimManager(
+            WeeklyCreditStrategy(self.x_dai, self.new_user)
+        )
+
+        try:
+            claim_manager_x_dai.claim(claim_amount)
+            self.assertEqual(True, False)
+        except AssertionError:
+            self.assertEqual(True, True)
+
+    # def test_claim_manager_should_claim(self):
+    #     claim_amount = 100
+    #     claim_manager_x_dai = ClaimManagerFactory(
+    #         self.x_dai, self.verified_user
+    #     ).get_manager()
+    #     credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
+    #     r = claim_manager_x_dai.claim(claim_amount)
+    #     r._status = ClaimReceipt.VERIFIED
+    #     r.save()
+    #
+    #     self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
+    #     self.assertEqual(
+    #         credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount
+    #     )
 #
-#     def test_get_claimed_should_be_zero(self):
-#         credit_strategy_xdai = WeeklyCreditStrategy(self.x_dai, self.new_user)
-#         credit_strategy_id_chain = WeeklyCreditStrategy(self.idChain, self.new_user)
+    # def test_only_one_pending_claim(self):
+    #     claim_amount_1 = 100
+    #     claim_amount_2 = 50
+    #     claim_manager_x_dai = ClaimManagerFactory(
+    #         self.x_dai, self.verified_user
+    #     ).get_manager()
+    #     claim_manager_x_dai.claim(claim_amount_1)
+    #
+    #     try:
+    #         claim_manager_x_dai.claim(claim_amount_2)
+    #     except AssertionError:
+    #         self.assertEqual(True, True)
 #
-#         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
-#         self.assertEqual(credit_strategy_id_chain.get_claimed(), 0)
-#         self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
-#         self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim)
-#
-#     def test_x_dai_claimed_be_zero_eth_be_100(self):
-#         claim_amount = 100
-#         ClaimReceipt.objects.create(
-#             chain=self.idChain,
-#             user_profile=self.new_user,
-#             datetime=timezone.now(),
-#             _status=ClaimReceipt.VERIFIED,
-#             amount=claim_amount,
-#         )
-#
-#         credit_strategy_xdai = WeeklyCreditStrategy(self.x_dai, self.new_user)
-#         credit_strategy_id_chain = WeeklyCreditStrategy(self.idChain, self.new_user)
-#
-#         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
-#         self.assertEqual(credit_strategy_id_chain.get_claimed(), claim_amount)
-#         self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
-#         self.assertEqual(
-#             credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount
-#         )
-#
-#     def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
-#         claim_manager_x_dai = SimpleClaimManager(
-#             WeeklyCreditStrategy(self.x_dai, self.new_user)
-#         )
-#
-#         try:
-#             claim_manager_x_dai.claim(x_dai_max_claim + 10)
-#             self.assertEqual(True, False)
-#         except AssertionError:
-#             self.assertEqual(True, True)
-#
-#     @bright_interface_mock
-#     def test_claim_unverified_user_should_fail(self):
-#         claim_amount = 100
-#         claim_manager_x_dai = SimpleClaimManager(
-#             WeeklyCreditStrategy(self.x_dai, self.new_user)
-#         )
-#
-#         try:
-#             claim_manager_x_dai.claim(claim_amount)
-#             self.assertEqual(True, False)
-#         except AssertionError:
-#             self.assertEqual(True, True)
-#
-#     def test_claim_manager_should_claim(self):
-#         claim_amount = 100
-#         claim_manager_x_dai = ClaimManagerFactory(
-#             self.x_dai, self.verified_user
-#         ).get_manager()
-#         credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
-#
-#         r = claim_manager_x_dai.claim(claim_amount)
-#         r._status = ClaimReceipt.VERIFIED
-#         r.save()
-#
-#         self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
-#         self.assertEqual(
-#             credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount
-#         )
-#
-#     def test_only_one_pending_claim(self):
-#         claim_amount_1 = 100
-#         claim_amount_2 = 50
-#         claim_manager_x_dai = ClaimManagerFactory(
-#             self.x_dai, self.verified_user
-#         ).get_manager()
-#         claim_manager_x_dai.claim(claim_amount_1)
-#
-#         try:
-#             claim_manager_x_dai.claim(claim_amount_2)
-#         except AssertionError:
-#             self.assertEqual(True, True)
-#
-#     def test_second_claim_after_first_verifies(self):
-#         claim_amount_1 = 100
-#         claim_amount_2 = 50
-#         claim_manager_x_dai = ClaimManagerFactory(
-#             self.x_dai, self.verified_user
-#         ).get_manager()
-#         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
-#         claim_1._status = ClaimReceipt.VERIFIED
-#         claim_1.save()
-#         claim_manager_x_dai.claim(claim_amount_2)
+    # def test_second_claim_after_first_verifies(self):
+    #     claim_amount_1 = 100
+    #     claim_amount_2 = 50
+    #     claim_manager_x_dai = ClaimManagerFactory(
+    #         self.x_dai, self.verified_user
+    #     ).get_manager()
+    #     claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+    #     claim_1._status = ClaimReceipt.VERIFIED
+    #     claim_1.save()
+    #     claim_manager_x_dai.claim(claim_amount_2)
 #
 #     def test_second_claim_after_first_fails(self):
 #         claim_amount_1 = 100
