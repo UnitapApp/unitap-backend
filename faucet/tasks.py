@@ -92,7 +92,7 @@ def process_batch(self, batch_pk):
                         manager = SolanaFundManager(batch.chain)
                     elif (
                         batch.chain.chain_type == NetworkTypes.EVM
-                        or batch.chain.chain_type == NetworkTypes.NONEVM
+                        or batch.chain.chain_type == NetworkTypes.NONEVMXDC
                     ):
                         manager = EVMFundManager(batch.chain)
                     else:
