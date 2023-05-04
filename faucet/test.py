@@ -72,6 +72,7 @@ def create_xDai_chain(wallet) -> Chain:
         symbol="XDAI",
         chain_id="100",
         max_claim_amount=x_dai_max_claim,
+        explorer_url='https://ftmscan.com/'
     )
 
 
@@ -85,6 +86,7 @@ def create_test_chain(wallet) -> Chain:
         fund_manager_address=fund_manager,
         chain_id=test_chain_id,
         max_claim_amount=t_chain_max,
+        explorer_url='https://ftmscan.com/'
     )
 
 
@@ -97,6 +99,7 @@ def create_idChain_chain(wallet) -> Chain:
         symbol="eidi",
         chain_id="74",
         max_claim_amount=eidi_max_claim,
+        explorer_url='https://ftmscan.com/'
     )
 
 
@@ -187,38 +190,35 @@ class TestCreateAccount(APITestCase):
         self.assertAlmostEqual(response_1.json()["verificationUrl"], "http://<no-link>")
 
 
-# class TestChainInfo(APITestCase):
-#     def setUp(self) -> None:
-#         self.wallet = WalletAccount.objects.create(
-#             name="Test Wallet", private_key=test_wallet_key
-#         )
-#         self.new_user = create_new_user()
-#         self.xdai = create_xDai_chain(self.wallet)
-#         self.idChain = create_idChain_chain(self.wallet)
-#
-#     def request_chain_list(self):
-#         endpoint = reverse("FAUCET:chain-list")
-#         print(f'\n\n\n\n\n\n{endpoint} \n\n\n\n\n')
-#         chains = self.client.get(endpoint)
-#         return chains
-#
-#     def test_list_chains(self):
-#         response = self.request_chain_list()
-        # print(f'\n\n\n\n{response}\n\n\n\n')
-        # self.assertEqual(response.status_code, 200)
+class TestChainInfo(APITestCase):
+    def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+        self.new_user = create_new_user()
+        self.xdai = create_xDai_chain(self.wallet)
+        self.idChain = create_idChain_chain(self.wallet)
 
-    # def test_list_chain_should_show_NA_if_no_addresses_provided(self):
-    #     chains = self.request_chain_list()
-    #     chains_list = json.loads(chains.content)
-    #     print(f'\n\n\n\n\n{chains_list}\n\n\n\n\n\n\n')
-    #
-    #     for chain_data in chains_list:
-    #         self.assertEqual(chain_data["claimed"], "N/A")
-    #         self.assertEqual(chain_data["unclaimed"], "N/A")
-    #         if chain_data["symbol"] == "XDAI":
-    #             self.assertEqual(chain_data["maxClaimAmount"], x_dai_max_claim)
-    #         elif chain_data["symbol"] == "eidi":
-    #             self.assertEqual(chain_data["maxClaimAmount"], eidi_max_claim)
+    def request_chain_list(self):
+        endpoint = reverse("FAUCET:chain-list")
+        chains = self.client.get(endpoint)
+        return chains
+
+    def test_list_chains(self):
+        response = self.request_chain_list()
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_chain_should_show_NA_if_no_addresses_provided(self):
+        chains = self.request_chain_list()
+        chains_list = json.loads(chains.content)
+
+        for chain_data in chains_list:
+            self.assertEqual(chain_data["claimed"], "N/A")
+            self.assertEqual(chain_data["unclaimed"], "N/A")
+            if chain_data["symbol"] == "XDAI":
+                self.assertEqual(chain_data["maxClaimAmount"], x_dai_max_claim)
+            elif chain_data["symbol"] == "eidi":
+                self.assertEqual(chain_data["maxClaimAmount"], eidi_max_claim)
 
     # @patch(
     #     "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
@@ -226,7 +226,7 @@ class TestCreateAccount(APITestCase):
     # )
     # def test_chain_list_with_address(self):
     #     endpoint = reverse("FAUCET:chain-list-address", kwargs={"address": address})
-    #     chain_list_response = self.client.get(endpoint)
+    #     chain_list_response = self.client.get(endpoint) # NO such a view!!!
     #     chain_list = json.loads(chain_list_response.content)
     #
     #     for chain_data in chain_list:
@@ -556,4 +556,3 @@ class TestCreateAccount(APITestCase):
 #
 #         unclaimed = self.strategy.get_unclaimed()
 #         self.assertEqual(unclaimed, t_chain_max - 100)
-
