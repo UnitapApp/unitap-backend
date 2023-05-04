@@ -11,7 +11,12 @@ from sentry_sdk import capture_exception
 
 from authentication.models import NetworkTypes, Wallet
 
-from .faucet_manager.fund_manager import EVMFundManager, SolanaFundManager,LightningFundManager, FundMangerException
+from .faucet_manager.fund_manager import (
+    EVMFundManager,
+    SolanaFundManager,
+    LightningFundManager,
+    FundMangerException,
+)
 from .models import Chain, ClaimReceipt, TransactionBatch
 
 
@@ -93,7 +98,7 @@ def process_batch(self, batch_pk):
                         manager = LightningFundManager(batch.chain)
                     elif (
                         batch.chain.chain_type == NetworkTypes.EVM
-                        or batch.chain.chain_type == NetworkTypes.NONEVM
+                        or batch.chain.chain_type == NetworkTypes.NONEVMXDC
                     ):
                         manager = EVMFundManager(batch.chain)
                     else:
