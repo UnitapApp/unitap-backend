@@ -1,0 +1,1 @@
+MEMCACHE_LIGHTNING_LOCK_KEY = "Lightning-Multi-Transfer-LOCK"
