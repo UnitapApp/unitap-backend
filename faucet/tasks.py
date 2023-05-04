@@ -147,11 +147,13 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
                     manager = SolanaFundManager(batch.chain)
                 elif (
                     batch.chain.chain_type == NetworkTypes.EVM
-                    or batch.chain.chain_type == NetworkTypes.NONEVM
+                    or batch.chain.chain_type == NetworkTypes.NONEVMXDC
                 ):
                     manager = EVMFundManager(batch.chain)
                 else:
-                    raise Exception("Invalid chain type to update pending batch")
+                    raise Exception(
+                        f"Invalid chain type to update pending batch, chain type {batch.chain.chain_type}"
+                    )
 
                 if manager.is_tx_verified(batch.tx_hash):
                     batch._status = ClaimReceipt.VERIFIED
