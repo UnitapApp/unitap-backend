@@ -388,19 +388,23 @@ class TestClaim(APITestCase):
             claim_manager_x_dai.claim(claim_amount_3)
         except AssertionError:
             self.assertEqual(True, True)
-#
-#     @skipIf(not DEBUG, "only on debug")
-#     def test_transfer(self):
-#         fund_manager = EVMFundManager(self.test_chain)
-#         tx_hash = fund_manager.transfer(self.verified_user, 100)
-#         self.assertIsNotNone(tx_hash)
-#
-#     @skipIf(not DEBUG, "only on debug")
-#     def test_simple_claim_manager_transfer(self):
-#         manager = SimpleClaimManager(
-#             SimpleCreditStrategy(self.test_chain, self.verified_user)
-#         )
-#         receipt = manager.claim(100)
+
+    # @skipIf(not DEBUG, "only on debug")
+    # def test_transfer(self):
+    #     fund_manager = EVMFundManager(self.test_chain)
+    #     tx_hash = fund_manager.transfer(self.verified_user, 100), It seems transfer method is not being used anymore.
+    #     self.assertIsNotNone(tx_hash)
+
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )
+    @skipIf(not DEBUG, "only on debug")
+    def test_simple_claim_manager_transfer(self):
+        manager = SimpleClaimManager(
+            SimpleCreditStrategy(self.test_chain, self.verified_user)
+        )
+        receipt = manager.claim(100)
 #
 #
 # class TestClaimAPI(APITestCase):
