@@ -284,7 +284,10 @@ class TestClaim(APITestCase):
         except AssertionError:
             self.assertEqual(True, True)
 
-    @bright_interface_mock
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )
     def test_claim_unverified_user_should_fail(self):
         claim_amount = 100
         claim_manager_x_dai = SimpleClaimManager(
@@ -297,74 +300,94 @@ class TestClaim(APITestCase):
         except AssertionError:
             self.assertEqual(True, True)
 
-    # def test_claim_manager_should_claim(self):
-    #     claim_amount = 100
-    #     claim_manager_x_dai = ClaimManagerFactory(
-    #         self.x_dai, self.verified_user
-    #     ).get_manager()
-    #     credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
-    #     r = claim_manager_x_dai.claim(claim_amount)
-    #     r._status = ClaimReceipt.VERIFIED
-    #     r.save()
-    #
-    #     self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
-    #     self.assertEqual(
-    #         credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount
-    #     )
-#
-    # def test_only_one_pending_claim(self):
-    #     claim_amount_1 = 100
-    #     claim_amount_2 = 50
-    #     claim_manager_x_dai = ClaimManagerFactory(
-    #         self.x_dai, self.verified_user
-    #     ).get_manager()
-    #     claim_manager_x_dai.claim(claim_amount_1)
-    #
-    #     try:
-    #         claim_manager_x_dai.claim(claim_amount_2)
-    #     except AssertionError:
-    #         self.assertEqual(True, True)
-#
-    # def test_second_claim_after_first_verifies(self):
-    #     claim_amount_1 = 100
-    #     claim_amount_2 = 50
-    #     claim_manager_x_dai = ClaimManagerFactory(
-    #         self.x_dai, self.verified_user
-    #     ).get_manager()
-    #     claim_1 = claim_manager_x_dai.claim(claim_amount_1)
-    #     claim_1._status = ClaimReceipt.VERIFIED
-    #     claim_1.save()
-    #     claim_manager_x_dai.claim(claim_amount_2)
-#
-#     def test_second_claim_after_first_fails(self):
-#         claim_amount_1 = 100
-#         claim_amount_2 = 50
-#         claim_manager_x_dai = ClaimManagerFactory(
-#             self.x_dai, self.verified_user
-#         ).get_manager()
-#         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
-#         claim_1._status = ClaimReceipt.REJECTED
-#         claim_1.save()
-#         claim_manager_x_dai.claim(claim_amount_2)
-#
-#     def test_claim_should_fail_if_limit_reached(self):
-#         claim_amount_1 = 10
-#         claim_amount_2 = 5
-#         claim_amount_3 = 1
-#         claim_manager_x_dai = ClaimManagerFactory(
-#             self.x_dai, self.verified_user
-#         ).get_manager()
-#         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
-#         claim_1._status = ClaimReceipt.VERIFIED
-#         claim_1.save()
-#         claim_2 = claim_manager_x_dai.claim(claim_amount_2)
-#         claim_2._status = ClaimReceipt.VERIFIED
-#         claim_2.save()
-#
-#         try:
-#             claim_manager_x_dai.claim(claim_amount_3)
-#         except AssertionError:
-#             self.assertEqual(True, True)
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )
+    def test_claim_manager_should_claim(self):
+        claim_amount = 100
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
+        credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
+        r = claim_manager_x_dai.claim(claim_amount)
+        r._status = ClaimReceipt.VERIFIED
+        r.save()
+
+        self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
+        self.assertEqual(
+            credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount
+        )
+
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )
+    def test_only_one_pending_claim(self):
+        claim_amount_1 = 100
+        claim_amount_2 = 50
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
+        claim_manager_x_dai.claim(claim_amount_1)
+
+        try:
+            claim_manager_x_dai.claim(claim_amount_2)
+        except AssertionError:
+            self.assertEqual(True, True)
+
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )
+    def test_second_claim_after_first_verifies(self):
+        claim_amount_1 = 100
+        claim_amount_2 = 50
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1._status = ClaimReceipt.VERIFIED
+        claim_1.save()
+        claim_manager_x_dai.claim(claim_amount_2)
+
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )
+    def test_second_claim_after_first_fails(self):
+        claim_amount_1 = 100
+        claim_amount_2 = 50
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1._status = ClaimReceipt.REJECTED
+        claim_1.save()
+        claim_manager_x_dai.claim(claim_amount_2)
+
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )
+    def test_claim_should_fail_if_limit_reached(self):
+        claim_amount_1 = 10
+        claim_amount_2 = 5
+        claim_amount_3 = 1
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1._status = ClaimReceipt.VERIFIED
+        claim_1.save()
+        claim_2 = claim_manager_x_dai.claim(claim_amount_2)
+        claim_2._status = ClaimReceipt.VERIFIED
+        claim_2.save()
+
+        try:
+            claim_manager_x_dai.claim(claim_amount_3)
+        except AssertionError:
+            self.assertEqual(True, True)
 #
 #     @skipIf(not DEBUG, "only on debug")
 #     def test_transfer(self):
