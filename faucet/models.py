@@ -118,7 +118,7 @@ class BrightUser(models.Model):
 
 
 class ClaimReceipt(models.Model):
-    MAX_PENDING_DURATION = 15  # minutes
+    MAX_PENDING_DURATION = 5  # minutes
     PENDING = "Pending"
     VERIFIED = "Verified"
     REJECTED = "Rejected"
