@@ -1,10 +1,2 @@
 #!/bin/bash
-
-# Source the build environment
-export BUILD_DIR=$1
-export ENV_DIR=$2
-export BIN_DIR=$BUILD_DIR/.heroku/python/bin
-export PATH=$BIN_DIR:$PATH
-
-# Install requests package
-pip install requests
+echo "this is pre_compile"
