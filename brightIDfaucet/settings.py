@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "faucet.apps.FaucetConfig",
+    "tokenTap.apps.TokentapConfig",
     "authentication.apps.AuthenticationConfig",
     "rest_framework",
     "rest_framework.authtoken",

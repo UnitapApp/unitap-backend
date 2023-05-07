@@ -196,6 +196,8 @@ class Chain(models.Model):
     poa = models.BooleanField(default=False)
 
     fund_manager_address = models.CharField(max_length=255)
+    tokentap_contract_address = models.CharField(max_length=255, null=True, blank=True)
+
     wallet = models.ForeignKey(
         WalletAccount, related_name="chains", on_delete=models.PROTECT
     )
@@ -257,9 +259,9 @@ class Chain(models.Model):
                 return v
             elif self.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
-                    self.rpc_url_private, 
-                    self.wallet.main_key, 
-                    self.fund_manager_address
+                    self.rpc_url_private,
+                    self.wallet.main_key,
+                    self.fund_manager_address,
                 )
                 return lnpay_client.get_balance()
 
@@ -291,9 +293,9 @@ class Chain(models.Model):
                 return v
             elif self.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
-                    self.rpc_url_private, 
-                    self.wallet.main_key, 
-                    self.fund_manager_address
+                    self.rpc_url_private,
+                    self.wallet.main_key,
+                    self.fund_manager_address,
                 )
                 return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
@@ -410,7 +412,7 @@ class TransactionBatch(models.Model):
     @property
     def is_expired(self):
         return self.age > timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION)
-    
+
 
 class LightningConfig(models.Model):
     period = models.IntegerField(default=64800)
@@ -419,7 +421,5 @@ class LightningConfig(models.Model):
     current_round = models.IntegerField(null=True)
 
     def save(self, *args, **kwargs):
-       self.pk = 1
-       super().save(*args, **kwargs)
-
-
+        self.pk = 1
+        super().save(*args, **kwargs)
