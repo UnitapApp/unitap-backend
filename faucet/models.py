@@ -318,12 +318,12 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        return self.claims.filter(
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
-        ).count()
-        # return ClaimReceipt.objects.filter(
-        #     chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
+        # return self.claims.filter(
+        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         # ).count()
+        return ClaimReceipt.objects.filter(
+            chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
+        ).count()
 
     @property
     def total_claims_since_last_monday(self):
