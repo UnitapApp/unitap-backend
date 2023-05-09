@@ -582,55 +582,68 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(data[0]["pk"], c2.pk)
         self.assertEqual(data[1]["pk"], c1.pk)
 
-# class TestWeeklyCreditStrategy(APITestCase):
-#     def setUp(self) -> None:
-#         self.wallet = WalletAccount.objects.create(
-#             name="Test Wallet", private_key=test_wallet_key
-#         )
-#         self.verified_user = create_verified_user()
-#         self.test_chain = create_test_chain(self.wallet)
-#         self.strategy = WeeklyCreditStrategy(self.test_chain, self.verified_user)
-#
-#     def test_last_monday(self):
-#         now = timezone.now()
-#         last_monday = WeeklyCreditStrategy.get_last_monday()
-#         self.assertGreaterEqual(now, last_monday)
-#
-#     def create_claim_receipt(self, date, amount=10):
-#         verified_batch = TransactionBatch.objects.create(
-#             chain=self.test_chain, tx_hash="test-hash", _status=ClaimReceipt.VERIFIED
-#         )
-#         ClaimReceipt.objects.create(
-#             chain=self.test_chain,
-#             bright_user=self.verified_user,
-#             _status=ClaimReceipt.VERIFIED,
-#             amount=amount,
-#             datetime=date,
-#             batch=verified_batch,
-#         )
-#
-#     def test_last_week_claims(self):
-#         last_monday = WeeklyCreditStrategy.get_last_monday()
-#         last_sunday = last_monday - datetime.timedelta(days=1)
-#         tuesday = last_monday + datetime.timedelta(days=1)
-#         wednesday = last_monday + datetime.timedelta(days=2)
-#
-#         # last sunday
-#         self.create_claim_receipt(last_sunday)
-#         self.create_claim_receipt(last_monday)
-#         self.create_claim_receipt(tuesday)
-#         self.create_claim_receipt(wednesday)
-#
-#         total_claimed = self.strategy.get_claimed()
-#         self.assertEqual(total_claimed, 30)
-#
-#     def test_unclaimed(self):
-#         last_monday = WeeklyCreditStrategy.get_last_monday()
-#         last_sunday = last_monday - datetime.timedelta(days=1)
-#         tuesday = last_monday + datetime.timedelta(days=1)
-#
-#         self.create_claim_receipt(last_sunday, t_chain_max)
-#         self.create_claim_receipt(tuesday, 100)
-#
-#         unclaimed = self.strategy.get_unclaimed()
-#         self.assertEqual(unclaimed, t_chain_max - 100)
+
+class TestWeeklyCreditStrategy(APITestCase):
+    def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+        # self.verified_user = create_verified_user()
+        self.test_chain = create_test_chain(self.wallet)
+
+        self.initial_context_id = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+        self.password = "test"
+        self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+
+        GlobalSettings.objects.create(weekly_chain_claim_limit=2)
+        (user, created) = User.objects.get_or_create(username=self._address,
+                                                     password=self.password)
+        self.client.force_authenticate(user=user)
+        self.user_profile = UserProfile.objects.create(user=user,
+                                                       initial_context_id=self.initial_context_id)
+
+        self.strategy = WeeklyCreditStrategy(self.test_chain, self.user_profile)
+
+    def test_last_monday(self):
+        now = timezone.now()
+        last_monday = WeeklyCreditStrategy.get_last_monday()
+        self.assertGreaterEqual(now, last_monday)
+
+    def create_claim_receipt(self, date, amount=10):
+        verified_batch = TransactionBatch.objects.create(
+            chain=self.test_chain, tx_hash="test-hash", _status=ClaimReceipt.VERIFIED
+        )
+        ClaimReceipt.objects.create(
+            chain=self.test_chain,
+            user_profile=self.user_profile,
+            _status=ClaimReceipt.VERIFIED,
+            amount=amount,
+            datetime=date,
+            batch=verified_batch,
+        )
+
+    def test_last_week_claims(self):
+        last_monday = WeeklyCreditStrategy.get_last_monday()
+        last_sunday = last_monday - datetime.timedelta(days=1)
+        tuesday = last_monday + datetime.timedelta(days=1)
+        wednesday = last_monday + datetime.timedelta(days=2)
+
+        # last sunday
+        self.create_claim_receipt(last_sunday)
+        self.create_claim_receipt(last_monday)
+        self.create_claim_receipt(tuesday)
+        self.create_claim_receipt(wednesday)
+
+        total_claimed = self.strategy.get_claimed()
+        self.assertEqual(total_claimed, 30)
+
+    def test_unclaimed(self):
+        last_monday = WeeklyCreditStrategy.get_last_monday()
+        last_sunday = last_monday - datetime.timedelta(days=1)
+        tuesday = last_monday + datetime.timedelta(days=1)
+
+        self.create_claim_receipt(date=last_sunday, amount=t_chain_max)
+        self.create_claim_receipt(tuesday, 100)
+
+        unclaimed = self.strategy.get_unclaimed()
+        self.assertEqual(unclaimed, t_chain_max - 100)
