@@ -1,3 +1,13 @@
-from django.test import TestCase
+from django.urls import reverse
+from rest_framework.test import APITestCase
 
-# Create your tests here.
+
+class TokenDistributionTestCase(APITestCase):
+    def setUp(self):
+        pass
+
+    def test_token_distribution_creation(self):
+        pass
+
+    def test_token_distribution_expiration(self):
+        pass
