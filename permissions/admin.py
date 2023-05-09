@@ -5,11 +5,11 @@ from .models import *
 
 
 class BrightIDMeetVerificationAdmin(admin.ModelAdmin):
-    list_display = ["pk"]
+    list_display = ["pk", "name"]
 
 
 class BrightIDAuraVerificationAdmin(admin.ModelAdmin):
-    list_display = ["pk"]
+    list_display = ["pk", "name"]
 
 
 admin.site.register(BrightIDMeetVerification, BrightIDMeetVerificationAdmin)
