@@ -1,10 +1,8 @@
 from django.utils import timezone
 from django.db import models
 from authentication.models import UserProfile
-
 from faucet.models import Chain
-
-# Create your models here.
+from permissions.models import Permission
 
 
 class TokenDistribution(models.Model):
@@ -22,6 +20,8 @@ class TokenDistribution(models.Model):
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
     )
+
+    # permissions = models.ManyToManyField(Permission, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     deadline = models.DateTimeField(null=True, blank=True)
@@ -45,4 +45,4 @@ class TokenDistributionClaim(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    typed_signed_data = models.TextField()
+    signed_typed_data = models.TextField()

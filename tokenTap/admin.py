@@ -17,4 +17,14 @@ class TokenDistributionAdmin(admin.ModelAdmin):
     ]
 
 
+class TokenDistributionClaimAdmin(admin.ModelAdmin):
+    list_display = [
+        "pk",
+        "token_distribution",
+        "user_profile",
+        "created_at",
+    ]
+
+
 admin.site.register(TokenDistribution, TokenDistributionAdmin)
+admin.site.register(TokenDistributionClaim, TokenDistributionClaimAdmin)
