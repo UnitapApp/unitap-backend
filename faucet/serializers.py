@@ -125,7 +125,7 @@ class ChainSerializer(serializers.ModelSerializer):
             "order",
             "total_claims",
             "total_claims_since_last_monday",
-            "total_claims_since_last_round",
+            # "total_claims_since_last_round",
             "needs_funding",
             "is_testnet",
             "chain_type",
