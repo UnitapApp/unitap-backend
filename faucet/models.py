@@ -257,9 +257,9 @@ class Chain(models.Model):
                 return v
             elif self.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
-                    self.rpc_url_private, 
-                    self.wallet.main_key, 
-                    self.fund_manager_address
+                    self.rpc_url_private,
+                    self.wallet.main_key,
+                    self.fund_manager_address,
                 )
                 return lnpay_client.get_balance()
 
@@ -291,9 +291,9 @@ class Chain(models.Model):
                 return v
             elif self.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
-                    self.rpc_url_private, 
-                    self.wallet.main_key, 
-                    self.fund_manager_address
+                    self.rpc_url_private,
+                    self.wallet.main_key,
+                    self.fund_manager_address,
                 )
                 return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
@@ -333,9 +333,6 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        # return self.claims.filter(
-        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
-        # ).count()
         return ClaimReceipt.objects.filter(
             chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
@@ -350,11 +347,6 @@ class Chain(models.Model):
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
 
-        # return self.claims.filter(
-        #     datetime__gte=WeeklyCreditStrategy.get_last_monday(),
-        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
-        # ).count()
-
     @property
     def total_claims_for_last_round(self):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
@@ -365,12 +357,6 @@ class Chain(models.Model):
             datetime__lte=WeeklyCreditStrategy.get_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
-
-        # return self.claims.filter(
-        #     datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
-        #     datetime__lte=WeeklyCreditStrategy.get_last_monday(),
-        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
-        # ).count()
 
     @property
     def total_claims_since_last_round(self):
@@ -425,7 +411,7 @@ class TransactionBatch(models.Model):
     @property
     def is_expired(self):
         return self.age > timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION)
-    
+
 
 class LightningConfig(models.Model):
     period = models.IntegerField(default=64800)
@@ -434,7 +420,5 @@ class LightningConfig(models.Model):
     current_round = models.IntegerField(null=True)
 
     def save(self, *args, **kwargs):
-       self.pk = 1
-       super().save(*args, **kwargs)
-
-
+        self.pk = 1
+        super().save(*args, **kwargs)
