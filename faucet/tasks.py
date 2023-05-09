@@ -102,7 +102,9 @@ def process_batch(self, batch_pk):
                     ):
                         manager = EVMFundManager(batch.chain)
                     else:
-                        raise Exception("Invalid chain type to process batch")
+                        raise Exception(
+                            f"Invalid chain type to process batch, chain type {batch.chain.chain_type}"
+                        )
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
@@ -150,11 +152,13 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
                     manager = LightningFundManager(batch.chain)
                 elif (
                     batch.chain.chain_type == NetworkTypes.EVM
-                    or batch.chain.chain_type == NetworkTypes.NONEVM
+                    or batch.chain.chain_type == NetworkTypes.NONEVMXDC
                 ):
                     manager = EVMFundManager(batch.chain)
                 else:
-                    raise Exception("Invalid chain type to update pending batch")
+                    raise Exception(
+                        f"Invalid chain type to update pending batch, chain type {batch.chain.chain_type}"
+                    )
 
                 if manager.is_tx_verified(batch.tx_hash):
                     batch._status = ClaimReceipt.VERIFIED
