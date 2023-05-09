@@ -2,7 +2,9 @@ from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile
 from faucet.models import Chain, WalletAccount
 from django.contrib.auth.models import User
+from permissions.models import BrightIDMeetVerification
 from rest_framework.test import APITestCase
+import inspect
 from django.utils import timezone
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 
@@ -32,6 +34,10 @@ class TokenDistributionTestCase(APITestCase):
             tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
+        self.permission = BrightIDMeetVerification.objects.create(
+            name="BrightID Meet Verification"
+        )
+
     def test_token_distribution_creation(self):
         td = TokenDistribution.objects.create(
             name="Test Distribution",
@@ -45,10 +51,16 @@ class TokenDistributionTestCase(APITestCase):
             amount=1000,
             chain=self.chain,
             deadline=timezone.now() + timezone.timedelta(days=7),
+            # permissions=[self.permission],
         )
+        td.permissions.set([self.permission])
 
         self.assertEqual(TokenDistribution.objects.count(), 1)
         self.assertEqual(TokenDistribution.objects.first(), td)
+        self.assertEqual(TokenDistribution.objects.first().permissions.count(), 1)
+        self.assertEqual(
+            TokenDistribution.objects.first().permissions.first(), self.permission
+        )
 
     def test_token_distribution_expiration(self):
         td1 = TokenDistribution.objects.create(

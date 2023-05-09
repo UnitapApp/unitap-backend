@@ -1,7 +1,9 @@
 from django.db import models
+from polymorphic.models import PolymorphicModel
 
 
-class Permission(models.Model):
+class Permission(PolymorphicModel):
+
     name = models.CharField(max_length=200)
 
     def is_valid(self, *args, **kwargs):
