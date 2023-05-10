@@ -21,6 +21,9 @@ from django.db import transaction
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     private_key = EncryptedCharField(max_length=100)
+    network_type = models.CharField(
+        choices=NetworkTypes.networks, max_length=10, default=NetworkTypes.EVM
+    )
 
     @property
     def address(self):
@@ -315,7 +318,9 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        # return self.claims.filter(_status=ClaimReceipt.VERIFIED).count()
+        # return self.claims.filter(
+        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
+        # ).count()
         return ClaimReceipt.objects.filter(
             chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
@@ -324,20 +329,33 @@ class Chain(models.Model):
     def total_claims_since_last_monday(self):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return self.claims.filter(
+        return ClaimReceipt.objects.filter(
+            chain=self,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
+
+        # return self.claims.filter(
+        #     datetime__gte=WeeklyCreditStrategy.get_last_monday(),
+        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+        # ).count()
 
     @property
     def total_claims_for_last_round(self):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return self.claims.filter(
+        return ClaimReceipt.objects.filter(
+            chain=self,
             datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
             datetime__lte=WeeklyCreditStrategy.get_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
+
+        # return self.claims.filter(
+        #     datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
+        #     datetime__lte=WeeklyCreditStrategy.get_last_monday(),
+        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+        # ).count()
 
     @property
     def total_claims_since_last_round(self):
