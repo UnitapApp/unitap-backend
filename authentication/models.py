@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 from django.utils import timezone
+from django.core.validators import RegexValidator
 
 
 class ProfileManager(models.Manager):
@@ -21,7 +22,18 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="profile")
     initial_context_id = models.CharField(max_length=512, unique=True)
 
-    username = models.CharField(max_length=24, null=True, blank=True, unique=True)
+    username = models.CharField(
+        max_length=150,
+        validators=[
+            RegexValidator(
+                regex=r"^[\w.@+-]+$",
+                message="Username can only contain letters, digits and @/./+/-/_.",
+            ),
+        ],
+        null=True,
+        blank=True,
+        unique=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 

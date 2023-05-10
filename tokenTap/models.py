@@ -45,4 +45,4 @@ class TokenDistributionClaim(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    signed_typed_data = models.TextField()
+    signed_typed_data = models.TextField() # change this 
