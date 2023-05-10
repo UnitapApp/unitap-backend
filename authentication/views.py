@@ -11,6 +11,7 @@ from drf_yasg.utils import swagger_auto_schema
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
     verify_signature_eth_scheme,
+    is_username_valid_and_available,
 )
 from drf_yasg import openapi
 from authentication.serializers import (
@@ -151,6 +152,12 @@ class SetUsernameView(CreateAPIView):
             username = request_serializer.validated_data.get("username")
             user_profile = request.user.profile
 
+            if not is_username_valid_and_available(username):
+                return Response(
+                    MessageResponseSerializer({"message": "Invalid username"}).data,
+                    status=400,
+                )
+
             try:
                 user_profile.username = username
                 user_profile.save()
@@ -180,15 +187,19 @@ class CheckUsernameView(CreateAPIView):
         request_body=UsernameRequestSerializer,
         responses={
             200: openapi.Response(
-                description="Username is available",
+                description="<Username> is available",
                 schema=MessageResponseSerializer(),
             ),
             400: openapi.Response(
                 description="Bad request",
                 schema=MessageResponseSerializer(),
             ),
+            409: openapi.Response(
+                description="The username <username> is already in use.",
+                schema=MessageResponseSerializer(),
+            ),
             403: openapi.Response(
-                description="This username already exists.\ntry another one.",
+                description="Username can only contain letters, digits and @/./+/-/_.",
                 schema=MessageResponseSerializer(),
             ),
         },
@@ -199,20 +210,31 @@ class CheckUsernameView(CreateAPIView):
         if request_serializer.is_valid():
             username = request_serializer.validated_data.get("username")
 
-            if UserProfile.objects.filter(username=username).exists():
+            # if UserProfile.objects.filter(username=username).exists():
+            #     return Response(
+            #         MessageResponseSerializer(
+            #             {"message": "This username already exists.\ntry another one."}
+            #         ).data,
+            #         status=403,
+            #     )
+            # else:
+            #     return Response(
+            #         MessageResponseSerializer(
+            #             {"message": "Username is available"}
+            #         ).data,
+            #         status=200,
+            #     )
+
+            status, message, flag = is_username_valid_and_available(username)
+
+            if status:
                 return Response(
-                    MessageResponseSerializer(
-                        {"message": "This username already exists.\ntry another one."}
-                    ).data,
-                    status=403,
+                    MessageResponseSerializer({"message": message}).data, status=200
                 )
-            else:
-                return Response(
-                    MessageResponseSerializer(
-                        {"message": "Username is available"}
-                    ).data,
-                    status=200,
-                )
+            return Response(
+                MessageResponseSerializer({"message": message}).data,
+                status=403 if flag == "validation_error" else 409,
+            )
 
         else:
             return Response(request_serializer.errors, status=400)
