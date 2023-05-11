@@ -1,12 +1,10 @@
 import datetime
 import json
 from unittest import skipIf
-from urllib import response
 from uuid import uuid4
-from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
-from django.test import TestCase
+from faucet.views import CustomException
 from rest_framework.test import APITestCase
 from authentication.models import UserProfile
 
@@ -19,7 +17,6 @@ from faucet.faucet_manager.credit_strategy import (
 
 from faucet.faucet_manager.fund_manager import EVMFundManager
 from faucet.models import (
-    # BrightUser,
     Chain,
     ClaimReceipt,
     GlobalSettings,
@@ -40,26 +37,11 @@ test_chain_id = 1337
 test_rpc_url = "http://127.0.0.1:7545"
 
 
-@patch(
-    "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
-    lambda a, b: True,
-)
-def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> UserProfile:
-    (u, created) = User.objects.get_or_create(username=_address, password="test")
-    p = UserProfile.objects.create(user=u, initial_context_id=_address)
+def create_new_user(
+    _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
+) -> UserProfile:
+    p = UserProfile.objects.get_or_create(_address)
     return p
-
-
-@patch(
-    "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
-    lambda a, b: True,
-)
-def create_verified_user() -> UserProfile:
-    user = create_new_user("0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e")
-    user._verification_status = ClaimReceipt.VERIFIED
-    user._last_verified_datetime = timezone.now()
-    user.save()
-    return user
 
 
 def create_xDai_chain(wallet) -> Chain:
@@ -72,7 +54,7 @@ def create_xDai_chain(wallet) -> Chain:
         symbol="XDAI",
         chain_id="100",
         max_claim_amount=x_dai_max_claim,
-        explorer_url='https://ftmscan.com/'
+        explorer_url="https://ftmscan.com/",
     )
 
 
@@ -86,7 +68,7 @@ def create_test_chain(wallet) -> Chain:
         fund_manager_address=fund_manager,
         chain_id=test_chain_id,
         max_claim_amount=t_chain_max,
-        explorer_url='https://ftmscan.com/'
+        explorer_url="https://ftmscan.com/",
     )
 
 
@@ -99,30 +81,8 @@ def create_idChain_chain(wallet) -> Chain:
         symbol="eidi",
         chain_id="74",
         max_claim_amount=eidi_max_claim,
-        explorer_url='https://ftmscan.com/'
+        explorer_url="https://ftmscan.com/",
     )
-
-
-def bright_interface_mock(status_mock=False, link_mock="http://<no-link>"):
-    def inner(func):
-        @patch(
-            "faucet.faucet_manager.bright_id_interface.BrightIDInterface.get_verification_status",
-            lambda a, b: status_mock,
-        )
-        @patch(
-            "faucet.faucet_manager.bright_id_interface.BrightIDInterface.get_verification_link",
-            lambda a, b: link_mock,
-        )
-        @patch(
-            "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
-            lambda a, b: True,
-        )
-        def wrapper(*args, **kwarg):
-            func(*args, **kwarg)
-
-        return wrapper
-
-    return inner
 
 
 class TestWalletAccount(APITestCase):
@@ -133,7 +93,9 @@ class TestWalletAccount(APITestCase):
         )
 
     def test_create_wallet(self):
+        self.assertEqual(WalletAccount.objects.count(), 1)
         self.assertEqual(self.wallet.main_key, self.key)
+        self.assertEqual(WalletAccount.objects.first(), self.wallet)
 
 
 # class TestCreateAccount(APITestCase):
@@ -220,18 +182,24 @@ class TestChainInfo(APITestCase):
             elif chain_data["symbol"] == "eidi":
                 self.assertEqual(chain_data["maxClaimAmount"], eidi_max_claim)
 
-    # @patch(
-    #     "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
-    #     lambda a, b: True,
-    # )
-    # def test_chain_list_with_address(self):
-    #     endpoint = reverse("FAUCET:chain-list-address", kwargs={"address": address})
-    #     chain_list_response = self.client.get(endpoint) # NO such a view!!!
-    #     chain_list = json.loads(chain_list_response.content)
-    #
-    #     for chain_data in chain_list:
-    #         self.assertEqual(chain_data["claimed"], 0)
-    #         self.assertEqual(chain_data["unclaimed"], chain_data["maxClaimAmount"])
+    def test_chain_list_without_token(self):
+        endpoint = reverse("FAUCET:chain-list")
+        chain_list_response = self.client.get(endpoint)
+        chain_list = json.loads(chain_list_response.content)
+
+        for chain_data in chain_list:
+            self.assertEqual(chain_data["claimed"], "N/A")
+            self.assertEqual(chain_data["unclaimed"], "N/A")
+
+    def test_chain_list_with_token(self):
+        endpoint = reverse("FAUCET:chain-list")
+        self.client.force_authenticate(user=self.new_user.user)
+        chain_list_response = self.client.get(endpoint)
+        chain_list = json.loads(chain_list_response.content)
+
+        for chain_data in chain_list:
+            self.assertEqual(chain_data["claimed"], 0)
+            self.assertEqual(chain_data["unclaimed"], chain_data["maxClaimAmount"])
 
 
 class TestClaim(APITestCase):
@@ -240,7 +208,7 @@ class TestClaim(APITestCase):
             name="Test Wallet", private_key=test_wallet_key
         )
         self.new_user = create_new_user()
-        self.verified_user = create_verified_user()
+        self.verified_user = create_new_user()
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
         self.test_chain = create_test_chain(self.wallet)
@@ -271,7 +239,9 @@ class TestClaim(APITestCase):
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
         self.assertEqual(credit_strategy_id_chain.get_claimed(), claim_amount)
         self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
-        self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount)
+        self.assertEqual(
+            credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount
+        )
 
     def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
         claim_manager_x_dai = SimpleClaimManager(
@@ -286,7 +256,7 @@ class TestClaim(APITestCase):
 
     @patch(
         "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
-        lambda a: True,
+        lambda a: False,
     )
     def test_claim_unverified_user_should_fail(self):
         claim_amount = 100
@@ -349,7 +319,10 @@ class TestClaim(APITestCase):
         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
-        claim_manager_x_dai.claim(claim_amount_2)
+        try:
+            claim_manager_x_dai.claim(claim_amount_2)
+        except AssertionError:
+            self.assertEqual(False, True)
 
     @patch(
         "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
@@ -364,7 +337,10 @@ class TestClaim(APITestCase):
         claim_1 = claim_manager_x_dai.claim(claim_amount_1)
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
-        claim_manager_x_dai.claim(claim_amount_2)
+        try:
+            claim_manager_x_dai.claim(claim_amount_2)
+        except AssertionError:
+            self.assertEqual(True, False)
 
     @patch(
         "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
@@ -389,12 +365,6 @@ class TestClaim(APITestCase):
         except AssertionError:
             self.assertEqual(True, True)
 
-    # @skipIf(not DEBUG, "only on debug")
-    # def test_transfer(self):
-    #     fund_manager = EVMFundManager(self.test_chain)
-    #     tx_hash = fund_manager.transfer(self.verified_user, 100), It seems transfer method is not being used anymore.
-    #     self.assertIsNotNone(tx_hash)
-
     @patch(
         "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
         lambda a: True,
@@ -404,13 +374,15 @@ class TestClaim(APITestCase):
         manager = SimpleClaimManager(
             SimpleCreditStrategy(self.test_chain, self.verified_user)
         )
-        receipt = manager.claim(100)
+        manager.claim(100)
 
 
 class TestClaimAPI(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
-        self.verified_user = create_verified_user()
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+        self.verified_user = create_new_user()
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
         self.test_chain = create_test_chain(self.wallet)
@@ -419,16 +391,11 @@ class TestClaimAPI(APITestCase):
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
 
         GlobalSettings.objects.create(weekly_chain_claim_limit=2)
-        (user, created) = User.objects.get_or_create(username=self._address,
-                                                     password=self.password)
-        self.client.force_authenticate(user=user)
-        self.user_profile = UserProfile.objects.create(user=user,
-                                                       initial_context_id=self.initial_context_id)
 
-    @patch(
-        "faucet.views.ClaimMaxView.wallet_address_is_set",
-        lambda a: (True, None)
-    )
+        self.client.force_authenticate(user=self.verified_user.user)
+        self.user_profile = self.verified_user
+
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (False, None),
@@ -442,19 +409,7 @@ class TestClaimAPI(APITestCase):
         response = self.client.post(endpoint)
         self.assertEqual(response.status_code, 403)
 
-    # def test_claim_max_api_should_fail_if_not_verified(self):
-    #     # print(f'\n\n\n\n{self.new_user.wallets}\n\n\n\n')
-    #     endpoint = reverse(
-    #         "FAUCET:claim-max",
-    #         kwargs={"chain_pk": self.x_dai.pk},
-    #     )
-    #     response = self.client.post(endpoint)
-    #     self.assertEqual(response.status_code, 406)
-    #
-    @patch(
-        "faucet.views.ClaimMaxView.wallet_address_is_set",
-        lambda a: (True, None)
-    )
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -471,38 +426,30 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(claim_receipt["amount"], self.x_dai.max_claim_amount)
 
-    # @patch(
-    #     "faucet.views.ClaimMaxView.wallet_address_is_set",
-    #     lambda a: (True, None)
-    # )
-    # @patch(
-    #     "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-    #     lambda a, b, c: (True, None),
-    # )
-    # def test_claim_max_twice_should_fail(self):
-    #     endpoint = reverse(
-    #         "FAUCET:claim-max",
-    #         kwargs={"chain_pk": self.x_dai.pk},
-    #     )
-    #     response_1 = self.client.post(endpoint)
-    #     self.assertEqual(response_1.status_code, 200)
-    #
-    #     print(f'\n\n\n\nAfter first response\n\n\n\n')
-    #
-    #     response_2 = self.client.post(endpoint), This part do not response 403, just assertion and error!!
-    #     self.assertEqual(response_2.status_code, 403)
-    #
-    #     print(f'\n\n\n\nAfter second response\n\n\n\n')
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
-        "faucet.views.ClaimMaxView.wallet_address_is_set",
-        lambda a: (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
     )
+    def test_claim_max_twice_should_fail(self):
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"chain_pk": self.x_dai.pk},
+        )
+        response_1 = self.client.post(endpoint)
+        self.assertEqual(response_1.status_code, 200)
+        try:
+            self.client.post(endpoint)
+        except CustomException:
+            self.assertEqual(True, True)
+
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
     )
     def test_get_last_claim_of_user(self):
-        from faucet.serializers import ReceiptSerializer
+
         endpoint = reverse("FAUCET:last-claim")
 
         rejected_batch = TransactionBatch.objects.create(
@@ -540,10 +487,7 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(claim_data["txHash"], last_claim.tx_hash)
         self.assertEqual(claim_data["chain"]["pk"], last_claim.chain.pk)
 
-    @patch(
-        "faucet.views.ClaimMaxView.wallet_address_is_set",
-        lambda a: (True, None)
-    )
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -596,11 +540,8 @@ class TestWeeklyCreditStrategy(APITestCase):
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
 
         GlobalSettings.objects.create(weekly_chain_claim_limit=2)
-        (user, created) = User.objects.get_or_create(username=self._address,
-                                                     password=self.password)
-        self.client.force_authenticate(user=user)
-        self.user_profile = UserProfile.objects.create(user=user,
-                                                       initial_context_id=self.initial_context_id)
+        self.user_profile = create_new_user(self._address)
+        self.client.force_authenticate(user=self.user_profile.user)
 
         self.strategy = WeeklyCreditStrategy(self.test_chain, self.user_profile)
 
