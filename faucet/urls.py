@@ -40,7 +40,7 @@ urlpatterns = [
     path(
         "chain/list/", ChainListView.as_view(), name="chain-list"
     ),  # can have auth token for more user specific info
-    path("chain/small-list/", SmallChainListView.as_view(), name="chain-list"),
+    path("chain/small-list/", SmallChainListView.as_view(), name="small-chain-list"),
     path(
         "chain/<int:chain_pk>/claim-max/",
         ClaimMaxView.as_view(),
