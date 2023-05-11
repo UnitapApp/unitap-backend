@@ -360,7 +360,14 @@ class Chain(models.Model):
 
     @property
     def total_claims_since_last_round(self):
-        return self.total_claims_for_last_round + self.total_claims_since_last_monday
+        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+
+        return ClaimReceipt.objects.filter(
+            chain=self,
+            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
+            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+        ).count()
+        # return self.total_claims_for_last_round + self.total_claims_since_last_monday
 
 
 class GlobalSettings(models.Model):
