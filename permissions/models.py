@@ -22,3 +22,10 @@ class BrightIDMeetVerification(Permission):
 class BrightIDAuraVerification(Permission):
     def is_valid(self, user_profile, *args, **kwargs):
         return user_profile.is_aura_verified
+
+
+# class WhitelistVerification(Permission):
+#     def is_valid(self, user_profile, *args, **kwargs):
+#         if user_profile.wallets.filter(wallet_type="EVM").exists():
+#             return user_profile.wallets.filter(wallet_type="EVM").first().address in []
+#         return False

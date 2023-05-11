@@ -374,6 +374,7 @@ class Chain(models.Model):
 
 class GlobalSettings(models.Model):
     weekly_chain_claim_limit = models.IntegerField(default=10)
+    tokentap_weekly_claim_limit = models.IntegerField(default=2)
 
 
 class TransactionBatch(models.Model):
