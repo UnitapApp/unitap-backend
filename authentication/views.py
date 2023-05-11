@@ -152,7 +152,8 @@ class SetUsernameView(CreateAPIView):
             username = request_serializer.validated_data.get("username")
             user_profile = request.user.profile
 
-            if not is_username_valid_and_available(username):
+            s, a, b = is_username_valid_and_available(username)
+            if not s:
                 return Response(
                     MessageResponseSerializer({"message": "Invalid username"}).data,
                     status=400,
@@ -199,7 +200,7 @@ class CheckUsernameView(CreateAPIView):
                 schema=MessageResponseSerializer(),
             ),
             403: openapi.Response(
-                description="Username can only contain letters, digits and @/./+/-/_.",
+                description="Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
                 schema=MessageResponseSerializer(),
             ),
         },

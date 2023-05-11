@@ -1,4 +1,3 @@
-from authentication.models import UserProfile
 import requests
 import json
 import time
@@ -10,6 +9,7 @@ from web3 import Web3
 from eth_account import Account
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.apps import apps
 
 
 def verify_signature_eth_scheme(address, signature):
@@ -104,10 +104,12 @@ BRIGHTID_SOULDBOUND_INTERFACE = BrightIDSoulboundAPIInterface("unitap")
 
 
 def is_username_valid_and_available(username):
+    UserProfile = apps.get_model("authentication", "UserProfile")
+
     # Check if the string matches the required format
     validator = RegexValidator(
-        regex=r"^[\w.@+-]{1,150}$",
-        message="Username can only contain letters, digits and @/./+/-/_.",
+        regex=r"^(?=.*[a-zA-Z])([\w.@+-]{3,150})$",
+        message="Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
     )
 
     try:
