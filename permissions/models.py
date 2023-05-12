@@ -5,6 +5,7 @@ from polymorphic.models import PolymorphicModel
 class Permission(PolymorphicModel):
 
     name = models.CharField(max_length=200)
+    description = models.TextField(null=True, blank=True)
 
     def is_valid(self, *args, **kwargs):
         # Override this method in subclasses

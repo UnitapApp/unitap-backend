@@ -28,6 +28,8 @@ class TokenDistribution(models.Model):
 
     max_number_of_claims = models.IntegerField(null=True, blank=True)
 
+    notes = models.TextField(null=True, blank=True)
+
     @property
     def is_expired(self):
         if self.deadline is None:
