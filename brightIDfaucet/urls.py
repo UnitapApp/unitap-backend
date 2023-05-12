@@ -27,4 +27,5 @@ urlpatterns = [
     path("pass/art/<int:token_id>/", artwork_view),
     path("api/v1/", include("faucet.urls")),
     path("api/auth/", include("authentication.urls")),
+    path("api/tokentap/", include("tokenTap.urls")),
 ]

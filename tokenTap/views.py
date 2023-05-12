@@ -13,8 +13,9 @@ from django.urls import reverse
 from authentication.models import UserProfile, Wallet
 from faucet.models import Chain, GlobalSettings
 from tokenTap.models import TokenDistribution
+from tokenTap.serializers import TokenDistributionSerializer
 
 
-# class TokenDistributionListView(ListAPIView):
-#     serializer_class = TokenDistributionSerializer
-#     queryset = TokenDistribution.objects.all()
+class TokenDistributionListView(ListAPIView):
+    serializer_class = TokenDistributionSerializer
+    queryset = TokenDistribution.objects.all()

@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from rest_framework_polymorphic.serializers import PolymorphicSerializer
+from rest_polymorphic.serializers import PolymorphicSerializer
+
 
 
 from permissions.models import (
