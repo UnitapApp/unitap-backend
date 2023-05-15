@@ -15,7 +15,10 @@ class SolanaClient:
         self.signer = signer
 
     def call_program(self, instruction):
-        txn = Transaction().add(instruction)
+        if isinstance(instruction, list):
+            txn = Transaction().add(*instruction)
+        else:
+            txn = Transaction().add(instruction)
 
         try:
             return self.rpc_client.send_transaction(txn, self.signer).value

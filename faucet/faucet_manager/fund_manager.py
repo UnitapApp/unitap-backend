@@ -176,11 +176,20 @@ class SolanaFundManager:
         return None
 
     @property
+    def operator(self):
+        if self.lock_account:
+            return self.lock_account.operator
+        return None
+
+    @property
     def solana_client(self):
         return SolanaClient(self.w3, self.account)
     
     def is_gas_price_too_high(self, instruction):
-        txn = Transaction().add(instruction)
+        if isinstance(instruction, list):
+            txn = Transaction().add(*instruction)
+        else:
+            txn = Transaction().add(instruction)
         try:
             fee = self.w3.get_fee_for_message(txn.compile_message()).value
             if not fee:
@@ -188,29 +197,26 @@ class SolanaFundManager:
             if fee > self.chain.max_gas_price:
                 return True
             return False
-        except Exception as e:
-            logging.warning(e)
+        except Exception as ex:
+            logging.warning(ex)
             return True
 
     def multi_transfer(self, data):
-        total_withdraw_amount = sum(item["amount"] for item in data)
         if self.is_initialized:
-            instruction = instructions.withdraw(
-                {"amount": total_withdraw_amount},
-                {"lock_account": self.lock_account_address, "owner": self.owner},
-                self.program_id
-            )
+            instruction = [
+                instructions.withdraw(
+                    {"amount": item['amount']},
+                    {
+                        "lock_account": self.lock_account_address, 
+                        "operator": self.operator,
+                        "recipient": Pubkey.from_string(item["to"])
+                    },
+                    self.program_id
+                ) for item in data
+            ]
             if self.is_gas_price_too_high(instruction):
                 raise FundMangerException.GasPriceTooHigh()
-            if not self.solana_client.call_program(instruction):
-                raise Exception("Could not withdraw assets from solana contract")
-            signature = self.solana_client.transfer_many_lamports(
-                self.owner,
-                [
-                    (Pubkey.from_string(item["to"]), int(item["amount"]))
-                    for item in data
-                ],
-            )
+            signature = self.solana_client.call_program(instruction)
             if not signature:
                 raise Exception("Transferring lamports to the receivers failed")
             return str(signature)
