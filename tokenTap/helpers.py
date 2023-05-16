@@ -6,6 +6,7 @@ from faucet.models import Chain, GlobalSettings
 from .models import TokenDistributionClaim
 from authentication.models import NetworkTypes
 from faucet.models import WalletAccount
+from eth_account.messages import encode_defunct
 
 
 def create_uint32_random_nonce():
@@ -20,14 +21,11 @@ def create_uint32_random_nonce():
 
 def hash_message(user, token, amount, nonce):
 
-    # Pack the values
-    packed_message = encode_abi(
+    message_hash = Web3().solidityKeccak(
         ["address", "address", "uint256", "uint32"],
-        [user, token, amount, nonce],
+        [Web3.toChecksumAddress(user), Web3.toChecksumAddress(token), amount, nonce],
     )
-
-    # Hash the data
-    hashed_message = Web3.keccak(text=str(packed_message))
+    hashed_message = encode_defunct(hexstr=message_hash.hex())
 
     return hashed_message
 
@@ -35,14 +33,11 @@ def hash_message(user, token, amount, nonce):
 def sign_hashed_message(hashed_message):
 
     private_key = WalletAccount.objects.get(network_type=NetworkTypes.EVM).private_key
+    account = Account.from_key(private_key)
 
-    # Sign the message
-    signed_message = Account.signHash(hashed_message, private_key)
+    signed_message = account.sign_message(hashed_message)
 
-    # convert to hex
-    signed_message = signed_message.signature.hex()
-
-    return signed_message
+    return signed_message.signature.hex()
 
 
 def has_weekly_credit_left(user_profile):

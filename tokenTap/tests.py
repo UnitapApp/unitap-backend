@@ -313,7 +313,8 @@ class TokenDistributionAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
-            response.data["detail"], "You have not connected an EVM wallet to your account"
+            response.data["detail"],
+            "You have not connected an EVM wallet to your account",
         )
 
     @patch(
@@ -360,10 +361,9 @@ class HelpersTestCase(APITestCase):
         )
 
         sig = sign_hashed_message(hashed_message=hash)
-        from web3 import Account
+        from web3 import Web3
 
-        recovered_address = Account.recoverHash(hash, signature=sig.signature)
-
+        recovered_address = Web3().eth.account.recover_message(hash, signature=sig)
         self.assertTrue(recovered_address.lower() == wallet.address.lower())
 
 
