@@ -1,7 +1,7 @@
 from unittest.mock import patch
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
-from faucet.models import Chain, WalletAccount
+from faucet.models import Chain, GlobalSettings, WalletAccount
 from django.contrib.auth.models import User
 from permissions.models import BrightIDAuraVerification, BrightIDMeetVerification
 from rest_framework.test import APITestCase
@@ -150,6 +150,8 @@ class TokenDistributionClaimTestCase(APITestCase):
 
 class TokenDistributionAPITestCase(APITestCase):
     def setUp(self) -> None:
+        self.global_settings = GlobalSettings.objects.create()
+
         self.chain = Chain.objects.create(
             chain_name="Gnosis Chain",
             wallet=WalletAccount.objects.create(
@@ -206,7 +208,7 @@ class TokenDistributionAPITestCase(APITestCase):
             response.data[0]["permissions"][1]["name"], "BrightID Aura Verification"
         )
 
-    def test_token_distribution_claim_not_claimable_max_reached(self):
+    def test_token_distribution_not_claimable_max_reached(self):
         ltd = TokenDistribution.objects.create(
             name="Test Distribution",
             distributer="Test Distributer",
@@ -231,7 +233,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data["detail"], "This token is not claimable")
 
-    def test_token_distribution_claim_not_claimable_deadline_reached(self):
+    def test_token_distribution_not_claimable_deadline_reached(self):
         ltd = TokenDistribution.objects.create(
             name="Test Distribution",
             distributer="Test Distributer",
@@ -256,7 +258,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data["detail"], "This token is not claimable")
 
-    def test_token_distribution_claim_not_claimable_already_claimed(self):
+    def test_token_distribution_not_claimable_already_claimed(self):
         tdc = TokenDistributionClaim.objects.create(
             user_profile=self.user_profile,
             token_distribution=self.td,
@@ -274,7 +276,7 @@ class TokenDistributionAPITestCase(APITestCase):
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (False, None),
     )
-    def test_token_distribution_claim_not_claimable_false_permissions(self):
+    def test_token_distribution_not_claimable_false_permissions(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
@@ -285,11 +287,40 @@ class TokenDistributionAPITestCase(APITestCase):
             response.data["detail"], "You do not have permission to claim this token"
         )
 
+    def test_token_distribution_not_claimable_weekly_credit_limit_reached(self):
+        self.global_settings.tokentap_weekly_claim_limit = 0
+        self.global_settings.save()
+
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.data["detail"], "You have reached your weekly claim limit"
+        )
+
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
     )
-    def test_token_distribution_claim_claimable(self):
+    def test_token_distribution_not_claimable_no_wallet(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.data["detail"], "You have not connected an EVM wallet to your account"
+        )
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_token_distribution_claimable(self):
 
         Wallet.objects.create(
             user_profile=self.user_profile,
