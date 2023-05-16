@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django.db import models
-from authentication.models import UserProfile
+from authentication.models import NetworkTypes, UserProfile
 from faucet.models import Chain
 from permissions.models import Permission
 
@@ -59,4 +59,33 @@ class TokenDistributionClaim(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    signed_typed_data = models.TextField()  # change this
+    notes = models.TextField(null=True, blank=True)
+
+    signature = models.CharField(max_length=1024, blank=True, null=True)
+    nonce = models.BigIntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.token_distribution} - {self.user_profile}"
+
+    @property
+    def payload(self):
+        m = {
+            "user": self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
+            "token": self.token_distribution.token_address,
+            "amount": self.token_distribution.amount,
+            "nonce": self.nonce,
+            "signature": self.signature,
+        }
+        return m
+
+    @property
+    def user(self):
+        return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
+
+    @property
+    def token(self):
+        return self.token_distribution.token_address
+
+    @property
+    def amount(self):
+        return self.token_distribution.amount
