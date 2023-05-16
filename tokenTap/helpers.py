@@ -39,6 +39,9 @@ def sign_hashed_message(hashed_message):
     # Sign the message
     signed_message = Account.signHash(hashed_message, private_key)
 
+    # convert to hex
+    signed_message = signed_message.signature.hex()
+
     return signed_message
 
 
