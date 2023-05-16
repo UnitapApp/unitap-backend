@@ -196,6 +196,8 @@ class Chain(models.Model):
     poa = models.BooleanField(default=False)
 
     fund_manager_address = models.CharField(max_length=255)
+    tokentap_contract_address = models.CharField(max_length=255, null=True, blank=True)
+
     wallet = models.ForeignKey(
         WalletAccount, related_name="chains", on_delete=models.PROTECT
     )
@@ -372,6 +374,7 @@ class Chain(models.Model):
 
 class GlobalSettings(models.Model):
     weekly_chain_claim_limit = models.IntegerField(default=10)
+    tokentap_weekly_claim_limit = models.IntegerField(default=2)
 
 
 class TransactionBatch(models.Model):
