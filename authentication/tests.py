@@ -5,10 +5,9 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_200_OK
 from authentication.models import UserProfile
 from faucet.models import ClaimReceipt
-
 
 ### get address as username and signed address as password and verify signature
 
@@ -114,8 +113,6 @@ class SetUsernameTestCase(APITestCase):
 
 class TestUserLogin(APITestCase):
     def setUp(self) -> None:
-        self.new_user = create_new_user()
-        self.verified_user = create_verified_user()
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
         self.endpoint = reverse('AUTHENTICATION:login-user')
@@ -168,3 +165,50 @@ class TestUserLogin(APITestCase):
         response = self.client.post(self.endpoint, data={'username': self._address, 'password': self.password})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
+
+class TestSponsorCheckOrMakeSponsored(APITestCase):
+    def setUp(self) -> None:
+        self.password = "test"
+        self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+        self.endpoint = reverse('AUTHENTICATION:sponsor-user')
+
+    def test_invalid_arguments_provide_should_fail(self):
+        response = self.client.post(self.endpoint, data={'somthing_else': False})
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+
+    @patch(
+        'authentication.helpers.BrightIDSoulboundAPIInterface.create_verification_link',
+        lambda a, b: None
+    )
+    @patch(
+        'authentication.helpers.BrightIDSoulboundAPIInterface.create_qr_content',
+        lambda a, b: None
+    )
+    @patch(
+        'authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship',
+        lambda a, b: True
+    )
+    def test_already_sponsored_is_ok(self):
+        response = self.client.post(self.endpoint, data={'address': self._address})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    @patch(
+        'authentication.helpers.BrightIDSoulboundAPIInterface.create_verification_link',
+        lambda a, b: None
+    )
+    @patch(
+        'authentication.helpers.BrightIDSoulboundAPIInterface.create_qr_content',
+        lambda a, b: None
+    )
+    @patch(
+        'authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship',
+        lambda a, b: False
+    )
+    @patch(
+        'authentication.helpers.BrightIDSoulboundAPIInterface.sponsor',
+        lambda a, b: True
+    )
+    def test_become_sponsor(self):
+        response = self.client.post(self.endpoint, data={'address': self._address})
+        self.assertEqual(response.status_code, HTTP_200_OK)
