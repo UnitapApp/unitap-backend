@@ -51,6 +51,12 @@ class TokenDistributionClaimView(CreateAPIView):
                 "You have reached your weekly claim limit"
             )
 
+    def check_user_has_wallet(self, user_profile):
+        if not user_profile.wallets.filter(wallet_type=NetworkTypes.EVM).exists():
+            raise rest_framework.exceptions.PermissionDenied(
+                "You have not connected an EVM wallet to your account"
+            )
+
     def post(self, request, *args, **kwargs):
         user_profile = request.user.profile
         token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
@@ -62,6 +68,8 @@ class TokenDistributionClaimView(CreateAPIView):
         self.check_user_weekly_credit(user_profile)
 
         self.check_user_permissions(token_distribution, user_profile)
+
+        self.check_user_has_wallet(user_profile)
 
         nonce = create_uint32_random_nonce()
         hashed_message = hash_message(

@@ -305,6 +305,21 @@ class TokenDistributionAPITestCase(APITestCase):
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
     )
+    def test_token_distribution_not_claimable_no_wallet(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.data["detail"], "You have not connected an EVM wallet to your account"
+        )
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
     def test_token_distribution_claimable(self):
 
         Wallet.objects.create(
