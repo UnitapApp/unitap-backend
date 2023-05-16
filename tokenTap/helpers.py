@@ -1,7 +1,9 @@
 import random
 from web3 import Web3, Account
-from eth_abi import encode_abi, encode_single
-
+from eth_abi import encode_abi
+from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
+from faucet.models import Chain, GlobalSettings
+from .models import TokenDistributionClaim
 from authentication.models import NetworkTypes
 from faucet.models import WalletAccount
 
@@ -17,15 +19,6 @@ def create_uint32_random_nonce():
 
 
 def hash_message(user, token, amount, nonce):
-    # Convert addresses from hex to bytes
-    # user_bytes = Web3.toBytes(hexstr=user)
-    # user_bytes = encode_single("address", user)
-    # print("user_bytes", user_bytes)
-    # # token_bytes = Web3.toBytes(hexstr=token)
-    # token_bytes = encode_single("address", token)
-
-    # amount_ = encode_single("uint256", amount)
-    # nonce_ = encode_single("uint32", nonce)
 
     # Pack the values
     packed_message = encode_abi(
@@ -47,3 +40,13 @@ def sign_hashed_message(hashed_message):
     signed_message = Account.signHash(hashed_message, private_key)
 
     return signed_message
+
+
+def has_weekly_credit_left(user_profile):
+    return (
+        TokenDistributionClaim.objects.filter(
+            user_profile=user_profile,
+            created_at__gte=WeeklyCreditStrategy.get_last_monday(),
+        ).count()
+        < GlobalSettings.objects.first().tokentap_weekly_claim_limit
+    )

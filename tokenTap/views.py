@@ -1,13 +1,6 @@
-import json
-import logging
-from django.http import FileResponse
-import os
 import rest_framework.exceptions
-from django.http import Http404
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
@@ -17,7 +10,12 @@ from tokenTap.serializers import (
     TokenDistributionClaimSerializer,
     TokenDistributionSerializer,
 )
-from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
+from .helpers import (
+    create_uint32_random_nonce,
+    hash_message,
+    sign_hashed_message,
+    has_weekly_credit_left,
+)
 
 
 class TokenDistributionListView(ListAPIView):
@@ -47,6 +45,12 @@ class TokenDistributionClaimView(CreateAPIView):
                     "You do not have permission to claim this token"
                 )
 
+    def check_user_weekly_credit(self, user_profile):
+        if not has_weekly_credit_left(user_profile):
+            raise rest_framework.exceptions.PermissionDenied(
+                "You have reached your weekly claim limit"
+            )
+
     def post(self, request, *args, **kwargs):
         user_profile = request.user.profile
         token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
@@ -54,6 +58,8 @@ class TokenDistributionClaimView(CreateAPIView):
         self.check_token_distribution_is_claimable(token_distribution)
 
         self.check_user_hasnt_already_claimed(user_profile, token_distribution)
+
+        self.check_user_weekly_credit(user_profile)
 
         self.check_user_permissions(token_distribution, user_profile)
 
