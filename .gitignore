@@ -166,3 +166,4 @@ private.py
 static
 
 __pycache__
+.env.test
