@@ -1,4 +1,5 @@
 import datetime
+import time
 import os
 import json
 from unittest import skipIf
@@ -23,6 +24,7 @@ from faucet.models import (
     GlobalSettings,
     WalletAccount,
     TransactionBatch,
+    LightningConfig
 )
 from unittest.mock import patch
 from dotenv import dotenv_values
@@ -414,6 +416,11 @@ class TestClaimAPI(APITestCase):
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
 
         GlobalSettings.objects.create(weekly_chain_claim_limit=2)
+        LightningConfig.objects.create(
+            period=86800,
+            period_max_cap=100,
+            current_round=int(int(time.time()) / 86800) * 86800
+        )
 
         self.client.force_authenticate(user=self.verified_user.user)
         self.user_profile = self.verified_user
@@ -555,10 +562,27 @@ class TestClaimAPI(APITestCase):
                 invoice = env_config['LIGHTNING_INVOICE']
 
                 lightning_fund_manager = LightningFundManager(self.lightning_chain)
-                lightning_fund_manager.multi_transfer({
+                lightning_fund_manager.multi_transfer([{
                     "amount": 10,
                     "data": invoice
-                })
+                }])
+
+    def test_lightning_claim_max_cap_exceeded(self):
+        lightning_fund_manager = LightningFundManager(self.lightning_chain)
+        config = lightning_fund_manager.config
+        config.claimed_amount = 100
+        config.save()
+        is_exceeded = lightning_fund_manager._LightningFundManager__check_max_cap_exceeds(10)
+        self.assertEqual(is_exceeded, True)
+
+        with self.assertRaises(AssertionError):
+            invoice = env_config['LIGHTNING_INVOICE']
+
+            lightning_fund_manager.multi_transfer([{
+                "amount": 10,
+                "data": invoice
+            }])
+
 
 
 class TestWeeklyCreditStrategy(APITestCase):
