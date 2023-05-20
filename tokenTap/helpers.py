@@ -1,8 +1,7 @@
 import random
 from web3 import Web3, Account
-from eth_abi import encode_abi
 from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
-from faucet.models import Chain, GlobalSettings
+from faucet.models import GlobalSettings
 from .models import TokenDistributionClaim
 from authentication.models import NetworkTypes
 from faucet.models import WalletAccount
