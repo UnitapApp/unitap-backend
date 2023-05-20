@@ -8,8 +8,8 @@ from permissions.models import Permission
 class TokenDistribution(models.Model):
     name = models.CharField(max_length=100)
 
-    distributer = models.CharField(max_length=100)
-    distributer_url = models.URLField(max_length=255, null=True, blank=True)
+    distributor = models.CharField(max_length=100)
+    distributor_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
