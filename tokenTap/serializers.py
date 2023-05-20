@@ -13,8 +13,8 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
-            "distributer",
-            "distributer_url",
+            "distributor",
+            "distributor_url",
             "discord_url",
             "twitter_url",
             "image_url",
@@ -42,8 +42,8 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
-            "distributer",
-            "distributer_url",
+            "distributor",
+            "distributor_url",
             "discord_url",
             "twitter_url",
             "image_url",
