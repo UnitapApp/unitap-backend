@@ -2,7 +2,6 @@ from rest_framework import serializers
 from rest_polymorphic.serializers import PolymorphicSerializer
 
 
-
 from permissions.models import (
     Permission,
     BrightIDMeetVerification,
