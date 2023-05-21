@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from faucet.models import Chain, GlobalSettings
+from permissions.models import Permission
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
     TokenDistributionClaimSerializer,
@@ -32,17 +33,22 @@ class TokenDistributionClaimView(CreateAPIView):
                 "This token is not claimable"
             )
 
-    def check_user_hasnt_already_claimed(self, user_profile, token_distribution):
-        if token_distribution.claims.filter(user_profile=user_profile).exists():
-            raise rest_framework.exceptions.PermissionDenied(
-                "You have already claimed this token"
-            )
+    # def check_user_hasnt_already_claimed(self, user_profile, token_distribution):
+    #     if token_distribution.claims.filter(user_profile=user_profile).exists():
+    #         raise rest_framework.exceptions.PermissionDenied(
+    #             "You have already claimed this token"
+    #         )
 
     def check_user_permissions(self, token_distribution, user_profile):
         for permission in token_distribution.permissions.all():
-            if not permission.is_valid(user_profile):
+            permission: Permission
+            if not permission.is_valid(
+                user_profile, token_distribution=token_distribution
+            ):
                 raise rest_framework.exceptions.PermissionDenied(
-                    "You do not have permission to claim this token"
+                    permission.response()
+                    if permission.response() is not None
+                    else "You do not have permission to claim this token"
                 )
 
     def check_user_weekly_credit(self, user_profile):
@@ -63,7 +69,7 @@ class TokenDistributionClaimView(CreateAPIView):
 
         self.check_token_distribution_is_claimable(token_distribution)
 
-        self.check_user_hasnt_already_claimed(user_profile, token_distribution)
+        # self.check_user_hasnt_already_claimed(user_profile, token_distribution)
 
         self.check_user_weekly_credit(user_profile)
 

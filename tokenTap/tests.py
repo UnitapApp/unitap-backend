@@ -1,9 +1,15 @@
 from unittest.mock import patch
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
+from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
 from faucet.models import Chain, GlobalSettings, WalletAccount
 from django.contrib.auth.models import User
-from permissions.models import BrightIDAuraVerification, BrightIDMeetVerification
+from permissions.models import (
+    BrightIDAuraVerification,
+    BrightIDMeetVerification,
+    OncePerWeekVerification,
+    OncePerMonthVerification,
+)
 from rest_framework.test import APITestCase
 import inspect
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
@@ -43,8 +49,8 @@ class TokenDistributionTestCase(APITestCase):
     def test_token_distribution_creation(self):
         td = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -67,8 +73,8 @@ class TokenDistributionTestCase(APITestCase):
     def test_token_distribution_expiration(self):
         td1 = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -82,8 +88,8 @@ class TokenDistributionTestCase(APITestCase):
 
         td2 = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -123,8 +129,8 @@ class TokenDistributionClaimTestCase(APITestCase):
 
         self.td = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -173,8 +179,8 @@ class TokenDistributionAPITestCase(APITestCase):
 
         self.td = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -188,13 +194,24 @@ class TokenDistributionAPITestCase(APITestCase):
         )
         self.permission1 = BrightIDMeetVerification.objects.create(
             name="BrightID Meet Verification",
-            description="Verify that you have met the distributer in person.",
+            description="Verify that you have met the distributor in person.",
         )
         self.permission2 = BrightIDAuraVerification.objects.create(
             name="BrightID Aura Verification",
             description="Verify that you have a high Aura score.",
         )
-        self.td.permissions.set([self.permission1, self.permission2])
+        self.permission3 = OncePerWeekVerification.objects.create(
+            name="Once Per Week Verification",
+            description="Verify that you have not claimed from this distribution in the last week.",
+        )
+        self.permission4 = OncePerMonthVerification.objects.create(
+            name="Once Per Month Verification",
+            description="Verify that you have not claimed from this distribution in the last month.",
+        )
+
+        self.td.permissions.set(
+            [self.permission1, self.permission2, self.permission3, self.permission4]
+        )
 
     def test_token_distribution_list(self):
         response = self.client.get(reverse("token-distribution-list"))
@@ -211,8 +228,8 @@ class TokenDistributionAPITestCase(APITestCase):
     def test_token_distribution_not_claimable_max_reached(self):
         ltd = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -236,8 +253,8 @@ class TokenDistributionAPITestCase(APITestCase):
     def test_token_distribution_not_claimable_deadline_reached(self):
         ltd = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -258,6 +275,10 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data["detail"], "This token is not claimable")
 
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
     def test_token_distribution_not_claimable_already_claimed(self):
         tdc = TokenDistributionClaim.objects.create(
             user_profile=self.user_profile,
@@ -270,7 +291,33 @@ class TokenDistributionAPITestCase(APITestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.data["detail"], "You have already claimed this token")
+        self.assertEqual(
+            response.data["detail"], "You have already claimed this token this week."
+        )
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_token_distribution_not_claimable_already_claimed_month(self):
+        tdc = TokenDistributionClaim.objects.create(
+            user_profile=self.user_profile,
+            token_distribution=self.td,
+            # Claimed 2 weeks ago
+            created_at=WeeklyCreditStrategy.get_second_last_monday(),
+        )
+        tdc.created_at = WeeklyCreditStrategy.get_second_last_monday()
+        tdc.save()
+
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.data["detail"], "You have already claimed this token this month."
+        )
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
@@ -283,9 +330,6 @@ class TokenDistributionAPITestCase(APITestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.data["detail"], "You do not have permission to claim this token"
-        )
 
     def test_token_distribution_not_claimable_weekly_credit_limit_reached(self):
         self.global_settings.tokentap_weekly_claim_limit = 0
@@ -390,8 +434,8 @@ class TokenDistributionClaimAPITestCase(APITestCase):
 
         self.td = TokenDistribution.objects.create(
             name="Test Distribution",
-            distributer="Test Distributer",
-            distributer_url="https://example.com/distributer",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
@@ -405,7 +449,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         )
         self.permission1 = BrightIDMeetVerification.objects.create(
             name="BrightID Meet Verification",
-            description="Verify that you have met the distributer in person.",
+            description="Verify that you have met the distributor in person.",
         )
         self.permission2 = BrightIDAuraVerification.objects.create(
             name="BrightID Aura Verification",
