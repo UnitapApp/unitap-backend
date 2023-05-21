@@ -42,7 +42,7 @@ class OncePerWeekVerification(Permission):
         ).exists()
 
     def response(self):
-        return "You have already claimed this token this week."
+        return "You have already claimed this token this week"
 
 
 class OncePerMonthVerification(Permission):
@@ -54,7 +54,7 @@ class OncePerMonthVerification(Permission):
         ).exists()
 
     def response(self):
-        return "You have already claimed this token this month."
+        return "You have already claimed this token this month"
 
 
 # class WhitelistVerification(Permission):

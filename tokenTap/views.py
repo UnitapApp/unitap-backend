@@ -4,13 +4,18 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
+from authentication.serializers import MessageResponseSerializer
 from faucet.models import Chain, GlobalSettings
 from permissions.models import Permission
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
+    DetailResponseSerializer,
+    TokenDistributionClaimResponseSerializer,
     TokenDistributionClaimSerializer,
     TokenDistributionSerializer,
 )
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from .helpers import (
     create_uint32_random_nonce,
     hash_message,
@@ -32,12 +37,6 @@ class TokenDistributionClaimView(CreateAPIView):
             raise rest_framework.exceptions.PermissionDenied(
                 "This token is not claimable"
             )
-
-    # def check_user_hasnt_already_claimed(self, user_profile, token_distribution):
-    #     if token_distribution.claims.filter(user_profile=user_profile).exists():
-    #         raise rest_framework.exceptions.PermissionDenied(
-    #             "You have already claimed this token"
-    #         )
 
     def check_user_permissions(self, token_distribution, user_profile):
         for permission in token_distribution.permissions.all():
@@ -63,13 +62,33 @@ class TokenDistributionClaimView(CreateAPIView):
                 "You have not connected an EVM wallet to your account"
             )
 
+    @swagger_auto_schema(
+        responses={
+            200: openapi.Response(
+                description="Signature Created Successfully",
+                schema=TokenDistributionClaimResponseSerializer(),
+            ),
+            403: openapi.Response(
+                description="This token is not claimable"
+                + " | "
+                + "You have reached your weekly claim limit"
+                + " | "
+                + "You do not have permission to claim this token"
+                + " | "
+                + "You have not connected an EVM wallet to your account"
+                + " | "
+                + "You have already claimed this token this week"
+                + " | "
+                + "You have already claimed this token this month",
+                schema=DetailResponseSerializer(),
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         user_profile = request.user.profile
         token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
 
         self.check_token_distribution_is_claimable(token_distribution)
-
-        # self.check_user_hasnt_already_claimed(user_profile, token_distribution)
 
         self.check_user_weekly_credit(user_profile)
 

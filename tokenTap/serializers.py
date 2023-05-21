@@ -4,6 +4,16 @@ from permissions.serializers import PermissionSerializer
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 
 
+class DetailResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        pass
+
+
 class TokenDistributionSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
     permissions = PermissionSerializer(many=True)
@@ -65,3 +75,8 @@ class TokenDistributionClaimSerializer(serializers.ModelSerializer):
     class Meta:
         model = TokenDistributionClaim
         fields = ["id", "token_distribution", "user_profile", "created_at", "payload"]
+
+
+class TokenDistributionClaimResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    signature = TokenDistributionClaimSerializer()

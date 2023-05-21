@@ -292,7 +292,7 @@ class TokenDistributionAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
-            response.data["detail"], "You have already claimed this token this week."
+            response.data["detail"], "You have already claimed this token this week"
         )
 
     @patch(
@@ -316,7 +316,7 @@ class TokenDistributionAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
-            response.data["detail"], "You have already claimed this token this month."
+            response.data["detail"], "You have already claimed this token this month"
         )
 
     @patch(
