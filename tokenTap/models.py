@@ -57,7 +57,7 @@ class TokenDistributionClaim(models.Model):
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, related_name="tokentap_claims"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
     notes = models.TextField(null=True, blank=True)
 
