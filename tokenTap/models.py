@@ -67,16 +67,16 @@ class TokenDistributionClaim(models.Model):
     def __str__(self):
         return f"{self.token_distribution} - {self.user_profile}"
 
-    @property
-    def payload(self):
-        m = {
-            "user": self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
-            "token": self.token_distribution.token_address,
-            "amount": self.token_distribution.amount,
-            "nonce": self.nonce,
-            "signature": self.signature,
-        }
-        return m
+    # @property
+    # def payload(self):
+    #     m = {
+    #         "user": self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
+    #         "token": self.token_distribution.token_address,
+    #         "amount": self.token_distribution.amount,
+    #         "nonce": self.nonce,
+    #         "signature": self.signature,
+    #     }
+    #     return m
 
     @property
     def user(self):

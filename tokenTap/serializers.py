@@ -69,12 +69,22 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
         ]
 
 
+class PayloadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TokenDistributionClaim
+        fields = ["user", "token", "amount", "nonce", "signature"]
+
+
 class TokenDistributionClaimSerializer(serializers.ModelSerializer):
     token_distribution = SmallTokenDistributionSerializer()
+    payload = serializers.SerializerMethodField()
 
     class Meta:
         model = TokenDistributionClaim
         fields = ["id", "token_distribution", "user_profile", "created_at", "payload"]
+
+    def get_payload(self, obj):
+        return PayloadSerializer(obj).data
 
 
 class TokenDistributionClaimResponseSerializer(serializers.Serializer):
