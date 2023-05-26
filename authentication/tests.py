@@ -176,7 +176,6 @@ class TestSponsorCheckOrMakeSponsored(APITestCase):
         response = self.client.post(self.endpoint, data={'somthing_else': False})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-
     @patch(
         'authentication.helpers.BrightIDSoulboundAPIInterface.create_verification_link',
         lambda a, b: None
@@ -211,4 +210,81 @@ class TestSponsorCheckOrMakeSponsored(APITestCase):
     )
     def test_become_sponsor(self):
         response = self.client.post(self.endpoint, data={'address': self._address})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+class TestSetWalletAddress(APITestCase):
+    def setUp(self) -> None:
+        self.password = "test"
+        self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+        self.endpoint = reverse('AUTHENTICATION:set-wallet-user')
+        self.user_profile = create_new_user()
+        self.client.force_authenticate(user=self.user_profile.user)
+
+    def test_invalid_arguments_provided_should_fail(self):
+        response = self.client.post(self.endpoint)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        response = self.client.post(self.endpoint, data={'address': False})
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        response = self.client.post(self.endpoint, data={'wallet_type': False})
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_set_same_address_for_multiple_users_should_fail(self):
+        response = self.client.post(self.endpoint, data={'address': self._address, 'wallet_type': "EVM"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = self.client.post(self.endpoint, data={'address': self._address, 'wallet_type': "Solana"})
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_not_existing_wallet_then_create_and_set_address_for_that_is_ok(self):
+        response = self.client.post(self.endpoint, data={'address': self._address, 'wallet_type': "EVM"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+# class TestGetWalletAddress(APITestCase):
+#     def setUp(self) -> None:
+#         self.password = "test"
+#         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+#         self.endpoint_set = reverse('AUTHENTICATION:set-wallet-user')
+#         self.endpoint_get = reverse('AUTHENTICATION:get-wallet-user')
+#         self.user_profile = create_new_user()
+#         self.client.force_authenticate(user=self.user_profile.user)
+#
+#     def test_get_existing_wallet_is_ok(self):
+#         response = self.client.post(self.endpoint_set, data={'address': self._address, 'wallet_type': "EVM"})
+#         self.assertEqual(response.status_code, HTTP_200_OK)
+#
+#         response = self.client.post(self.endpoint_get, data={'wallet_type': "EVM"})
+#         self.assertEqual(response.status_code, HTTP_200_OK)
+#
+#     def test_not_existing_wallet_should_fail_getting_profile(self):
+#         response = self.client.post(self.endpoint_get, data={'wallet_type': "EVM"})
+#         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+
+class TestGetWalletsView(APITestCase):
+    def setUp(self) -> None:
+        self.password = "test"
+        self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+        self.endpoint = reverse('AUTHENTICATION:get-wallets-user')
+        self.user_profile = create_new_user()
+        self.client.force_authenticate(user=self.user_profile.user)
+
+    def test_request_to_this_api_is_ok(self):
+        response = self.client.get(self.endpoint)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+class TestGetProfileView(APITestCase):
+    def setUp(self) -> None:
+        self.password = "test"
+        self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+        self.endpoint = reverse('AUTHENTICATION:get-profile-user')
+        self.user_profile = create_new_user()
+        self.client.force_authenticate(user=self.user_profile.user)
+
+    def test_request_to_this_api_is_ok(self):
+        response = self.client.get(self.endpoint)
         self.assertEqual(response.status_code, HTTP_200_OK)
