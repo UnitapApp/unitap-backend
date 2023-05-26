@@ -4,6 +4,16 @@ from permissions.serializers import PermissionSerializer
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 
 
+class DetailResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        pass
+
+
 class TokenDistributionSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
     permissions = PermissionSerializer(many=True)
@@ -13,8 +23,8 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
-            "distributer",
-            "distributer_url",
+            "distributor",
+            "distributor_url",
             "discord_url",
             "twitter_url",
             "image_url",
@@ -42,8 +52,8 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
-            "distributer",
-            "distributer_url",
+            "distributor",
+            "distributor_url",
             "discord_url",
             "twitter_url",
             "image_url",
@@ -59,9 +69,24 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
         ]
 
 
+class PayloadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TokenDistributionClaim
+        fields = ["user", "token", "amount", "nonce", "signature"]
+
+
 class TokenDistributionClaimSerializer(serializers.ModelSerializer):
     token_distribution = SmallTokenDistributionSerializer()
+    payload = serializers.SerializerMethodField()
 
     class Meta:
         model = TokenDistributionClaim
         fields = ["id", "token_distribution", "user_profile", "created_at", "payload"]
+
+    def get_payload(self, obj):
+        return PayloadSerializer(obj).data
+
+
+class TokenDistributionClaimResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    signature = TokenDistributionClaimSerializer()

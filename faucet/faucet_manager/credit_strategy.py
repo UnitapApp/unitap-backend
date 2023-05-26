@@ -5,6 +5,7 @@ import datetime
 
 from django.db.models import Sum
 from django.utils import timezone
+import pytz
 from authentication.models import UserProfile
 
 from brightIDfaucet import settings
@@ -101,6 +102,12 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
         return timezone.make_aware(
             datetime.datetime.fromtimestamp(last_monday_midnight - week)
         )
+
+    @staticmethod
+    def get_first_day_of_the_month():
+        now = datetime.datetime.now(pytz.timezone("UTC"))
+        first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        return first_day
 
 
 class ArbitrumCreditStrategy(WeeklyCreditStrategy):

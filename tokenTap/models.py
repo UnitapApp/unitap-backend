@@ -8,8 +8,8 @@ from permissions.models import Permission
 class TokenDistribution(models.Model):
     name = models.CharField(max_length=100)
 
-    distributer = models.CharField(max_length=100)
-    distributer_url = models.URLField(max_length=255, null=True, blank=True)
+    distributor = models.CharField(max_length=100)
+    distributor_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
@@ -57,7 +57,7 @@ class TokenDistributionClaim(models.Model):
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, related_name="tokentap_claims"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
     notes = models.TextField(null=True, blank=True)
 
@@ -67,16 +67,16 @@ class TokenDistributionClaim(models.Model):
     def __str__(self):
         return f"{self.token_distribution} - {self.user_profile}"
 
-    @property
-    def payload(self):
-        m = {
-            "user": self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
-            "token": self.token_distribution.token_address,
-            "amount": self.token_distribution.amount,
-            "nonce": self.nonce,
-            "signature": self.signature,
-        }
-        return m
+    # @property
+    # def payload(self):
+    #     m = {
+    #         "user": self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
+    #         "token": self.token_distribution.token_address,
+    #         "amount": self.token_distribution.amount,
+    #         "nonce": self.nonce,
+    #         "signature": self.signature,
+    #     }
+    #     return m
 
     @property
     def user(self):
