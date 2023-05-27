@@ -1,6 +1,9 @@
 import time
 from contextlib import contextmanager
 from django.core.cache import cache
+from authentication.models import Wallet
+from faucet.models import Chain, ClaimReceipt
+
 
 @contextmanager
 def memcache_lock(lock_id, oid, lock_expire=60):
@@ -18,3 +21,15 @@ def memcache_lock(lock_id, oid, lock_expire=60):
             # owned by someone else
             # also don't release the lock if we didn't acquire it
             cache.delete(lock_id)
+
+
+def get_tokens_of_wallet_in_chain(wallet_address: str, chain: Chain):
+    try:
+        wallet = Wallet.objects.get(address=wallet_address)
+        claim = ClaimReceipt.objects.get(chain__chain_id=chain.chain_id, user_profile=wallet.user_profile)
+        return claim.amount
+
+    except Wallet.DoesNotExist:
+        return None
+    except ClaimReceipt.DoesNotExist:
+        return None

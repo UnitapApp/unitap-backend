@@ -7,7 +7,7 @@ from django.utils import timezone
 from faucet.views import CustomException
 from rest_framework.test import APITestCase
 from authentication.models import UserProfile
-
+from faucet.helpers import get_tokens_of_wallet_in_chain
 from brightIDfaucet.settings import DEBUG
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import (
@@ -23,6 +23,7 @@ from faucet.models import (
     WalletAccount,
     TransactionBatch,
 )
+from authentication.models import Wallet, NetworkTypes
 from unittest.mock import patch
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
@@ -38,7 +39,7 @@ test_rpc_url = "http://127.0.0.1:7545"
 
 
 def create_new_user(
-    _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
+        _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
 ) -> UserProfile:
     p = UserProfile.objects.get_or_create(_address)
     return p
@@ -588,3 +589,36 @@ class TestWeeklyCreditStrategy(APITestCase):
 
         unclaimed = self.strategy.get_unclaimed()
         self.assertEqual(unclaimed, t_chain_max - 100)
+
+
+class HelpersTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
+        self.user_profile = create_new_user(_address=self.address)
+        self.wallet = Wallet.objects.create(
+            user_profile=self.user_profile,
+            wallet_type=NetworkTypes.EVM,
+            address=self.address,
+        )
+
+        self.wallet_account = self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+
+        self.test_chain = create_test_chain(wallet=self.wallet_account)
+
+        verified_batch = TransactionBatch.objects.create(
+            chain=self.test_chain, tx_hash="0x0000000000", _status=ClaimReceipt.VERIFIED
+        )
+
+        self.claim_receipt = ClaimReceipt.objects.create(
+            chain=self.test_chain,
+            batch=verified_batch,
+            amount=1000,  # Here is the amount of that token
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            user_profile=self.user_profile,
+        )
+
+    def test_get_tokens_of_wallet_is_ok(self):
+        self.assertEqual(get_tokens_of_wallet_in_chain(wallet_address=self.address, chain=self.test_chain), 1000)
