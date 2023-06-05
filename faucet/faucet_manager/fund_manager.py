@@ -90,6 +90,8 @@ class EVMFundManager:
     def prepare_tx_for_broadcast(self, tx_function):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
         gas_estimation = tx_function.estimateGas({"from": self.account.address})
+        if self.chain.chain_id == 997:
+            gas_estimation = 100000
 
         if self.is_gas_price_too_high:
             raise FundMangerException.GasPriceTooHigh()
