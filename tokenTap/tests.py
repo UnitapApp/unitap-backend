@@ -304,9 +304,9 @@ class TokenDistributionAPITestCase(APITestCase):
             user_profile=self.user_profile,
             token_distribution=self.td,
             # Claimed 2 weeks ago
-            created_at=WeeklyCreditStrategy.get_second_last_monday(),
+            created_at=WeeklyCreditStrategy.get_first_day_of_the_month(),
         )
-        tdc.created_at = WeeklyCreditStrategy.get_second_last_monday()
+        tdc.created_at = WeeklyCreditStrategy.get_first_day_of_the_month()
         tdc.save()
 
         self.client.force_authenticate(user=self.user_profile.user)
