@@ -8,7 +8,7 @@ from permissions.models import Permission
 class TokenDistribution(models.Model):
     name = models.CharField(max_length=100)
 
-    distributor = models.CharField(max_length=100)
+    distributor = models.CharField(max_length=100, null=True, blank=True)
     distributor_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
@@ -30,6 +30,8 @@ class TokenDistribution(models.Model):
 
     notes = models.TextField(null=True, blank=True)
 
+    is_active = models.BooleanField(default=True)
+
     @property
     def is_expired(self):
         if self.deadline is None:
@@ -44,7 +46,11 @@ class TokenDistribution(models.Model):
 
     @property
     def is_claimable(self):
-        return not self.is_expired and not self.is_maxed_out
+        return not self.is_expired and not self.is_maxed_out and self.is_active
+
+    @property
+    def number_of_claims(self):
+        return self.claims.count()
 
     def __str__(self):
         return f"{self.name} - {self.token} - {self.amount}"
