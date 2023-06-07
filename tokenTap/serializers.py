@@ -65,6 +65,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "created_at",
             "deadline",
             "max_number_of_claims",
+            "number_of_claims",
             "notes",
         ]
 
