@@ -1,5 +1,5 @@
 from rest_framework.test import APITestCase
-from .models import Permission, BrightIDMeetVerification, BrightIDAuraVerification
+from .models import *
 
 
 class PermissionsTestCase(APITestCase):
@@ -14,3 +14,16 @@ class PermissionsTestCase(APITestCase):
         p2 = BrightIDAuraVerification.objects.create(name="BrightID Aura Verification")
         self.assertEqual(Permission.objects.count(), 2)
         self.assertEqual(Permission.objects.last(), p2)
+
+        p3 = OncePerWeekVerification.objects.create(name="Once Per Week Verification")
+        self.assertEqual(Permission.objects.count(), 3)
+        self.assertEqual(Permission.objects.last(), p3)
+
+        p4 = OncePerMonthVerification.objects.create(name="Once Per Month Verification")
+        self.assertEqual(Permission.objects.count(), 4)
+        self.assertEqual(Permission.objects.last(), p4)
+
+        p5 = OnceInALifeTimeVerification.objects.create(name="Once In A Life Time Verification")
+        self.assertEqual(Permission.objects.count(), 5)
+        self.assertEqual(Permission.objects.last(), p5)
+        
