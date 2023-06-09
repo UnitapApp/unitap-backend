@@ -41,6 +41,7 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
         fields = [
             "weekly_chain_claim_limit",
             "tokentap_weekly_claim_limit",
+            "prizetap_weekly_claim_limit",
             "is_gas_tap_available",
         ]
 

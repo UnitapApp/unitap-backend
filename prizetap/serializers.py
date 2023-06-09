@@ -1,11 +1,13 @@
 from rest_framework import serializers
 
 from faucet.serializers import SmallChainSerializer
+from permissions.serializers import PermissionSerializer
 from .models import *
 
 
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
+    permissions = PermissionSerializer(many=True)
 
     class Meta:
         model = Raffle
@@ -21,6 +23,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "is_prize_nft",
             "prize",
             "chain",
+            "permissions",
             "created_at",
             "deadline",
             "max_number_of_entries",
