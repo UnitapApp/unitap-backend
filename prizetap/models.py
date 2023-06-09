@@ -2,6 +2,7 @@ from django.db import models
 from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
+from permissions.models import Permission
 
 # Create your models here.
 
@@ -15,11 +16,15 @@ class Raffle(models.Model):
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
 
+    is_prize_nft = models.BooleanField(default=False)
+
     prize = models.CharField(max_length=100)
 
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="raffles", null=True, blank=True
     )
+
+    permissions = models.ManyToManyField(Permission, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     deadline = models.DateTimeField(null=True, blank=True)
@@ -44,6 +49,10 @@ class Raffle(models.Model):
     @property
     def is_claimable(self):
         return not self.is_expired and not self.is_maxed_out and self.is_active
+
+    @property
+    def number_of_entries(self):
+        return self.entries.count()
 
     def __str__(self):
         return f"{self.name} - {self.prize}"
