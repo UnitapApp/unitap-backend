@@ -1,3 +1,9 @@
 from django.contrib import admin
+from prizetap.models import *
 
-# Register your models here.
+
+class RaffleAdmin(admin.ModelAdmin):
+    list_display = ["pk", "name", "creator"]
+
+
+admin.site.register(Raffle, RaffleAdmin)

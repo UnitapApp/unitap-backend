@@ -47,6 +47,10 @@ class Raffle(models.Model):
     def is_claimable(self):
         return not self.is_expired and not self.is_maxed_out and self.is_active
 
+    @property
+    def number_of_entries(self):
+        return self.entries.count()
+
     def __str__(self):
         return f"{self.name} - {self.prize}"
 

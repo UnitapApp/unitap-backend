@@ -28,4 +28,5 @@ urlpatterns = [
     path("api/v1/", include("faucet.urls")),
     path("api/auth/", include("authentication.urls")),
     path("api/tokentap/", include("tokenTap.urls")),
+    path("api/prizetap/", include("prizetap.urls")),
 ]
