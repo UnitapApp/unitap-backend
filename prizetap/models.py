@@ -2,6 +2,7 @@ from django.db import models
 from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
+from permissions.models import Permission
 
 # Create your models here.
 
@@ -22,6 +23,8 @@ class Raffle(models.Model):
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="raffles", null=True, blank=True
     )
+
+    permissions = models.ManyToManyField(Permission, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     deadline = models.DateTimeField(null=True, blank=True)
