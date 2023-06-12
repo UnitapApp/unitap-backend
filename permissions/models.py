@@ -57,6 +57,17 @@ class OncePerMonthVerification(Permission):
         return "You have already claimed this token this month"
 
 
+class OnceInALifeTimeVerification(Permission):
+    def is_valid(self, user_profile, *args, **kwargs):
+        token_distribution = kwargs.get("token_distribution")
+        return not token_distribution.claims.filter(
+            user_profile=user_profile,
+        ).exists()
+
+    def response(self):
+        return "You have already claimed this token"
+
+
 # class WhitelistVerification(Permission):
 #     def is_valid(self, user_profile, *args, **kwargs):
 #         if user_profile.wallets.filter(wallet_type="EVM").exists():
