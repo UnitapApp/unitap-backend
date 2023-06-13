@@ -43,6 +43,8 @@ django-celery-results==2.3.1
 django-cors-headers==3.12.0
 django-encrypted-model-fields==0.6.5
 django-filter==21.1
+django-polymorphic==3.1.0
+django-rest-polymorphic==0.1.10
 djangorestframework==3.13.1
 djangorestframework-camel-case==1.3.0
 drf-yasg==1.20.0
@@ -77,6 +79,7 @@ jsonalias==0.1.1
 jsonrpcclient==4.0.2
 jsonschema==4.4.0
 kombu==5.2.4
+lnpay-py==0.1.0
 lru-dict==1.1.7
 MarkupSafe==2.1.1
 more-itertools==8.13.0
@@ -113,7 +116,7 @@ python-dotenv==0.20.0
 python-memcached==1.59
 pytz==2022.1
 redis==4.3.3
-requests==2.27.1
+requests==2.29.0
 rfc3986==1.5.0
 rlp==2.0.1
 ruamel.yaml==0.17.21
@@ -132,7 +135,7 @@ toolz==0.11.2
 Twisted==22.4.0
 txaio==22.2.1
 types-cachetools==4.2.10
-typing-extensions==4.2.0
+typing_extensions==4.2.0
 tzdata==2022.1
 uhashring==2.2
 uritemplate==4.1.1

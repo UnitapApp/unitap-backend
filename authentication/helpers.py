@@ -7,6 +7,9 @@ import ed25519
 from eth_account.messages import encode_defunct
 from web3 import Web3
 from eth_account import Account
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.apps import apps
 
 
 def verify_signature_eth_scheme(address, signature):
@@ -98,3 +101,28 @@ class BrightIDSoulboundAPIInterface:
 
 
 BRIGHTID_SOULDBOUND_INTERFACE = BrightIDSoulboundAPIInterface("unitap")
+
+
+def is_username_valid_and_available(username):
+    UserProfile = apps.get_model("authentication", "UserProfile")
+
+    # Check if the string matches the required format
+    validator = RegexValidator(
+        regex=r"^(?=.*[a-zA-Z])([\w.@+-]{3,150})$",
+        message="Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
+    )
+
+    try:
+        validator(username)
+    except ValidationError:
+        return (
+            False,
+            "Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
+            "validation_error",
+        )
+
+    # Check if the string is not already in use
+    if UserProfile.objects.filter(username=username).exists():
+        return False, f"The username {username} is already in use.", "already_in_use"
+
+    return True, f"{username} is available.", "success"

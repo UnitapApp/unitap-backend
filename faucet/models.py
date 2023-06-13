@@ -11,6 +11,7 @@ from django.conf import settings
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
+from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -117,7 +118,7 @@ class BrightUser(models.Model):
 
 
 class ClaimReceipt(models.Model):
-    MAX_PENDING_DURATION = 15  # minutes
+    MAX_PENDING_DURATION = 5  # minutes
     PENDING = "Pending"
     VERIFIED = "Verified"
     REJECTED = "Rejected"
@@ -195,6 +196,8 @@ class Chain(models.Model):
     poa = models.BooleanField(default=False)
 
     fund_manager_address = models.CharField(max_length=255)
+    tokentap_contract_address = models.CharField(max_length=255, null=True, blank=True)
+
     wallet = models.ForeignKey(
         WalletAccount, related_name="chains", on_delete=models.PROTECT
     )
@@ -254,6 +257,13 @@ class Chain(models.Model):
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
                 return v
+            elif self.chain_type == NetworkTypes.LIGHTNING:
+                lnpay_client = LNPayClient(
+                    self.rpc_url_private,
+                    self.wallet.main_key,
+                    self.fund_manager_address,
+                )
+                return lnpay_client.get_balance()
 
             raise Exception("Invalid chain type")
         except:
@@ -281,6 +291,13 @@ class Chain(models.Model):
                     Pubkey.from_string(self.wallet.address)
                 ).value
                 return v
+            elif self.chain_type == NetworkTypes.LIGHTNING:
+                lnpay_client = LNPayClient(
+                    self.rpc_url_private,
+                    self.wallet.main_key,
+                    self.fund_manager_address,
+                )
+                return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
         except:
             return 0
@@ -318,9 +335,6 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        # return self.claims.filter(
-        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
-        # ).count()
         return ClaimReceipt.objects.filter(
             chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
@@ -335,11 +349,6 @@ class Chain(models.Model):
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
 
-        # return self.claims.filter(
-        #     datetime__gte=WeeklyCreditStrategy.get_last_monday(),
-        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
-        # ).count()
-
     @property
     def total_claims_for_last_round(self):
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
@@ -351,19 +360,21 @@ class Chain(models.Model):
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
 
-        # return self.claims.filter(
-        #     datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
-        #     datetime__lte=WeeklyCreditStrategy.get_last_monday(),
-        #     _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
-        # ).count()
-
     @property
     def total_claims_since_last_round(self):
-        return self.total_claims_for_last_round + self.total_claims_since_last_monday
+        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+
+        return ClaimReceipt.objects.filter(
+            chain=self,
+            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
+            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+        ).count()
+        # return self.total_claims_for_last_round + self.total_claims_since_last_monday
 
 
 class GlobalSettings(models.Model):
     weekly_chain_claim_limit = models.IntegerField(default=10)
+    tokentap_weekly_claim_limit = models.IntegerField(default=2)
 
 
 class TransactionBatch(models.Model):
@@ -410,3 +421,14 @@ class TransactionBatch(models.Model):
     @property
     def is_expired(self):
         return self.age > timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION)
+
+
+class LightningConfig(models.Model):
+    period = models.IntegerField(default=64800)
+    period_max_cap = models.BigIntegerField()
+    claimed_amount = models.BigIntegerField(default=0)
+    current_round = models.IntegerField(null=True)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)

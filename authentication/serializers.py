@@ -64,6 +64,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             "pk",
+            "username",
             "token",
             "initial_context_id",
             "is_meet_verified",
