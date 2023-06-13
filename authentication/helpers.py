@@ -117,7 +117,7 @@ def is_username_valid_and_available(username):
     except ValidationError:
         return (
             False,
-            "Username can only contain letters, digits and @/./+/-/_.",
+            "Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
             "validation_error",
         )
 
