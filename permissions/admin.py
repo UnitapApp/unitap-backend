@@ -20,7 +20,12 @@ class OncePerMonthVerificationAdmin(admin.ModelAdmin):
     list_display = ["pk", "name"]
 
 
+class OnceInALifeTimeVerificationAdmin(admin.ModelAdmin):
+    list_display = ["pk", "name"]
+
+
 admin.site.register(BrightIDMeetVerification, BrightIDMeetVerificationAdmin)
 admin.site.register(BrightIDAuraVerification, BrightIDAuraVerificationAdmin)
 admin.site.register(OncePerWeekVerification, OncePerWeekVerificationAdmin)
 admin.site.register(OncePerMonthVerification, OncePerMonthVerificationAdmin)
+admin.site.register(OnceInALifeTimeVerification, OnceInALifeTimeVerificationAdmin)

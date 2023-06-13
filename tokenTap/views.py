@@ -26,7 +26,7 @@ from .helpers import (
 
 class TokenDistributionListView(ListAPIView):
     serializer_class = TokenDistributionSerializer
-    queryset = TokenDistribution.objects.all()
+    queryset = TokenDistribution.objects.filter(is_active=True)
 
 
 class TokenDistributionClaimView(CreateAPIView):
