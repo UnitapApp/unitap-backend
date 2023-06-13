@@ -11,12 +11,13 @@ from rest_framework.views import APIView
 from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated
 from django.urls import reverse
-from authentication.models import UserProfile, Wallet
+from authentication.models import UserProfile, Wallet, NetworkTypes
 from faucet.faucet_manager.claim_manager import (
     ClaimManagerFactory,
     LimitedChainClaimManager,
 )
 from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+from faucet.helpers import get_tokens_of_wallet_in_chain
 from faucet.models import Chain, ClaimReceipt, GlobalSettings
 from faucet.serializers import (
     ChainBalanceSerializer,
@@ -25,13 +26,10 @@ from faucet.serializers import (
     ChainSerializer,
     SmallChainSerializer,
 )
+from faucet.errors import CustomException
 
 # import BASE_DIR from django settings
 from django.conf import settings
-
-
-class CustomException(Exception):
-    pass
 
 
 class LastClaimView(RetrieveAPIView):
@@ -44,8 +42,8 @@ class LastClaimView(RetrieveAPIView):
         try:
             return (
                 ClaimReceipt.objects.filter(user_profile=user_profile)
-                .order_by("pk")
-                .last()
+                    .order_by("pk")
+                    .last()
             )
         except ClaimReceipt.DoesNotExist:
             raise Http404("Claim Receipt for this user does not exist")
@@ -81,8 +79,8 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             result = (
-                gs.weekly_chain_claim_limit
-                - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
+                    gs.weekly_chain_claim_limit
+                    - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
             )
             return Response({"total_weekly_claims_remaining": result}, status=200)
         else:
@@ -144,6 +142,20 @@ class ClaimMaxView(APIView):
             # return Response({"message": "You are not BrighID verified"}, status=403)
             raise CustomException("You are not BrighID verified")
 
+    def check_user_does_not_have_more_than_4x(self, wallet_address):
+        # print(f'\n\n\n\n\n{wallet_address}\n\n\n\n')
+        wallet = Wallet.objects.get(address=wallet_address)
+        manager = self.get_claim_manager()
+        max_credit = manager.get_credit_strategy().get_unclaimed()
+        try:
+            user_assets = get_tokens_of_wallet_in_chain(wallet_address=wallet_address, chain=self.get_chain())
+            # print(f'\n\n\n\n\n{self.get_chain()}\n\n\n\n\n')
+            assert user_assets is not None
+            if wallet.wallet_type == NetworkTypes.EVM and user_assets > 4 * max_credit:
+                raise CustomException("You have 4x more than what you want to claim")
+        except AssertionError as e:
+            raise CustomException("Somthing went wrong in receiving the amount of your assets in this chain")
+
     def wallet_address_is_set(self):
         passive_address = self.request.data.get("address", None)
         if passive_address is not None:
@@ -186,6 +198,7 @@ class ClaimMaxView(APIView):
         try:
             self.check_user_is_verified()
             s, passive_address = self.wallet_address_is_set()
+            self.check_user_does_not_have_more_than_4x(wallet_address=passive_address)
         except CustomException as e:
             return Response({"message": str(e)}, status=403)
 

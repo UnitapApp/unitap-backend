@@ -1,4 +1,5 @@
 import time
+from web3 import Web3
 from contextlib import contextmanager
 from django.core.cache import cache
 from authentication.models import Wallet
@@ -25,11 +26,8 @@ def memcache_lock(lock_id, oid, lock_expire=60):
 
 def get_tokens_of_wallet_in_chain(wallet_address: str, chain: Chain):
     try:
-        wallet = Wallet.objects.get(address=wallet_address)
-        claim = ClaimReceipt.objects.get(chain__chain_id=chain.chain_id, user_profile=wallet.user_profile)
-        return claim.amount
-
-    except Wallet.DoesNotExist:
-        return None
-    except ClaimReceipt.DoesNotExist:
+        web3 = Web3(Web3.HTTPProvider(chain.rpc_url_private))
+        assert web3.isConnected() is True
+        return web3.eth.getBalance(wallet_address)
+    except AssertionError as e:
         return None
