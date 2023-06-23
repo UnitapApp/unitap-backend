@@ -407,7 +407,7 @@ class Chain(models.Model):
             total_claims_since_last_round,
             180,
         )
-        # return self.total_claims_for_last_round + self.total_claims_since_last_monday
+        return total_claims_since_last_round
 
 
 class GlobalSettings(models.Model):
