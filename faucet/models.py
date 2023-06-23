@@ -252,7 +252,10 @@ class Chain(models.Model):
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
                 if self.chain_id == 500:
                     logging.debug("chain XDC NONEVM is checking its balances")
-                return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
+                funds = EVMFundManager(self).w3.eth.getBalance(
+                    self.fund_manager_address
+                )
+                return funds
 
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
@@ -267,7 +270,11 @@ class Chain(models.Model):
                 return lnpay_client.get_balance()
 
             raise Exception("Invalid chain type")
-        except:
+        except Exception as e:
+
+            logging.exception(
+                f"Error getting manager balance for {self.chain_name} error is {e}"
+            )
             return 0
 
     @property

@@ -65,7 +65,7 @@ def process_batch(self, batch_pk):
                 print("Could not acquire process lock")
                 return
 
-            print("Processing Batch")
+            print(f"Processing Batch {batch_pk}")
 
             batch = TransactionBatch.objects.get(pk=batch_pk)
 
@@ -92,6 +92,7 @@ def process_batch(self, batch_pk):
                 print(data)
 
                 try:
+                    print(f"Sending 1 ")
                     if batch.chain.chain_type == NetworkTypes.SOLANA:
                         manager = SolanaFundManager(batch.chain)
                     elif batch.chain.chain_type == NetworkTypes.LIGHTNING:
@@ -100,17 +101,22 @@ def process_batch(self, batch_pk):
                         batch.chain.chain_type == NetworkTypes.EVM
                         or batch.chain.chain_type == NetworkTypes.NONEVMXDC
                     ):
+                        print(f"Sending 2 ")
                         manager = EVMFundManager(batch.chain)
                     else:
                         raise Exception(
                             f"Invalid chain type to process batch, chain type {batch.chain.chain_type}"
                         )
+                    print(f"Sending 3 ")
                     tx_hash = manager.multi_transfer(data)
+                    print(f"Sending 4")
                     batch.tx_hash = tx_hash
                     batch.save()
                 except FundMangerException.GasPriceTooHigh as e:
+                    print(f"Sending 5 {e}")
                     logging.error(e)
                 except FundMangerException.RPCError as e:
+                    print(f"Sending 6 {e}")
                     logging.error(e)
                 except Exception as e:
                     capture_exception()
