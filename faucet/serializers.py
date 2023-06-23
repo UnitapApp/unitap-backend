@@ -126,7 +126,7 @@ class ChainSerializer(serializers.ModelSerializer):
             "max_claim_amount",
             "claimed",
             "unclaimed",
-            "order",
+            # "order",
             "total_claims",
             "total_claims_since_last_monday",
             "tokentap_contract_address",
