@@ -7,34 +7,32 @@ import borsh_construct as borsh
 from ..program_id import PROGRAM_ID
 
 
-class WithdrawArgs(typing.TypedDict):
+class EmergencyWithdrawArgs(typing.TypedDict):
     amount: int
 
 
 layout = borsh.CStruct("amount" / borsh.U64)
 
 
-class WithdrawAccounts(typing.TypedDict):
+class EmergencyWithdrawAccounts(typing.TypedDict):
     lock_account: Pubkey
-    operator: Pubkey
-    recipient: Pubkey
+    owner: Pubkey
 
 
-def withdraw(
-    args: WithdrawArgs,
-    accounts: WithdrawAccounts,
+def emergency_withdraw(
+    args: EmergencyWithdrawArgs,
+    accounts: EmergencyWithdrawAccounts,
     program_id: Pubkey = PROGRAM_ID,
     remaining_accounts: typing.Optional[typing.List[AccountMeta]] = None,
 ) -> Instruction:
     keys: list[AccountMeta] = [
         AccountMeta(pubkey=accounts["lock_account"], is_signer=False, is_writable=True),
-        AccountMeta(pubkey=accounts["operator"], is_signer=True, is_writable=True),
-        AccountMeta(pubkey=accounts["recipient"], is_signer=False, is_writable=True),
+        AccountMeta(pubkey=accounts["owner"], is_signer=True, is_writable=True),
         AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
     ]
     if remaining_accounts is not None:
         keys += remaining_accounts
-    identifier = b'\xb7\x12F\x9c\x94m\xa1"'
+    identifier = b"\xef-\xcb@\x96I\xda\\"
     encoded_args = layout.build(
         {
             "amount": args["amount"],
