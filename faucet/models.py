@@ -12,6 +12,7 @@ from authentication.models import NetworkTypes, UserProfile, Wallet
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from faucet.faucet_manager.lnpay_client import LNPayClient
+from django.core.cache import cache
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -335,40 +336,77 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        return ClaimReceipt.objects.filter(
+        cached_total_claims = cache.get(f"total_claims_{self.chain_id}")
+        if cached_total_claims:
+            return cached_total_claims
+        total_claims = ClaimReceipt.objects.filter(
             chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
+        cache.set(f"total_claims_{self.chain_id}", total_claims, 180)
+        return total_claims
 
     @property
     def total_claims_since_last_monday(self):
+        cached_total_claims_since_last_monday = cache.get(
+            f"total_claims_since_last_monday_{self.chain_id}"
+        )
+        if cached_total_claims_since_last_monday:
+            return cached_total_claims_since_last_monday
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
+        total_claims_since_last_monday = ClaimReceipt.objects.filter(
             chain=self,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
+        cache.set(
+            f"total_claims_since_last_monday_{self.chain_id}",
+            total_claims_since_last_monday,
+            180,
+        )
+        return total_claims_since_last_monday
 
     @property
     def total_claims_for_last_round(self):
+        cached_total_claims_for_last_round = cache.get(
+            f"total_claims_for_last_round_{self.chain_id}"
+        )
+        if cached_total_claims_for_last_round:
+            return cached_total_claims_for_last_round
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
+        total_claims_for_last_round = ClaimReceipt.objects.filter(
             chain=self,
             datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
             datetime__lte=WeeklyCreditStrategy.get_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
+        cache.set(
+            f"total_claims_for_last_round_{self.chain_id}",
+            total_claims_for_last_round,
+            180,
+        )
+        return total_claims_for_last_round
 
     @property
     def total_claims_since_last_round(self):
+        cached_total_claims_since_last_round = cache.get(
+            f"total_claims_since_last_round_{self.chain_id}"
+        )
+        if cached_total_claims_since_last_round:
+            return cached_total_claims_since_last_round
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
+        total_claims_since_last_round = ClaimReceipt.objects.filter(
             chain=self,
             datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
+        cache.set(
+            f"total_claims_since_last_round_{self.chain_id}",
+            total_claims_since_last_round,
+            180,
+        )
         # return self.total_claims_for_last_round + self.total_claims_since_last_monday
 
 
