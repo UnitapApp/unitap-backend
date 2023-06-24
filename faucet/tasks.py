@@ -1,16 +1,15 @@
 import time
 import logging
 from contextlib import contextmanager
-
 from celery import shared_task
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from sentry_sdk import capture_exception
-
 from authentication.models import NetworkTypes, Wallet
-
+from tokenTap.models import TokenDistributionClaim
+from django.conf import settings as django_settings
 from .faucet_manager.fund_manager import (
     EVMFundManager,
     SolanaFundManager,
@@ -259,3 +258,45 @@ def update_needs_funding_status():  # periodic task
     chains = Chain.objects.filter(is_active=True)
     for _chain in chains:
         update_needs_funding_status_chain.delay(_chain.pk)
+
+
+@shared_task
+def process_verified_lighning_claim(gas_tap_claim_id):
+    try:
+        claim = ClaimReceipt.objects.get(pk=gas_tap_claim_id)
+        user_profile = claim.user_profile
+        tokentap_lightning_claim = (
+            TokenDistributionClaim.objects.filter(
+                user_profile=user_profile,
+                token_distribution__chain__chain_type=NetworkTypes.LIGHTNING,
+            )
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not tokentap_lightning_claim:
+            raise Exception("No tokentap claim found for user")
+
+        tokentap_lightning_claim.status = ClaimReceipt.VERIFIED
+        tokentap_lightning_claim.tx_hash = claim.tx_hash
+        tokentap_lightning_claim.save()
+
+        claim._status = ClaimReceipt.PROCESSED_FOR_TOKENTAP
+        claim.save()
+
+    except Exception as e:
+        capture_exception()
+        print(f"error in processing lightning claims: {str(e)}")
+
+
+@shared_task
+def update_tokentap_claim_for_verified_lightning_claims():
+    claims = ClaimReceipt.objects.filter(
+        _status=ClaimReceipt.VERIFIED,
+        chain__chain_type=NetworkTypes.LIGHTNING,
+    )
+    for _claim in claims:
+        if django_settings.IS_TESTING:
+            process_verified_lighning_claim.apply((_claim.pk,))
+        else:
+            process_verified_lighning_claim.delay((_claim.pk,))

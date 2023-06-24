@@ -82,7 +82,15 @@ class TokenDistributionClaimSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TokenDistributionClaim
-        fields = ["id", "token_distribution", "user_profile", "created_at", "payload"]
+        fields = [
+            "id",
+            "token_distribution",
+            "user_profile",
+            "created_at",
+            "payload",
+            "status",
+            "tx_hash",
+        ]
 
     def get_payload(self, obj):
         return PayloadSerializer(obj).data
