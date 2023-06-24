@@ -22,6 +22,8 @@ def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
 
+IS_TESTING = False
+
 # SECURITY WARNING: keep the secret key used in production secret!
 FIELD_ENCRYPTION_KEY = os.environ.get("FIELD_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY")

@@ -123,11 +123,13 @@ class ClaimReceipt(models.Model):
     PENDING = "Pending"
     VERIFIED = "Verified"
     REJECTED = "Rejected"
+    PROCESSED_FOR_TOKENTAP = "Processed"
 
     states = (
         (PENDING, "Pending"),
         (VERIFIED, "Verified"),
         (REJECTED, "Rejected"),
+        (PROCESSED_FOR_TOKENTAP, "Processed"),
     )
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)

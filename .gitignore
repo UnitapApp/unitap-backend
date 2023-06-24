@@ -139,6 +139,8 @@ req.txt
 # Rope project settings
 .ropeproject
 
+tmp.py
+
 # mkdocs documentation
 /site
 
