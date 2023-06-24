@@ -6,14 +6,10 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('faucet', '0048_claimreceipt_already_processed'),
+        ('faucet', '0048_globalsettings_prizetap_weekly_claim_limit_and_more'),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='claimreceipt',
-            name='already_processed',
-        ),
         migrations.AlterField(
             model_name='claimreceipt',
             name='_status',
