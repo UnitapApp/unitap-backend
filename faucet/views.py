@@ -17,7 +17,7 @@ from faucet.faucet_manager.claim_manager import (
     LimitedChainClaimManager,
 )
 from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
-from faucet.helpers import get_tokens_of_wallet_in_chain
+from faucet.helpers import WalletInfo
 from faucet.models import Chain, ClaimReceipt, GlobalSettings
 from faucet.serializers import (
     ChainBalanceSerializer,
@@ -143,18 +143,13 @@ class ClaimMaxView(APIView):
             raise CustomException("You are not BrighID verified")
 
     def check_user_does_not_have_more_than_4x(self, wallet_address):
-        # print(f'\n\n\n\n\n{wallet_address}\n\n\n\n')
         wallet = Wallet.objects.get(address=wallet_address)
-        manager = self.get_claim_manager()
-        max_credit = manager.get_credit_strategy().get_unclaimed()
-        try:
-            user_assets = get_tokens_of_wallet_in_chain(wallet_address=wallet_address, chain=self.get_chain())
-            # print(f'\n\n\n\n\n{self.get_chain()}\n\n\n\n\n')
-            assert user_assets is not None
+        max_credit = self.get_chain().max_claim_amount
+        user_assets = WalletInfo.get_tokens_of_wallet_in_chain(wallet_address=wallet_address, chain=self.get_chain())
+        if user_assets is not None:
+            print(f'\n\n\n\n{user_assets}\n\n\n\n')
             if wallet.wallet_type == NetworkTypes.EVM and user_assets > 4 * max_credit:
                 raise CustomException("You have 4x more than what you want to claim")
-        except AssertionError as e:
-            raise CustomException("Somthing went wrong in receiving the amount of your assets in this chain")
 
     def wallet_address_is_set(self):
         passive_address = self.request.data.get("address", None)

@@ -24,10 +24,12 @@ def memcache_lock(lock_id, oid, lock_expire=60):
             cache.delete(lock_id)
 
 
-def get_tokens_of_wallet_in_chain(wallet_address: str, chain: Chain):
-    try:
-        web3 = Web3(Web3.HTTPProvider(chain.rpc_url_private))
-        assert web3.isConnected() is True
-        return web3.eth.getBalance(wallet_address)
-    except AssertionError as e:
-        return None
+class WalletInfo:
+    @staticmethod
+    def get_tokens_of_wallet_in_chain(wallet_address: str, chain: Chain):
+        try:
+            web3 = Web3(Web3.HTTPProvider(chain.rpc_url_private))
+            assert web3.isConnected() is True
+            return web3.eth.getBalance(wallet_address)
+        except AssertionError as e:
+            return None

@@ -1,5 +1,7 @@
 import datetime
+import sys
 import json
+import web3
 from unittest import skipIf
 from uuid import uuid4
 from django.urls import reverse
@@ -7,7 +9,7 @@ from django.utils import timezone
 from faucet.views import CustomException
 from rest_framework.test import APITestCase
 from authentication.models import UserProfile
-from faucet.helpers import get_tokens_of_wallet_in_chain
+from faucet.helpers import WalletInfo
 from brightIDfaucet.settings import DEBUG
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import (
@@ -397,6 +399,8 @@ class TestClaimAPI(APITestCase):
         self.user_profile = self.verified_user
         self.wallet = Wallet.objects.create(user_profile=self.user_profile, address=self._address,
                                             wallet_type=NetworkTypes.EVM)
+        # self.wallet_not_evm = Wallet.objects.create(user_profile=self.user_profile, address=self._address,
+        #                                     wallet_type=NetworkTypes.EVM)
 
     @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
@@ -412,50 +416,53 @@ class TestClaimAPI(APITestCase):
         response = self.client.post(endpoint)
         self.assertEqual(response.status_code, 403)
 
-    # @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
-    #        lambda a: (True, "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"))
-    # @patch(
-    #     "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-    #     lambda a, b, c: (True, None),
-    # )
-    # def test_claim_max_api_should_claim_all(self):    ----------> fails because of 4x
-    #     endpoint = reverse(
-    #         "FAUCET:claim-max",
-    #         kwargs={"chain_pk": self.x_dai.pk},
-    #     )
-    #
-    #     response = self.client.post(endpoint)
-    #     claim_receipt = json.loads(response.content)
-    #     print(f'\n\n\n\n{claim_receipt}\n\n\n\n')
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(claim_receipt["amount"], self.x_dai.max_claim_amount)
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
+           lambda a: (True, None))
+    @patch("faucet.views.ClaimMaxView.check_user_does_not_have_more_than_4x",
+           lambda a, wallet_address: None)
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_claim_max_api_should_claim_all(self):
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"chain_pk": self.x_dai.pk},
+        )
+        response = self.client.post(endpoint)
+        claim_receipt = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(claim_receipt["amount"], self.x_dai.max_claim_amount)
 
-    # @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
-    #        lambda a: (True, "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"))
-    # @patch(
-    #     "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-    #     lambda a, b, c: (True, None),
-    # )
-    # def test_claim_max_twice_should_fail(self):    ----------> fails because of 4x
-    #     ClaimReceipt.objects.create(
-    #         chain=self.idChain,
-    #         user_profile=self.user_profile,
-    #         datetime=timezone.now(),
-    #         _status=ClaimReceipt.VERIFIED,
-    #         amount=0,
-    #     )
-    #     endpoint = reverse(
-    #         "FAUCET:claim-max",
-    #         kwargs={"chain_pk": self.x_dai.pk},
-    #     )
-    #     response_1 = self.client.post(endpoint)
-    #     self.assertEqual(response_1.status_code, 200)
-    #     try:
-    #         self.client.post(endpoint)
-    #     except CustomException:
-    #         self.assertEqual(True, True)
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
+           lambda a: (True, None))
+    @patch("faucet.views.ClaimMaxView.check_user_does_not_have_more_than_4x",
+           lambda a, wallet_address: None)
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_claim_max_twice_should_fail(self):
+        ClaimReceipt.objects.create(
+            chain=self.idChain,
+            user_profile=self.user_profile,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            amount=0,
+        )
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"chain_pk": self.x_dai.pk},
+        )
+        response_1 = self.client.post(endpoint)
+        self.assertEqual(response_1.status_code, 200)
+        try:
+            self.client.post(endpoint)
+        except CustomException:
+            self.assertEqual(True, True)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
+           lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -538,20 +545,63 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(data[0]["pk"], c2.pk)
         self.assertEqual(data[1]["pk"], c1.pk)
 
-    # @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
-    # def test_claim_less_than_4x_of_amounts_is_ok(self):
-    #     endpoint = reverse(
-    #         "FAUCET:claim-max",
-    #         kwargs={"chain_pk": self.x_dai.pk},
-    #     )
-    #     # response = self.client.get(endpoint)
-    #     # print(response.data)
-    #     # TODO set wallet amount 0, then claim from the specified chain, so everything will be ok
-    #
-    # @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
-    # def test_claim_NONEVM_is_always_ok(self):
-    #     pass
-    #     # TODO create a NONEVM account, then claim for that
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
+           lambda a: (True, "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"))
+    @patch("faucet.helpers.WalletInfo.get_tokens_of_wallet_in_chain",
+           lambda wallet_address, chain: 0)
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_claim_less_than_4x_of_amounts_is_ok(self):
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"chain_pk": self.x_dai.pk},
+        )
+
+        response = self.client.post(endpoint)
+        claim_receipt = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
+           lambda a: (True, "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"))
+    @patch("web3.eth.Eth.get_balance",
+           lambda a: sys.maxsize)
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_claim_NONEVM_is_always_ok(self):
+        self.wallet.wallet_type = NetworkTypes.NONEVM
+        self.wallet.save()
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"chain_pk": self.x_dai.pk},
+        )
+
+        response = self.client.post(endpoint)
+        claim_receipt = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.wallet.wallet_type = NetworkTypes.EVM
+        self.wallet.save()
+
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
+           lambda a: (True, "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"))
+    @patch("web3.Web3.isConnected",
+           lambda a: False)
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_claim_when_w3_is_not_connected(self):
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"chain_pk": self.x_dai.pk},
+        )
+
+        response = self.client.post(endpoint)
+        claim_receipt = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
 
     @patch("faucet.views.ClaimMaxView.wallet_address_is_set",
            lambda a: (True, "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"))
@@ -564,9 +614,9 @@ class TestClaimAPI(APITestCase):
             "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9" has already 4x more than what the users can claim
         """
         endpoint = reverse(
-                "FAUCET:claim-max",
-                kwargs={"chain_pk": self.x_dai.pk},
-            )
+            "FAUCET:claim-max",
+            kwargs={"chain_pk": self.x_dai.pk},
+        )
 
         response = self.client.post(endpoint)
         claim_receipt = json.loads(response.content)
@@ -666,4 +716,4 @@ class HelpersTestCase(APITestCase):
         )
 
     def test_get_tokens_of_wallet_is_ok(self):
-        self.assertIsNotNone(get_tokens_of_wallet_in_chain(wallet_address=self.address, chain=self.test_chain))
+        self.assertIsNotNone(WalletInfo.get_tokens_of_wallet_in_chain(wallet_address=self.address, chain=self.test_chain))
