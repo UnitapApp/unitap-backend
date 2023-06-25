@@ -21,7 +21,7 @@ from django.db import transaction
 
 
 def get_cache_time(id):
-    return int(180.0 + (float(int(id) % 25) / 25.0) * 180.0)
+    return int((float(int(id) % 25) / 25.0) * 180.0) + 180
 
 
 class WalletAccount(models.Model):
@@ -347,23 +347,23 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        cached_total_claims = cache.get(f"gas_tap_chain_total_claims_{self.chain_id}")
+        cached_total_claims = cache.get(f"gas_tap_chain_total_claims_{self.pk}")
         if cached_total_claims:
             return cached_total_claims
         total_claims = ClaimReceipt.objects.filter(
             chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
         cache.set(
-            f"gas_tap_chain_total_claims_{self.chain_id}",
+            f"gas_tap_chain_total_claims_{self.pk}",
             total_claims,
-            get_cache_time(self.chain_id),
+            get_cache_time(self.pk),
         )
         return total_claims
 
     @property
     def total_claims_since_last_monday(self):
         cached_total_claims_since_last_monday = cache.get(
-            f"gas_tap_chain_total_claims_since_last_monday_{self.chain_id}"
+            f"gas_tap_chain_total_claims_since_last_monday_{self.pk}"
         )
         if cached_total_claims_since_last_monday:
             return cached_total_claims_since_last_monday
@@ -375,16 +375,16 @@ class Chain(models.Model):
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
         cache.set(
-            f"gas_tap_chain_total_claims_since_last_monday_{self.chain_id}",
+            f"gas_tap_chain_total_claims_since_last_monday_{self.pk}",
             total_claims_since_last_monday,
-            get_cache_time(self.chain_id),
+            get_cache_time(self.pk),
         )
         return total_claims_since_last_monday
 
     @property
     def total_claims_for_last_round(self):
         cached_total_claims_for_last_round = cache.get(
-            f"gas_tap_chain_total_claims_for_last_round_{self.chain_id}"
+            f"gas_tap_chain_total_claims_for_last_round_{self.pk}"
         )
         if cached_total_claims_for_last_round:
             return cached_total_claims_for_last_round
@@ -397,16 +397,16 @@ class Chain(models.Model):
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
         cache.set(
-            f"gas_tap_chain_total_claims_for_last_round_{self.chain_id}",
+            f"gas_tap_chain_total_claims_for_last_round_{self.pk}",
             total_claims_for_last_round,
-            get_cache_time(self.chain_id),
+            get_cache_time(self.pk),
         )
         return total_claims_for_last_round
 
     @property
     def total_claims_since_last_round(self):
         cached_total_claims_since_last_round = cache.get(
-            f"gas_tap_chain_total_claims_since_last_round_{self.chain_id}"
+            f"gas_tap_chain_total_claims_since_last_round_{self.pk}"
         )
         if cached_total_claims_since_last_round:
             return cached_total_claims_since_last_round
@@ -418,9 +418,9 @@ class Chain(models.Model):
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
         cache.set(
-            f"gas_tap_chain_total_claims_since_last_round_{self.chain_id}",
+            f"gas_tap_chain_total_claims_since_last_round_{self.pk}",
             total_claims_since_last_round,
-            get_cache_time(self.chain_id),
+            get_cache_time(self.pk),
         )
         return total_claims_since_last_round
 
