@@ -36,10 +36,20 @@ MEMCACHED_URL = os.environ.get("MEMCACHEDCLOUD_SERVERS")
 MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
 MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
 
+
+def before_send(event, hint):
+    if "N+1 Query" in str(event.get("exception", {})):
+        return None  # This will discard the event
+    elif "already known" in str(event.get("exception", {})):
+        return None
+    return event
+
+
 if SENTRY_DSN != "DEBUG-DSN":  # setup sentry only on production
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
+        before_send=before_send,
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
