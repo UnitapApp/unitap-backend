@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from authentication.serializers import MessageResponseSerializer
-from faucet.models import Chain, GlobalSettings
+from faucet.models import Chain, ClaimReceipt, GlobalSettings
 from permissions.models import Permission
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
@@ -14,6 +14,7 @@ from tokenTap.serializers import (
     TokenDistributionClaimSerializer,
     TokenDistributionSerializer,
 )
+from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .helpers import (
@@ -87,6 +88,7 @@ class TokenDistributionClaimView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         user_profile = request.user.profile
         token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
+        lightning_invoice = request.data.get("lightning_invoice", None)
 
         self.check_token_distribution_is_claimable(token_distribution)
 
@@ -97,21 +99,38 @@ class TokenDistributionClaimView(CreateAPIView):
         self.check_user_has_wallet(user_profile)
 
         nonce = create_uint32_random_nonce()
-        hashed_message = hash_message(
-            user=user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
-            token=token_distribution.token_address,
-            amount=token_distribution.amount,
-            nonce=nonce,
-        )
+        if token_distribution.chain.chain_type == NetworkTypes.EVM:
+            hashed_message = hash_message(
+                user=user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
+                token=token_distribution.token_address,
+                amount=token_distribution.amount,
+                nonce=nonce,
+            )
 
-        signature = sign_hashed_message(hashed_message=hashed_message)
+            signature = sign_hashed_message(hashed_message=hashed_message)
 
-        tdc = TokenDistributionClaim.objects.create(
-            user_profile=user_profile,
-            nonce=nonce,
-            signature=signature,
-            token_distribution=token_distribution,
-        )
+            tdc = TokenDistributionClaim.objects.create(
+                user_profile=user_profile,
+                nonce=nonce,
+                signature=signature,
+                token_distribution=token_distribution,
+            )
+
+        elif token_distribution.chain.chain_type == NetworkTypes.LIGHTNING:
+            tdc = TokenDistributionClaim.objects.create(
+                user_profile=user_profile,
+                nonce=nonce,
+                signature=lightning_invoice,
+                token_distribution=token_distribution,
+            )
+            gas_tap_claim = ClaimReceipt.objects.create(
+                chain=token_distribution.chain,
+                user_profile=user_profile,
+                datetime=timezone.now(),
+                amount=token_distribution.amount,
+                _status=ClaimReceipt.PENDING,
+                passive_address=lightning_invoice,
+            )
 
         return Response(
             {
