@@ -23,6 +23,8 @@ class RaffleSerializer(serializers.ModelSerializer):
             "is_prize_nft",
             "prize",
             "chain",
+            "contract",
+            "raffleId",
             "permissions",
             "created_at",
             "deadline",
@@ -35,11 +37,13 @@ class RaffleSerializer(serializers.ModelSerializer):
         ]
 
 
-# class RaffleEntrySerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = RaffleEntry
-#         fields = [
-#             "pk",
-#             "raffle",
-#             "user_profile",
-#         ]
+class RaffleEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RaffleEntry
+        fields = [
+            "pk",
+            "user_profile",
+            "created_at",
+            "signature",
+            "nonce"
+        ]
