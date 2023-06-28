@@ -12,12 +12,14 @@ def create_uint32_random_nonce():
     return nonce
 
 
-def raffle_hash_message(user, raffleId, nonce):
+def raffle_hash_message(user, raffleId, nonce=None):
 
-    message_hash = Web3().solidityKeccak(
-        ["address", "uint256", "uint32"],
-        [Web3.toChecksumAddress(user), raffleId, nonce],
-    )
+    abi = ["address", "uint256"]
+    data = [Web3.toChecksumAddress(user), raffleId]
+    if nonce:
+        abi.append("uint32")
+        data.append(nonce)
+    message_hash = Web3().solidityKeccak(abi, data)
     hashed_message = encode_defunct(hexstr=message_hash.hex())
 
     return hashed_message

@@ -45,8 +45,6 @@ class Raffle(models.Model):
 
     is_active = models.BooleanField(default=True)
 
-    winner = models.CharField(max_length=1024, null=True, blank=True)
-
     @property
     def is_expired(self):
         if self.deadline is None:
@@ -66,11 +64,18 @@ class Raffle(models.Model):
     @property
     def number_of_entries(self):
         return self.entries.count()
+    
+    @property
+    def winner(self):
+        try:
+            return self.entries.get(is_winner=True).user_profile
+        except RaffleEntry.DoesNotExist:
+            return None
 
     def __str__(self):
         return f"{self.name} - {self.prize}"
     
-    def generate_signature(self, user: str, nonce: int):
+    def generate_signature(self, user: str, nonce: int = None):
         assert self.raffleId and self.signer
 
         hashed_message = raffle_hash_message(
@@ -98,6 +103,7 @@ class RaffleEntry(models.Model):
 
     signature = models.CharField(max_length=1024, blank=True, null=True)
     nonce = models.BigIntegerField(null=True, blank=True)
+    is_winner = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return f"{self.raffle} - {self.user_profile}"
@@ -105,3 +111,13 @@ class RaffleEntry(models.Model):
     @property
     def user(self):
         return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
+
+    def save(self, *args, **kwargs):
+        if self.is_winner:
+            try:
+                entry = RaffleEntry.objects.get(is_winner=True, raffle=self.raffle)
+                assert entry.pk == self.pk, "The raffle already has a winner"
+            except RaffleEntry.DoesNotExist:
+                pass
+                    
+        super().save(*args, **kwargs)

@@ -12,4 +12,9 @@ urlpatterns = [
         RaffleEnrollmentView.as_view(),
         name="raflle-enrollment",
     ),
+    path(
+        "claim-prize/<int:pk>/",
+        ClaimPrizeView.as_view(),
+        name="claim-prize",
+    )
 ]
