@@ -26,6 +26,17 @@ class RaffleEnrollmentView(CreateAPIView):
                 "Can't enroll in this raffle"
             )
         
+    def check_user_is_already_enrolled(
+            self, raffle: Raffle, user_profile: UserProfile
+        ):
+        if RaffleEntry.objects.filter(
+            raffle=raffle,
+            user_profile=user_profile
+        ).exists():
+            raise rest_framework.exceptions.PermissionDenied(
+                "You're already enrolled in this raffle"
+            )
+        
     def check_user_permissions(self, raffle: Raffle, user_profile):
         for permission in raffle.permissions.all():
             permission: Permission
@@ -55,6 +66,8 @@ class RaffleEnrollmentView(CreateAPIView):
         raffle = get_object_or_404(Raffle, pk=pk)
         
         self.can_enroll_in_raffle(raffle)
+
+        self.check_user_is_already_enrolled(raffle, user_profile)
 
         self.check_user_weekly_credit(user_profile)
 
