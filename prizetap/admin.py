@@ -17,6 +17,10 @@ class RaffleٍEntryAdmin(admin.ModelAdmin):
     @admin.display(ordering='user_profile__wallets', description='Wallet')
     def get_wallet(self, obj):
         return obj.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
+    
+    @admin.display(ordering='pk')
+    def nonce(self, obj):
+        return obj.pk
 
 
 admin.site.register(Raffle, RaffleAdmin)

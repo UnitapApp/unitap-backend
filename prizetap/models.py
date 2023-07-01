@@ -102,7 +102,6 @@ class RaffleEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
     signature = models.CharField(max_length=1024, blank=True, null=True)
-    nonce = models.BigIntegerField(null=True, blank=True)
     is_winner = models.BooleanField(blank=True, default=False)
 
     def __str__(self):

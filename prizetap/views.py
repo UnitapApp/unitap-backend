@@ -75,16 +75,14 @@ class RaffleEnrollmentView(CreateAPIView):
 
         self.check_user_has_wallet(user_profile)
 
-        nonce = create_uint32_random_nonce()
-
         raffle_entry = RaffleEntry.objects.create(
             user_profile=user_profile,
-            nonce=nonce,
-            signature=raffle.generate_signature(
-                user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address, nonce
-            ),
             raffle=raffle,
         )
+        raffle_entry.signature = raffle.generate_signature(
+            user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address, raffle_entry.pk
+        )
+        raffle_entry.save()
 
         return Response(
             {
