@@ -8,7 +8,7 @@ from authentication.models import NetworkTypes, UserProfile
 from .models import Raffle, RaffleEntry
 from .serializers import RaffleSerializer, RaffleEntrySerializer
 from .utils import create_uint32_random_nonce
-from .validators import has_weekly_credit_left
+from .validators import *
 
 from permissions.models import Permission
 
@@ -133,6 +133,33 @@ class ClaimPrizeView(APIView):
                 "detail": "Signature created successfully",
                 "success": True,
                 "signature": signature
+            },
+            status=200,
+        )
+    
+class SetEnrollmentTxView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user_profile = request.user.profile
+        raffle_entry = get_object_or_404(RaffleEntry, pk=pk)
+
+        validator = SetRaffleEntryTxValidator(
+            user_profile=user_profile,
+            raffle_entry=raffle_entry
+        )
+        
+        validator.is_valid(self.request.data)
+        
+        tx_hash = self.request.data.get("tx_hash", None)
+        raffle_entry.tx_hash = tx_hash
+        raffle_entry.save()
+        
+        return Response(
+            {
+                "detail": "Raffle entry updated successfully",
+                "success": True,
+                "entry": RaffleEntrySerializer(raffle_entry).data
             },
             status=200,
         )
