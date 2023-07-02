@@ -7,7 +7,6 @@ from rest_framework.views import APIView
 from authentication.models import NetworkTypes, UserProfile
 from .models import Raffle, RaffleEntry
 from .serializers import RaffleSerializer, RaffleEntrySerializer
-from .utils import create_uint32_random_nonce
 from .validators import *
 
 from permissions.models import Permission
@@ -154,7 +153,7 @@ class SetEnrollmentTxView(APIView):
         tx_hash = self.request.data.get("tx_hash", None)
         raffle_entry.tx_hash = tx_hash
         raffle_entry.save()
-        
+
         return Response(
             {
                 "detail": "Raffle entry updated successfully",
