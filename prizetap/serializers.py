@@ -44,6 +44,10 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "pk",
             "user_profile",
             "created_at",
-            "signature",
-            "nonce"
+            "signature"
         ]
+
+    def to_representation(self, instance: RaffleEntry):
+        representation = super().to_representation(instance)
+        representation["nonce"] = instance.nonce
+        return representation
