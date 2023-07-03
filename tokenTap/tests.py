@@ -592,3 +592,69 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["token_distribution"]["id"], self.td.pk)
+
+    # Tests that the token distribution claim status is successfully updated
+    def test_successful_update(self):
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=self.user_profile,
+            status=ClaimReceipt.PENDING,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {"tx_hash": "0xabc"}
+        response = self.client.post(url, data=data)
+        assert response.status_code == 200
+        claim.refresh_from_db()
+        assert claim.status == ClaimReceipt.VERIFIED
+        assert claim.tx_hash == "0xabc"
+
+    # Tests that an error is raised when tx_hash is missing from request data
+    def test_missing_tx_hash(self):
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=self.user_profile,
+            status=ClaimReceipt.PENDING,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+        assert "tx_hash is a required field" in str(response.content)
+
+    # Tests that an error is raised when the token distribution claim does not belong to the user profile
+    def test_claim_not_belonging_to_user_profile(self):
+        other_user_profile = UserProfile.objects.get_or_create("other")
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=other_user_profile,
+            status=ClaimReceipt.PENDING,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {"tx_hash": "0xabc"}
+        response = self.client.post(url, data=data)
+        assert response.status_code == 403
+
+    # Tests that an error is raised when the token distribution claim status is already verified
+    def test_already_verified_claim(self):
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=self.user_profile,
+            status=ClaimReceipt.VERIFIED,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {"tx_hash": "0xabc"}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 403)
+        assert "already been updated" in str(response.content)
