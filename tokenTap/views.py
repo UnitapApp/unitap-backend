@@ -141,6 +141,38 @@ class TokenDistributionClaimView(CreateAPIView):
         )
 
 
+class TokenDistributionClaimStatusUpdateView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user_profile = request.user.profile
+        token_distribution_claim = TokenDistributionClaim.objects.get(
+            pk=self.kwargs["pk"],
+        )
+        tx_hash = request.data.get("tx_hash", None)
+        if tx_hash is None:
+            raise rest_framework.exceptions.ValidationError(
+                "tx_hash is a required field"
+            )
+
+        if token_distribution_claim.user_profile != user_profile:
+            raise rest_framework.exceptions.PermissionDenied(
+                "You do not have permission to update this claim"
+            )
+        if token_distribution_claim.status != ClaimReceipt.PENDING:
+            raise rest_framework.exceptions.PermissionDenied(
+                "This claim has already been updated"
+            )
+        token_distribution_claim.tx_hash = tx_hash
+        token_distribution_claim.status = ClaimReceipt.VERIFIED
+        token_distribution_claim.save()
+
+        return Response(
+            {"detail": "Token Distribution Claim Status Updated Successfully"},
+            status=200,
+        )
+
+
 class TokenDistributionClaimListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = TokenDistributionClaimSerializer
