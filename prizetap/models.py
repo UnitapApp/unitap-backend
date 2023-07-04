@@ -8,9 +8,13 @@ from .utils import (
     raffle_hash_message,
     sign_hashed_message
 )
+from core.models import UserConstraint
 
 # Create your models here.
 
+class Constraint(UserConstraint):
+    pass
+    
 
 class Raffle(models.Model):
 
@@ -37,7 +41,7 @@ class Raffle(models.Model):
         Chain, on_delete=models.CASCADE, related_name="raffles", null=True, blank=True
     )
 
-    permissions = models.ManyToManyField(Permission, blank=True)
+    constraints = models.ManyToManyField(Constraint, blank=True, related_name="raffles")
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     deadline = models.DateTimeField(null=True, blank=True)
