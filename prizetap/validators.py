@@ -1,7 +1,7 @@
 from .models import RaffleEntry
 from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
 from faucet.models import GlobalSettings
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import PermissionDenied
 from authentication.models import NetworkTypes, UserProfile
 from .models import RaffleEntry, Raffle
 from .constraints import *
@@ -87,11 +87,15 @@ class SetRaffleEntryTxValidator:
 
     def is_owner_of_raffle_entry(self):
         if not self.raffle_entry.user_profile == self.user_profile:
-            raise ValidationError("You don't have permission to update this raffle entry")
+            raise PermissionDenied(
+                "You don't have permission to update this raffle entry"
+            )
         
     def is_tx_empty(self):
         if self.raffle_entry.tx_hash:
-            raise ValidationError("This raffle entry is already updated")
+            raise PermissionDenied(
+                "This raffle entry is already updated"
+            )
 
     def is_valid(self, data):
         self.is_owner_of_raffle_entry()
@@ -99,5 +103,7 @@ class SetRaffleEntryTxValidator:
 
         tx_hash = data.get("tx_hash", None)
         if not tx_hash or len(tx_hash) != 66:
-            raise ValidationError("Tx hash is not valid")
+            raise PermissionDenied(
+                "Tx hash is not valid"
+            )
 
