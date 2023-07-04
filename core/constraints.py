@@ -7,7 +7,7 @@ class ConstraintVerification(ABC):
         self.response_text = response
 
     @abstractmethod
-    def is_observed(self, *args, **kwargs):
+    def is_observed(self, *args, **kwargs) -> bool:
         pass
 
     def response(self) -> str:
