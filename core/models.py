@@ -14,3 +14,6 @@ class UserConstraint(models.Model):
     name = models.CharField(max_length=255, unique=True, 
                             choices=[(c.__name__, c.__name__) for c in constraints])
     response = models.TextField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.name
