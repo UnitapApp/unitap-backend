@@ -7,7 +7,10 @@ from rest_framework.views import APIView
 from authentication.models import NetworkTypes, UserProfile
 from .models import Raffle, RaffleEntry
 from .serializers import RaffleSerializer, RaffleEntrySerializer
-from .validators import *
+from .validators import (
+    RaffleEnrollmentValidator,
+    SetRaffleEntryTxValidator
+)
 
 from permissions.models import Permission
 
@@ -19,60 +22,16 @@ class RaffleListView(ListAPIView):
 class RaffleEnrollmentView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
-    def can_enroll_in_raffle(self, raffle: Raffle):
-        if not raffle.is_claimable:
-            raise rest_framework.exceptions.PermissionDenied(
-                "Can't enroll in this raffle"
-            )
-        
-    def check_user_is_already_enrolled(
-            self, raffle: Raffle, user_profile: UserProfile
-        ):
-        if RaffleEntry.objects.filter(
-            raffle=raffle,
-            user_profile=user_profile
-        ).exists():
-            raise rest_framework.exceptions.PermissionDenied(
-                "You're already enrolled in this raffle"
-            )
-        
-    def check_user_permissions(self, raffle: Raffle, user_profile):
-        for permission in raffle.permissions.all():
-            permission: Permission
-            if not permission.is_valid(
-                user_profile, raffle=raffle
-            ):
-                raise rest_framework.exceptions.PermissionDenied(
-                    permission.response()
-                    if permission.response() is not None
-                    else "You do not have permission to enroll in this raffle"
-                )
-
-    def check_user_weekly_credit(self, user_profile):
-        if not has_weekly_credit_left(user_profile):
-            raise rest_framework.exceptions.PermissionDenied(
-                "You have reached your weekly enrollment limit"
-            )
-
-    def check_user_has_wallet(self, user_profile):
-        if not user_profile.wallets.filter(wallet_type=NetworkTypes.EVM).exists():
-            raise rest_framework.exceptions.PermissionDenied(
-                "You have not connected an EVM wallet to your account"
-            )
-
     def post(self, request, pk):
         user_profile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
         
-        self.can_enroll_in_raffle(raffle)
-
-        self.check_user_is_already_enrolled(raffle, user_profile)
-
-        self.check_user_weekly_credit(user_profile)
-
-        self.check_user_permissions(raffle, user_profile)
-
-        self.check_user_has_wallet(user_profile)
+        validator = RaffleEnrollmentValidator(
+            user_profile=user_profile,
+            raffle=raffle
+        )
+        
+        validator.is_valid(self.request.data)
 
         raffle_entry = RaffleEntry.objects.create(
             user_profile=user_profile,
