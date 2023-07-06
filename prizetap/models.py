@@ -59,7 +59,7 @@ class Raffle(models.Model):
     def is_maxed_out(self):
         if self.max_number_of_entries is None:
             return False
-        return self.max_number_of_entries <= self.entries.count()
+        return self.max_number_of_entries <= self.number_of_entries
 
     @property
     def is_claimable(self):
