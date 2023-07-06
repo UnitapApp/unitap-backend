@@ -1,13 +1,12 @@
 from rest_framework import serializers
 
 from faucet.serializers import SmallChainSerializer
-from permissions.serializers import PermissionSerializer
 from .models import *
 
 
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
-    permissions = PermissionSerializer(many=True)
+    winner = serializers.SerializerMethodField()
 
     class Meta:
         model = Raffle
@@ -25,7 +24,6 @@ class RaffleSerializer(serializers.ModelSerializer):
             "chain",
             "contract",
             "raffleId",
-            "permissions",
             "created_at",
             "deadline",
             "max_number_of_entries",
@@ -35,6 +33,10 @@ class RaffleSerializer(serializers.ModelSerializer):
             "is_claimable",
             "number_of_entries",
         ]
+
+    def get_winner(self, raffle: Raffle):
+        if raffle.winner:
+            return raffle.winner.pk
 
 
 class RaffleEntrySerializer(serializers.ModelSerializer):
