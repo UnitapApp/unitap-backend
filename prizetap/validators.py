@@ -26,15 +26,6 @@ class RaffleEnrollmentValidator:
                 "Can't enroll in this raffle"
             )
         
-    def check_user_is_already_enrolled(self):
-        if RaffleEntry.objects.filter(
-            raffle=self.raffle,
-            user_profile=self.user_profile
-        ).exists():
-            raise PermissionDenied(
-                "You're already enrolled in this raffle"
-            )
-        
     def check_user_constraints(self):
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = eval(c.name)(self.user_profile)
@@ -51,8 +42,6 @@ class RaffleEnrollmentValidator:
 
     def is_valid(self, data):
         self.can_enroll_in_raffle()
-
-        self.check_user_is_already_enrolled()
 
         self.check_user_constraints()
 

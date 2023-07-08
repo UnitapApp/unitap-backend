@@ -40,14 +40,19 @@ class RaffleEnrollmentView(CreateAPIView):
         
         validator.is_valid(self.request.data)
 
-        raffle_entry = RaffleEntry.objects.create(
-            user_profile=user_profile,
-            raffle=raffle,
-        )
-        raffle_entry.signature = raffle.generate_signature(
-            user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address, raffle_entry.pk
-        )
-        raffle_entry.save()
+        try:
+            raffle_entry = raffle.entries.get(
+                user_profile=user_profile
+            )
+        except RaffleEntry.DoesNotExist:
+            raffle_entry = RaffleEntry.objects.create(
+                user_profile=user_profile,
+                raffle=raffle,
+            )
+            raffle_entry.signature = raffle.generate_signature(
+                user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address, raffle_entry.pk
+            )
+            raffle_entry.save()
 
         return Response(
             {
