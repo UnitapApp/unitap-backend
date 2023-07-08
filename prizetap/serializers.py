@@ -7,6 +7,7 @@ from .models import *
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
     winner = serializers.SerializerMethodField()
+    user_is_enrolled = serializers.SerializerMethodField()
 
     class Meta:
         model = Raffle
@@ -31,12 +32,17 @@ class RaffleSerializer(serializers.ModelSerializer):
             "winner",
             "is_expired",
             "is_claimable",
+            "user_is_enrolled",
             "number_of_entries",
         ]
 
     def get_winner(self, raffle: Raffle):
         if raffle.winner:
             return raffle.winner.pk
+        
+    def get_user_is_enrolled(self, raffle: Raffle):
+        return raffle.entries.filter(
+            user_profile=self.context['user']).exists()
 
 
 class RaffleEntrySerializer(serializers.ModelSerializer):

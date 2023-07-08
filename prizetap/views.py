@@ -19,6 +19,13 @@ class RaffleListView(ListAPIView):
     queryset = Raffle.objects.filter(is_active=True)
     serializer_class = RaffleSerializer
 
+    def get(self, request):
+        queryset = self.get_queryset()
+        serializer = RaffleSerializer(queryset, many=True, context={
+            'user': request.user.profile if request.user.is_authenticated else None
+        })
+        return Response(serializer.data)
+
 class RaffleEnrollmentView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
