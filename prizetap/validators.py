@@ -96,3 +96,30 @@ class SetRaffleEntryTxValidator:
                 "Tx hash is not valid"
             )
 
+class SetClaimingPrizeTxValidator:
+    
+    def __init__(self, *args, **kwargs):
+        self.raffle_entry: RaffleEntry = kwargs['raffle_entry']
+        
+    def is_winner(self):
+        if not self.raffle_entry.is_winner:
+            raise PermissionDenied(
+                "You are not the raffle winner"
+            )
+        
+    def is_tx_empty(self):
+        if self.raffle_entry.claiming_prize_tx:
+            raise PermissionDenied(
+                "The tx_hash is already set"
+            )
+
+    def is_valid(self, data):
+        self.is_winner()
+        self.is_tx_empty()
+
+        tx_hash = data.get("tx_hash", None)
+        if not tx_hash or len(tx_hash) != 66:
+            raise PermissionDenied(
+                "Tx hash is not valid"
+            )
+

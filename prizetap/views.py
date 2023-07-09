@@ -9,7 +9,8 @@ from .serializers import RaffleSerializer, RaffleEntrySerializer
 from .validators import (
     RaffleEnrollmentValidator,
     ClaimPrizeValidator,
-    SetRaffleEntryTxValidator
+    SetRaffleEntryTxValidator,
+    SetClaimingPrizeTxValidator
 )
 
 from permissions.models import Permission
@@ -104,6 +105,35 @@ class SetEnrollmentTxView(APIView):
         
         tx_hash = self.request.data.get("tx_hash", None)
         raffle_entry.tx_hash = tx_hash
+        raffle_entry.save()
+
+        return Response(
+            {
+                "detail": "Raffle entry updated successfully",
+                "success": True,
+                "entry": RaffleEntrySerializer(raffle_entry).data
+            },
+            status=200,
+        )
+    
+class SetClaimingPrizeTxView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user_profile = request.user.profile
+        raffle = get_object_or_404(Raffle, pk=pk)
+        raffle_entry = get_object_or_404(
+            RaffleEntry, raffle=raffle, user_profile=user_profile)
+
+        validator = SetClaimingPrizeTxValidator(
+            user_profile=user_profile,
+            raffle_entry=raffle_entry
+        )
+        
+        validator.is_valid(self.request.data)
+
+        tx_hash = self.request.data.get("tx_hash", None)
+        raffle_entry.claiming_prize_tx = tx_hash
         raffle_entry.save()
 
         return Response(

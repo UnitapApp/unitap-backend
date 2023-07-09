@@ -107,7 +107,8 @@ class RaffleEntry(models.Model):
 
     signature = models.CharField(max_length=1024, blank=True, null=True)
     is_winner = models.BooleanField(blank=True, default=False)
-    tx_hash = models.CharField(max_length=255, blank=True, null=True) 
+    tx_hash = models.CharField(max_length=255, blank=True, null=True)
+    claiming_prize_tx = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"{self.raffle} - {self.user_profile}"

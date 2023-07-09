@@ -58,7 +58,8 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "user_profile",
             "created_at",
             "signature",
-            "tx_hash"
+            "tx_hash",
+            "claiming_prize_tx"
         ]
         read_only_fields = [
             "pk",
