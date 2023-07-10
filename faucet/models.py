@@ -24,6 +24,29 @@ def get_cache_time(id):
     return int((float(int(id) % 25) / 25.0) * 180.0) + 180
 
 
+class BigNumField(models.Field):
+    empty_strings_allowed = False
+
+    def __init__(self, *args, **kwargs):
+        kwargs["max_length"] = 200  # or some other number
+        super().__init__(*args, **kwargs)
+
+    def db_type(self, connection):
+        return "numeric"
+
+    def get_internal_type(self):
+        return "BigNumField"
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            return int(value)
+
+        return value
+
+    def get_prep_value(self, value):
+        return str(value)
+
+
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     private_key = EncryptedCharField(max_length=100)
@@ -198,7 +221,7 @@ class Chain(models.Model):
     gas_image_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url_private = models.URLField(max_length=255)
 
-    max_claim_amount = models.BigIntegerField()
+    max_claim_amount = BigNumField()
 
     poa = models.BooleanField(default=False)
 
@@ -277,7 +300,6 @@ class Chain(models.Model):
 
             raise Exception("Invalid chain type")
         except Exception as e:
-
             logging.exception(
                 f"Error getting manager balance for {self.chain_name} error is {e}"
             )
