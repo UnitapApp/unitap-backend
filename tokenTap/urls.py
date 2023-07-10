@@ -18,4 +18,9 @@ urlpatterns = [
         TokenDistributionClaimRetrieveView.as_view(),
         name="claim-retrieve",
     ),
+    path(
+        "claims-list/<int:pk>/update/",
+        TokenDistributionClaimStatusUpdateView.as_view(),
+        name="claim-update",
+    ),
 ]

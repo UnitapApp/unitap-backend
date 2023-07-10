@@ -1,13 +1,13 @@
 from rest_framework import serializers
 
 from faucet.serializers import SmallChainSerializer
-from permissions.serializers import PermissionSerializer
 from .models import *
 
 
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
-    permissions = PermissionSerializer(many=True)
+    winner = serializers.SerializerMethodField()
+    user_entry = serializers.SerializerMethodField()
 
     class Meta:
         model = Raffle
@@ -23,7 +23,8 @@ class RaffleSerializer(serializers.ModelSerializer):
             "is_prize_nft",
             "prize",
             "chain",
-            "permissions",
+            "contract",
+            "raffleId",
             "created_at",
             "deadline",
             "max_number_of_entries",
@@ -31,15 +32,43 @@ class RaffleSerializer(serializers.ModelSerializer):
             "winner",
             "is_expired",
             "is_claimable",
+            "user_entry",
             "number_of_entries",
         ]
 
+    def get_winner(self, raffle: Raffle):
+        if raffle.winner:
+            return raffle.winner.pk
+        
+    def get_user_entry(self, raffle: Raffle):
+        try:
+            return RaffleEntrySerializer(
+                raffle.entries.get(user_profile=self.context['user'])
+            ).data
+        except RaffleEntry.DoesNotExist:
+            return None
 
-# class RaffleEntrySerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = RaffleEntry
-#         fields = [
-#             "pk",
-#             "raffle",
-#             "user_profile",
-#         ]
+
+
+class RaffleEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RaffleEntry
+        fields = [
+            "pk",
+            "user_profile",
+            "created_at",
+            "signature",
+            "tx_hash",
+            "claiming_prize_tx"
+        ]
+        read_only_fields = [
+            "pk",
+            "user_profile",
+            "created_at",
+            "signature"
+        ]
+
+    def to_representation(self, instance: RaffleEntry):
+        representation = super().to_representation(instance)
+        representation["nonce"] = instance.nonce
+        return representation

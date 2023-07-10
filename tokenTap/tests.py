@@ -2,16 +2,24 @@ from unittest.mock import patch
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
-from faucet.models import Chain, GlobalSettings, WalletAccount
+from faucet.models import (
+    Chain,
+    ClaimReceipt,
+    GlobalSettings,
+    TransactionBatch,
+    WalletAccount,
+)
+
+# from brightIDfaucet.settings import IS_TESTING
 from django.contrib.auth.models import User
 from permissions.models import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     OncePerWeekVerification,
     OncePerMonthVerification,
+    OnceInALifeTimeVerification,
 )
-from rest_framework.test import APITestCase
-import inspect
+from rest_framework.test import APITestCase, override_settings
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
 from django.utils import timezone
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
@@ -154,6 +162,7 @@ class TokenDistributionClaimTestCase(APITestCase):
         self.assertEqual(TokenDistributionClaim.objects.first(), tdc)
 
 
+@override_settings(IS_TESTING=True)
 class TokenDistributionAPITestCase(APITestCase):
     def setUp(self) -> None:
         self.global_settings = GlobalSettings.objects.create()
@@ -172,6 +181,24 @@ class TokenDistributionAPITestCase(APITestCase):
             symbol="XDAI",
             chain_id="100",
             max_claim_amount=x_dai_max_claim,
+            tokentap_contract_address=gnosis_tokentap_contract_address,
+        )
+
+        self.btc_chain = Chain.objects.create(
+            chain_name="Bitcoin",
+            wallet=WalletAccount.objects.create(
+                name="Bitcoin Wallet",
+                private_key=test_wallet_key,
+                network_type=NetworkTypes.LIGHTNING,
+            ),
+            rpc_url_private=test_rpc_url_private,
+            fund_manager_address=fund_manager,
+            native_currency_name="bitcoin",
+            explorer_url="https://blockstream.info/testnet/",
+            symbol="BTC",
+            chain_id="1010",
+            max_claim_amount=100,
+            chain_type=NetworkTypes.LIGHTNING,
             tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
@@ -208,15 +235,36 @@ class TokenDistributionAPITestCase(APITestCase):
             name="Once Per Month Verification",
             description="Verify that you have not claimed from this distribution in the last month.",
         )
+        self.permission5 = OnceInALifeTimeVerification.objects.create(
+            name="Once In A Life Time Verification",
+            description="Verify that you have not claimed from this distribution before.",
+        )
 
         self.td.permissions.set(
             [self.permission1, self.permission2, self.permission3, self.permission4]
         )
 
+        self.btc_td = TokenDistribution.objects.create(
+            name="Test Distribution",
+            distributor="Test distributor",
+            distributor_url="https://example.com/distributor",
+            discord_url="https://discord.com/example",
+            twitter_url="https://twitter.com/example",
+            image_url="https://example.com/image.png",
+            token="TEST",
+            token_address="0x83ff60e2f93f8edd0637ef669c69d5fb4f64ca8e",
+            amount=100,
+            chain=self.btc_chain,
+            deadline=timezone.now() + timezone.timedelta(days=7),
+            max_number_of_claims=10,
+            notes="Test Notes",
+        )
+        self.btc_td.permissions.set([self.permission1, self.permission5])
+
     def test_token_distribution_list(self):
         response = self.client.get(reverse("token-distribution-list"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]["name"], "Test Distribution")
         self.assertEqual(
             response.data[0]["permissions"][0]["name"], "BrightID Meet Verification"
@@ -379,6 +427,70 @@ class TokenDistributionAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_btc_lightning_claimable(self):
+        Wallet.objects.create(
+            user_profile=self.user_profile,
+            wallet_type=NetworkTypes.EVM,
+            address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
+            data={"lightning_invoice": "test"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["signature"]["status"], "Pending")
+        self.assertEqual(ClaimReceipt.objects.count(), 1)
+        self.assertEqual(ClaimReceipt.objects.first().chain, self.btc_td.chain)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_btc_lightning_claimable_claim_updates_after_6seconds(self):
+        Wallet.objects.create(
+            user_profile=self.user_profile,
+            wallet_type=NetworkTypes.EVM,
+            address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
+            data={"lightning_invoice": "test"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["signature"]["status"], "Pending")
+        self.assertEqual(ClaimReceipt.objects.count(), 1)
+        gas_tap_claim = ClaimReceipt.objects.first()
+        self.assertEqual(gas_tap_claim.chain, self.btc_td.chain)
+        self.assertEqual(gas_tap_claim._status, ClaimReceipt.PENDING)
+
+        tb = TransactionBatch.objects.create(
+            chain=self.btc_td.chain, tx_hash="test hash", _status=ClaimReceipt.VERIFIED
+        )
+
+        gas_tap_claim.batch = tb
+        gas_tap_claim._status = ClaimReceipt.VERIFIED
+        gas_tap_claim.save()
+
+        from faucet.tasks import update_tokentap_claim_for_verified_lightning_claims
+
+        update_tokentap_claim_for_verified_lightning_claims.apply()
+
+        gas_tap_claim.refresh_from_db()
+        self.assertEqual(gas_tap_claim._status, ClaimReceipt.PROCESSED_FOR_TOKENTAP)
+        self.assertEqual(gas_tap_claim.tx_hash, "test hash")
+        self.assertEqual(
+            TokenDistributionClaim.objects.first().status, ClaimReceipt.VERIFIED
+        )
+        self.assertEqual(TokenDistributionClaim.objects.first().tx_hash, "test hash")
+
 
 class HelpersTestCase(APITestCase):
     def test_nonce_creator(self):
@@ -480,3 +592,69 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["token_distribution"]["id"], self.td.pk)
+
+    # Tests that the token distribution claim status is successfully updated
+    def test_successful_update(self):
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=self.user_profile,
+            status=ClaimReceipt.PENDING,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {"tx_hash": "0xabc"}
+        response = self.client.post(url, data=data)
+        assert response.status_code == 200
+        claim.refresh_from_db()
+        assert claim.status == ClaimReceipt.VERIFIED
+        assert claim.tx_hash == "0xabc"
+
+    # Tests that an error is raised when tx_hash is missing from request data
+    def test_missing_tx_hash(self):
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=self.user_profile,
+            status=ClaimReceipt.PENDING,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+        assert "tx_hash is a required field" in str(response.content)
+
+    # Tests that an error is raised when the token distribution claim does not belong to the user profile
+    def test_claim_not_belonging_to_user_profile(self):
+        other_user_profile = UserProfile.objects.get_or_create("other")
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=other_user_profile,
+            status=ClaimReceipt.PENDING,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {"tx_hash": "0xabc"}
+        response = self.client.post(url, data=data)
+        assert response.status_code == 403
+
+    # Tests that an error is raised when the token distribution claim status is already verified
+    def test_already_verified_claim(self):
+        claim = TokenDistributionClaim.objects.create(
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
+            user_profile=self.user_profile,
+            status=ClaimReceipt.VERIFIED,
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        url = reverse("claim-update", kwargs={"pk": claim.pk})
+        data = {"tx_hash": "0xabc"}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 403)
+        assert "already been updated" in str(response.content)

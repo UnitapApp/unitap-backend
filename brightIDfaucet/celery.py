@@ -34,6 +34,10 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.reject_expired_pending_claims",
         "schedule": 120,
     },
+    "update_tokentap_claim_for_verified_lightning_claims": {
+        "task": "faucet.tasks.update_tokentap_claim_for_verified_lightning_claims",
+        "schedule": 5,
+    },
 }
 
 # Load task modules from all registered Django apps.
