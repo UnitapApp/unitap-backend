@@ -1,6 +1,7 @@
 version: "3.7"
 services:
   backend:
+    platform: linux/amd64
     build: .
     image: unitap-backend
     environment:
@@ -23,6 +24,7 @@ services:
       - .:/code
   
   database:
+    platform: linux/amd64
     image: postgres:14.1-alpine
     restart: always
     environment:
@@ -35,6 +37,7 @@ services:
       - db:/var/lib/postgresql/data
   
   redis:
+    platform: linux/amd64
     image: redis:6.2-alpine
     restart: always
     expose:
@@ -44,11 +47,13 @@ services:
       - cache:/data
 
   memcached:
+    platform: linux/amd64
     container_name: memcached
     image: memcached:latest
     ports:
         - "11211:11211"
   ganache:
+    platform: linux/amd64
     image: trufflesuite/ganache-cli
     restart: always
     expose:
