@@ -65,6 +65,11 @@ class ListClaims(ListAPIView):
         user_profile = self.request.user.profile
         return ClaimReceipt.objects.filter(
             user_profile=user_profile,
+            _status__in=[
+                ClaimReceipt.VERIFIED,
+                ClaimReceipt.PENDING,
+                ClaimReceipt.REJECTED,
+            ],
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).order_by("-pk")
 
