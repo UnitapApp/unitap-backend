@@ -244,6 +244,7 @@ class Chain(models.Model):
     order = models.IntegerField(default=0)
 
     is_active = models.BooleanField(default=True)
+    show_in_gastap = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
