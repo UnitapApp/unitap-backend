@@ -33,9 +33,16 @@ class Raffle(models.Model):
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
 
-    is_prize_nft = models.BooleanField(default=False)
+    prize_amount = models.BigIntegerField()
+    prize_asset = models.CharField(max_length=255)
+    prize_name = models.CharField(max_length=100)
+    prize_symbol = models.CharField(max_length=100)
+    decimals = models.IntegerField(default=18)
+    
 
-    prize = models.CharField(max_length=100)
+    is_prize_nft = models.BooleanField(default=False)
+    nft_id = models.BigIntegerField(null=True, blank=True)
+    token_uri = models.TextField(null=True, blank=True)
 
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="raffles", null=True, blank=True
@@ -77,7 +84,7 @@ class Raffle(models.Model):
             return None
 
     def __str__(self):
-        return f"{self.name} - {self.prize}"
+        return f"{self.name}"
     
     def generate_signature(self, user: str, nonce: int = None):
         assert self.raffleId and self.signer
