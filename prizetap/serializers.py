@@ -64,6 +64,7 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "user_profile",
             "created_at",
             "signature",
+            "multiplier",
             "tx_hash",
             "claiming_prize_tx"
         ]
@@ -71,7 +72,8 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "pk",
             "user_profile",
             "created_at",
-            "signature"
+            "signature",
+            "multiplier",
         ]
 
     def to_representation(self, instance: RaffleEntry):

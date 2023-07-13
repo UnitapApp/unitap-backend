@@ -85,13 +85,14 @@ class Raffle(models.Model):
     def __str__(self):
         return f"{self.name}"
     
-    def generate_signature(self, user: str, nonce: int = None):
+    def generate_signature(self, user: str, nonce: int = None, multiplier: int = None):
         assert self.raffleId and self.signer
 
         hashed_message = raffle_hash_message(
             user=user,
             raffleId=self.raffleId,
             nonce=nonce,
+            multiplier=multiplier
         )
 
         return sign_hashed_message(
@@ -112,6 +113,7 @@ class RaffleEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
     signature = models.CharField(max_length=1024, blank=True, null=True)
+    multiplier = models.IntegerField(default=1)
     is_winner = models.BooleanField(blank=True, default=False)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
     claiming_prize_tx = models.CharField(max_length=255, blank=True, null=True)
