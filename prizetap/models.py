@@ -2,7 +2,6 @@ from django.db import models
 from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
-from permissions.models import Permission
 from faucet.models import WalletAccount
 from .utils import (
     raffle_hash_message,
