@@ -251,7 +251,7 @@ class Chain(models.Model):
 
     @property
     def has_enough_funds(self):
-        if self.get_manager_balance() > self.max_claim_amount * 8:
+        if self.get_manager_balance() > self.max_claim_amount * 8: #TODO check here  
             return True
         logging.warning(f"Chain {self.chain_name} has insufficient funds in contract")
         return False
