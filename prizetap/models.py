@@ -74,7 +74,7 @@ class Raffle(models.Model):
     @property
     def number_of_entries(self):
         return self.entries.filter(tx_hash__isnull=False).aggregate(
-            TOTAL = models.Sum('multiplier'))['TOTAL']
+            TOTAL = models.Sum('multiplier'))['TOTAL'] or 0
     
     @property
     def winner(self):
