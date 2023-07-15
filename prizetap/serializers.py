@@ -20,8 +20,14 @@ class RaffleSerializer(serializers.ModelSerializer):
             "discord_url",
             "twitter_url",
             "image_url",
+            "prize_amount",
+            "prize_asset",
+            "prize_name",
+            "prize_symbol",
+            "decimals",
             "is_prize_nft",
-            "prize",
+            "nft_id",
+            "token_uri",
             "chain",
             "contract",
             "raffleId",
@@ -58,6 +64,7 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "user_profile",
             "created_at",
             "signature",
+            "multiplier",
             "tx_hash",
             "claiming_prize_tx"
         ]
@@ -65,7 +72,8 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "pk",
             "user_profile",
             "created_at",
-            "signature"
+            "signature",
+            "multiplier",
         ]
 
     def to_representation(self, instance: RaffleEntry):
