@@ -21,6 +21,7 @@ class TokenDistributionClaimAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
         "token_distribution",
+        "status",
         "user_profile",
         "created_at",
     ]
