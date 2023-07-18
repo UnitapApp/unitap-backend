@@ -147,7 +147,6 @@ class ClaimMaxView(APIView):
         max_credit = self.get_chain().max_claim_amount
         user_assets = WalletInfo.get_tokens_of_wallet_in_chain(wallet_address=wallet_address, chain=self.get_chain())
         if user_assets is not None:
-            print(f'\n\n\n\n{user_assets}\n\n\n\n')
             if wallet.wallet_type == NetworkTypes.EVM and user_assets > 4 * max_credit:
                 raise CustomException("You have 4x more than what you want to claim")
 
