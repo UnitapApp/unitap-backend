@@ -4,9 +4,34 @@ from faucet.serializers import SmallChainSerializer
 from .models import *
 
 
+class RaffleEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RaffleEntry
+        fields = [
+            "pk",
+            "user_profile",
+            "created_at",
+            "signature",
+            "multiplier",
+            "tx_hash",
+            "claiming_prize_tx"
+        ]
+        read_only_fields = [
+            "pk",
+            "user_profile",
+            "created_at",
+            "signature",
+            "multiplier",
+        ]
+
+    def to_representation(self, instance: RaffleEntry):
+        representation = super().to_representation(instance)
+        representation["nonce"] = instance.nonce
+        return representation
+
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
-    winner = serializers.SerializerMethodField()
+    winner_entry = RaffleEntrySerializer()
     user_entry = serializers.SerializerMethodField()
 
     class Meta:
@@ -35,16 +60,12 @@ class RaffleSerializer(serializers.ModelSerializer):
             "deadline",
             "max_number_of_entries",
             "is_active",
-            "winner",
+            "winner_entry",
             "is_expired",
             "is_claimable",
             "user_entry",
             "number_of_entries",
         ]
-
-    def get_winner(self, raffle: Raffle):
-        if raffle.winner:
-            return raffle.winner.pk
         
     def get_user_entry(self, raffle: Raffle):
         try:
@@ -53,30 +74,3 @@ class RaffleSerializer(serializers.ModelSerializer):
             ).data
         except RaffleEntry.DoesNotExist:
             return None
-
-
-
-class RaffleEntrySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RaffleEntry
-        fields = [
-            "pk",
-            "user_profile",
-            "created_at",
-            "signature",
-            "multiplier",
-            "tx_hash",
-            "claiming_prize_tx"
-        ]
-        read_only_fields = [
-            "pk",
-            "user_profile",
-            "created_at",
-            "signature",
-            "multiplier",
-        ]
-
-    def to_representation(self, instance: RaffleEntry):
-        representation = super().to_representation(instance)
-        representation["nonce"] = instance.nonce
-        return representation
