@@ -23,7 +23,7 @@ class TokenDistributionClaimAdmin(admin.ModelAdmin):
         "token_distribution",
         "status",
         "user_profile",
-        "created_at",
+        "age",
     ]
     list_filter = ["token_distribution", "status"]
 
