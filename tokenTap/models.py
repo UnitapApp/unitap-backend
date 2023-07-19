@@ -90,3 +90,7 @@ class TokenDistributionClaim(models.Model):
     @property
     def amount(self):
         return self.token_distribution.amount
+
+    @property
+    def age(self):
+        return timezone.now() - self.created_at
