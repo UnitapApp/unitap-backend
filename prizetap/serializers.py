@@ -1,9 +1,12 @@
 from rest_framework import serializers
-
+from core.serializers import UserConstraintBaseSerializer
 from faucet.serializers import SmallChainSerializer
 from .models import *
 
-
+class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
+    class Meta:
+        model = Constraint
+        fields = UserConstraintBaseSerializer.Meta.fields
 class RaffleEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = RaffleEntry
@@ -33,6 +36,7 @@ class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
     winner_entry = RaffleEntrySerializer()
     user_entry = serializers.SerializerMethodField()
+    constraints = ConstraintSerializer(many=True, read_only=True)
 
     class Meta:
         model = Raffle
@@ -56,6 +60,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "chain",
             "contract",
             "raffleId",
+            "constraints",
             "created_at",
             "deadline",
             "max_number_of_entries",
