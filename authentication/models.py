@@ -66,6 +66,13 @@ class UserProfile(models.Model):
         )
 
         return is_verified
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if not self.username:
+            self.username = f"User{self.pk}"
+            super().save(*args, **kwargs)
 
 
 class NetworkTypes:
