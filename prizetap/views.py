@@ -17,7 +17,7 @@ from permissions.models import Permission
 
 
 class RaffleListView(ListAPIView):
-    queryset = Raffle.objects.filter(is_active=True)
+    queryset = Raffle.objects.filter(is_active=True).order_by("pk")
     serializer_class = RaffleSerializer
 
     def get(self, request):
@@ -51,7 +51,9 @@ class RaffleEnrollmentView(CreateAPIView):
                 raffle=raffle,
             )
             raffle_entry.signature = raffle.generate_signature(
-                user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address, raffle_entry.pk
+                user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address, 
+                raffle_entry.pk,
+                1
             )
             raffle_entry.save()
 

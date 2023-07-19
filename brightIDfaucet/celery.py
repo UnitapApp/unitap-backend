@@ -36,7 +36,7 @@ app.conf.beat_schedule = {
     },
     "update_tokentap_claim_for_verified_lightning_claims": {
         "task": "faucet.tasks.update_tokentap_claim_for_verified_lightning_claims",
-        "schedule": 5,
+        "schedule": 3,
     },
 }
 
