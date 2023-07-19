@@ -84,3 +84,16 @@ class ProfileSerializer(serializers.ModelSerializer):
                 gs.weekly_chain_claim_limit
                 - LimitedChainClaimManager.get_total_weekly_claims(instance)
             )
+        
+class SimpleProfilerSerializer(serializers.ModelSerializer):
+    wallets = WalletSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            "pk",
+            "username",
+            "is_meet_verified",
+            "is_aura_verified",
+            "wallets",
+        ]
