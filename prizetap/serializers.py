@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from core.serializers import UserConstraintBaseSerializer
+from authentication.serializers import SimpleProfilerSerializer
 from faucet.serializers import SmallChainSerializer
 from .models import *
 
@@ -8,6 +9,7 @@ class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerial
         model = Constraint
         fields = UserConstraintBaseSerializer.Meta.fields
 class RaffleEntrySerializer(serializers.ModelSerializer):
+    user_profile = SimpleProfilerSerializer()
     class Meta:
         model = RaffleEntry
         fields = [
