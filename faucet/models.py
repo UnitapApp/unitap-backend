@@ -151,12 +151,14 @@ class ClaimReceipt(models.Model):
     VERIFIED = "Verified"
     REJECTED = "Rejected"
     PROCESSED_FOR_TOKENTAP = "Processed"
+    PROCESSED_FOR_TOKENTAP_REJECT = "Processed_Rejected"
 
     states = (
         (PENDING, "Pending"),
         (VERIFIED, "Verified"),
         (REJECTED, "Rejected"),
         (PROCESSED_FOR_TOKENTAP, "Processed"),
+        (PROCESSED_FOR_TOKENTAP_REJECT, "Processed_Rejected"),
     )
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
@@ -177,7 +179,7 @@ class ClaimReceipt(models.Model):
         blank=True,
     )
 
-    _status = models.CharField(max_length=10, choices=states, default=PENDING)
+    _status = models.CharField(max_length=30, choices=states, default=PENDING)
 
     passive_address = models.CharField(max_length=512, null=True, blank=True)
 
@@ -251,7 +253,7 @@ class Chain(models.Model):
 
     @property
     def has_enough_funds(self):
-        if self.get_manager_balance() > self.max_claim_amount * 8: #TODO check here  
+        if self.get_manager_balance() > self.max_claim_amount * 8:  # TODO check here
             return True
         logging.warning(f"Chain {self.chain_name} has insufficient funds in contract")
         return False
@@ -463,7 +465,7 @@ class TransactionBatch(models.Model):
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     _status = models.CharField(
-        max_length=10, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
     )
 
     updating = models.BooleanField(default=False)
