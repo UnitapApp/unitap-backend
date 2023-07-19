@@ -87,6 +87,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         
 class SimpleProfilerSerializer(serializers.ModelSerializer):
     wallets = WalletSerializer(many=True, read_only=True)
+    username = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -97,3 +98,8 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
             "is_aura_verified",
             "wallets",
         ]
+
+    def get_username(self, user_profile: UserProfile):
+        if not user_profile.username:
+            return f"User{user_profile.pk}"
+        return user_profile.username
