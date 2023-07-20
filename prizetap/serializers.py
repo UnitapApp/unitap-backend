@@ -5,9 +5,9 @@ from faucet.serializers import SmallChainSerializer
 from .models import *
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
-    class Meta:
+    class Meta(UserConstraintBaseSerializer.Meta):
         model = Constraint
-        fields = UserConstraintBaseSerializer.Meta.fields
+        
 class RaffleEntrySerializer(serializers.ModelSerializer):
     user_profile = SimpleProfilerSerializer()
     class Meta:
