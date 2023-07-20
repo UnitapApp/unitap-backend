@@ -29,3 +29,8 @@ class UserConstraint(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @classmethod
+    def create_name_field(cls, constraints):
+        return models.CharField(max_length=255, unique=True, 
+                            choices=[(c.__name__, c.__name__) for c in constraints])
