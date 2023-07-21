@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin import UserConstraintBaseAdmin
 from .models import *
 
 # Register your models here.
@@ -28,5 +29,6 @@ class TokenDistributionClaimAdmin(admin.ModelAdmin):
     list_filter = ["token_distribution", "status"]
 
 
+admin.site.register(Constraint, UserConstraintBaseAdmin)
 admin.site.register(TokenDistribution, TokenDistributionAdmin)
 admin.site.register(TokenDistributionClaim, TokenDistributionClaimAdmin)

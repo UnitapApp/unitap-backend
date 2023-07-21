@@ -1,5 +1,6 @@
 from django.contrib import admin
 from prizetap.models import *
+from core.admin import UserConstraintBaseAdmin
 
 
 class RaffleAdmin(admin.ModelAdmin):
@@ -21,15 +22,8 @@ class RaffleٍEntryAdmin(admin.ModelAdmin):
     @admin.display(ordering='pk')
     def nonce(self, obj):
         return obj.pk
-    
-class ConstraintAdmin(admin.ModelAdmin):
-    list_display = [
-        "pk",
-        "name",
-        "response"
-    ]
 
 
 admin.site.register(Raffle, RaffleAdmin)
 admin.site.register(RaffleEntry, RaffleٍEntryAdmin)
-admin.site.register(Constraint, ConstraintAdmin)
+admin.site.register(Constraint, UserConstraintBaseAdmin)

@@ -2,6 +2,7 @@ import rest_framework.exceptions
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django.urls import reverse
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from authentication.serializers import MessageResponseSerializer
@@ -23,6 +24,7 @@ from .helpers import (
     sign_hashed_message,
     has_weekly_credit_left,
 )
+from .constraints import *
 
 
 class TokenDistributionListView(ListAPIView):
@@ -40,16 +42,10 @@ class TokenDistributionClaimView(CreateAPIView):
             )
 
     def check_user_permissions(self, token_distribution, user_profile):
-        for permission in token_distribution.permissions.all():
-            permission: Permission
-            if not permission.is_valid(
-                user_profile, token_distribution=token_distribution
-            ):
-                raise rest_framework.exceptions.PermissionDenied(
-                    permission.response()
-                    if permission.response() is not None
-                    else "You do not have permission to claim this token"
-                )
+        for c in token_distribution.permissions.all():
+            constraint: ConstraintVerification = eval(c.name)(user_profile)
+            if not constraint.is_observed(token_distribution=token_distribution):
+                raise PermissionDenied(constraint.response())
 
     def check_user_weekly_credit(self, user_profile):
         if not has_weekly_credit_left(user_profile):
