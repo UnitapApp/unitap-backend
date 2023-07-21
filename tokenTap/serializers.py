@@ -9,6 +9,7 @@ from tokenTap.models import (
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
     class Meta(UserConstraintBaseSerializer.Meta):
+        ref_name = "TokenDistributionConstraint"
         model = Constraint
         
 class DetailResponseSerializer(serializers.Serializer):

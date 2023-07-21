@@ -6,6 +6,7 @@ from .models import *
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
     class Meta(UserConstraintBaseSerializer.Meta):
+        ref_name = "RaffleConstraint"
         model = Constraint
         
 class RaffleEntrySerializer(serializers.ModelSerializer):
