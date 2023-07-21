@@ -12,7 +12,7 @@ class OncePerWeekVerification(ConstraintVerification):
         ).exists()
     
 class OncePerMonthVerification(ConstraintVerification):
-    def is_valid(self, *args, **kwargs):
+    def is_observed(self, *args, **kwargs):
         token_distribution = kwargs["token_distribution"]
         return not token_distribution.claims.filter(
             user_profile=self.user_profile,
@@ -21,7 +21,7 @@ class OncePerMonthVerification(ConstraintVerification):
 
 
 class OnceInALifeTimeVerification(ConstraintVerification):
-    def is_valid(self, *args, **kwargs):
+    def is_observed(self, *args, **kwargs):
         token_distribution = kwargs["token_distribution"]
         return not token_distribution.claims.filter(
             user_profile=self.user_profile,
