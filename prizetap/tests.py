@@ -1,14 +1,10 @@
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from faucet.models import Chain, WalletAccount
-from .utils import (
-    raffle_hash_message,
-    sign_hashed_message,
-)
 from .models import *
 from .constraints import *
 
@@ -171,6 +167,14 @@ class RaffleAPITestCase(RaffleTestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+class RaffleEntryTestCase(RaffleTestCase):
+    def setUp(self):
+        super().setUp()
+
+class RaffleEntryAPITestCase(RaffleEntryTestCase):
+    def setUp(self):
+        super().setUp()
+    
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -188,10 +192,22 @@ class RaffleAPITestCase(RaffleTestCase):
         self.assertEqual(self.raffle.number_of_entries, 0)
         self.assertEqual(response.data['signature']['signature'], entry.signature)
         self.assertEqual(response.data['signature']['signature'], 
-                         Raffle.generate_signature(self.user_profile.user, entry.pk))
-
-class RaffleEntryTestCase(RaffleTestCase):
-    pass
-
-class RaffleEntryAPITestCase(RaffleEntryTestCase):
-    pass
+                         self.raffle.generate_signature(
+                            self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
+                            entry.pk,
+                            1
+                         )
+                        )
+    
+    @patch('prizetap.models.Raffle.is_claimable', new_callable=PropertyMock)
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
+        lambda a, b, c : (True, None)
+    )
+    def test_not_claimable_raffle_enrollment(self, is_claimable_mock: PropertyMock):
+        is_claimable_mock.return_value = False
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk})
+        )
+        self.assertEqual(response.status_code, 403)
