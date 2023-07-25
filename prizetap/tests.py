@@ -211,3 +211,70 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
             reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk})
         )
         self.assertEqual(response.status_code, 403)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
+        lambda a, b, c : (True, None)
+    )
+    def test_set_raffle_enrollment_tx(self):
+        entry = RaffleEntry.objects.create(
+            raffle=self.raffle,
+            user_profile=self.user_profile
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        tx_hash = "0xc9f4401d848bf61bd8e225fa800ab259018a917b55b0aa6aa1beefb2747d4af5"
+        response = self.client.post(
+            reverse("set-enrollment-tx", kwargs={"pk": entry.pk}),
+            data={"tx_hash": tx_hash}
+        )
+        self.assertEqual(response.status_code, 200)
+        entry.refresh_from_db()
+        self.assertEqual(entry.tx_hash, tx_hash)
+        self.assertEqual(response.data['entry']['tx_hash'], tx_hash)
+        self.assertEqual(self.raffle.number_of_entries, 1)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
+        lambda a, b, c : (True, None)
+    )
+    def test_set_not_owned_raffle_enrollment_tx_failure(self):
+        entry = RaffleEntry.objects.create(
+            raffle=self.raffle,
+            user_profile=UserProfile.objects.create(
+                user=User.objects.create_user(
+                    username="test_2", 
+                    password="1234"
+                ),
+                initial_context_id="test_2",
+                username="test_2",
+            )
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        tx_hash = "0xc9f4401d848bf61bd8e225fa800ab259018a917b55b0aa6aa1beefb2747d4af5"
+        response = self.client.post(
+            reverse("set-enrollment-tx", kwargs={"pk": entry.pk}),
+            data={"tx_hash": tx_hash}
+        )
+        self.assertEqual(response.status_code, 403)
+        entry.refresh_from_db()
+        self.assertEqual(entry.tx_hash, None)
+        self.assertEqual(self.raffle.number_of_entries, 0)
+
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
+        lambda a, b, c : (True, None)
+    )
+    def test_duplicate_set_raffle_enrollment_tx_failure(self):
+        tx_hash = "0xc9f4401d848bf61bd8e225fa800ab259018a917b55b0aa6aa1beefb2747d4af5"
+        entry = RaffleEntry.objects.create(
+            raffle=self.raffle,
+            user_profile=self.user_profile,
+            tx_hash=tx_hash
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("set-enrollment-tx", kwargs={"pk": entry.pk}),
+            data={"tx_hash": tx_hash}
+        )
+        self.assertEqual(response.status_code, 403)
