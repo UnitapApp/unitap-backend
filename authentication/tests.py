@@ -29,9 +29,12 @@ test_rpc_url = "http://127.0.0.1:7545"
     "faucet.faucet_manager.bright_id_interface.BrightIDInterface.sponsor",
     lambda a, b: True,
 )
-def create_new_user(_address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9") -> UserProfile:
-    (u, created) = User.objects.get_or_create(username=_address, password="test")
-    p = UserProfile.objects.create(user=u, initial_context_id=_address)
+def create_new_user(
+    _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
+) -> UserProfile:
+    # (u, created) = User.objects.get_or_create(username=_address, password="test")
+    p = UserProfile.objects.get_or_create(_address)
+    # p = UserProfile.objects.create(user=u, initial_context_id=_address)
     return p
 
 
@@ -115,12 +118,9 @@ class TestUserLogin(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-        self.endpoint = reverse('AUTHENTICATION:login-user')
+        self.endpoint = reverse("AUTHENTICATION:login-user")
 
-    @patch(
-        "faucet.views.ClaimMaxView.wallet_address_is_set",
-        lambda a: (True, None)
-    )
+    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -130,39 +130,45 @@ class TestUserLogin(APITestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship',
-        lambda a, b: False
+        "authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship",
+        lambda a, b: False,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.sponsor',
-        lambda a, b: False
+        "authentication.helpers.BrightIDSoulboundAPIInterface.sponsor",
+        lambda a, b: False,
     )
     def test_check_in_process_of_sponsoring(self):
-        response = self.client.post(self.endpoint, data={'username': self._address, 'password': self.password})
+        response = self.client.post(
+            self.endpoint, data={"username": self._address, "password": self.password}
+        )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship',
-        lambda a, b: False
+        "authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship",
+        lambda a, b: False,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.sponsor',
-        lambda a, b: True
+        "authentication.helpers.BrightIDSoulboundAPIInterface.sponsor",
+        lambda a, b: True,
     )
     def test_check_requested_brightID_and_waiting_for_that(self):
-        response = self.client.post(self.endpoint, data={'username': self._address, 'password': self.password})
+        response = self.client.post(
+            self.endpoint, data={"username": self._address, "password": self.password}
+        )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship',
-        lambda a, b: True
+        "authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship",
+        lambda a, b: True,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status',
-        lambda a, b: (False, 4)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b: (False, 4),
     )
     def test_linking_process_should_be_failed(self):
-        response = self.client.post(self.endpoint, data={'username': self._address, 'password': self.password})
+        response = self.client.post(
+            self.endpoint, data={"username": self._address, "password": self.password}
+        )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
@@ -170,54 +176,54 @@ class TestSponsorCheckOrMakeSponsored(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-        self.endpoint = reverse('AUTHENTICATION:sponsor-user')
+        self.endpoint = reverse("AUTHENTICATION:sponsor-user")
 
     def test_invalid_arguments_provide_should_fail(self):
-        response = self.client.post(self.endpoint, data={'somthing_else': False})
+        response = self.client.post(self.endpoint, data={"somthing_else": False})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.create_verification_link',
-        lambda a, b: None
+        "authentication.helpers.BrightIDSoulboundAPIInterface.create_verification_link",
+        lambda a, b: None,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.create_qr_content',
-        lambda a, b: None
+        "authentication.helpers.BrightIDSoulboundAPIInterface.create_qr_content",
+        lambda a, b: None,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship',
-        lambda a, b: True
+        "authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship",
+        lambda a, b: True,
     )
     def test_already_sponsored_is_ok(self):
-        response = self.client.post(self.endpoint, data={'address': self._address})
+        response = self.client.post(self.endpoint, data={"address": self._address})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.create_verification_link',
-        lambda a, b: None
+        "authentication.helpers.BrightIDSoulboundAPIInterface.create_verification_link",
+        lambda a, b: None,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.create_qr_content',
-        lambda a, b: None
+        "authentication.helpers.BrightIDSoulboundAPIInterface.create_qr_content",
+        lambda a, b: None,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship',
-        lambda a, b: False
+        "authentication.helpers.BrightIDSoulboundAPIInterface.check_sponsorship",
+        lambda a, b: False,
     )
     @patch(
-        'authentication.helpers.BrightIDSoulboundAPIInterface.sponsor',
-        lambda a, b: True
+        "authentication.helpers.BrightIDSoulboundAPIInterface.sponsor",
+        lambda a, b: True,
     )
     def test_become_sponsor(self):
-        response = self.client.post(self.endpoint, data={'address': self._address})
+        response = self.client.post(self.endpoint, data={"address": self._address})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
 class TestSetWalletAddress(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
-        self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-        self.endpoint = reverse('AUTHENTICATION:set-wallet-user')
+        self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461G3Ef9A9"
+        self.endpoint = reverse("AUTHENTICATION:set-wallet-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
 
@@ -225,21 +231,27 @@ class TestSetWalletAddress(APITestCase):
         response = self.client.post(self.endpoint)
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        response = self.client.post(self.endpoint, data={'address': False})
+        response = self.client.post(self.endpoint, data={"address": False})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        response = self.client.post(self.endpoint, data={'wallet_type': False})
+        response = self.client.post(self.endpoint, data={"wallet_type": False})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_set_same_address_for_multiple_users_should_fail(self):
-        response = self.client.post(self.endpoint, data={'address': self._address, 'wallet_type': "EVM"})
+        response = self.client.post(
+            self.endpoint, data={"address": self._address, "wallet_type": "EVM"}
+        )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        response = self.client.post(self.endpoint, data={'address': self._address, 'wallet_type': "Solana"})
+        response = self.client.post(
+            self.endpoint, data={"address": self._address, "wallet_type": "Solana"}
+        )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_not_existing_wallet_then_create_and_set_address_for_that_is_ok(self):
-        response = self.client.post(self.endpoint, data={'address': self._address, 'wallet_type': "EVM"})
+        response = self.client.post(
+            self.endpoint, data={"address": self._address, "wallet_type": "EVM"}
+        )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -268,7 +280,7 @@ class TestGetWalletsView(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-        self.endpoint = reverse('AUTHENTICATION:get-wallets-user')
+        self.endpoint = reverse("AUTHENTICATION:get-wallets-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
 
@@ -281,7 +293,7 @@ class TestGetProfileView(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-        self.endpoint = reverse('AUTHENTICATION:get-profile-user')
+        self.endpoint = reverse("AUTHENTICATION:get-profile-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
 

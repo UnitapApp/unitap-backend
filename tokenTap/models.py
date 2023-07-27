@@ -2,8 +2,16 @@ from django.utils import timezone
 from django.db import models
 from authentication.models import NetworkTypes, UserProfile
 from faucet.models import Chain, ClaimReceipt
-from permissions.models import Permission
+from core.models import UserConstraint
+from .constraints import *
 
+class Constraint(UserConstraint):
+    constraints = UserConstraint.constraints + [
+        OncePerWeekVerification,
+        OncePerMonthVerification,
+        OnceInALifeTimeVerification
+    ]
+    name = UserConstraint.create_name_field(constraints)
 
 class TokenDistribution(models.Model):
     name = models.CharField(max_length=100)
@@ -21,7 +29,7 @@ class TokenDistribution(models.Model):
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
     )
 
-    permissions = models.ManyToManyField(Permission, blank=True)
+    permissions = models.ManyToManyField(Constraint, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     deadline = models.DateTimeField(null=True, blank=True)
@@ -71,7 +79,7 @@ class TokenDistributionClaim(models.Model):
     nonce = models.BigIntegerField(null=True, blank=True)
 
     status = models.CharField(
-        max_length=10, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
     )
 
     tx_hash = models.CharField(max_length=255, null=True, blank=True)
@@ -90,3 +98,7 @@ class TokenDistributionClaim(models.Model):
     @property
     def amount(self):
         return self.token_distribution.amount
+
+    @property
+    def age(self):
+        return timezone.now() - self.created_at

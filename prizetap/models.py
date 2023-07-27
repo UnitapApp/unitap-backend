@@ -73,12 +73,19 @@ class Raffle(models.Model):
 
     @property
     def number_of_entries(self):
-        return self.entries.filter(tx_hash__isnull=False).count()
+        return self.entries.filter(tx_hash__isnull=False).aggregate(
+            TOTAL = models.Sum('multiplier'))['TOTAL'] or 0
     
     @property
     def winner(self):
+        winner_entry = self.winner_entry
+        if winner_entry:
+            return winner_entry.user_profile
+        
+    @property
+    def winner_entry(self):
         try:
-            return self.entries.get(is_winner=True).user_profile
+            return self.entries.get(is_winner=True)
         except RaffleEntry.DoesNotExist:
             return None
 

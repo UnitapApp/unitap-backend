@@ -1,62 +1,16 @@
 from rest_framework import serializers
-
+from core.serializers import UserConstraintBaseSerializer
+from authentication.serializers import SimpleProfilerSerializer
 from faucet.serializers import SmallChainSerializer
 from .models import *
 
-
-class RaffleSerializer(serializers.ModelSerializer):
-    chain = SmallChainSerializer()
-    winner = serializers.SerializerMethodField()
-    user_entry = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Raffle
-        fields = [
-            "pk",
-            "name",
-            "description",
-            "creator",
-            "creator_url",
-            "discord_url",
-            "twitter_url",
-            "image_url",
-            "prize_amount",
-            "prize_asset",
-            "prize_name",
-            "prize_symbol",
-            "decimals",
-            "is_prize_nft",
-            "nft_id",
-            "token_uri",
-            "chain",
-            "contract",
-            "raffleId",
-            "created_at",
-            "deadline",
-            "max_number_of_entries",
-            "is_active",
-            "winner",
-            "is_expired",
-            "is_claimable",
-            "user_entry",
-            "number_of_entries",
-        ]
-
-    def get_winner(self, raffle: Raffle):
-        if raffle.winner:
-            return raffle.winner.pk
+class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
+    class Meta(UserConstraintBaseSerializer.Meta):
+        ref_name = "RaffleConstraint"
+        model = Constraint
         
-    def get_user_entry(self, raffle: Raffle):
-        try:
-            return RaffleEntrySerializer(
-                raffle.entries.get(user_profile=self.context['user'])
-            ).data
-        except RaffleEntry.DoesNotExist:
-            return None
-
-
-
 class RaffleEntrySerializer(serializers.ModelSerializer):
+    user_profile = SimpleProfilerSerializer()
     class Meta:
         model = RaffleEntry
         fields = [
@@ -80,3 +34,51 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation["nonce"] = instance.nonce
         return representation
+
+class RaffleSerializer(serializers.ModelSerializer):
+    chain = SmallChainSerializer()
+    winner_entry = RaffleEntrySerializer()
+    user_entry = serializers.SerializerMethodField()
+    constraints = ConstraintSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Raffle
+        fields = [
+            "pk",
+            "name",
+            "description",
+            "creator",
+            "creator_url",
+            "discord_url",
+            "twitter_url",
+            "image_url",
+            "prize_amount",
+            "prize_asset",
+            "prize_name",
+            "prize_symbol",
+            "decimals",
+            "is_prize_nft",
+            "nft_id",
+            "token_uri",
+            "chain",
+            "contract",
+            "raffleId",
+            "constraints",
+            "created_at",
+            "deadline",
+            "max_number_of_entries",
+            "is_active",
+            "winner_entry",
+            "is_expired",
+            "is_claimable",
+            "user_entry",
+            "number_of_entries",
+        ]
+        
+    def get_user_entry(self, raffle: Raffle):
+        try:
+            return RaffleEntrySerializer(
+                raffle.entries.get(user_profile=self.context['user'])
+            ).data
+        except RaffleEntry.DoesNotExist:
+            return None

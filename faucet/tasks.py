@@ -290,15 +290,51 @@ def process_verified_lighning_claim(gas_tap_claim_id):
 
 
 @shared_task
+def process_rejected_lighning_claim(gas_tap_claim_id):
+    try:
+        claim = ClaimReceipt.objects.get(pk=gas_tap_claim_id)
+        user_profile = claim.user_profile
+        tokentap_lightning_claim = (
+            TokenDistributionClaim.objects.filter(
+                user_profile=user_profile,
+                token_distribution__chain__chain_type=NetworkTypes.LIGHTNING,
+            )
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not tokentap_lightning_claim:
+            raise Exception("No tokentap claim found for user")
+
+        tokentap_lightning_claim.delete()
+
+        claim._status = ClaimReceipt.PROCESSED_FOR_TOKENTAP_REJECT
+        claim.save()
+
+    except Exception as e:
+        capture_exception()
+        print(f"error in processing lightning claims: {str(e)}")
+
+
+@shared_task
 def update_tokentap_claim_for_verified_lightning_claims():
     claims = ClaimReceipt.objects.filter(
-        _status=ClaimReceipt.VERIFIED,
+        _status__in=[ClaimReceipt.VERIFIED, ClaimReceipt.REJECTED],
         chain__chain_type=NetworkTypes.LIGHTNING,
     )
     for _claim in claims:
         if django_settings.IS_TESTING:
-            process_verified_lighning_claim.apply((_claim.pk,))
+            if _claim._status == ClaimReceipt.VERIFIED:
+                process_verified_lighning_claim.apply((_claim.pk,))
+            elif _claim._status == ClaimReceipt.REJECTED:
+                process_rejected_lighning_claim.apply((_claim.pk,))
         else:
-            process_verified_lighning_claim.delay(
-                _claim.pk,
-            )
+            if _claim._status == ClaimReceipt.VERIFIED:
+
+                process_verified_lighning_claim.delay(
+                    _claim.pk,
+                )
+            elif _claim._status == ClaimReceipt.REJECTED:
+                process_rejected_lighning_claim.delay(
+                    _claim.pk,
+                )

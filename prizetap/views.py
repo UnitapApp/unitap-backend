@@ -17,7 +17,7 @@ from permissions.models import Permission
 
 
 class RaffleListView(ListAPIView):
-    queryset = Raffle.objects.filter(is_active=True)
+    queryset = Raffle.objects.filter(is_active=True).order_by("pk")
     serializer_class = RaffleSerializer
 
     def get(self, request):
