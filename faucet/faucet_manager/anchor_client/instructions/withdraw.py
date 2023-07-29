@@ -16,7 +16,8 @@ layout = borsh.CStruct("amount" / borsh.U64)
 
 class WithdrawAccounts(typing.TypedDict):
     lock_account: Pubkey
-    owner: Pubkey
+    operator: Pubkey
+    recipient: Pubkey
 
 
 def withdraw(
@@ -27,7 +28,8 @@ def withdraw(
 ) -> Instruction:
     keys: list[AccountMeta] = [
         AccountMeta(pubkey=accounts["lock_account"], is_signer=False, is_writable=True),
-        AccountMeta(pubkey=accounts["owner"], is_signer=True, is_writable=True),
+        AccountMeta(pubkey=accounts["operator"], is_signer=True, is_writable=True),
+        AccountMeta(pubkey=accounts["recipient"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
     ]
     if remaining_accounts is not None:

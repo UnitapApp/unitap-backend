@@ -40,6 +40,9 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
         model = GlobalSettings
         fields = [
             "weekly_chain_claim_limit",
+            "tokentap_weekly_claim_limit",
+            "prizetap_weekly_claim_limit",
+            "is_gas_tap_available",
         ]
 
 
@@ -95,6 +98,7 @@ class SmallChainSerializer(serializers.ModelSerializer):
             "gas_image_url",
             "max_claim_amount",
             "is_testnet",
+            "tokentap_contract_address",
             "chain_type",
             "block_scan_address",
         ]
@@ -122,10 +126,10 @@ class ChainSerializer(serializers.ModelSerializer):
             "max_claim_amount",
             "claimed",
             "unclaimed",
-            "order",
+            # "order",
             "total_claims",
             "total_claims_since_last_monday",
-            # "total_claims_since_last_round",
+            "tokentap_contract_address",
             "needs_funding",
             "is_testnet",
             "chain_type",

@@ -65,6 +65,11 @@ class ListClaims(ListAPIView):
         user_profile = self.request.user.profile
         return ClaimReceipt.objects.filter(
             user_profile=user_profile,
+            _status__in=[
+                ClaimReceipt.VERIFIED,
+                ClaimReceipt.PENDING,
+                ClaimReceipt.REJECTED,
+            ],
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).order_by("-pk")
 
@@ -99,8 +104,7 @@ class ChainListView(ListAPIView):
     serializer_class = ChainSerializer
 
     def get_queryset(self):
-        queryset = Chain.objects.filter(is_active=True)
-        # .prefetch_related("claims")
+        queryset = Chain.objects.filter(is_active=True, show_in_gastap=True)
 
         sorted_queryset = sorted(
             queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True

@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
+tmp.py
+
 # Distribution / packaging
 .Python
 build/
@@ -127,13 +129,19 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.myvenv/
+.myvenv
 
+
+req.txt
 # Spyder project settings
 .spyderproject
 .spyproject
 
 # Rope project settings
 .ropeproject
+
+tmp.py
 
 # mkdocs documentation
 /site

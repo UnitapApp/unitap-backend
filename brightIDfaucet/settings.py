@@ -16,11 +16,46 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'django.core.cache': {
+            'handlers': ['console'],
+            'level': 'ERROR',  # Change this to control the log level
+        }
+    }
+}
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
+
+IS_TESTING = False
 
 # SECURITY WARNING: keep the secret key used in production secret!
 FIELD_ENCRYPTION_KEY = os.environ.get("FIELD_KEY")
@@ -34,10 +69,20 @@ MEMCACHED_URL = os.environ.get("MEMCACHEDCLOUD_SERVERS")
 MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
 MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
 
+
+def before_send(event, hint):
+    if "N+1 Query" in str(event.get("exception", {})):
+        return None  # This will discard the event
+    elif "already known" in str(event.get("exception", {})):
+        return None
+    return event
+
+
 if SENTRY_DSN != "DEBUG-DSN":  # setup sentry only on production
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
+        before_send=before_send,
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
@@ -62,6 +107,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "faucet.apps.FaucetConfig",
+    "tokenTap.apps.TokentapConfig",
+    "prizetap.apps.PrizetapConfig",
+    "permissions.apps.PermissionsConfig",
     "authentication.apps.AuthenticationConfig",
     "rest_framework",
     "rest_framework.authtoken",
@@ -69,6 +117,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "corsheaders",
     "django_filters",
+    "core"
 ]
 
 MIDDLEWARE = [

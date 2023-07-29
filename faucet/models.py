@@ -12,11 +12,39 @@ from authentication.models import NetworkTypes, UserProfile, Wallet
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from faucet.faucet_manager.lnpay_client import LNPayClient
+from django.core.cache import cache
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
 # import django transaction
 from django.db import transaction
+
+
+def get_cache_time(id):
+    return int((float(int(id) % 25) / 25.0) * 180.0) + 180
+
+
+class BigNumField(models.Field):
+    empty_strings_allowed = False
+
+    def __init__(self, *args, **kwargs):
+        kwargs["max_length"] = 200  # or some other number
+        super().__init__(*args, **kwargs)
+
+    def db_type(self, connection):
+        return "numeric"
+
+    def get_internal_type(self):
+        return "BigNumField"
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            return int(value)
+
+        return value
+
+    def get_prep_value(self, value):
+        return str(value)
 
 
 class WalletAccount(models.Model):
@@ -122,11 +150,15 @@ class ClaimReceipt(models.Model):
     PENDING = "Pending"
     VERIFIED = "Verified"
     REJECTED = "Rejected"
+    PROCESSED_FOR_TOKENTAP = "Processed"
+    PROCESSED_FOR_TOKENTAP_REJECT = "Processed_Rejected"
 
     states = (
         (PENDING, "Pending"),
         (VERIFIED, "Verified"),
         (REJECTED, "Rejected"),
+        (PROCESSED_FOR_TOKENTAP, "Processed"),
+        (PROCESSED_FOR_TOKENTAP_REJECT, "Processed_Rejected"),
     )
 
     chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
@@ -147,7 +179,7 @@ class ClaimReceipt(models.Model):
         blank=True,
     )
 
-    _status = models.CharField(max_length=10, choices=states, default=PENDING)
+    _status = models.CharField(max_length=30, choices=states, default=PENDING)
 
     passive_address = models.CharField(max_length=512, null=True, blank=True)
 
@@ -191,11 +223,13 @@ class Chain(models.Model):
     gas_image_url = models.URLField(max_length=255, blank=True, null=True)
     rpc_url_private = models.URLField(max_length=255)
 
-    max_claim_amount = models.BigIntegerField()
+    max_claim_amount = BigNumField()
 
     poa = models.BooleanField(default=False)
 
     fund_manager_address = models.CharField(max_length=255)
+    tokentap_contract_address = models.CharField(max_length=255, null=True, blank=True)
+
     wallet = models.ForeignKey(
         WalletAccount, related_name="chains", on_delete=models.PROTECT
     )
@@ -212,13 +246,14 @@ class Chain(models.Model):
     order = models.IntegerField(default=0)
 
     is_active = models.BooleanField(default=True)
+    show_in_gastap = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.pk} - {self.symbol}:{self.chain_id}"
 
     @property
     def has_enough_funds(self):
-        if self.get_manager_balance() > self.max_claim_amount * 8:
+        if self.get_manager_balance() > self.max_claim_amount * 8:  # TODO check here
             return True
         logging.warning(f"Chain {self.chain_name} has insufficient funds in contract")
         return False
@@ -249,7 +284,10 @@ class Chain(models.Model):
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
                 if self.chain_id == 500:
                     logging.debug("chain XDC NONEVM is checking its balances")
-                return EVMFundManager(self).w3.eth.getBalance(self.fund_manager_address)
+                funds = EVMFundManager(self).w3.eth.getBalance(
+                    self.fund_manager_address
+                )
+                return funds
 
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
@@ -264,7 +302,10 @@ class Chain(models.Model):
                 return lnpay_client.get_balance()
 
             raise Exception("Invalid chain type")
-        except:
+        except Exception as e:
+            logging.exception(
+                f"Error getting manager balance for {self.chain_name} error is {e}"
+            )
             return 0
 
     @property
@@ -333,45 +374,89 @@ class Chain(models.Model):
 
     @property
     def total_claims(self):
-        return ClaimReceipt.objects.filter(
+        cached_total_claims = cache.get(f"gas_tap_chain_total_claims_{self.pk}")
+        if cached_total_claims:
+            return cached_total_claims
+        total_claims = ClaimReceipt.objects.filter(
             chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
+        cache.set(
+            f"gas_tap_chain_total_claims_{self.pk}",
+            total_claims,
+            get_cache_time(self.pk),
+        )
+        return total_claims
 
     @property
     def total_claims_since_last_monday(self):
+        cached_total_claims_since_last_monday = cache.get(
+            f"gas_tap_chain_total_claims_since_last_monday_{self.pk}"
+        )
+        if cached_total_claims_since_last_monday:
+            return cached_total_claims_since_last_monday
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
+        total_claims_since_last_monday = ClaimReceipt.objects.filter(
             chain=self,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
+        cache.set(
+            f"gas_tap_chain_total_claims_since_last_monday_{self.pk}",
+            total_claims_since_last_monday,
+            get_cache_time(self.pk),
+        )
+        return total_claims_since_last_monday
 
     @property
     def total_claims_for_last_round(self):
+        cached_total_claims_for_last_round = cache.get(
+            f"gas_tap_chain_total_claims_for_last_round_{self.pk}"
+        )
+        if cached_total_claims_for_last_round:
+            return cached_total_claims_for_last_round
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
+        total_claims_for_last_round = ClaimReceipt.objects.filter(
             chain=self,
             datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
             datetime__lte=WeeklyCreditStrategy.get_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
+        cache.set(
+            f"gas_tap_chain_total_claims_for_last_round_{self.pk}",
+            total_claims_for_last_round,
+            get_cache_time(self.pk),
+        )
+        return total_claims_for_last_round
 
     @property
     def total_claims_since_last_round(self):
+        cached_total_claims_since_last_round = cache.get(
+            f"gas_tap_chain_total_claims_since_last_round_{self.pk}"
+        )
+        if cached_total_claims_since_last_round:
+            return cached_total_claims_since_last_round
         from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
 
-        return ClaimReceipt.objects.filter(
+        total_claims_since_last_round = ClaimReceipt.objects.filter(
             chain=self,
             datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
             _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
         ).count()
-        # return self.total_claims_for_last_round + self.total_claims_since_last_monday
+        cache.set(
+            f"gas_tap_chain_total_claims_since_last_round_{self.pk}",
+            total_claims_since_last_round,
+            get_cache_time(self.pk),
+        )
+        return total_claims_since_last_round
 
 
 class GlobalSettings(models.Model):
-    weekly_chain_claim_limit = models.IntegerField(default=10)
+    weekly_chain_claim_limit = models.IntegerField(default=5)
+    tokentap_weekly_claim_limit = models.IntegerField(default=3)
+    prizetap_weekly_claim_limit = models.IntegerField(default=3)
+    is_gas_tap_available = models.BooleanField(default=True)
 
 
 class TransactionBatch(models.Model):
@@ -380,7 +465,7 @@ class TransactionBatch(models.Model):
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     _status = models.CharField(
-        max_length=10, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
     )
 
     updating = models.BooleanField(default=False)

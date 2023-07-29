@@ -49,10 +49,8 @@ class WalletAccountAdmin(admin.ModelAdmin):
 
 
 class GlobalSettingsAdmin(admin.ModelAdmin):
-    list_display = ["pk", "weekly_chain_claim_limit"]
-    list_editable = [
-        "weekly_chain_claim_limit",
-    ]
+    list_display = ["pk", "weekly_chain_claim_limit", "tokentap_weekly_claim_limit"]
+    list_editable = ["weekly_chain_claim_limit", "tokentap_weekly_claim_limit"]
 
 
 class TransactionBatchAdmin(admin.ModelAdmin):
@@ -70,15 +68,10 @@ class TransactionBatchAdmin(admin.ModelAdmin):
     search_fields = ["tx_hash"]
     list_filter = ["chain", "_status", "updating"]
 
+
 class LightningConfigAdmin(admin.ModelAdmin):
-    readonly_fields=["claimed_amount", "current_round"]
-    list_display = [
-        "pk",
-        "period",
-        "period_max_cap",
-        "claimed_amount",
-        "current_round"
-    ]
+    readonly_fields = ["claimed_amount", "current_round"]
+    list_display = ["pk", "period", "period_max_cap", "claimed_amount", "current_round"]
     pass
 
 

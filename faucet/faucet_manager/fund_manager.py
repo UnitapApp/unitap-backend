@@ -27,8 +27,11 @@ from .lnpay_client import LNPayClient
 class FundMangerException:
     class GasPriceTooHigh(Exception):
         pass
+
     class RPCError(Exception):
         pass
+
+
 class EVMFundManager:
     def __init__(self, chain: Chain):
         self.chain = chain
@@ -46,18 +49,22 @@ class EVMFundManager:
                 return _w3
         except Exception as e:
             logging.error(e)
-            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
+            raise FundMangerException.RPCError(
+                f"Could not connect to rpc {self.chain.rpc_url_private}"
+            )
 
     @property
     def is_gas_price_too_high(self):
         try:
             gas_price = self.w3.eth.gas_price
+            print(f"Gas price: {gas_price} vs max: {self.chain.max_gas_price}")
             if gas_price > self.chain.max_gas_price:
                 return True
             return False
         except Exception as e:
             logging.error(e)
             return True
+
     @property
     def account(self) -> LocalAccount:
         return self.w3.eth.account.privateKeyToAccount(self.chain.wallet.main_key)
@@ -96,9 +103,11 @@ class EVMFundManager:
     def prepare_tx_for_broadcast(self, tx_function):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
         gas_estimation = tx_function.estimateGas({"from": self.account.address})
+        if self.chain.chain_id == "997":
+            gas_estimation = 100000
 
         if self.is_gas_price_too_high:
-            raise FundMangerException.GasPriceTooHigh()
+            raise FundMangerException.GasPriceTooHigh("Gas price is too high")
 
         tx_data = tx_function.buildTransaction(
             {
@@ -135,7 +144,9 @@ class SolanaFundManager:
                 return _w3
         except Exception as e:
             logging.error(e)
-            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
+            raise FundMangerException.RPCError(
+                f"Could not connect to rpc {self.chain.rpc_url_private}"
+            )
 
     @property
     def account(self) -> Keypair:
@@ -176,11 +187,20 @@ class SolanaFundManager:
         return None
 
     @property
+    def operator(self):
+        if self.lock_account:
+            return self.lock_account.operator
+        return None
+
+    @property
     def solana_client(self):
         return SolanaClient(self.w3, self.account)
-    
+
     def is_gas_price_too_high(self, instruction):
-        txn = Transaction().add(instruction)
+        if isinstance(instruction, list):
+            txn = Transaction().add(*instruction)
+        else:
+            txn = Transaction().add(instruction)
         try:
             fee = self.w3.get_fee_for_message(txn.compile_message()).value
             if not fee:
@@ -188,29 +208,26 @@ class SolanaFundManager:
             if fee > self.chain.max_gas_price:
                 return True
             return False
-        except Exception as e:
-            logging.warning(e)
+        except Exception as ex:
+            logging.warning(ex)
             return True
 
     def multi_transfer(self, data):
-        total_withdraw_amount = sum(item["amount"] for item in data)
         if self.is_initialized:
-            instruction = instructions.withdraw(
-                {"amount": total_withdraw_amount},
-                {"lock_account": self.lock_account_address, "owner": self.owner},
-                self.program_id
-            )
+            instruction = [
+                instructions.withdraw(
+                    {"amount": item['amount']},
+                    {
+                        "lock_account": self.lock_account_address, 
+                        "operator": self.operator,
+                        "recipient": Pubkey.from_string(item["to"])
+                    },
+                    self.program_id
+                ) for item in data
+            ]
             if self.is_gas_price_too_high(instruction):
                 raise FundMangerException.GasPriceTooHigh()
-            if not self.solana_client.call_program(instruction):
-                raise Exception("Could not withdraw assets from solana contract")
-            signature = self.solana_client.transfer_many_lamports(
-                self.owner,
-                [
-                    (Pubkey.from_string(item["to"]), int(item["amount"]))
-                    for item in data
-                ],
-            )
+            signature = self.solana_client.call_program(instruction)
             if not signature:
                 raise Exception("Transferring lamports to the receivers failed")
             return str(signature)
@@ -229,13 +246,18 @@ class SolanaFundManager:
                 TransactionConfirmationStatus.Finalized,
             ]
         except RPCException:
-            logging.warning("Solana raised the RPCException at get_signature_statuses()")
+            logging.warning(
+                "Solana raised the RPCException at get_signature_statuses()"
+            )
             return False
         except RPCNoResultException:
-            logging.warning("Solana raised the RPCNoResultException at get_signature_statuses()")
+            logging.warning(
+                "Solana raised the RPCNoResultException at get_signature_statuses()"
+            )
             return False
         except Exception:
             raise
+
 
 class LightningFundManager:
     def __init__(self, chain: Chain):
@@ -246,19 +268,17 @@ class LightningFundManager:
         config = LightningConfig.objects.first()
         assert config is not None, "There is no Lightning config"
         return config
-    
+
     @property
     def api_key(self):
         return self.chain.wallet.main_key
-    
+
     @property
     def lnpay_client(self):
         return LNPayClient(
-            self.chain.rpc_url_private, 
-            self.api_key, 
-            self.chain.fund_manager_address
+            self.chain.rpc_url_private, self.api_key, self.chain.fund_manager_address
         )
-    
+
     def __check_max_cap_exceeds(self, amount) -> bool:
         try:
             config = self.config
@@ -277,20 +297,20 @@ class LightningFundManager:
         client = self.lnpay_client
 
         with memcache_lock(MEMCACHE_LIGHTNING_LOCK_KEY, os.getpid()) as acquired:
-            assert acquired, \
-                "Could not acquire Lightning multi-transfer lock"
-            
+            assert acquired, "Could not acquire Lightning multi-transfer lock"
+
             item = data[0]
-            assert not self.__check_max_cap_exceeds(item['amount']), \
-                "Lightning periodic max cap exceeded"
+            assert not self.__check_max_cap_exceeds(
+                item["amount"]
+            ), "Lightning periodic max cap exceeded"
             try:
                 pay_result = client.pay_invoice(item["to"])
 
                 if pay_result:
-                    result = pay_result['lnTx']['id']
+                    result = pay_result["lnTx"]["id"]
 
                     config = self.config
-                    config.claimed_amount += item['amount']
+                    config.claimed_amount += item["amount"]
                     config.save()
 
                     cache.delete(MEMCACHE_LIGHTNING_LOCK_KEY)
@@ -304,4 +324,4 @@ class LightningFundManager:
 
     def is_tx_verified(self, tx_hash):
         invoice_status = self.lnpay_client.get_invoice_status(tx_hash)
-        return invoice_status['settled'] == 1
+        return invoice_status["settled"] == 1
