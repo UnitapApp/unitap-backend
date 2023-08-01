@@ -4,14 +4,17 @@ from authentication.models import NetworkTypes, UserProfile
 from faucet.models import Chain, ClaimReceipt
 from core.models import UserConstraint
 from .constraints import *
+from django.core.cache import cache
+
 
 class Constraint(UserConstraint):
     constraints = UserConstraint.constraints + [
         OncePerWeekVerification,
         OncePerMonthVerification,
-        OnceInALifeTimeVerification
+        OnceInALifeTimeVerification,
     ]
     name = UserConstraint.create_name_field(constraints)
+
 
 class TokenDistribution(models.Model):
     name = models.CharField(max_length=100)
@@ -59,6 +62,27 @@ class TokenDistribution(models.Model):
     @property
     def number_of_claims(self):
         return self.claims.count()
+
+    @property
+    def total_claims_since_last_round(self):
+        cached_total_claims_since_last_round = cache.get(
+            f"token_tap_token_distribution_total_claims_since_last_round_{self.pk}"
+        )
+        if cached_total_claims_since_last_round:
+            return cached_total_claims_since_last_round
+        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+
+        total_claims_since_last_round = TokenDistributionClaim.objects.filter(
+            token_distribution=self,
+            created_at__gte=TimeUtils.get_second_last_monday(),
+            status__in=[ClaimReceipt.VERIFIED, ClaimReceipt.PENDING],
+        ).count()
+        cache.set(
+            f"token_tap_token_distribution_total_claims_since_last_round_{self.pk}",
+            total_claims_since_last_round,
+            300,
+        )
+        return total_claims_since_last_round
 
     def __str__(self):
         return f"{self.name} - {self.token} - {self.amount}"

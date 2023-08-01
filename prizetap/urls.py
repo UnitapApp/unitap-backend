@@ -25,6 +25,6 @@ urlpatterns = [
     path(
         "set-claiming-prize-tx/<int:pk>/",
         SetClaimingPrizeTxView.as_view(),
-        name="set-enrollment-tx",
+        name="set-claiming-prize-tx",
     )
 ]

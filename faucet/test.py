@@ -1,4 +1,6 @@
 import datetime
+import time
+import os
 import json
 from unittest import skipIf
 from uuid import uuid4
@@ -15,15 +17,19 @@ from faucet.faucet_manager.credit_strategy import (
     WeeklyCreditStrategy,
 )
 
-from faucet.faucet_manager.fund_manager import EVMFundManager
+from faucet.faucet_manager.fund_manager import EVMFundManager, LightningFundManager
 from faucet.models import (
     Chain,
     ClaimReceipt,
     GlobalSettings,
     WalletAccount,
     TransactionBatch,
+    LightningConfig
 )
 from unittest.mock import patch
+from dotenv import dotenv_values
+from faucet.helpers import memcache_lock
+from faucet.constants import *
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
@@ -35,6 +41,8 @@ test_rpc_url_private = "http://ganache:7545"
 test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
 test_chain_id = 1337
 test_rpc_url = "http://127.0.0.1:7545"
+
+env_config = dotenv_values(".env.test")
 
 
 def create_new_user(
@@ -81,6 +89,19 @@ def create_idChain_chain(wallet) -> Chain:
         symbol="eidi",
         chain_id="74",
         max_claim_amount=eidi_max_claim,
+        explorer_url="https://ftmscan.com/",
+    )
+
+def create_lightning_chain(wallet) -> Chain:
+    return Chain.objects.create(
+        chain_name="Lightning",
+        native_currency_name="BTC",
+        symbol="BTC",
+        rpc_url_private=env_config['LIGHTNING_RPC_URL'],
+        wallet=wallet,
+        fund_manager_address=env_config['LIGHTNING_FUND_MANAGER'],
+        chain_id=286621,
+        max_claim_amount=10,
         explorer_url="https://ftmscan.com/",
     )
 
@@ -382,15 +403,24 @@ class TestClaimAPI(APITestCase):
         self.wallet = WalletAccount.objects.create(
             name="Test Wallet", private_key=test_wallet_key
         )
+        self.lightning_wallet = WalletAccount.objects.create(
+            name="Test Lightning Wallet", private_key=env_config['LIGHTNING_WALLET']
+        )
         self.verified_user = create_new_user()
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
         self.test_chain = create_test_chain(self.wallet)
+        self.lightning_chain = create_lightning_chain(self.lightning_wallet)
         self.initial_context_id = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
 
         GlobalSettings.objects.create(weekly_chain_claim_limit=2)
+        LightningConfig.objects.create(
+            period=86800,
+            period_max_cap=100,
+            current_round=int(int(time.time()) / 86800) * 86800
+        )
 
         self.client.force_authenticate(user=self.verified_user.user)
         self.user_profile = self.verified_user
@@ -525,6 +555,34 @@ class TestClaimAPI(APITestCase):
         data = json.loads(response.content)
         self.assertEqual(data[0]["pk"], c2.pk)
         self.assertEqual(data[1]["pk"], c1.pk)
+
+    def test_lightning_claim_race_condition(self):
+        with self.assertRaises(AssertionError):
+            with memcache_lock(MEMCACHE_LIGHTNING_LOCK_KEY, os.getpid()):
+                invoice = env_config['LIGHTNING_INVOICE']
+
+                lightning_fund_manager = LightningFundManager(self.lightning_chain)
+                lightning_fund_manager.multi_transfer([{
+                    "amount": 10,
+                    "data": invoice
+                }])
+
+    def test_lightning_claim_max_cap_exceeded(self):
+        lightning_fund_manager = LightningFundManager(self.lightning_chain)
+        config = lightning_fund_manager.config
+        config.claimed_amount = 100
+        config.save()
+        is_exceeded = lightning_fund_manager._LightningFundManager__check_max_cap_exceeds(10)
+        self.assertEqual(is_exceeded, True)
+
+        with self.assertRaises(AssertionError):
+            invoice = env_config['LIGHTNING_INVOICE']
+
+            lightning_fund_manager.multi_transfer([{
+                "amount": 10,
+                "data": invoice
+            }])
+
 
 
 class TestWeeklyCreditStrategy(APITestCase):
