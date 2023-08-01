@@ -74,8 +74,8 @@ class TokenDistribution(models.Model):
 
         total_claims_since_last_round = TokenDistributionClaim.objects.filter(
             token_distribution=self,
-            datetime__gte=TimeUtils.get_second_last_monday(),
-            status__in=[ClaimReceipt.VERIFIED],
+            created_at__gte=TimeUtils.get_second_last_monday(),
+            status__in=[ClaimReceipt.VERIFIED, ClaimReceipt.PENDING],
         ).count()
         cache.set(
             f"token_tap_token_distribution_total_claims_since_last_round_{self.pk}",
