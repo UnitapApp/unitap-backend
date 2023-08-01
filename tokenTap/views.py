@@ -31,6 +31,16 @@ class TokenDistributionListView(ListAPIView):
     serializer_class = TokenDistributionSerializer
     queryset = TokenDistribution.objects.filter(is_active=True)
 
+    def get_queryset(self):
+        q =  TokenDistribution.objects.filter(is_active=True)
+
+        sorted_queryset = sorted(
+            q, key=lambda obj: obj.total_claims_since_last_round, reverse=True
+        )
+
+        return sorted_queryset
+        
+
 
 class TokenDistributionClaimView(CreateAPIView):
     permission_classes = [IsAuthenticated]
