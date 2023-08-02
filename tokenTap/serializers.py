@@ -45,6 +45,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "deadline",
             "max_number_of_claims",
             "number_of_claims",
+            "total_claims_since_last_round",
             "notes",
             "is_expired",
             "is_maxed_out",
