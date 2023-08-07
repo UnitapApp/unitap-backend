@@ -22,9 +22,13 @@ from authentication.serializers import (
 )
 
 
+class UserProfileCountView(ListAPIView):
+    def get(self, request, *args, **kwargs):
+        return Response({"count": UserProfile.user_count()}, status=200)
+
+
 class SponsorView(CreateAPIView):
     def post(self, request, *args, **kwargs):
-
         address = request.data.get("address", None)
         if not address:
             return Response({"message": "Invalid request"}, status=403)

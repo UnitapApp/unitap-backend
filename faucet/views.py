@@ -34,6 +34,11 @@ class CustomException(Exception):
     pass
 
 
+class ClaimCountView(ListAPIView):
+    def get(self, request, *args, **kwargs):
+        return Response({"count": ClaimReceipt.claims_count()}, status=200)
+
+
 class LastClaimView(RetrieveAPIView):
     serializer_class = ReceiptSerializer
 

@@ -207,6 +207,15 @@ class ClaimReceipt(models.Model):
             return self.batch.tx_hash
         return None
 
+    @staticmethod
+    def claims_count():
+        cached_count = cache.get("gastap_claims_count")
+        if cached_count:
+            return cached_count
+        count = ClaimReceipt.objects.filter(_status=ClaimReceipt.VERIFIED).count()
+        cache.set("gastap_claims_count", count, 600)
+        return count
+
 
 class Chain(models.Model):
     chain_name = models.CharField(max_length=255)
@@ -338,7 +347,10 @@ class Chain(models.Model):
                 )
                 return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
-        except:
+        except Exception as e:
+            logging.exception(
+                f"Error getting wallet balance for {self.chain_name} error is {e}"
+            )
             return 0
 
     @property

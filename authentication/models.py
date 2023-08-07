@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 from django.utils import timezone
 from django.core.validators import RegexValidator
+from django.core.cache import cache
 
 
 class ProfileManager(models.Manager):
@@ -66,13 +67,22 @@ class UserProfile(models.Model):
         )
 
         return is_verified
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
         if not self.username:
             self.username = f"User{self.pk}"
             super().save(*args, **kwargs)
+
+    @staticmethod
+    def user_count():
+        cached_user_count = cache.get("user_profile_count")
+        if cached_user_count:
+            return cached_user_count
+        count = UserProfile.objects.count()
+        cache.set("user_profile_count", count, 300)
+        return count
 
 
 class NetworkTypes:
