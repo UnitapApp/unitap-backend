@@ -212,7 +212,9 @@ class ClaimReceipt(models.Model):
         cached_count = cache.get("gastap_claims_count")
         if cached_count:
             return cached_count
-        count = ClaimReceipt.objects.filter(_status=ClaimReceipt.VERIFIED).count()
+        count = ClaimReceipt.objects.filter(
+            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
+        ).count()
         cache.set("gastap_claims_count", count, 600)
         return count
 
