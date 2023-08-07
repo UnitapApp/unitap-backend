@@ -24,6 +24,7 @@ class TokenDistribution(models.Model):
     discord_url = models.URLField(max_length=255, null=True, blank=True)
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
+    token_image_url = models.URLField(max_length=255, null=True, blank=True)
 
     token = models.CharField(max_length=100)
     token_address = models.CharField(max_length=255)
