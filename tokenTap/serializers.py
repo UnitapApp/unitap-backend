@@ -68,6 +68,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "discord_url",
             "twitter_url",
             "image_url",
+            "token_image_url",
             "token",
             "token_address",
             "amount",
