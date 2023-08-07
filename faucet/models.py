@@ -347,7 +347,10 @@ class Chain(models.Model):
                 )
                 return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
-        except:
+        except Exception as e:
+            logging.exception(
+                f"Error getting wallet balance for {self.chain_name} error is {e}"
+            )
             return 0
 
     @property
