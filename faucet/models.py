@@ -466,6 +466,14 @@ class Chain(models.Model):
         return total_claims_since_last_round
 
 
+class TokenPrice(models.Model):
+    usd_price = models.CharField(max_length=255, null=False)
+    datetime = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
+    price_url = models.URLField(max_length=255, blank=True, null=False)
+    symbol = models.CharField(max_length=255)
+
+
 class GlobalSettings(models.Model):
     weekly_chain_claim_limit = models.IntegerField(default=5)
     tokentap_weekly_claim_limit = models.IntegerField(default=3)

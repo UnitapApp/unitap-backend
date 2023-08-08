@@ -1,6 +1,8 @@
 import time
 import logging
 from contextlib import contextmanager
+
+import requests
 from celery import shared_task
 from django.core.cache import cache
 from django.db import transaction
@@ -16,7 +18,7 @@ from .faucet_manager.fund_manager import (
     LightningFundManager,
     FundMangerException,
 )
-from .models import Chain, ClaimReceipt, TransactionBatch
+from .models import Chain, ClaimReceipt, TransactionBatch, TokenPrice
 
 
 @contextmanager
@@ -96,8 +98,8 @@ def process_batch(self, batch_pk):
                     elif batch.chain.chain_type == NetworkTypes.LIGHTNING:
                         manager = LightningFundManager(batch.chain)
                     elif (
-                        batch.chain.chain_type == NetworkTypes.EVM
-                        or batch.chain.chain_type == NetworkTypes.NONEVMXDC
+                            batch.chain.chain_type == NetworkTypes.EVM
+                            or batch.chain.chain_type == NetworkTypes.NONEVMXDC
                     ):
                         manager = EVMFundManager(batch.chain)
                     else:
@@ -150,8 +152,8 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
                 elif batch.chain.chain_type == NetworkTypes.LIGHTNING:
                     manager = LightningFundManager(batch.chain)
                 elif (
-                    batch.chain.chain_type == NetworkTypes.EVM
-                    or batch.chain.chain_type == NetworkTypes.NONEVMXDC
+                        batch.chain.chain_type == NetworkTypes.EVM
+                        or batch.chain.chain_type == NetworkTypes.NONEVMXDC
                 ):
                     manager = EVMFundManager(batch.chain)
                 else:
@@ -181,7 +183,7 @@ def reject_expired_pending_claims():
         batch=None,
         _status=ClaimReceipt.PENDING,
         datetime__lte=timezone.now()
-        - timezone.timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION),
+                      - timezone.timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION),
     ).update(_status=ClaimReceipt.REJECTED)
 
 
@@ -338,3 +340,35 @@ def update_tokentap_claim_for_verified_lightning_claims():
                 process_rejected_lighning_claim.delay(
                     _claim.pk,
                 )
+
+
+@shared_task
+def update_tokens_price():
+    """
+    update token.usd_price for all TokenPrice records in DB
+    """
+
+    # TODO: we can make this function performance better by using aiohttp and asyncio or Threads
+    tokens = TokenPrice.objects.all()
+    res_gen = map(lambda token: (token, requests.get(token.price_url, timeout=5)), tokens)
+
+    def parse_request(token: TokenPrice, request_res: requests.Response):
+        try:
+            request_res.raise_for_status()
+            json_data = request_res.json()
+            token.usd_price = json_data['data']['rates']['USD']
+            # TODO: save all change when this function ended for all url done for better performance
+            token.save()
+        except requests.HTTPError as e:
+            logging.exception(
+                f'requests for url: {request_res.url} can not fetched with status_code: {request_res.status_code}. \
+                {str(e)}')
+
+        except KeyError as e:
+            logging.exception(
+                f'requests for url: {request_res.url} data do not have property keys for loading data. {str(e)}')
+
+        except Exception as e:
+            logging.exception(f'requests for url: {request_res.url} got error {type(e).__name__}. {str(e)}')
+
+    [parse_request(*res) for res in res_gen]
