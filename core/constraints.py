@@ -18,10 +18,10 @@ class ConstraintParam(Enum):
 class ConstraintVerification(ABC):
     _param_keys = []
     _param_values = {}
+    __response_text = ""
     
-    def __init__(self, user_profile:UserProfile, response:str = None) -> None:
+    def __init__(self, user_profile:UserProfile) -> None:
         self.user_profile = user_profile
-        self.response_text = response
 
     @abstractmethod
     def is_observed(self, *args, **kwargs) -> bool:
@@ -39,8 +39,14 @@ class ConstraintVerification(ABC):
                 raise Exception(f"Invalid param key {key}")
         cls._param_values = copy.deepcopy(values)
 
+    @property
     def response(self) -> str:
-        return self.response_text or f"{self.__class__.__name__} constraint is violated"
+        return self.__response_text or f"{self.__class__.__name__} constraint is violated"
+    
+    @response.setter
+    def response(self, text: str):
+        self.__response_text = text
+
 
 class BrightIDMeetVerification(ConstraintVerification):
     def is_observed(self, *args, **kwargs):
