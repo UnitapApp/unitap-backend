@@ -24,11 +24,11 @@ class ConstraintTestCase(BaseTestCase):
         is_meet_verified_mock.return_value = False
         constraint = BrightIDMeetVerification(self.user_profile)
         self.assertEqual(constraint.is_observed(), False)
-        self.assertEqual(constraint.response(), "BrightIDMeetVerification constraint is violated")
+        self.assertEqual(constraint.response, "BrightIDMeetVerification constraint is violated")
 
     @patch('authentication.models.UserProfile.is_aura_verified', new_callable=PropertyMock)
     def test_aura_constraint(self, is_aura_verified_mock:PropertyMock):
         is_aura_verified_mock.return_value = False
         constraint = BrightIDAuraVerification(self.user_profile)
         self.assertEqual(constraint.is_observed(), False)
-        self.assertEqual(constraint.response(), "BrightIDAuraVerification constraint is violated")
+        self.assertEqual(constraint.response, "BrightIDAuraVerification constraint is violated")
