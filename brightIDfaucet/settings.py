@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "core.apps.CoreConfig",
     "faucet.apps.FaucetConfig",
     "tokenTap.apps.TokentapConfig",
     "prizetap.apps.PrizetapConfig",
@@ -116,8 +117,7 @@ INSTALLED_APPS = [
     "encrypted_model_fields",
     "drf_yasg",
     "corsheaders",
-    "django_filters",
-    "core"
+    "django_filters"
 ]
 
 MIDDLEWARE = [
