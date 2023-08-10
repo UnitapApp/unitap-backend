@@ -48,6 +48,7 @@ class Raffle(models.Model):
     )
 
     constraints = models.ManyToManyField(Constraint, blank=True, related_name="raffles")
+    constraint_params = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     deadline = models.DateTimeField(null=True, blank=True)

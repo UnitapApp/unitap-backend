@@ -1,3 +1,4 @@
+import json
 from .models import RaffleEntry
 from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
 from faucet.models import GlobalSettings
@@ -27,9 +28,14 @@ class RaffleEnrollmentValidator:
             )
         
     def check_user_constraints(self):
+        param_values = json.loads(self.raffle.constraint_params)
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = eval(c.name)(self.user_profile)
-            if not constraint.is_observed():
+            try:
+                constraint.set_param_values(param_values[c.name])
+            except KeyError:
+                pass
+            if not constraint.is_observed(self.raffle.constraint_params):
                 raise PermissionDenied(
                     constraint.response()
                 )
