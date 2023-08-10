@@ -55,7 +55,7 @@ class TokenDistributionClaimView(CreateAPIView):
         for c in token_distribution.permissions.all():
             constraint: ConstraintVerification = eval(c.name)(user_profile)
             if not constraint.is_observed(token_distribution=token_distribution):
-                raise PermissionDenied(constraint.response())
+                raise PermissionDenied(constraint.response)
 
     def check_user_weekly_credit(self, user_profile):
         if not has_weekly_credit_left(user_profile):
