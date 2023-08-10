@@ -34,6 +34,7 @@ class RaffleEnrollmentValidator:
             param_values = {}
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = eval(c.name)(self.user_profile)
+            constraint.response = c.response
             try:
                 constraint.set_param_values(param_values[c.name])
             except KeyError:
