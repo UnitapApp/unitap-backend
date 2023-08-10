@@ -40,7 +40,7 @@ class RaffleEnrollmentValidator:
                 pass
             if not constraint.is_observed(self.raffle.constraint_params):
                 raise PermissionDenied(
-                    constraint.response()
+                    constraint.response
                 )
 
     def check_user_has_wallet(self):
