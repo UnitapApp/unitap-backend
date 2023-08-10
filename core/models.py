@@ -1,6 +1,6 @@
 from django.db import models
-from .constraints import *
 from django.utils.translation import gettext_lazy as _
+from .constraints import *
 
 class UserConstraint(models.Model):
     class Meta:
