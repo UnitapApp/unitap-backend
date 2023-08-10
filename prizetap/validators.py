@@ -28,7 +28,10 @@ class RaffleEnrollmentValidator:
             )
         
     def check_user_constraints(self):
-        param_values = json.loads(self.raffle.constraint_params)
+        try:
+            param_values = json.loads(self.raffle.constraint_params)
+        except:
+            param_values = {}
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = eval(c.name)(self.user_profile)
             try:
