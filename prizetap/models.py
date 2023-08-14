@@ -132,10 +132,6 @@ class RaffleEntry(models.Model):
     @property
     def user(self):
         return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
-    
-    @property
-    def nonce(self):
-        return self.pk
 
     def save(self, *args, **kwargs):
         if self.is_winner:

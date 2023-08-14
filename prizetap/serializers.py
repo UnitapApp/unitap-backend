@@ -30,11 +30,6 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "multiplier",
         ]
 
-    def to_representation(self, instance: RaffleEntry):
-        representation = super().to_representation(instance)
-        representation["nonce"] = instance.nonce
-        return representation
-
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
     winner_entry = RaffleEntrySerializer()
