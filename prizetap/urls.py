@@ -13,6 +13,11 @@ urlpatterns = [
         name="raflle-enrollment",
     ),
     path(
+        "raffle-enrollment/detail/<int:pk>/",
+        GetRaffleEntryView.as_view(),
+        name="raflle-enrollment-detail",
+    ),
+    path(
         "claim-prize/<int:pk>/",
         ClaimPrizeView.as_view(),
         name="claim-prize",

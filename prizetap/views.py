@@ -146,3 +146,15 @@ class SetClaimingPrizeTxView(APIView):
             },
             status=200,
         )
+
+class GetRaffleEntryView(APIView):
+    def get(self, request, pk):
+        raffle_entry = get_object_or_404(RaffleEntry, pk=pk)
+
+        return Response(
+            {
+                "success": True,
+                "entry": RaffleEntrySerializer(raffle_entry).data
+            },
+            status=200,
+        )
