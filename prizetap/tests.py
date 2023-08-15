@@ -63,7 +63,6 @@ class RaffleTestCase(BaseTestCase):
             description="Test Raffle Description",
             contract=erc20_contract_address,
             raffleId=1,
-            signer=self.wallet,
             prize_amount=1e14,
             prize_asset="0x0000000000000000000000000000000000000000",
             prize_name="Test raffle",
