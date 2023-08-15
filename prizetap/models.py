@@ -45,10 +45,16 @@ class Raffle(models.Model):
     constraint_params = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
+    start_at = models.DateTimeField(default=timezone.now)
     deadline = models.DateTimeField(null=True, blank=True)
     max_number_of_entries = models.IntegerField(null=True, blank=True)
+    max_multiplier = models.IntegerField(default=1)
 
     is_active = models.BooleanField(default=True)
+
+    @property
+    def is_started(self):
+        return timezone.now() >= self.start_at
 
     @property
     def is_expired(self):
@@ -64,7 +70,8 @@ class Raffle(models.Model):
 
     @property
     def is_claimable(self):
-        return not self.is_expired and not self.is_maxed_out and self.is_active
+        return self.is_started and not self.is_expired and \
+            not self.is_maxed_out and self.is_active
 
     @property
     def number_of_entries(self):
