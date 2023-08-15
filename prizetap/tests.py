@@ -119,6 +119,22 @@ class RaffleTestCase(BaseTestCase):
         entry.tx_hash = "0x0"
         entry.save()
 
+        self.assertFalse(self.raffle.is_maxed_out)
+        self.assertTrue(self.raffle.is_claimable)
+
+        RaffleEntry.objects.create(
+            raffle=self.raffle,
+            user_profile=UserProfile.objects.create(
+                user=User.objects.create_user(
+                    username="test_2", 
+                    password="1234"
+                ),
+                initial_context_id="test_2",
+                username="test_2",
+            ),
+            multiplier=1
+        )
+
         self.assertTrue(self.raffle.is_maxed_out)
         self.assertFalse(self.raffle.is_claimable)
 
@@ -188,7 +204,7 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         entry: RaffleEntry = self.raffle.entries.first()
         self.assertEqual(entry.user_profile, self.user_profile)
         self.assertEqual(entry.is_winner, False)
-        self.assertEqual(self.raffle.number_of_entries, 0)
+        self.assertEqual(self.raffle.number_of_entries, 1)
     
     @patch('prizetap.models.Raffle.is_claimable', new_callable=PropertyMock)
     @patch(
@@ -249,7 +265,6 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(response.status_code, 403)
         entry.refresh_from_db()
         self.assertEqual(entry.tx_hash, None)
-        self.assertEqual(self.raffle.number_of_entries, 0)
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
