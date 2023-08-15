@@ -57,7 +57,9 @@ class RaffleSerializer(serializers.ModelSerializer):
             "contract",
             "raffleId",
             "constraints",
+            "constraint_params",
             "created_at",
+            "start_at",
             "deadline",
             "max_number_of_entries",
             "is_active",
@@ -66,6 +68,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "is_claimable",
             "user_entry",
             "number_of_entries",
+            "max_multiplier"
         ]
         
     def get_user_entry(self, raffle: Raffle):
