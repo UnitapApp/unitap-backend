@@ -274,66 +274,6 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
         lambda a, b, c : (True, None)
     )
-    def test_claim_prize(self):
-        RaffleEntry.objects.create(
-            raffle=self.raffle,
-            user_profile=self.user_profile,
-            is_winner=True
-        )
-        self.raffle.deadline = timezone.now()
-        self.raffle.save()
-        self.client.force_authenticate(user=self.user_profile.user)
-        response_1 = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
-        )
-        self.assertEqual(response_1.status_code, 200)
-        response_2 = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
-        )
-        self.assertEqual(response_2.status_code, 200)
-        signature = self.raffle.generate_signature(
-                        self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
-                    )
-        self.assertEqual(response_1.data['signature'], signature)
-        self.assertEqual(response_2.data['signature'], signature)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
-    )
-    def test_claim_prize_fail_when_not_winner(self):
-        RaffleEntry.objects.create(
-            raffle=self.raffle,
-            user_profile=self.user_profile
-        )
-        self.raffle.deadline = timezone.now()
-        self.raffle.save()
-        self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
-        )
-        self.assertEqual(response.status_code, 403)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
-    )
-    def test_claim_prize_fail_when_not_expired(self):
-        RaffleEntry.objects.create(
-            raffle=self.raffle,
-            user_profile=self.user_profile,
-            is_winner=True
-        )
-        self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
-        )
-        self.assertEqual(response.status_code, 403)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
-    )
     def test_set_claiming_prize_tx(self):
         entry = RaffleEntry.objects.create(
             raffle=self.raffle,

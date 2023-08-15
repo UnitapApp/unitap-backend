@@ -18,11 +18,6 @@ urlpatterns = [
         name="raflle-enrollment-detail",
     ),
     path(
-        "claim-prize/<int:pk>/",
-        ClaimPrizeView.as_view(),
-        name="claim-prize",
-    ),
-    path(
         "set-enrollment-tx/<int:pk>/",
         SetEnrollmentTxView.as_view(),
         name="set-enrollment-tx",

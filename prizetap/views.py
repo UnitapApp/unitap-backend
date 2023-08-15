@@ -8,7 +8,6 @@ from .models import Raffle, RaffleEntry
 from .serializers import RaffleSerializer, RaffleEntrySerializer
 from .validators import (
     RaffleEnrollmentValidator,
-    ClaimPrizeValidator,
     SetRaffleEntryTxValidator,
     SetClaimingPrizeTxValidator
 )
@@ -56,32 +55,6 @@ class RaffleEnrollmentView(CreateAPIView):
             {
                 "detail": "Enrolled Successfully",
                 "signature": RaffleEntrySerializer(raffle_entry).data,
-            },
-            status=200,
-        )
-
-class ClaimPrizeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
-        user_profile = request.user.profile
-        raffle = get_object_or_404(Raffle, pk=pk)
-        
-        validator = ClaimPrizeValidator(
-            user_profile=user_profile,
-            raffle=raffle
-        )
-        
-        validator.is_valid(self.request.data)
-
-        signature = raffle.generate_signature(
-            user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address)
-
-        return Response(
-            {
-                "detail": "Signature created successfully",
-                "success": True,
-                "signature": signature
             },
             status=200,
         )

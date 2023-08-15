@@ -57,27 +57,6 @@ class RaffleEnrollmentValidator:
 
         self.check_user_has_wallet()
 
-
-class ClaimPrizeValidator:
-    def __init__(self, *args, **kwargs):
-        self.user_profile: UserProfile = kwargs['user_profile']
-        self.raffle: Raffle = kwargs['raffle']
-
-    def can_claim_prize(self):
-        if not self.raffle.is_expired:
-            raise PermissionDenied(
-                "The raffle is not over"
-            )
-        if not self.raffle.winner or self.raffle.winner != self.user_profile:
-            raise PermissionDenied(
-                "You are not the raffle winner"
-            )
-            
-    def is_valid(self, data):
-        self.can_claim_prize()
-
-    
-
 class SetRaffleEntryTxValidator:
     
     def __init__(self, *args, **kwargs):
