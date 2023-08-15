@@ -3,10 +3,6 @@ from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
 from faucet.models import WalletAccount
-from .utils import (
-    raffle_hash_message,
-    sign_hashed_message
-)
 from core.models import UserConstraint
 
 # Create your models here.
@@ -25,7 +21,6 @@ class Raffle(models.Model):
     description = models.TextField(null=True, blank=True)
     contract = models.CharField(max_length=256)
     raffleId = models.BigIntegerField()
-    signer = models.ForeignKey(WalletAccount, on_delete=models.DO_NOTHING)
     creator = models.CharField(max_length=256, null=True, blank=True)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
@@ -92,20 +87,6 @@ class Raffle(models.Model):
 
     def __str__(self):
         return f"{self.name}"
-    
-    def generate_signature(self, user: str, nonce: int = None, multiplier: int = None):
-        assert self.raffleId and self.signer
-
-        hashed_message = raffle_hash_message(
-            user=user,
-            raffleId=self.raffleId,
-            nonce=nonce,
-            multiplier=multiplier
-        )
-
-        return sign_hashed_message(
-            hashed_message, self.signer.private_key
-        )
 
 
 class RaffleEntry(models.Model):

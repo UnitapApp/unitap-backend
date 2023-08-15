@@ -50,11 +50,6 @@ class RaffleEnrollmentView(CreateAPIView):
                 user_profile=user_profile,
                 raffle=raffle,
             )
-            raffle_entry.signature = raffle.generate_signature(
-                user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address, 
-                raffle_entry.pk,
-                1
-            )
             raffle_entry.save()
 
         return Response(

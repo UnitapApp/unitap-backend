@@ -190,14 +190,6 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(entry.user_profile, self.user_profile)
         self.assertEqual(entry.is_winner, False)
         self.assertEqual(self.raffle.number_of_entries, 0)
-        self.assertEqual(response.data['signature']['signature'], entry.signature)
-        self.assertEqual(response.data['signature']['signature'], 
-                         self.raffle.generate_signature(
-                            self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
-                            entry.pk,
-                            1
-                         )
-                        )
     
     @patch('prizetap.models.Raffle.is_claimable', new_callable=PropertyMock)
     @patch(
