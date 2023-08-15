@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from rest_framework.generics import ListAPIView,CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from authentication.models import NetworkTypes
 from .models import Raffle, RaffleEntry
 from .serializers import RaffleSerializer, RaffleEntrySerializer
 from .validators import (
@@ -11,8 +10,6 @@ from .validators import (
     SetRaffleEntryTxValidator,
     SetClaimingPrizeTxValidator
 )
-
-from permissions.models import Permission
 
 
 class RaffleListView(ListAPIView):

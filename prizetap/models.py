@@ -2,7 +2,6 @@ from django.db import models
 from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
-from faucet.models import WalletAccount
 from core.models import UserConstraint
 
 # Create your models here.
