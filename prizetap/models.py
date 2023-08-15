@@ -101,7 +101,6 @@ class RaffleEntry(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
-    signature = models.CharField(max_length=1024, blank=True, null=True)
     multiplier = models.IntegerField(default=1)
     is_winner = models.BooleanField(blank=True, default=False)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)

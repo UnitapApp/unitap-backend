@@ -54,7 +54,7 @@ class RaffleEnrollmentView(CreateAPIView):
 
         return Response(
             {
-                "detail": "Signature Created Successfully",
+                "detail": "Enrolled Successfully",
                 "signature": RaffleEntrySerializer(raffle_entry).data,
             },
             status=200,
