@@ -8,8 +8,25 @@ class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerial
     class Meta(UserConstraintBaseSerializer.Meta):
         ref_name = "RaffleConstraint"
         model = Constraint
-        
+
+class SimpleRaffleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Raffle
+        fields = [
+            "pk",
+            "name",
+            "contract",
+            "raffleId",
+        ]
+        read_only_fields = [
+            "pk",
+            "name",
+            "contract",
+            "raffleId",
+        ]
+
 class RaffleEntrySerializer(serializers.ModelSerializer):
+    raffle = SimpleRaffleSerializer()
     user_profile = SimpleProfilerSerializer()
     chain = serializers.SerializerMethodField()
     wallet = serializers.SerializerMethodField()
