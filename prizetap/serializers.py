@@ -11,11 +11,16 @@ class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerial
         
 class RaffleEntrySerializer(serializers.ModelSerializer):
     user_profile = SimpleProfilerSerializer()
+    chain = serializers.SerializerMethodField()
+    wallet = serializers.SerializerMethodField()
     class Meta:
         model = RaffleEntry
         fields = [
             "pk",
+            "chain",
+            "raffle",
             "user_profile",
+            "wallet",
             "created_at",
             "multiplier",
             "tx_hash",
@@ -23,10 +28,20 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "pk",
+            "chain",
+            "raffle",
             "user_profile",
+            "wallet",
             "created_at",
             "multiplier",
         ]
+
+    def get_chain(self, entry: RaffleEntry):
+        return entry.raffle.chain.chain_id
+    
+    def get_wallet(self, entry: RaffleEntry):
+        return entry.user_profile.wallets.get(
+            wallet_type=entry.raffle.chain.chain_type).address
 
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
