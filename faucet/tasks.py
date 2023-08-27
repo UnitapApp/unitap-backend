@@ -18,7 +18,8 @@ from .faucet_manager.fund_manager import (
     LightningFundManager,
     FundMangerException,
 )
-from .models import Chain, ClaimReceipt, TransactionBatch, TokenPrice
+from core.models import TokenPrice
+from .models import Chain, ClaimReceipt, TransactionBatch
 
 
 @contextmanager

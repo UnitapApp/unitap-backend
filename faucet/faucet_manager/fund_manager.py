@@ -69,12 +69,16 @@ class EVMFundManager:
     def account(self) -> LocalAccount:
         return self.w3.eth.account.privateKeyToAccount(self.chain.wallet.main_key)
 
-    def get_checksum_address(self):
-        return Web3.toChecksumAddress(self.chain.fund_manager_address.lower())
+    @staticmethod
+    def to_checksum_address(address: str):
+        return Web3.toChecksumAddress(address.lower())
+
+    def get_fund_manager_checksum_address(self):
+        return self.to_checksum_address(self.chain.fund_manager_address)
 
     @property
     def contract(self):
-        return self.w3.eth.contract(address=self.get_checksum_address(), abi=self.abi)
+        return self.w3.eth.contract(address=self.get_fund_manager_checksum_address(), abi=self.abi)
 
     def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
@@ -121,13 +125,14 @@ class EVMFundManager:
         return signed_tx
 
     def is_tx_verified(self, tx_hash):
-        try:
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
-            if receipt["status"] == 1:
-                return True
-            return False
-        except TimeExhausted:
-            raise
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        if receipt["status"] == 1:
+            return True
+        return False
+
+    def get_tx(self, tx_hash):
+        tx = self.w3.eth.get_transaction(tx_hash)
+        return tx
 
 
 class SolanaFundManager:
@@ -218,7 +223,7 @@ class SolanaFundManager:
                 instructions.withdraw(
                     {"amount": item['amount']},
                     {
-                        "lock_account": self.lock_account_address, 
+                        "lock_account": self.lock_account_address,
                         "operator": self.operator,
                         "recipient": Pubkey.from_string(item["to"])
                     },

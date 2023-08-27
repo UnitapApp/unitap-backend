@@ -1,3 +1,4 @@
+from decimal import Decimal
 from datetime import datetime, timedelta
 import logging
 from django.db import models
@@ -466,14 +467,6 @@ class Chain(models.Model):
         return total_claims_since_last_round
 
 
-class TokenPrice(models.Model):
-    usd_price = models.CharField(max_length=255, null=False)
-    datetime = models.DateTimeField(auto_now_add=True)
-    last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
-    price_url = models.URLField(max_length=255, blank=True, null=False)
-    symbol = models.CharField(max_length=255)
-
-
 class GlobalSettings(models.Model):
     weekly_chain_claim_limit = models.IntegerField(default=5)
     tokentap_weekly_claim_limit = models.IntegerField(default=3)
@@ -536,3 +529,27 @@ class LightningConfig(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+
+
+class DonationReceipt(models.Model):
+    user_profile = models.ForeignKey(
+        UserProfile,
+        related_name="donations",
+        on_delete=models.PROTECT,
+        null=False,
+        blank=False
+    )
+    tx_hash = models.CharField(max_length=255, blank=False, null=False)
+    chain = models.ForeignKey(
+        Chain,
+        related_name="donation",
+        on_delete=models.PROTECT,
+        null=False,
+        blank=False,
+    )
+    value = models.CharField(max_length=255, null=False)
+    total_price = models.CharField(max_length=255, null=False)
+    datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('chain', 'tx_hash')
