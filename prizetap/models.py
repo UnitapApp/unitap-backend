@@ -38,7 +38,7 @@ class Raffle(models.Model):
     token_uri = models.TextField(null=True, blank=True)
 
     chain = models.ForeignKey(
-        Chain, on_delete=models.CASCADE, related_name="raffles", null=True, blank=True
+        Chain, on_delete=models.CASCADE, related_name="raffles"
     )
 
     constraints = models.ManyToManyField(Constraint, blank=True, related_name="raffles")
