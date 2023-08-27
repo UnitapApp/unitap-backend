@@ -60,9 +60,35 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
         return entry.user_profile.wallets.get(
             wallet_type=entry.raffle.chain.chain_type).address
 
+class WinnerEntrySerializer(serializers.ModelSerializer):
+    user_profile = SimpleProfilerSerializer()
+    wallet = serializers.SerializerMethodField()
+    class Meta:
+        model = RaffleEntry
+        fields = [
+            "pk",
+            "user_profile",
+            "wallet",
+            "created_at",
+            "multiplier",
+            "tx_hash",
+            "claiming_prize_tx"
+        ]
+        read_only_fields = [
+            "pk",
+            "user_profile",
+            "wallet",
+            "created_at",
+            "multiplier",
+        ]
+
+    def get_wallet(self, entry: RaffleEntry):
+        return entry.user_profile.wallets.get(
+            wallet_type=entry.raffle.chain.chain_type).address
+
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
-    winner_entry = RaffleEntrySerializer()
+    winner_entry = WinnerEntrySerializer()
     user_entry = serializers.SerializerMethodField()
     constraints = ConstraintSerializer(many=True, read_only=True)
 
