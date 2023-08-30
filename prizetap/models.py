@@ -78,6 +78,10 @@ class Raffle(models.Model):
         return self.entries.count()
     
     @property
+    def number_of_onchain_entries(self):
+        return self.entries.filter(tx_hash__isnull=False).count()
+    
+    @property
     def winner(self):
         winner_entry = self.winner_entry
         if winner_entry:

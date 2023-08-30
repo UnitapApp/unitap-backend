@@ -126,6 +126,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "is_claimable",
             "user_entry",
             "number_of_entries",
+            "number_of_onchain_entries",
             "max_multiplier"
         ]
         
