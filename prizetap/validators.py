@@ -1,7 +1,7 @@
 import json
 from .models import RaffleEntry
 from rest_framework.exceptions import PermissionDenied
-from authentication.models import NetworkTypes, UserProfile
+from authentication.models import UserProfile
 from .models import RaffleEntry, Raffle
 from .constraints import *
 
@@ -34,9 +34,10 @@ class RaffleEnrollmentValidator:
                 )
 
     def check_user_has_wallet(self):
-        if not self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM).exists():
+        if not self.user_profile.wallets.filter(
+            wallet_type=self.raffle.chain.chain_type).exists():
             raise PermissionDenied(
-                "You have not connected an EVM wallet to your account"
+                f"You have not connected an {self.raffle.chain.chain_type} wallet to your account"
             )
 
     def is_valid(self, data):
