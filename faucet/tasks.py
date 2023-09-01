@@ -377,10 +377,11 @@ def update_tokens_price():
 
 
 @shared_task(bind=True)
-def process_donation_receipt(self, donation_receipt: DonationReceipt):
-    lock_name = f'{self.name}-LOCK-{donation_receipt.pk}'
+def process_donation_receipt(self, donation_receipt_pk):
+    lock_name = f'{self.name}-LOCK-{donation_receipt_pk}'
 
     with memcache_lock(lock_name, self.app.oid) as acquired:
+        donation_receipt = DonationReceipt.objects.get(donation_receipt_pk)
         if not acquired:
             logging.debug("Could not acquire update lock")
             return
@@ -425,4 +426,4 @@ def update_donation_receipt_pending_status():
     """
     pending_donation_receipts = DonationReceipt.objects.filter(status=ClaimReceipt.PROCESSED_FOR_TOKENTAP)
     for pending_donation_receipt in pending_donation_receipts:
-        process_donation_receipt.delay(pending_donation_receipt)
+        process_donation_receipt.delay(pending_donation_receipt.pk)
