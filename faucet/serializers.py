@@ -182,14 +182,7 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         chain = self._validate_chain(attrs.pop('chain_name'))
-        tx = self._validate_tx_hash(attrs.get('tx_hash'), chain)
         attrs['chain'] = chain
-        attrs['value'] = tx.get('value')
-        if chain.is_testnet is not True:
-            token_price = self._validate_token_price(chain)
-            attrs['total_price'] = str(decimal.Decimal(tx.get('value')) * decimal.Decimal(token_price.usd_price))
-            return attrs
-        attrs['total_price'] = str(0)
         return attrs
 
     def _validate_chain(self, chain_name: str):
@@ -198,33 +191,6 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
         except Chain.DoesNotExist:
             raise serializers.ValidationError({'chain': 'chain is not EVM or does not exist.'})
         return chain
-
-    def _validate_token_price(self, chain: Chain):
-        try:
-            token_price = TokenPrice.objects.get(symbol=chain.symbol)
-        except (TokenPrice.DoesNotExist, AttributeError):
-            raise serializers.ValidationError({'chain': 'can not found token price for given chain'})
-        return token_price
-
-    def _validate_tx_hash(self, tx_hash: str, chain: Chain):
-        evm_fund_manage = EVMFundManager(chain)
-        user: UserProfile = self.context.get('user')
-
-        try:
-            if evm_fund_manage.is_tx_verified(tx_hash) is False:
-                raise serializers.ValidationError({'tx_hash': 'tx_hash is not verified'})
-            tx = evm_fund_manage.get_tx(tx_hash)
-            if evm_fund_manage.to_checksum_address(tx.get('from')) not in user.wallets.annotate(
-                    lower_address=Func(F('address'), function='LOWER')).values_list('address', flat=True):
-                raise serializers.ValidationError({'tx_hash': 'tx_hash is not from your address'})
-            if evm_fund_manage.to_checksum_address(tx.get('to')) != evm_fund_manage.get_fund_manager_checksum_address():
-                raise serializers.ValidationError({'tx_hash': 'tx_hash is not to our donation contract address'})
-        except web3.exceptions.TransactionNotFound:
-            raise serializers.ValidationError({'tx_hash': 'tx_hash not found'})
-        except web3.exceptions.TimeExhausted:
-            raise serializers.ValidationError({'chain': 'can not connect to chain'},
-                                              code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return tx
 
     class Meta:
         model = DonationReceipt
@@ -235,11 +201,13 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             "datetime",
             "total_price",
             "value",
-            "chain_name"
+            "chain_name",
+            "status"
         ]
         read_only_fields = [
             'value',
             'datetime',
             'total_price',
-            'chain'
+            'chain',
+            'status'
         ]
