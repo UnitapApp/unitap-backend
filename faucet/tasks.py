@@ -379,9 +379,9 @@ def update_tokens_price():
 @shared_task(bind=True)
 def process_donation_receipt(self, donation_receipt_pk):
     lock_name = f'{self.name}-LOCK-{donation_receipt_pk}'
-
+    logging.info(f'lock name is: {lock_name}')
     with memcache_lock(lock_name, self.app.oid) as acquired:
-        donation_receipt = DonationReceipt.objects.get(donation_receipt_pk)
+        donation_receipt = DonationReceipt.objects.get(pk=donation_receipt_pk)
         if not acquired:
             logging.debug("Could not acquire update lock")
             return
