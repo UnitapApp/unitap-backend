@@ -179,6 +179,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 class DonationReceiptSerializer(serializers.ModelSerializer):
     chain_name = serializers.CharField(max_length=20, write_only=True)
+    chain = SmallChainSerializer()
 
     def validate(self, attrs):
         chain = self._validate_chain(attrs.pop('chain_name'))
