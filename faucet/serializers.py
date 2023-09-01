@@ -182,6 +182,7 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         chain = self._validate_chain(attrs.pop('chain_name'))
+        attrs['user_profile'] = self.context.get('user')
         attrs['chain'] = chain
         return attrs
 
@@ -202,12 +203,14 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             "total_price",
             "value",
             "chain_name",
-            "status"
+            "status",
+            "user_profile"
         ]
         read_only_fields = [
             'value',
             'datetime',
             'total_price',
             'chain',
-            'status'
+            'status',
+            "user_profile"
         ]
