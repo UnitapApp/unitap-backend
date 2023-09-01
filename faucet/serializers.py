@@ -197,6 +197,7 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             chain: Chain = Chain.objects.get(chain_name=chain_name, chain_type='EVM')
         except Chain.DoesNotExist:
             raise serializers.ValidationError({'chain': 'chain is not EVM or does not exist.'})
+        return chain
 
     def _validate_token_price(self, chain: Chain):
         try:
