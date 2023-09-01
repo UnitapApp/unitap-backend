@@ -386,10 +386,10 @@ def process_donation_receipt(self, donation_receipt_pk):
             logging.debug("Could not acquire update lock")
             return
         evm_fund_manager = EVMFundManager(donation_receipt.chain)
-        if evm_fund_manager.is_tx_verified(donation_receipt.tx_hash) is False:
-            donation_receipt.delete()
-            return
         try:
+            if evm_fund_manager.is_tx_verified(donation_receipt.tx_hash) is False:
+                donation_receipt.delete()
+                return
             user = donation_receipt.user_profile
             tx = evm_fund_manager.get_tx(donation_receipt.tx_hash)
             if evm_fund_manager.to_checksum_address(tx.get('from')) not in user.wallets.annotate(
@@ -412,10 +412,8 @@ def process_donation_receipt(self, donation_receipt_pk):
             else:
                 donation_receipt.total_price = str(0)
             donation_receipt.save()
-        except web3.exceptions.TransactionNotFound:
+        except (web3.exceptions.TransactionNotFound, web3.exceptions.TimeExhausted):
             donation_receipt.delete()
-            return
-        except web3.exceptions.TimeExhausted:
             return
 
 
