@@ -393,7 +393,7 @@ def process_donation_receipt(self, donation_receipt_pk):
             user = donation_receipt.user_profile
             tx = evm_fund_manager.get_tx(donation_receipt.tx_hash)
             if tx.get('from').lower() not in user.wallets.annotate(
-                    lower_address=Func(F('address'), function='LOWER')).values_list('address', flat=True):
+                    lower_address=Func(F('address'), function='LOWER')).values_list('lower_address', flat=True):
                 donation_receipt.delete()
                 return
             if evm_fund_manager.to_checksum_address(
@@ -409,8 +409,10 @@ def process_donation_receipt(self, donation_receipt_pk):
                 except TokenPrice.DoesNotExist:
                     logging.error(f'TokenPrice for Chain: {donation_receipt.chain.chain_name} did not defined')
                     donation_receipt.status = ClaimReceipt.PROCESSED_FOR_TOKENTAP_REJECT
+                    return
             else:
                 donation_receipt.total_price = str(0)
+            donation_receipt.status = ClaimReceipt.VERIFIED
             donation_receipt.save()
         except (web3.exceptions.TransactionNotFound, web3.exceptions.TimeExhausted):
             donation_receipt.delete()
