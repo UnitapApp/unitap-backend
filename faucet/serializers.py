@@ -230,7 +230,8 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             "chain",
             "datetime",
             "total_price",
-            "value"
+            "value",
+            "chain_name"
         ]
         read_only_fields = [
             'value',
