@@ -475,12 +475,12 @@ class GlobalSettings(models.Model):
 
 
 class TransactionBatch(models.Model):
-    chain = models.ForeignKey(Chain, related_name="batches", on_delete=models.PROTECT)
+    chain = models.ForeignKey(Chain, related_name="batches", on_delete=models.PROTECT, db_index=True)
     datetime = models.DateTimeField(auto_now_add=True)
-    tx_hash = models.CharField(max_length=255, blank=True, null=True)
+    tx_hash = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
     _status = models.CharField(
-        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING, db_index=True
     )
 
     updating = models.BooleanField(default=False)
@@ -547,9 +547,12 @@ class DonationReceipt(models.Model):
         null=False,
         blank=False,
     )
-    value = models.CharField(max_length=255, null=False)
-    total_price = models.CharField(max_length=255, null=False)
+    value = models.CharField(max_length=255, null=True, blank=True)
+    total_price = models.CharField(max_length=255, null=True, blank=True)
     datetime = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PROCESSED_FOR_TOKENTAP
+    )
 
     class Meta:
         unique_together = ('chain', 'tx_hash')

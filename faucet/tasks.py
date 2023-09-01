@@ -1,12 +1,13 @@
+import decimal
 import time
 import logging
 from contextlib import contextmanager
-
+import web3.exceptions
 import requests
 from celery import shared_task
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, F, Func
 from django.utils import timezone
 from sentry_sdk import capture_exception
 from authentication.models import NetworkTypes, Wallet
@@ -19,7 +20,7 @@ from .faucet_manager.fund_manager import (
     FundMangerException,
 )
 from core.models import TokenPrice
-from .models import Chain, ClaimReceipt, TransactionBatch
+from .models import Chain, ClaimReceipt, TransactionBatch, DonationReceipt
 
 
 @contextmanager
@@ -373,3 +374,55 @@ def update_tokens_price():
             logging.exception(f'requests for url: {request_res.url} got error {type(e).__name__}. {str(e)}')
 
     [parse_request(*res) for res in res_gen]
+
+
+@shared_task(bind=True)
+def process_donation_receipt(self, donation_receipt: DonationReceipt):
+    lock_name = f'{self.name}-LOCK-{donation_receipt.pk}'
+
+    with memcache_lock(lock_name, self.app.oid) as acquired:
+        if not acquired:
+            logging.debug("Could not acquire update lock")
+            return
+        evm_fund_manager = EVMFundManager(donation_receipt.chain)
+        if evm_fund_manager.is_tx_verified(donation_receipt.tx_hash) is False:
+            donation_receipt.delete()
+            return
+        try:
+            user = donation_receipt.user_profile
+            tx = evm_fund_manager.get_tx(donation_receipt.tx_hash)
+            if evm_fund_manager.to_checksum_address(tx.get('from')) not in user.wallets.annotate(
+                    lower_address=Func(F('address'), function='LOWER')).values_list('address', flat=True):
+                donation_receipt.delete()
+                return
+            if evm_fund_manager.to_checksum_address(
+                    tx.get('to')) != evm_fund_manager.get_fund_manager_checksum_address():
+                donation_receipt.delete()
+                return
+            donation_receipt.value = tx.get('value')
+            if donation_receipt.chain.is_testnet is False:
+                try:
+                    token_price = TokenPrice.objects.get(symbol=donation_receipt.chain.symbol)
+                    donation_receipt.total_price = str(
+                        decimal.Decimal(tx.get('value')) * decimal.Decimal(token_price.usd_price))
+                except TokenPrice.DoesNotExist:
+                    logging.error(f'TokenPrice for Chain: {donation_receipt.chain.chain_name} did not defined')
+                    donation_receipt.status = ClaimReceipt.PROCESSED_FOR_TOKENTAP_REJECT
+            else:
+                donation_receipt.total_price = str(0)
+            donation_receipt.save()
+        except web3.exceptions.TransactionNotFound:
+            donation_receipt.delete()
+            return
+        except web3.exceptions.TimeExhausted:
+            return
+
+
+@shared_task
+def update_donation_receipt_pending_status():
+    """
+    update status of pending donation receipt
+    """
+    pending_donation_receipts = DonationReceipt.objects.filter(status=ClaimReceipt.PROCESSED_FOR_TOKENTAP)
+    for pending_donation_receipt in pending_donation_receipts:
+        process_donation_receipt.delay(pending_donation_receipt)
