@@ -72,7 +72,19 @@ class TransactionBatchAdmin(admin.ModelAdmin):
 class LightningConfigAdmin(admin.ModelAdmin):
     readonly_fields = ["claimed_amount", "current_round"]
     list_display = ["pk", "period", "period_max_cap", "claimed_amount", "current_round"]
-    pass
+
+
+class DonationReceiptAdmin(admin.ModelAdmin):
+    list_display = [
+        'tx_hash',
+        'user_profile',
+        'chain',
+        'value',
+        'total_price',
+        'datetime'
+    ]
+    search_fields = ['tx_hash']
+    list_filter = ['chain', 'user_profile']
 
 
 admin.site.register(WalletAccount, WalletAccountAdmin)
@@ -82,3 +94,4 @@ admin.site.register(ClaimReceipt, ClaimReceiptAdmin)
 admin.site.register(GlobalSettings, GlobalSettingsAdmin)
 admin.site.register(TransactionBatch, TransactionBatchAdmin)
 admin.site.register(LightningConfig, LightningConfigAdmin)
+admin.site.register(DonationReceipt, DonationReceiptAdmin)

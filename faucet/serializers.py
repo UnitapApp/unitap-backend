@@ -182,11 +182,14 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         chain = self._validate_chain(attrs.pop('chain_name'))
-        token_price = self._validate_token_price(chain)
         tx = self._validate_tx_hash(attrs.get('tx_hash'), chain)
         attrs['chain'] = chain
         attrs['value'] = tx.get('value')
-        attrs['total_price'] = str(decimal.Decimal(tx.get('value')) * decimal.Decimal(token_price.usd_price))
+        if chain.is_testnet is not True:
+            token_price = self._validate_token_price(chain)
+            attrs['total_price'] = str(decimal.Decimal(tx.get('value')) * decimal.Decimal(token_price.usd_price))
+            return attrs
+        attrs['total_price'] = str(0)
         return attrs
 
     def _validate_chain(self, chain_name: str):
@@ -198,7 +201,7 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
     def _validate_token_price(self, chain: Chain):
         try:
             token_price = TokenPrice.objects.get(symbol=chain.symbol)
-        except TokenPrice.DoesNotExist:
+        except (TokenPrice.DoesNotExist, AttributeError):
             raise serializers.ValidationError({'chain': 'can not found token price for given chain'})
         return token_price
 
