@@ -392,7 +392,7 @@ def process_donation_receipt(self, donation_receipt_pk):
                 return
             user = donation_receipt.user_profile
             tx = evm_fund_manager.get_tx(donation_receipt.tx_hash)
-            if evm_fund_manager.to_checksum_address(tx.get('from')) not in user.wallets.annotate(
+            if tx.get('from') not in user.wallets.annotate(
                     lower_address=Func(F('address'), function='LOWER')).values_list('address', flat=True):
                 donation_receipt.delete()
                 return
