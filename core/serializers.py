@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .constraints import *
 from .models import UserConstraint
 
 class UserConstraintBaseSerializer(serializers.Serializer):
@@ -10,6 +11,7 @@ class UserConstraintBaseSerializer(serializers.Serializer):
     )
     description = serializers.CharField()
     response = serializers.CharField()
+    params = serializers.SerializerMethodField()
 
     class Meta:
         fields = [
@@ -18,7 +20,8 @@ class UserConstraintBaseSerializer(serializers.Serializer):
             "title",
             "type",
             "description",
-            "response"
+            "response",
+            "params"
         ]
         read_only_fields = [
             "pk",
@@ -26,5 +29,10 @@ class UserConstraintBaseSerializer(serializers.Serializer):
             "title",
             "type",
             "description",
-            "response"
+            "response",
+            "params"
         ]
+
+    def get_params(self, constraint: UserConstraint):
+        c_class: ConstraintVerification = eval(constraint.name)
+        return [p.value for p in c_class.param_keys()]

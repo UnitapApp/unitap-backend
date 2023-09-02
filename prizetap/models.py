@@ -2,11 +2,6 @@ from django.db import models
 from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
-from faucet.models import WalletAccount
-from .utils import (
-    raffle_hash_message,
-    sign_hashed_message
-)
 from core.models import UserConstraint
 
 # Create your models here.
@@ -25,7 +20,6 @@ class Raffle(models.Model):
     description = models.TextField(null=True, blank=True)
     contract = models.CharField(max_length=256)
     raffleId = models.BigIntegerField()
-    signer = models.ForeignKey(WalletAccount, on_delete=models.DO_NOTHING)
     creator = models.CharField(max_length=256, null=True, blank=True)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
@@ -44,16 +38,23 @@ class Raffle(models.Model):
     token_uri = models.TextField(null=True, blank=True)
 
     chain = models.ForeignKey(
-        Chain, on_delete=models.CASCADE, related_name="raffles", null=True, blank=True
+        Chain, on_delete=models.CASCADE, related_name="raffles"
     )
 
     constraints = models.ManyToManyField(Constraint, blank=True, related_name="raffles")
+    constraint_params = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
+    start_at = models.DateTimeField(default=timezone.now)
     deadline = models.DateTimeField(null=True, blank=True)
     max_number_of_entries = models.IntegerField(null=True, blank=True)
+    max_multiplier = models.IntegerField(default=1)
 
     is_active = models.BooleanField(default=True)
+
+    @property
+    def is_started(self):
+        return timezone.now() >= self.start_at
 
     @property
     def is_expired(self):
@@ -69,12 +70,16 @@ class Raffle(models.Model):
 
     @property
     def is_claimable(self):
-        return not self.is_expired and not self.is_maxed_out and self.is_active
+        return self.is_started and not self.is_expired and \
+            not self.is_maxed_out and self.is_active
 
     @property
     def number_of_entries(self):
-        return self.entries.filter(tx_hash__isnull=False).aggregate(
-            TOTAL = models.Sum('multiplier'))['TOTAL'] or 0
+        return self.entries.count()
+    
+    @property
+    def number_of_onchain_entries(self):
+        return self.entries.filter(tx_hash__isnull=False).count()
     
     @property
     def winner(self):
@@ -91,20 +96,6 @@ class Raffle(models.Model):
 
     def __str__(self):
         return f"{self.name}"
-    
-    def generate_signature(self, user: str, nonce: int = None, multiplier: int = None):
-        assert self.raffleId and self.signer
-
-        hashed_message = raffle_hash_message(
-            user=user,
-            raffleId=self.raffleId,
-            nonce=nonce,
-            multiplier=multiplier
-        )
-
-        return sign_hashed_message(
-            hashed_message, self.signer.private_key
-        )
 
 
 class RaffleEntry(models.Model):
@@ -119,7 +110,6 @@ class RaffleEntry(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
-    signature = models.CharField(max_length=1024, blank=True, null=True)
     multiplier = models.IntegerField(default=1)
     is_winner = models.BooleanField(blank=True, default=False)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
@@ -131,10 +121,6 @@ class RaffleEntry(models.Model):
     @property
     def user(self):
         return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
-    
-    @property
-    def nonce(self):
-        return self.pk
 
     def save(self, *args, **kwargs):
         if self.is_winner:

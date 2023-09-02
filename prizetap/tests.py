@@ -63,7 +63,6 @@ class RaffleTestCase(BaseTestCase):
             description="Test Raffle Description",
             contract=erc20_contract_address,
             raffleId=1,
-            signer=self.wallet,
             prize_amount=1e14,
             prize_asset="0x0000000000000000000000000000000000000000",
             prize_name="Test raffle",
@@ -119,6 +118,22 @@ class RaffleTestCase(BaseTestCase):
         entry: RaffleEntry = self.raffle.entries.first()
         entry.tx_hash = "0x0"
         entry.save()
+
+        self.assertFalse(self.raffle.is_maxed_out)
+        self.assertTrue(self.raffle.is_claimable)
+
+        RaffleEntry.objects.create(
+            raffle=self.raffle,
+            user_profile=UserProfile.objects.create(
+                user=User.objects.create_user(
+                    username="test_2", 
+                    password="1234"
+                ),
+                initial_context_id="test_2",
+                username="test_2",
+            ),
+            multiplier=1
+        )
 
         self.assertTrue(self.raffle.is_maxed_out)
         self.assertFalse(self.raffle.is_claimable)
@@ -189,15 +204,7 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         entry: RaffleEntry = self.raffle.entries.first()
         self.assertEqual(entry.user_profile, self.user_profile)
         self.assertEqual(entry.is_winner, False)
-        self.assertEqual(self.raffle.number_of_entries, 0)
-        self.assertEqual(response.data['signature']['signature'], entry.signature)
-        self.assertEqual(response.data['signature']['signature'], 
-                         self.raffle.generate_signature(
-                            self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
-                            entry.pk,
-                            1
-                         )
-                        )
+        self.assertEqual(self.raffle.number_of_entries, 1)
     
     @patch('prizetap.models.Raffle.is_claimable', new_callable=PropertyMock)
     @patch(
@@ -258,7 +265,6 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(response.status_code, 403)
         entry.refresh_from_db()
         self.assertEqual(entry.tx_hash, None)
-        self.assertEqual(self.raffle.number_of_entries, 0)
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
@@ -275,66 +281,6 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         response = self.client.post(
             reverse("set-enrollment-tx", kwargs={"pk": entry.pk}),
             data={"tx_hash": tx_hash}
-        )
-        self.assertEqual(response.status_code, 403)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
-    )
-    def test_claim_prize(self):
-        RaffleEntry.objects.create(
-            raffle=self.raffle,
-            user_profile=self.user_profile,
-            is_winner=True
-        )
-        self.raffle.deadline = timezone.now()
-        self.raffle.save()
-        self.client.force_authenticate(user=self.user_profile.user)
-        response_1 = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
-        )
-        self.assertEqual(response_1.status_code, 200)
-        response_2 = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
-        )
-        self.assertEqual(response_2.status_code, 200)
-        signature = self.raffle.generate_signature(
-                        self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
-                    )
-        self.assertEqual(response_1.data['signature'], signature)
-        self.assertEqual(response_2.data['signature'], signature)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
-    )
-    def test_claim_prize_fail_when_not_winner(self):
-        RaffleEntry.objects.create(
-            raffle=self.raffle,
-            user_profile=self.user_profile
-        )
-        self.raffle.deadline = timezone.now()
-        self.raffle.save()
-        self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
-        )
-        self.assertEqual(response.status_code, 403)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
-    )
-    def test_claim_prize_fail_when_not_expired(self):
-        RaffleEntry.objects.create(
-            raffle=self.raffle,
-            user_profile=self.user_profile,
-            is_winner=True
-        )
-        self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(
-            reverse("claim-prize", kwargs={"pk": self.raffle.pk})
         )
         self.assertEqual(response.status_code, 403)
 
