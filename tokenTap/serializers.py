@@ -68,7 +68,6 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "discord_url",
             "twitter_url",
             "image_url",
-            "token_image_url",
             "token",
             "token_address",
             "amount",
@@ -78,6 +77,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "deadline",
             "max_number_of_claims",
             "notes",
+            "token_image_url",
         ]
 
 
