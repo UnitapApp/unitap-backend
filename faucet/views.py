@@ -1,11 +1,9 @@
 import json
-import logging
 from django.http import FileResponse
 import os
 import rest_framework.exceptions
 from django.http import Http404
 from rest_framework.generics import (
-    CreateAPIView,
     RetrieveAPIView,
     ListAPIView,
     ListCreateAPIView,
@@ -31,7 +29,8 @@ from faucet.serializers import (
     SmallChainSerializer,
     DonationReceiptSerializer,
 )
-
+from core.paginations import StandardResultsSetPagination
+from core.filters import ChainFilterBackend, IsOwnerFilterBackend
 # import BASE_DIR from django settings
 from django.conf import settings
 
@@ -97,8 +96,8 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             result = (
-                gs.weekly_chain_claim_limit
-                - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
+                    gs.weekly_chain_claim_limit
+                    - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
             )
             return Response({"total_weekly_claims_remaining": result}, status=200)
         else:
@@ -221,10 +220,12 @@ class ChainBalanceView(RetrieveAPIView):
 class DonationReceiptView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DonationReceiptSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [IsOwnerFilterBackend, ChainFilterBackend]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context.update({"user": self.get_user()})
+        context.update({'user': self.get_user()})
         return context
 
     def get_queryset(self):
