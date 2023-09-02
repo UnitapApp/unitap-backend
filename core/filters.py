@@ -21,5 +21,5 @@ class ChainFilterBackend(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         chain_pk = request.query_params.get('chain_pk')
         if chain_pk is None:
-            return super().filter_queryset(request, queryset, view)
+            return queryset
         return queryset.filter(chain=get_object_or_404(Chain, pk=chain_pk))
