@@ -1,9 +1,17 @@
+import decimal
+
+from django.db.models import Func, F
 from rest_framework import serializers
+from rest_framework import status
+import web3.exceptions
+
 from authentication.models import UserProfile
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
-from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings
+from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings, DonationReceipt
+from faucet.faucet_manager.fund_manager import EVMFundManager
+from core.models import TokenPrice
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -25,8 +33,8 @@ class UserSerializer(serializers.ModelSerializer):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             return (
-                gs.weekly_chain_claim_limit
-                - LimitedChainClaimManager.get_total_weekly_claims(instance)
+                    gs.weekly_chain_claim_limit
+                    - LimitedChainClaimManager.get_total_weekly_claims(instance)
             )
 
     def create(self, validated_data):
@@ -166,4 +174,44 @@ class ReceiptSerializer(serializers.ModelSerializer):
             "amount",
             "status",
             "last_updated",
+        ]
+
+
+class DonationReceiptSerializer(serializers.ModelSerializer):
+    chain_name = serializers.CharField(max_length=20, write_only=True)
+    chain = SmallChainSerializer(read_only=True)
+
+    def validate(self, attrs):
+        chain = self._validate_chain(attrs.pop('chain_name'))
+        attrs['user_profile'] = self.context.get('user')
+        attrs['chain'] = chain
+        return attrs
+
+    def _validate_chain(self, chain_name: str):
+        try:
+            chain: Chain = Chain.objects.get(chain_name=chain_name, chain_type='EVM')
+        except Chain.DoesNotExist:
+            raise serializers.ValidationError({'chain': 'chain is not EVM or does not exist.'})
+        return chain
+
+    class Meta:
+        model = DonationReceipt
+        depth = 1
+        fields = [
+            "tx_hash",
+            "chain",
+            "datetime",
+            "total_price",
+            "value",
+            "chain_name",
+            "status",
+            "user_profile"
+        ]
+        read_only_fields = [
+            'value',
+            'datetime',
+            'total_price',
+            'chain',
+            'status',
+            "user_profile"
         ]

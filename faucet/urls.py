@@ -2,6 +2,7 @@ from django.urls import path
 
 from faucet.views import (
     ChainListView,
+    ClaimCountView,
     ClaimMaxView,
     GlobalSettingsView,
     LastClaimView,
@@ -11,6 +12,7 @@ from faucet.views import (
     error500,
     ChainBalanceView,
     SmallChainListView,
+    DonationReceiptView,
 )
 
 from drf_yasg.views import get_schema_view
@@ -37,6 +39,7 @@ urlpatterns = [
     ),
     path("user/last-claim/", LastClaimView.as_view(), name="last-claim"),
     path("user/claims/", ListClaims.as_view(), name="claims"),
+    path("claims/count/", ClaimCountView.as_view(), name="claims-count"),
     path(
         "chain/list/", ChainListView.as_view(), name="chain-list"
     ),  # can have auth token for more user specific info
@@ -60,4 +63,5 @@ urlpatterns = [
         ChainBalanceView.as_view(),
         name="chain-balance",
     ),
+    path("user/donation", DonationReceiptView.as_view(), name="donation-receipt"),
 ]

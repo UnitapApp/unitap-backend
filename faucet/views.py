@@ -4,7 +4,12 @@ from django.http import FileResponse
 import os
 import rest_framework.exceptions
 from django.http import Http404
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
+from rest_framework.generics import (
+    CreateAPIView,
+    RetrieveAPIView,
+    ListAPIView,
+    ListCreateAPIView,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,13 +22,14 @@ from faucet.faucet_manager.claim_manager import (
     LimitedChainClaimManager,
 )
 from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
-from faucet.models import Chain, ClaimReceipt, GlobalSettings
+from faucet.models import Chain, ClaimReceipt, GlobalSettings, DonationReceipt
 from faucet.serializers import (
     ChainBalanceSerializer,
     GlobalSettingsSerializer,
     ReceiptSerializer,
     ChainSerializer,
     SmallChainSerializer,
+    DonationReceiptSerializer,
 )
 
 # import BASE_DIR from django settings
@@ -32,6 +38,11 @@ from django.conf import settings
 
 class CustomException(Exception):
     pass
+
+
+class ClaimCountView(ListAPIView):
+    def get(self, request, *args, **kwargs):
+        return Response({"count": ClaimReceipt.claims_count()}, status=200)
 
 
 class LastClaimView(RetrieveAPIView):
@@ -205,6 +216,22 @@ class ChainBalanceView(RetrieveAPIView):
         if chain_pk is None:
             raise Http404("Chain ID not provided")
         return Chain.objects.get(pk=chain_pk)
+
+
+class DonationReceiptView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DonationReceiptSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"user": self.get_user()})
+        return context
+
+    def get_queryset(self):
+        return DonationReceipt.objects.filter(user_profile=self.get_user())
+
+    def get_user(self) -> UserProfile:
+        return self.request.user.profile
 
 
 def artwork_video(request):

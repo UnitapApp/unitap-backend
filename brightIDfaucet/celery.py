@@ -38,6 +38,14 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.update_tokentap_claim_for_verified_lightning_claims",
         "schedule": 3,
     },
+    'update-tokens-price': {
+        "task": "faucet.tasks.update_tokens_price",
+        "schedule": 120,
+    },
+    'update-donation-receipt-status': {
+        "task": "faucet.tasks.update_donation_receipt_pending_status",
+        "schedule": 60,
+    }
 }
 
 # Load task modules from all registered Django apps.

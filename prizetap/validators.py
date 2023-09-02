@@ -1,19 +1,9 @@
+import json
 from .models import RaffleEntry
-from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
-from faucet.models import GlobalSettings
 from rest_framework.exceptions import PermissionDenied
-from authentication.models import NetworkTypes, UserProfile
+from authentication.models import UserProfile
 from .models import RaffleEntry, Raffle
 from .constraints import *
-
-def has_weekly_credit_left(user_profile):
-    return (
-        RaffleEntry.objects.filter(
-            user_profile=user_profile,
-            created_at__gte=WeeklyCreditStrategy.get_last_monday(),
-        ).count()
-        < GlobalSettings.objects.first().prizetap_weekly_claim_limit
-    )
 
 class RaffleEnrollmentValidator:
     def __init__(self, *args, **kwargs):
@@ -27,17 +17,27 @@ class RaffleEnrollmentValidator:
             )
         
     def check_user_constraints(self):
+        try:
+            param_values = json.loads(self.raffle.constraint_params)
+        except:
+            param_values = {}
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = eval(c.name)(self.user_profile)
-            if not constraint.is_observed():
+            constraint.response = c.response
+            try:
+                constraint.set_param_values(param_values[c.name])
+            except KeyError:
+                pass
+            if not constraint.is_observed(self.raffle.constraint_params):
                 raise PermissionDenied(
-                    constraint.response()
+                    constraint.response
                 )
 
     def check_user_has_wallet(self):
-        if not self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM).exists():
+        if not self.user_profile.wallets.filter(
+            wallet_type=self.raffle.chain.chain_type).exists():
             raise PermissionDenied(
-                "You have not connected an EVM wallet to your account"
+                f"You have not connected an {self.raffle.chain.chain_type} wallet to your account"
             )
 
     def is_valid(self, data):
@@ -46,27 +46,6 @@ class RaffleEnrollmentValidator:
         self.check_user_constraints()
 
         self.check_user_has_wallet()
-
-
-class ClaimPrizeValidator:
-    def __init__(self, *args, **kwargs):
-        self.user_profile: UserProfile = kwargs['user_profile']
-        self.raffle: Raffle = kwargs['raffle']
-
-    def can_claim_prize(self):
-        if not self.raffle.is_expired:
-            raise PermissionDenied(
-                "The raffle is not over"
-            )
-        if not self.raffle.winner or self.raffle.winner != self.user_profile:
-            raise PermissionDenied(
-                "You are not the raffle winner"
-            )
-            
-    def is_valid(self, data):
-        self.can_claim_prize()
-
-    
 
 class SetRaffleEntryTxValidator:
     

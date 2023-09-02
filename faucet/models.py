@@ -1,3 +1,4 @@
+from decimal import Decimal
 from datetime import datetime, timedelta
 import logging
 from django.db import models
@@ -207,6 +208,17 @@ class ClaimReceipt(models.Model):
             return self.batch.tx_hash
         return None
 
+    @staticmethod
+    def claims_count():
+        cached_count = cache.get("gastap_claims_count")
+        if cached_count:
+            return cached_count
+        count = ClaimReceipt.objects.filter(
+            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
+        ).count()
+        cache.set("gastap_claims_count", count, 600)
+        return count
+
 
 class Chain(models.Model):
     chain_name = models.CharField(max_length=255)
@@ -338,7 +350,10 @@ class Chain(models.Model):
                 )
                 return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
-        except:
+        except Exception as e:
+            logging.exception(
+                f"Error getting wallet balance for {self.chain_name} error is {e}"
+            )
             return 0
 
     @property
@@ -460,12 +475,12 @@ class GlobalSettings(models.Model):
 
 
 class TransactionBatch(models.Model):
-    chain = models.ForeignKey(Chain, related_name="batches", on_delete=models.PROTECT)
+    chain = models.ForeignKey(Chain, related_name="batches", on_delete=models.PROTECT, db_index=True)
     datetime = models.DateTimeField(auto_now_add=True)
-    tx_hash = models.CharField(max_length=255, blank=True, null=True)
+    tx_hash = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
     _status = models.CharField(
-        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING, db_index=True
     )
 
     updating = models.BooleanField(default=False)
@@ -514,3 +529,30 @@ class LightningConfig(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+
+
+class DonationReceipt(models.Model):
+    user_profile = models.ForeignKey(
+        UserProfile,
+        related_name="donations",
+        on_delete=models.PROTECT,
+        null=False,
+        blank=False
+    )
+    tx_hash = models.CharField(max_length=255, blank=False, null=False)
+    chain = models.ForeignKey(
+        Chain,
+        related_name="donation",
+        on_delete=models.PROTECT,
+        null=False,
+        blank=False,
+    )
+    value = models.CharField(max_length=255, null=True, blank=True)
+    total_price = models.CharField(max_length=255, null=True, blank=True)
+    datetime = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PROCESSED_FOR_TOKENTAP
+    )
+
+    class Meta:
+        unique_together = ('chain', 'tx_hash')
