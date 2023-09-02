@@ -2,12 +2,9 @@ from faucet.serializers import SmallChainSerializer
 from rest_framework import serializers
 from core.serializers import UserConstraintBaseSerializer
 from core.models import UserConstraint
-from tokenTap.models import (
-    TokenDistribution, 
-    TokenDistributionClaim, 
-    Constraint
-)
+from tokenTap.models import TokenDistribution, TokenDistributionClaim, Constraint
 from .constraints import *
+
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
     class Meta(UserConstraintBaseSerializer.Meta):
@@ -17,7 +14,8 @@ class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerial
     def get_params(self, constraint: UserConstraint):
         c_class: ConstraintVerification = eval(constraint.name)
         return [p.value for p in c_class.param_keys()]
-        
+
+
 class DetailResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
 

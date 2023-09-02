@@ -4,7 +4,12 @@ from django.http import FileResponse
 import os
 import rest_framework.exceptions
 from django.http import Http404
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, ListCreateAPIView
+from rest_framework.generics import (
+    CreateAPIView,
+    RetrieveAPIView,
+    ListAPIView,
+    ListCreateAPIView,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -92,8 +97,8 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             result = (
-                    gs.weekly_chain_claim_limit
-                    - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
+                gs.weekly_chain_claim_limit
+                - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
             )
             return Response({"total_weekly_claims_remaining": result}, status=200)
         else:
@@ -219,7 +224,7 @@ class DonationReceiptView(ListCreateAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context.update({'user': self.get_user()})
+        context.update({"user": self.get_user()})
         return context
 
     def get_queryset(self):

@@ -12,7 +12,7 @@ from faucet.views import (
     error500,
     ChainBalanceView,
     SmallChainListView,
-    DonationReceiptView
+    DonationReceiptView,
 )
 
 from drf_yasg.views import get_schema_view
@@ -63,5 +63,5 @@ urlpatterns = [
         ChainBalanceView.as_view(),
         name="chain-balance",
     ),
-    path('user/donation', DonationReceiptView.as_view(), name='donation-receipt')
+    path("user/donation", DonationReceiptView.as_view(), name="donation-receipt"),
 ]
