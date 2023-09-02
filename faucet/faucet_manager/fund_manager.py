@@ -4,7 +4,6 @@ import logging
 from django.core.cache import cache
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
-from web3.exceptions import TimeExhausted
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
@@ -133,6 +132,9 @@ class EVMFundManager:
     def get_tx(self, tx_hash):
         tx = self.w3.eth.get_transaction(tx_hash)
         return tx
+
+    def from_wei(self, value: int, unit='ether'):
+        return self.w3.toWei(value, unit)
 
 
 class SolanaFundManager:

@@ -1,13 +1,13 @@
-import decimal
 import time
 import logging
+import decimal
 from contextlib import contextmanager
 import web3.exceptions
 import requests
 from celery import shared_task
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Q, F, Func
+from django.db.models import F, Func
 from django.utils import timezone
 from sentry_sdk import capture_exception
 from authentication.models import NetworkTypes, Wallet
@@ -400,15 +400,16 @@ def process_donation_receipt(self, donation_receipt_pk):
                     tx.get('to')) != evm_fund_manager.get_fund_manager_checksum_address():
                 donation_receipt.delete()
                 return
-            donation_receipt.value = tx.get('value')
+            donation_receipt.value = str(evm_fund_manager.from_wei(tx.get('value')))
             if donation_receipt.chain.is_testnet is False:
                 try:
                     token_price = TokenPrice.objects.get(symbol=donation_receipt.chain.symbol)
                     donation_receipt.total_price = str(
-                        decimal.Decimal(tx.get('value')) * decimal.Decimal(token_price.usd_price))
+                        decimal.Decimal(donation_receipt.value) * decimal.Decimal(token_price.usd_price))
                 except TokenPrice.DoesNotExist:
                     logging.error(f'TokenPrice for Chain: {donation_receipt.chain.chain_name} did not defined')
                     donation_receipt.status = ClaimReceipt.PROCESSED_FOR_TOKENTAP_REJECT
+                    donation_receipt.save()
                     return
             else:
                 donation_receipt.total_price = str(0)
