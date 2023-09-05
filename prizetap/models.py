@@ -46,8 +46,8 @@ class Raffle(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     start_at = models.DateTimeField(default=timezone.now)
-    deadline = models.DateTimeField(null=True, blank=True)
-    max_number_of_entries = models.IntegerField(null=True, blank=True)
+    deadline = models.DateTimeField(blank=True)
+    max_number_of_entries = models.IntegerField(blank=True)
     max_multiplier = models.IntegerField(default=1)
 
     is_active = models.BooleanField(default=True)
