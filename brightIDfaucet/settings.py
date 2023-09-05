@@ -17,35 +17,35 @@ logging.basicConfig(
 )
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'WARNING',
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
-        'django.server': {
-            'handlers': ['console'],
-            'level': 'INFO',
+        "django.server": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'INFO',
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
-        'django.core.cache': {
-            'handlers': ['console'],
-            'level': 'ERROR',  # Change this to control the log level
-        }
-    }
+        "django.core.cache": {
+            "handlers": ["console"],
+            "level": "ERROR",  # Change this to control the log level
+        },
+    },
 }
 
 
@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     "faucet.apps.FaucetConfig",
     "tokenTap.apps.TokentapConfig",
     "prizetap.apps.PrizetapConfig",
+    "learntap.apps.LearntapConfig",
     "permissions.apps.PermissionsConfig",
     "authentication.apps.AuthenticationConfig",
     "rest_framework",
@@ -117,7 +118,7 @@ INSTALLED_APPS = [
     "encrypted_model_fields",
     "drf_yasg",
     "corsheaders",
-    "django_filters"
+    "django_filters",
 ]
 
 MIDDLEWARE = [
