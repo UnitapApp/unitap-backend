@@ -241,12 +241,12 @@ class DonationReceiptView(ListCreateAPIView):
 class LeaderboardView(ListAPIView):
     serializer_class = LeaderboardSerializer
     pagination_class = StandardResultsSetPagination
-    queryset = DonationReceipt
+    queryset = DonationReceipt.objects.all()
     filter_backends = [ChainFilterBackend]
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        donation_receipt = queryset.objects.filter(status=ClaimReceipt.VERIFIED).annotate(
+        donation_receipt = queryset.filter(status=ClaimReceipt.VERIFIED).annotate(
             total_price_float=Cast('total_price', FloatField())).values('user_profile').annotate(
             sum_total_price=Sum('total_price_float')).order_by('-sum_total_price')
         subquery_interacted_chains = DonationReceipt.objects.filter(
