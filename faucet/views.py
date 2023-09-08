@@ -27,12 +27,15 @@ from faucet.serializers import (
     ReceiptSerializer,
     ChainSerializer,
     SmallChainSerializer,
-    DonationReceiptSerializer,
+    DonationReceiptSerializer, LeaderboardSerializer,
 )
 from core.paginations import StandardResultsSetPagination
 from core.filters import ChainFilterBackend, IsOwnerFilterBackend
 # import BASE_DIR from django settings
 from django.conf import settings
+from django.db.models import FloatField, Sum, OuterRef, Subquery
+from django.db.models.functions import Cast
+from django.contrib.postgres.expressions import ArraySubquery
 
 
 class CustomException(Exception):
@@ -233,6 +236,33 @@ class DonationReceiptView(ListCreateAPIView):
 
     def get_user(self) -> UserProfile:
         return self.request.user.profile
+
+
+class LeaderboardView(ListAPIView):
+    serializer_class = LeaderboardSerializer
+    pagination_class = StandardResultsSetPagination
+    queryset = DonationReceipt
+    filter_backends = [ChainFilterBackend]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        donation_receipt = queryset.objects.filter(status=ClaimReceipt.VERIFIED).annotate(
+            total_price_float=Cast('total_price', FloatField())).values('user_profile').annotate(
+            sum_total_price=Sum('total_price_float')).order_by('-sum_total_price')
+        subquery_interacted_chains = DonationReceipt.objects.filter(
+            user_profile=OuterRef('user_profile')).filter(status=ClaimReceipt.VERIFIED).values_list(
+            'chain', flat=True)
+        queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
+        subquery_username = UserProfile.objects.filter(pk=OuterRef('user_profile')).values('username')
+        subquery_wallet = Wallet.objects.filter(user_profile=OuterRef('user_profile')).values('address')
+        queryset.annotate(user=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 def artwork_video(request):

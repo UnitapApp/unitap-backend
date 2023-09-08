@@ -206,3 +206,10 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             'status',
             "user_profile"
         ]
+
+
+class LeaderboardSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150, read_only=True)
+    total_price_sum = serializers.CharField(max_length=150, read_only=True)
+    interacted_chains = serializers.StringRelatedField(read_only=True)
+    wallet = serializers.CharField(max_length=512, read_only=True)
