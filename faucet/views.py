@@ -255,7 +255,7 @@ class LeaderboardView(ListAPIView):
         queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
         subquery_username = UserProfile.objects.filter(pk=OuterRef('user_profile')).values('username')
         subquery_wallet = Wallet.objects.filter(user_profile=OuterRef('user_profile')).values('address')
-        queryset.annotate(user=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
+        queryset = queryset.annotate(username=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
