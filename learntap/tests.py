@@ -55,3 +55,5 @@ class MissionModelTests(TestCase):
         self.assertEqual(mission.constraint_params, "{}")
         self.assertEqual(mission.constraints.count(), 1)
         self.assertEqual(mission.tags.count(), 2)
+
+

@@ -36,5 +36,6 @@ class Mission(models.Model):
     def __str__(self):
         return self.title
 
+    @property
     def total_XP(self):
         pass
