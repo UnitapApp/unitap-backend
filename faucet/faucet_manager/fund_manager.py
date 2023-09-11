@@ -133,8 +133,8 @@ class EVMFundManager:
         tx = self.w3.eth.get_transaction(tx_hash)
         return tx
 
-    def from_wei(self, value: int, unit='ether'):
-        return self.w3.toWei(value, unit)
+    def from_wei(self, value: int, unit: str = 'ether'):
+        return self.w3.fromWei(value, unit)
 
 
 class SolanaFundManager:
