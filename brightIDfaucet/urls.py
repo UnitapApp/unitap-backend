@@ -29,4 +29,5 @@ urlpatterns = [
     path("api/auth/", include("authentication.urls")),
     path("api/tokentap/", include("tokenTap.urls")),
     path("api/prizetap/", include("prizetap.urls")),
+    path("api/learntap/", include("learntap.urls")),
 ]
