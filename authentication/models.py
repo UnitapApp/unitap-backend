@@ -48,7 +48,6 @@ class UserProfile(models.Model):
 
     @property
     def is_meet_verified(self):
-        return True
         (
             is_verified,
             context_ids,
@@ -60,7 +59,6 @@ class UserProfile(models.Model):
 
     @property
     def is_aura_verified(self):
-        return True
         (
             is_verified,
             context_ids,
