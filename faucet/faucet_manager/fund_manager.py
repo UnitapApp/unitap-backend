@@ -43,7 +43,7 @@ class EVMFundManager:
             _w3 = Web3(Web3.HTTPProvider(self.chain.rpc_url_private))
             if self.chain.poa:
                 _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-            if _w3.isConnected():
+            if _w3.is_connected():
                 _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
                 return _w3
         except Exception as e:
@@ -66,11 +66,11 @@ class EVMFundManager:
 
     @property
     def account(self) -> LocalAccount:
-        return self.w3.eth.account.privateKeyToAccount(self.chain.wallet.main_key)
+        return self.w3.eth.account.from_key(self.chain.wallet.main_key)
 
     @staticmethod
     def to_checksum_address(address: str):
-        return Web3.toChecksumAddress(address.lower())
+        return Web3.to_checksum_address(address.lower())
 
     def get_fund_manager_checksum_address(self):
         return self.to_checksum_address(self.chain.fund_manager_address)
@@ -112,7 +112,7 @@ class EVMFundManager:
         if self.is_gas_price_too_high:
             raise FundMangerException.GasPriceTooHigh("Gas price is too high")
 
-        tx_data = tx_function.buildTransaction(
+        tx_data = tx_function.build_transaction(
             {
                 "nonce": nonce,
                 "from": self.account.address,
@@ -134,7 +134,7 @@ class EVMFundManager:
         return tx
 
     def from_wei(self, value: int, unit: str = 'ether'):
-        return self.w3.fromWei(value, unit)
+        return self.w3.from_wei(value, unit)
 
 
 class SolanaFundManager:
