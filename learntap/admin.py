@@ -20,17 +20,17 @@ class ConstraintAdmin(admin.ModelAdmin):
 
 
 class StationAdmin(admin.ModelAdmin):
-    list_display = ("title", "mission", "is_active", "is_promoted")
-    list_filter = ("is_active", "is_promoted")
+    list_display = ("title", "mission", "is_active")
+    list_filter = ("is_active",)
     search_fields = ("title", "mission__title")
-    list_editable = ("is_active", "is_promoted")
+    list_editable = ("is_active",)
 
 
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ("title", "station", "mission", "is_active", "is_promoted")
-    list_filter = ("is_active", "is_promoted", "mission", "station")
+    list_display = ("title", "station", "mission", "is_active")
+    list_filter = ("is_active", "mission", "station")
     search_fields = ("title", "station__title", "mission__title")
-    list_editable = ("is_active", "is_promoted")
+    list_editable = ("is_active",)
 
 
 admin.site.register(Mission, MissionAdmin)

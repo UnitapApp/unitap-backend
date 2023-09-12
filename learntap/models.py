@@ -39,7 +39,13 @@ class Mission(models.Model):
 
     @property
     def total_XP(self):
-        return self.stations.aggregate(total_XP=models.Sum("total_XP"))["total_XP"]
+        return sum([station.total_XP for station in self.stations.all()])
+
+    def first_task(self):
+        return self.stations.first().tasks.first()
+
+    def last_task(self):
+        return self.stations.last().tasks.last()
 
 
 class Referral(models.Model):

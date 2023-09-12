@@ -125,3 +125,134 @@ class referralTests(APITestCase):
     #     self.assertEqual(response.status_code, 200)
     #     self.assertEqual(len(response.data), 1)
     #     self.assertEqual
+
+
+class TaskAPITest(APITestCase):
+    def setUp(self):
+        self.profile1 = UserProfile.objects.get_or_create("mamad")
+
+        self.mission = Mission.objects.create(
+            title="test mission",
+            creator_name="mamad",
+            creator_url="https://mamad.com",
+            discord_url="https://discord.com",
+            twitter_url="https://twitter.com",
+            description="this is a test mission",
+            imageUrl="https://mamad.com",
+            is_promoted=True,
+            is_active=True,
+            constraint_params="{}",
+        )
+
+        self.station1 = Station.objects.create(
+            mission=self.mission,
+            title="test station1",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+        )
+        self.station2 = Station.objects.create(
+            mission=self.mission,
+            title="test station2",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+        )
+        self.task1 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task1",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=100,
+        )
+        self.task2 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task2",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=10,
+        )
+        self.task3 = Task.objects.create(
+            mission=self.mission,
+            station=self.station2,
+            title="test task3",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=40,
+        )
+
+    def test_task_creation(self):
+        self.assertEqual(len(Mission.objects.all()), 1)
+        self.assertEqual(len(Station.objects.all()), 2)
+        self.assertEqual(len(Task.objects.all()), 3)
+
+        mission: Mission = Mission.objects.first()
+        self.assertEqual(mission, self.mission)
+        self.assertEqual(mission.stations.count(), 2)
+        self.assertEqual(mission.tasks.count(), 3)
+        self.assertEqual(mission.stations.first(), self.station1)
+        self.assertEqual(mission.stations.last(), self.station2)
+        self.assertEqual(mission.first_task(), self.task1)
+        self.assertEqual(mission.last_task(), self.task3)
+        self.assertEqual(mission.stations.first().tasks.count(), 2)
+        self.assertEqual(mission.stations.first().tasks.last(), self.task2)
+
+        self.assertEqual(mission.stations.first().tasks.first().XP, 100)
+        self.assertEqual(mission.stations.first().tasks.last().XP, 10)
+        self.assertEqual(mission.stations.last().tasks.first().XP, 40)
+        self.assertEqual(mission.stations.first().total_XP, 110)
+        self.assertEqual(mission.stations.last().total_XP, 40)
+        self.assertEqual(mission.total_XP, 150)
+
+        self.assertTrue(
+            mission.stations.first().tasks.first().is_first_task_of_the_station()
+        )
+        self.assertTrue(
+            mission.stations.first().tasks.first().is_first_task_of_the_mission()
+        )
+        self.assertFalse(
+            mission.stations.first().tasks.first().is_last_task_of_the_station()
+        )
+        self.assertFalse(
+            mission.stations.first().tasks.last().is_first_task_of_the_station()
+        )
+        self.assertFalse(
+            mission.stations.first().tasks.last().is_first_task_of_the_mission()
+        )
+        self.assertTrue(
+            mission.stations.first().tasks.last().is_last_task_of_the_station()
+        )
+        self.assertTrue(
+            mission.stations.last().tasks.first().is_first_task_of_the_station()
+        )
+        self.assertFalse(
+            mission.stations.last().tasks.first().is_first_task_of_the_mission()
+        )
+        self.assertTrue(
+            mission.stations.last().tasks.last().is_last_task_of_the_station()
+        )
+        self.assertTrue(
+            mission.stations.last().tasks.last().is_last_task_of_the_mission()
+        )
