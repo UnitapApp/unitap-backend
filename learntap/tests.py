@@ -1,3 +1,5 @@
+from time import sleep
+from unittest.mock import patch
 from rest_framework.test import APITestCase, override_settings
 from django.urls import reverse
 from .models import *
@@ -256,3 +258,140 @@ class TaskAPITest(APITestCase):
         self.assertTrue(
             mission.stations.last().tasks.last().is_last_task_of_the_mission()
         )
+
+
+class TaskVerificationTest(APITestCase):
+    def setUp(self) -> None:
+        self.profile1 = UserProfile.objects.get_or_create("mamad")
+
+        self.mission = Mission.objects.create(
+            title="test mission",
+            creator_name="mamad",
+            creator_url="https://mamad.com",
+            discord_url="https://discord.com",
+            twitter_url="https://twitter.com",
+            description="this is a test mission",
+            imageUrl="https://mamad.com",
+            is_promoted=True,
+            is_active=True,
+            constraint_params="{}",
+        )
+
+        self.station1 = Station.objects.create(
+            mission=self.mission,
+            title="test station1",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+        )
+        self.station2 = Station.objects.create(
+            mission=self.mission,
+            title="test station2",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+        )
+        self.task1 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task1",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=100,
+        )
+        self.task2 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task2",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=10,
+        )
+        self.task3 = Task.objects.create(
+            mission=self.mission,
+            station=self.station2,
+            title="test task3",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=40,
+        )
+
+    def test_verification_mutex(self):
+        url = reverse("task-verify", kwargs={"pk": self.task1.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        # response = self.client.post(url, {"data": "test"})
+        # self.assertEqual(response.status_code, 400)
+
+        # response = self.client.post(url, {"data": "test"})
+        # self.assertEqual(response.status_code, 400)
+
+        # response = self.client.post(url, {"data": "test"})
+        # self.assertEqual(response.status_code, 400)
+
+        # sleep(120)
+
+        # response = self.client.post(url, {"data": "test"})
+        # self.assertEqual(response.status_code, 200)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (False, None),
+    )
+    def test_verification_should_fail(self):
+        self.task1.verifications.add(
+            Constraint.objects.create(
+                name=BrightIDMeetVerification.__name__,
+                title="BrightID meet",
+                description="You have to be BrightID verified.",
+            )
+        )
+        self.task1.save()
+
+        url = reverse("task-verify", kwargs={"pk": self.task1.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 403)
+
+    
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_verification_should_fail(self):
+        self.task1.verifications.add(
+            Constraint.objects.create(
+                name=BrightIDMeetVerification.__name__,
+                title="BrightID meet",
+                description="You have to be BrightID verified.",
+            )
+        )
+        self.task1.save()
+
+        url = reverse("task-verify", kwargs={"pk": self.task1.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
