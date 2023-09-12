@@ -296,7 +296,7 @@ class Chain(models.Model):
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
                 if self.chain_id == 500:
                     logging.debug("chain XDC NONEVM is checking its balances")
-                funds = EVMFundManager(self).w3.eth.getBalance(
+                funds = EVMFundManager(self).w3.eth.get_balance(
                     self.fund_manager_address
                 )
                 return funds
@@ -335,7 +335,7 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                return EVMFundManager(self).w3.eth.getBalance(self.wallet.address)
+                return EVMFundManager(self).w3.eth.get_balance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(
