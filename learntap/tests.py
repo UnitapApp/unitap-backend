@@ -74,7 +74,7 @@ class MissionModelAndAPITests(APITestCase):
         self.assertEqual(len(mission["tags"]), 2)
 
 
-class referralAPITests(APITestCase):
+class referralTests(APITestCase):
     def setUp(self):
         self.profile1 = UserProfile.objects.get_or_create("mamad")
         self.profile2 = UserProfile.objects.get_or_create("amir")
