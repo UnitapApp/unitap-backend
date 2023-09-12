@@ -1,4 +1,5 @@
 from django.db import models
+from authentication.models import UserProfile
 from core.models import UserConstraint
 from django.utils import timezone
 
@@ -39,3 +40,20 @@ class Mission(models.Model):
     @property
     def total_XP(self):
         pass
+
+
+class Referral(models.Model):
+    mission = models.ForeignKey(
+        Mission, on_delete=models.CASCADE, related_name="referrals"
+    )
+    profile = models.ForeignKey(
+        UserProfile, on_delete=models.CASCADE, related_name="referrals_recieved"
+    )
+    referred_by = models.ForeignKey(
+        UserProfile, on_delete=models.CASCADE, null=True, related_name="referals_made"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=True)
+
+    def __str__(self):
+        return f"{self.profile} referred by {self.referred_by} for {self.mission}"
