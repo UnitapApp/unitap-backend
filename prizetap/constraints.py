@@ -1,7 +1,26 @@
 from core.constraints import *
+from faucet.models import Chain
+from .utils import UnitapPassClient
 
-# TODO: fixme
-# class EligibilityVerification(ConstraintVerification):
-#     def is_observed(self, *args, **kwargs):
-#         raffle = kwargs['raffle']
-#         return self.user_profile in raffle.eligibles
+
+class HaveUnitapPass(ConstraintVerification):
+    def __init__(self, user_profile: UserProfile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs):
+        chain = Chain.objects.get(chain_id=1)
+        self.unitappass_client = UnitapPassClient(chain)
+        user_address: str = self.user_profile.wallets.get(
+            wallet_type=chain.chain_type).address
+        user_address = self.unitappass_client.w3.to_checksum_address(
+            user_address.lower()
+        )
+        return self.unitappass_client.is_holder(user_address)
+
+
+class NotHaveUnitapPass(HaveUnitapPass):
+    def __init__(self, user_profile: UserProfile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs):
+        return not super().is_observed()

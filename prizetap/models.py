@@ -3,11 +3,16 @@ from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
 from core.models import UserConstraint
+from .constraints import *
 
 # Create your models here.
 
 class Constraint(UserConstraint):
-    pass
+    constraints = UserConstraint.constraints + [
+        HaveUnitapPass,
+        NotHaveUnitapPass
+    ]
+    name = UserConstraint.create_name_field(constraints)
     
 
 class Raffle(models.Model):
