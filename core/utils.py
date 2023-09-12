@@ -53,8 +53,7 @@ class TimeUtils:
 
 class Web3Utils:
 
-    def __init__(self, chain_id, rpc_url) -> None:
-        self._chain_id = chain_id
+    def __init__(self, rpc_url) -> None:
         self._rpc_url = rpc_url
         self._w3 = None
         self._account = None
@@ -71,7 +70,7 @@ class Web3Utils:
             return self._w3
 
         raise Exception(
-            f"RPC provider is not connected"
+            f"RPC provider is not connected ({self._rpc_url})"
         )
 
     @property
@@ -88,14 +87,18 @@ class Web3Utils:
     def set_contract(self, address, abi):
         self._contract = self.w3.eth.contract(address=address, abi=abi)
 
-    def contract_call(self, func: Type[ContractFunction]):
+    def contract_txn(self, func: Type[ContractFunction]):
         signed_tx = self.build_contract_call(func)
         txn_hash = self.send_raw_tx(signed_tx)
         return txn_hash.hex()
 
+    def contract_call(self, func: Type[ContractFunction], from_address=None):
+        if from_address:
+            return func.call({"from": from_address})
+        return func.call()
+
     def build_contract_call(self, func: Type[ContractFunction]):
-        tx_data = func.build_transaction(
-            {"chainId": self._chain_id, "from": self.account.address})
+        tx_data = func.build_transaction({"from": self.account.address})
         return self.sign_tx(tx_data)
 
     def sign_tx(self, tx_data: TxParams):
