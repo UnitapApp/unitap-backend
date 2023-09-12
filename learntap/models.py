@@ -142,3 +142,56 @@ class Task(models.Model):
 
     def is_last_task_of_the_mission(self):
         return self.mission.stations.last().tasks.last() == self
+
+    def get_next_task(self):
+        if self.is_last_task_of_the_station():
+            if self.is_last_task_of_the_mission():
+                return None
+            else:
+                return self.mission.stations.get(
+                    order=self.station.order + 1
+                ).tasks.first()
+        else:
+            return self.station.tasks.get(order=self.order + 1)
+
+    def get_previous_task(self):
+        if self.is_first_task_of_the_station():
+            if self.is_first_task_of_the_mission():
+                return None
+            else:
+                return self.mission.stations.get(
+                    order=self.station.order - 1
+                ).tasks.last()
+        else:
+            return self.station.tasks.get(order=self.order - 1)
+
+
+class UserMissionProgress(models.Model):
+    class Meta:
+        unique_together = (("profile", "mission"),)
+
+    profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    mission = models.ForeignKey(Mission, on_delete=models.CASCADE)
+    current_task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True)
+    is_completed = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True, editable=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.profile} - {self.mission} - {self.is_completed}"
+
+
+class UserTaskProgress(models.Model):
+    class Meta:
+        unique_together = (("profile", "task"),)
+        ordering = ["started_at"]
+
+    profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    is_completed = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True, editable=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    user_data = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.profile} - {self.task} - {self.is_completed}"

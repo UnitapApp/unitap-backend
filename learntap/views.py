@@ -1,3 +1,4 @@
+import json
 from learntap.validators import TaskVerificationValidator
 from .models import *
 from .serializers import *
@@ -32,11 +33,14 @@ class TaskVerificationView(CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         # get user data
-        user_data = request.data.get("data", None)
+        user_data = request.data.get("user_data", None)
+        if user_data:
+            try:
+                user_data = json.loads(user_data)
+            except:
+                return Response({"error": "Invalid user data"}, status=400)
         profile = request.user.profile
         task = Task.objects.get(pk=kwargs["pk"])
-
-        # check if its not already verified TODO
 
         # check if verification mutex is not locked -> {user_id: task_id}
         is_verifying = cache.get(f"task_verification:{profile.pk}")
@@ -49,8 +53,7 @@ class TaskVerificationView(CreateAPIView):
 
         # verify
         validator = TaskVerificationValidator(
-            user_profile=profile,
-            task=task,
+            user_profile=profile, task=task, user_data=user_data
         )
         validator.is_valid(user_data)
 
