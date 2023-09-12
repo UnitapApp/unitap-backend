@@ -184,12 +184,10 @@ class UserMissionProgress(models.Model):
 class UserTaskProgress(models.Model):
     class Meta:
         unique_together = (("profile", "task"),)
-        ordering = ["started_at"]
 
     profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     is_completed = models.BooleanField(default=False)
-    started_at = models.DateTimeField(auto_now_add=True, editable=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     user_data = models.TextField(null=True, blank=True)
 

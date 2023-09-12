@@ -6,6 +6,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.core.cache import cache
+from .helpers import UserProgressManager
 
 
 class TagsListView(ListAPIView):
@@ -26,6 +27,16 @@ class MissionRetrieveView(RetrieveAPIView):
     queryset = Mission.objects.filter(is_active=True)
     serializer_class = MissionFullSerializer
     lookup_field = "pk"
+
+
+class StartMissionView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        mission = Mission.objects.get(pk=kwargs["pk"])
+        profile = request.user.profile
+        UserProgressManager.start_mission(profile, mission)
+        return Response({"detail": "Mission started successfully"}, status=200)
 
 
 class TaskVerificationView(CreateAPIView):
@@ -57,7 +68,9 @@ class TaskVerificationView(CreateAPIView):
         )
         validator.is_valid(user_data)
 
-        # update user progress TODO
+        # update user progress
+        UserProgressManager.update_user_progress(profile, task)
+
         # update user XP TODO
 
         cache.delete(f"task_verification:{profile.pk}")

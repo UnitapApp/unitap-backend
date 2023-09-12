@@ -2,6 +2,8 @@ from time import sleep
 from unittest.mock import patch
 from rest_framework.test import APITestCase, override_settings
 from django.urls import reverse
+
+from learntap.helpers import UserProgressManager
 from .models import *
 from django.utils import timezone
 from authentication.models import NetworkTypes
@@ -375,7 +377,6 @@ class TaskVerificationTest(APITestCase):
         response = self.client.post(url, {"data": "test"})
         self.assertEqual(response.status_code, 403)
 
-    
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -393,5 +394,273 @@ class TaskVerificationTest(APITestCase):
         url = reverse("task-verify", kwargs={"pk": self.task1.pk})
         self.client.force_authenticate(user=self.profile1.user)
         response = self.client.post(url, {"data": "test"})
-        print(response.data)
         self.assertEqual(response.status_code, 200)
+
+
+class UserProgressTest(APITestCase):
+    def setUp(self) -> None:
+        self.profile1 = UserProfile.objects.get_or_create("mamad")
+
+        self.mission = Mission.objects.create(
+            title="test mission",
+            creator_name="mamad",
+            creator_url="https://mamad.com",
+            discord_url="https://discord.com",
+            twitter_url="https://twitter.com",
+            description="this is a test mission",
+            imageUrl="https://mamad.com",
+            is_promoted=True,
+            is_active=True,
+            constraint_params="{}",
+        )
+
+        self.station1 = Station.objects.create(
+            mission=self.mission,
+            title="test station1",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+        )
+        self.station2 = Station.objects.create(
+            mission=self.mission,
+            title="test station2",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+        )
+        self.task1 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task1",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=100,
+        )
+        self.task2 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task2",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=10,
+        )
+        self.task3 = Task.objects.create(
+            mission=self.mission,
+            station=self.station2,
+            title="test task3",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=40,
+        )
+
+    def test_current_task(self):
+        # start mission
+        url = reverse("start-mission", kwargs={"pk": self.mission.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(
+            UserProgressManager.get_current_task_of_mission(
+                self.profile1, self.mission
+            ),
+            self.task1,
+        )
+
+        url = reverse("task-verify", kwargs={"pk": self.task1.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(
+            UserProgressManager.get_current_task_of_mission(
+                self.profile1, self.mission
+            ),
+            self.task2,
+        )
+
+        url = reverse("task-verify", kwargs={"pk": self.task2.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(
+            UserProgressManager.get_current_task_of_mission(
+                self.profile1, self.mission
+            ),
+            self.task3,
+        )
+
+        url = reverse("task-verify", kwargs={"pk": self.task3.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(
+            UserProgressManager.get_current_task_of_mission(
+                self.profile1, self.mission
+            ),
+            None,
+        )
+
+
+class UserProgressAPITest(APITestCase):
+    def setUp(self) -> None:
+        self.profile1 = UserProfile.objects.get_or_create("mamad")
+
+        self.mission = Mission.objects.create(
+            title="test mission",
+            creator_name="mamad",
+            creator_url="https://mamad.com",
+            discord_url="https://discord.com",
+            twitter_url="https://twitter.com",
+            description="this is a test mission",
+            imageUrl="https://mamad.com",
+            is_promoted=True,
+            is_active=True,
+            constraint_params="{}",
+        )
+
+        self.station1 = Station.objects.create(
+            mission=self.mission,
+            title="test station1",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+        )
+        self.station2 = Station.objects.create(
+            mission=self.mission,
+            title="test station2",
+            description="this is a test station",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+        )
+        self.task1 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task1",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=100,
+        )
+        self.task2 = Task.objects.create(
+            mission=self.mission,
+            station=self.station1,
+            title="test task2",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=1,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=10,
+        )
+        self.task3 = Task.objects.create(
+            mission=self.mission,
+            station=self.station2,
+            title="test task3",
+            description="this is a test task",
+            imageUrl="https://mamad.com",
+            is_active=True,
+            order=0,
+            has_action=True,
+            action_button_text="test action",
+            definition="{}",
+            verifications_definition="{}",
+            XP=40,
+        )
+
+    def test_current_task(self):
+        url = reverse("mission", kwargs={"pk": self.mission.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["current_task"], None)
+        self.assertEqual(response.data["is_in_progress"], False)
+
+        url = reverse("start-mission", kwargs={"pk": self.mission.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+
+        url = reverse("mission", kwargs={"pk": self.mission.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["current_task"]["pk"], self.task1.pk)
+        self.assertEqual(response.data["is_in_progress"], True)
+        self.assertEqual(response.data["mission_progress_percentage"], 0)
+        self.assertEqual(response.data["has_completed_mission"], False)
+
+        url = reverse("task-verify", kwargs={"pk": self.task1.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        url = reverse("mission", kwargs={"pk": self.mission.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["current_task"]["pk"], self.task2.pk)
+        self.assertEqual(response.data["is_in_progress"], True)
+        self.assertEqual(response.data["mission_progress_percentage"], 33)
+        self.assertEqual(response.data["has_completed_mission"], False)
+
+        url = reverse("task-verify", kwargs={"pk": self.task2.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        url = reverse("mission", kwargs={"pk": self.mission.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["current_task"]["pk"], self.task3.pk)
+        self.assertEqual(response.data["is_in_progress"], True)
+        self.assertEqual(response.data["mission_progress_percentage"], 66)
+        self.assertEqual(response.data["has_completed_mission"], False)
+
+        url = reverse("task-verify", kwargs={"pk": self.task3.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.post(url, {"data": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        url = reverse("mission", kwargs={"pk": self.mission.pk})
+        self.client.force_authenticate(user=self.profile1.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        print(response.data["current_task"])
+        self.assertEqual(response.data["current_task"], None)
+        self.assertEqual(response.data["is_in_progress"], False)
+        self.assertEqual(response.data["mission_progress_percentage"], 100)
+        self.assertEqual(response.data["has_completed_mission"], True)
