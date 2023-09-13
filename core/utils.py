@@ -8,7 +8,6 @@ from django.utils import timezone
 
 
 class TimeUtils:
-
     @staticmethod
     def get_last_monday():
         now = int(time())
@@ -46,13 +45,11 @@ class TimeUtils:
     @staticmethod
     def get_first_day_of_the_month():
         now = datetime.datetime.now(pytz.timezone("UTC"))
-        first_day = now.replace(day=1, hour=0, minute=0,
-                                second=0, microsecond=0)
+        first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         return first_day
 
 
 class Web3Utils:
-
     def __init__(self, rpc_url) -> None:
         self._rpc_url = rpc_url
         self._w3 = None
@@ -69,9 +66,7 @@ class Web3Utils:
         if self._w3.is_connected():
             return self._w3
 
-        raise Exception(
-            f"RPC provider is not connected ({self._rpc_url})"
-        )
+        raise Exception(f"RPC provider is not connected ({self._rpc_url})")
 
     @property
     def account(self):
@@ -102,8 +97,7 @@ class Web3Utils:
         return self.sign_tx(tx_data)
 
     def sign_tx(self, tx_data: TxParams):
-        return self.w3.eth.account.sign_transaction(
-            tx_data, self.account.key)
+        return self.w3.eth.account.sign_transaction(tx_data, self.account.key)
 
     def send_raw_tx(self, signed_tx):
         return self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)

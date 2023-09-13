@@ -14,6 +14,7 @@ from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from faucet.faucet_manager.lnpay_client import LNPayClient
 from django.core.cache import cache
+from core.models import BigNumField
 
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 
@@ -23,29 +24,6 @@ from django.db import transaction
 
 def get_cache_time(id):
     return int((float(int(id) % 25) / 25.0) * 180.0) + 180
-
-
-class BigNumField(models.Field):
-    empty_strings_allowed = False
-
-    def __init__(self, *args, **kwargs):
-        kwargs["max_length"] = 200  # or some other number
-        super().__init__(*args, **kwargs)
-
-    def db_type(self, connection):
-        return "numeric"
-
-    def get_internal_type(self):
-        return "BigNumField"
-
-    def to_python(self, value):
-        if isinstance(value, str):
-            return int(value)
-
-        return value
-
-    def get_prep_value(self, value):
-        return str(value)
 
 
 class WalletAccount(models.Model):
@@ -475,12 +453,17 @@ class GlobalSettings(models.Model):
 
 
 class TransactionBatch(models.Model):
-    chain = models.ForeignKey(Chain, related_name="batches", on_delete=models.PROTECT, db_index=True)
+    chain = models.ForeignKey(
+        Chain, related_name="batches", on_delete=models.PROTECT, db_index=True
+    )
     datetime = models.DateTimeField(auto_now_add=True)
     tx_hash = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
     _status = models.CharField(
-        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING, db_index=True
+        max_length=30,
+        choices=ClaimReceipt.states,
+        default=ClaimReceipt.PENDING,
+        db_index=True,
     )
 
     updating = models.BooleanField(default=False)
@@ -537,7 +520,7 @@ class DonationReceipt(models.Model):
         related_name="donations",
         on_delete=models.PROTECT,
         null=False,
-        blank=False
+        blank=False,
     )
     tx_hash = models.CharField(max_length=255, blank=False, null=False)
     chain = models.ForeignKey(
@@ -551,8 +534,10 @@ class DonationReceipt(models.Model):
     total_price = models.CharField(max_length=255, null=True, blank=True)
     datetime = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
-        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PROCESSED_FOR_TOKENTAP
+        max_length=30,
+        choices=ClaimReceipt.states,
+        default=ClaimReceipt.PROCESSED_FOR_TOKENTAP,
     )
 
     class Meta:
-        unique_together = ('chain', 'tx_hash')
+        unique_together = ("chain", "tx_hash")
