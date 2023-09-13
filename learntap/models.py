@@ -32,6 +32,8 @@ class Mission(models.Model):
     )
     constraint_params = models.TextField(null=True, blank=True)
 
+    # TODO add chaind
+
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
     def __str__(self):
