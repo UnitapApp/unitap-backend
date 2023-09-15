@@ -251,7 +251,7 @@ class LeaderboardView(ListAPIView):
             sum_total_price=Sum('total_price_float')).order_by('-sum_total_price')
         subquery_interacted_chains = DonationReceipt.objects.filter(
             user_profile=OuterRef('user_profile')).filter(status=ClaimReceipt.VERIFIED).values_list(
-            'chain', flat=True)
+            'chain', flat=True).distinct()
         queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
         subquery_username = UserProfile.objects.filter(pk=OuterRef('user_profile')).values('username')
         subquery_wallet = Wallet.objects.filter(user_profile=OuterRef('user_profile')).values('address')

@@ -41,7 +41,7 @@ class TokenPrice(models.Model):
     usd_price = models.CharField(max_length=255, null=False)
     datetime = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
-    price_url = models.URLField(max_length=255, blank=True, null=False)
+    price_url = models.URLField(max_length=255, null=True)
     symbol = models.CharField(
         max_length=255, db_index=True, unique=True, null=False, blank=False
     )
