@@ -242,6 +242,8 @@ class UserLeaderboardView(RetrieveAPIView):
     filter_backends = [ChainFilterBackend]
     permission_classes = [IsAuthenticated]
     queryset = DonationReceipt.objects.all()
+    serializer_class = LeaderboardSerializer
+
 
     def get_user(self) -> UserProfile:
         return self.request.user.profile
