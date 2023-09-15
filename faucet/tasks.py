@@ -351,7 +351,7 @@ def update_tokens_price():
     """
 
     # TODO: we can make this function performance better by using aiohttp and asyncio or Threads
-    tokens = TokenPrice.objects.all()
+    tokens = TokenPrice.objects.exclude(price_url__isnull=True)
     res_gen = map(lambda token: (token, requests.get(token.price_url, timeout=5)), tokens)
 
     def parse_request(token: TokenPrice, request_res: requests.Response):
