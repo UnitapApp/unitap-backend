@@ -33,7 +33,7 @@ from core.paginations import StandardResultsSetPagination
 from core.filters import ChainFilterBackend, IsOwnerFilterBackend
 # import BASE_DIR from django settings
 from django.conf import settings
-from django.db.models import FloatField, Sum, OuterRef, Subquery
+from django.db.models import FloatField, Sum, OuterRef, Subquery, Window, F, Count
 from django.db.models.functions import Cast
 from django.contrib.postgres.expressions import ArraySubquery
 
@@ -232,10 +232,37 @@ class DonationReceiptView(ListCreateAPIView):
         return context
 
     def get_queryset(self):
-        return DonationReceipt.objects.filter(user_profile=self.get_user())
+        return DonationReceipt.objects.all()
 
     def get_user(self) -> UserProfile:
         return self.request.user.profile
+
+
+class UserLeaderboardView(RetrieveAPIView):
+    filter_backends = [ChainFilterBackend]
+    permission_classes = [IsAuthenticated]
+    queryset = DonationReceipt.objects.all()
+
+    def get_user(self) -> UserProfile:
+        return self.request.user.profile
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.filter(status=ClaimReceipt.VERIFIED) \
+            .annotate(
+            total_price_float=Cast('total_price', FloatField())).values('user_profile') \
+            .annotate(
+            sum_total_price=Sum('total_price_float'))
+        user_obj = queryset.get(user_profile=self.get_user().pk)
+        user_rank = queryset.filter(sum_total_price__gt=user_obj.get('sum_total_price')).count() + 1
+        user_obj['rank'] = user_rank
+        user_obj['username'] = self.get_user().username
+        user_obj['wallet'] = self.get_user().wallets.all()[0].address
+        interacted_chains = list(DonationReceipt.objects.filter(
+            user_profile=self.get_user()).filter(status=ClaimReceipt.VERIFIED).values_list(
+            'chain', flat=True).distinct())
+        user_obj['interacted_chains'] = interacted_chains
+        return user_obj
 
 
 class LeaderboardView(ListAPIView):
