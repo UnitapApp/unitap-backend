@@ -213,3 +213,4 @@ class LeaderboardSerializer(serializers.Serializer):
     sum_total_price = serializers.CharField(max_length=150, read_only=True)
     interacted_chains = serializers.StringRelatedField(read_only=True)
     wallet = serializers.CharField(max_length=512, read_only=True)
+    rank = serializers.CharField(max_length='10', read_only=True, required=False)
