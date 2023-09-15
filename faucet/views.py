@@ -6,7 +6,7 @@ from django.http import Http404
 from rest_framework.generics import (
     RetrieveAPIView,
     ListAPIView,
-    ListCreateAPIView,
+    ListCreateAPIView, get_object_or_404,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -244,7 +244,6 @@ class UserLeaderboardView(RetrieveAPIView):
     queryset = DonationReceipt.objects.all()
     serializer_class = LeaderboardSerializer
 
-
     def get_user(self) -> UserProfile:
         return self.request.user.profile
 
@@ -255,7 +254,7 @@ class UserLeaderboardView(RetrieveAPIView):
             total_price_float=Cast('total_price', FloatField())).values('user_profile') \
             .annotate(
             sum_total_price=Sum('total_price_float'))
-        user_obj = queryset.get(user_profile=self.get_user().pk)
+        user_obj = get_object_or_404(queryset, user_profile=self.get_user().pk)
         user_rank = queryset.filter(sum_total_price__gt=user_obj.get('sum_total_price')).count() + 1
         user_obj['rank'] = user_rank
         user_obj['username'] = self.get_user().username
@@ -264,6 +263,7 @@ class UserLeaderboardView(RetrieveAPIView):
             user_profile=self.get_user()).filter(status=ClaimReceipt.VERIFIED).values_list(
             'chain', flat=True).distinct())
         user_obj['interacted_chains'] = interacted_chains
+
         return user_obj
 
 
