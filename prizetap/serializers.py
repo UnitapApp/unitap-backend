@@ -3,11 +3,16 @@ from core.serializers import UserConstraintBaseSerializer
 from authentication.serializers import SimpleProfilerSerializer
 from faucet.serializers import SmallChainSerializer
 from .models import *
+from .constants import *
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
     class Meta(UserConstraintBaseSerializer.Meta):
         ref_name = "RaffleConstraint"
         model = Constraint
+
+    def get_params(self, constraint: UserConstraint):
+        c_class: ConstraintVerification = eval(constraint.name)
+        return [p.value for p in c_class.param_keys()]
 
 class SimpleRaffleSerializer(serializers.ModelSerializer):
     class Meta:
