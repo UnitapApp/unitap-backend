@@ -2,19 +2,22 @@ from django.db import models
 from faucet.models import Chain
 from django.utils import timezone
 from authentication.models import NetworkTypes, UserProfile
-from core.models import UserConstraint
+from core.models import BigNumField, UserConstraint
+from .constraints import *
 
 # Create your models here.
 
+
 class Constraint(UserConstraint):
-    pass
-    
+    constraints = UserConstraint.constraints + [HaveUnitapPass, NotHaveUnitapPass]
+    name = UserConstraint.create_name_field(constraints)
+
 
 class Raffle(models.Model):
-
     class Meta:
         models.UniqueConstraint(
-            fields=['chain', 'contract', 'raffleId'], name="unique_raffle")
+            fields=["chain", "contract", "raffleId"], name="unique_raffle"
+        )
 
     name = models.CharField(max_length=256)
     description = models.TextField(null=True, blank=True)
@@ -26,28 +29,25 @@ class Raffle(models.Model):
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
 
-    prize_amount = models.BigIntegerField()
+    prize_amount = BigNumField()
     prize_asset = models.CharField(max_length=255)
     prize_name = models.CharField(max_length=100)
     prize_symbol = models.CharField(max_length=100)
     decimals = models.IntegerField(default=18)
-    
 
     is_prize_nft = models.BooleanField(default=False)
-    nft_id = models.BigIntegerField(null=True, blank=True)
+    nft_id = BigNumField(null=True, blank=True)
     token_uri = models.TextField(null=True, blank=True)
 
-    chain = models.ForeignKey(
-        Chain, on_delete=models.CASCADE, related_name="raffles"
-    )
+    chain = models.ForeignKey(Chain, on_delete=models.CASCADE, related_name="raffles")
 
     constraints = models.ManyToManyField(Constraint, blank=True, related_name="raffles")
     constraint_params = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     start_at = models.DateTimeField(default=timezone.now)
-    deadline = models.DateTimeField(null=True, blank=True)
-    max_number_of_entries = models.IntegerField(null=True, blank=True)
+    deadline = models.DateTimeField()
+    max_number_of_entries = models.IntegerField()
     max_multiplier = models.IntegerField(default=1)
 
     is_active = models.BooleanField(default=True)
@@ -70,23 +70,27 @@ class Raffle(models.Model):
 
     @property
     def is_claimable(self):
-        return self.is_started and not self.is_expired and \
-            not self.is_maxed_out and self.is_active
+        return (
+            self.is_started
+            and not self.is_expired
+            and not self.is_maxed_out
+            and self.is_active
+        )
 
     @property
     def number_of_entries(self):
         return self.entries.count()
-    
+
     @property
     def number_of_onchain_entries(self):
         return self.entries.filter(tx_hash__isnull=False).count()
-    
+
     @property
     def winner(self):
         winner_entry = self.winner_entry
         if winner_entry:
             return winner_entry.user_profile
-        
+
     @property
     def winner_entry(self):
         try:
@@ -129,5 +133,5 @@ class RaffleEntry(models.Model):
                 assert entry.pk == self.pk, "The raffle already has a winner"
             except RaffleEntry.DoesNotExist:
                 pass
-                    
+
         super().save(*args, **kwargs)

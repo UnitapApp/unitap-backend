@@ -22,7 +22,7 @@ class BaseTestCase(APITestCase):
     def setUp(self):
         self.user_profile = UserProfile.objects.create(
             user=User.objects.create_user(
-                username="test", 
+                username="test",
                 password="1234"
             ),
             initial_context_id="test",
@@ -33,7 +33,7 @@ class BaseTestCase(APITestCase):
             wallet_type=NetworkTypes.EVM,
             address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
         )
-        self.wallet=WalletAccount.objects.create(
+        self.wallet = WalletAccount.objects.create(
             name="Sepolia Chain Wallet",
             private_key=test_wallet_key,
             network_type=NetworkTypes.EVM,
@@ -54,6 +54,7 @@ class BaseTestCase(APITestCase):
             title="BrightID meet",
             description="You have to be BrightID verified."
         )
+
 
 class RaffleTestCase(BaseTestCase):
     def setUp(self):
@@ -78,7 +79,8 @@ class RaffleTestCase(BaseTestCase):
         self.assertEqual(Raffle.objects.count(), 1)
         self.assertEqual(Raffle.objects.first(), self.raffle)
         self.assertEqual(Raffle.objects.first().constraints.count(), 1)
-        self.assertEqual(Raffle.objects.first().constraints.first(), self.meet_constraint)
+        self.assertEqual(Raffle.objects.first(
+        ).constraints.first(), self.meet_constraint)
 
     def test_raffle_claimable(self):
         self.assertTrue(self.raffle.is_claimable)
@@ -126,7 +128,7 @@ class RaffleTestCase(BaseTestCase):
             raffle=self.raffle,
             user_profile=UserProfile.objects.create(
                 user=User.objects.create_user(
-                    username="test_2", 
+                    username="test_2",
                     password="1234"
                 ),
                 initial_context_id="test_2",
@@ -137,6 +139,7 @@ class RaffleTestCase(BaseTestCase):
 
         self.assertTrue(self.raffle.is_maxed_out)
         self.assertFalse(self.raffle.is_claimable)
+
 
 class RaffleAPITestCase(RaffleTestCase):
     def setUp(self) -> None:
@@ -170,7 +173,6 @@ class RaffleAPITestCase(RaffleTestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (False, None),
@@ -182,14 +184,16 @@ class RaffleAPITestCase(RaffleTestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+
 class RaffleEntryTestCase(RaffleTestCase):
     def setUp(self):
         super().setUp()
 
+
 class RaffleEntryAPITestCase(RaffleEntryTestCase):
     def setUp(self):
         super().setUp()
-    
+
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -205,11 +209,11 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(entry.user_profile, self.user_profile)
         self.assertEqual(entry.is_winner, False)
         self.assertEqual(self.raffle.number_of_entries, 1)
-    
+
     @patch('prizetap.models.Raffle.is_claimable', new_callable=PropertyMock)
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
     )
     def test_not_claimable_raffle_enrollment(self, is_claimable_mock: PropertyMock):
         is_claimable_mock.return_value = False
@@ -220,8 +224,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(response.status_code, 403)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
     )
     def test_set_raffle_enrollment_tx(self):
         entry = RaffleEntry.objects.create(
@@ -241,15 +245,15 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(self.raffle.number_of_entries, 1)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
     )
     def test_set_not_owned_raffle_enrollment_tx_failure(self):
         entry = RaffleEntry.objects.create(
             raffle=self.raffle,
             user_profile=UserProfile.objects.create(
                 user=User.objects.create_user(
-                    username="test_2", 
+                    username="test_2",
                     password="1234"
                 ),
                 initial_context_id="test_2",
@@ -267,8 +271,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(entry.tx_hash, None)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
     )
     def test_duplicate_set_raffle_enrollment_tx_failure(self):
         tx_hash = "0xc9f4401d848bf61bd8e225fa800ab259018a917b55b0aa6aa1beefb2747d4af5"
@@ -285,8 +289,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(response.status_code, 403)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
     )
     def test_set_claiming_prize_tx(self):
         entry = RaffleEntry.objects.create(
@@ -306,8 +310,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(response.data['entry']['claiming_prize_tx'], tx_hash)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
     )
     def test_set_not_owned_claim_prize_failure(self):
         RaffleEntry.objects.create(
@@ -318,7 +322,7 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
             raffle=self.raffle,
             user_profile=UserProfile.objects.create(
                 user=User.objects.create_user(
-                    username="test_2", 
+                    username="test_2",
                     password="1234"
                 ),
                 initial_context_id="test_2",
@@ -337,8 +341,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(entry.claiming_prize_tx, None)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", 
-        lambda a, b, c : (True, None)
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
     )
     def test_duplicate_claiming_prize_tx_failure(self):
         tx_hash = "0xc9f4401d848bf61bd8e225fa800ab259018a917b55b0aa6aa1beefb2747d4af5"
@@ -353,3 +357,23 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
             data={"tx_hash": tx_hash}
         )
         self.assertEqual(response.status_code, 403)
+
+
+class UitlsTestCase(RaffleTestCase):
+    def setUp(self):
+        super().setUp()
+        self.mainnet_chain = Chain.objects.create(
+            chain_name="ETH",
+            wallet=self.wallet,
+            rpc_url_private="https://rpc.ankr.com/eth",
+            explorer_url="https://etherscan.io/",
+            fund_manager_address=fund_manager,
+            native_currency_name="ETH",
+            symbol="ETH",
+            chain_id="1",
+            max_claim_amount=1e11
+        )
+
+    def test_unitappass_contraint(self):
+        constraint = NotHaveUnitapPass(self.user_profile)
+        self.assertTrue(constraint.is_observed())

@@ -1,14 +1,12 @@
 import json
-import logging
 from django.http import FileResponse
 import os
 import rest_framework.exceptions
 from django.http import Http404
 from rest_framework.generics import (
-    CreateAPIView,
     RetrieveAPIView,
     ListAPIView,
-    ListCreateAPIView,
+    ListCreateAPIView, get_object_or_404,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -29,11 +27,15 @@ from faucet.serializers import (
     ReceiptSerializer,
     ChainSerializer,
     SmallChainSerializer,
-    DonationReceiptSerializer,
+    DonationReceiptSerializer, LeaderboardSerializer,
 )
-
+from core.paginations import StandardResultsSetPagination
+from core.filters import ChainFilterBackend, IsOwnerFilterBackend
 # import BASE_DIR from django settings
 from django.conf import settings
+from django.db.models import FloatField, Sum, OuterRef, Subquery, Window, F, Count
+from django.db.models.functions import Cast
+from django.contrib.postgres.expressions import ArraySubquery
 
 
 class CustomException(Exception):
@@ -97,8 +99,8 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             result = (
-                gs.weekly_chain_claim_limit
-                - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
+                    gs.weekly_chain_claim_limit
+                    - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
             )
             return Response({"total_weekly_claims_remaining": result}, status=200)
         else:
@@ -221,17 +223,75 @@ class ChainBalanceView(RetrieveAPIView):
 class DonationReceiptView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DonationReceiptSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [IsOwnerFilterBackend, ChainFilterBackend]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context.update({"user": self.get_user()})
+        context.update({'user': self.get_user()})
         return context
 
     def get_queryset(self):
-        return DonationReceipt.objects.filter(user_profile=self.get_user())
+        return DonationReceipt.objects.all()
 
     def get_user(self) -> UserProfile:
         return self.request.user.profile
+
+
+class UserLeaderboardView(RetrieveAPIView):
+    filter_backends = [ChainFilterBackend]
+    permission_classes = [IsAuthenticated]
+    queryset = DonationReceipt.objects.all()
+    serializer_class = LeaderboardSerializer
+
+    def get_user(self) -> UserProfile:
+        return self.request.user.profile
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.filter(status=ClaimReceipt.VERIFIED) \
+            .annotate(
+            total_price_float=Cast('total_price', FloatField())).values('user_profile') \
+            .annotate(
+            sum_total_price=Sum('total_price_float'))
+        user_obj = get_object_or_404(queryset, user_profile=self.get_user().pk)
+        user_rank = queryset.filter(sum_total_price__gt=user_obj.get('sum_total_price')).count() + 1
+        user_obj['rank'] = user_rank
+        user_obj['username'] = self.get_user().username
+        user_obj['wallet'] = self.get_user().wallets.all()[0].address
+        interacted_chains = list(DonationReceipt.objects.filter(
+            user_profile=self.get_user()).filter(status=ClaimReceipt.VERIFIED).values_list(
+            'chain', flat=True).distinct())
+        user_obj['interacted_chains'] = interacted_chains
+
+        return user_obj
+
+
+class LeaderboardView(ListAPIView):
+    serializer_class = LeaderboardSerializer
+    pagination_class = StandardResultsSetPagination
+    queryset = DonationReceipt.objects.all()
+    filter_backends = [ChainFilterBackend]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        donation_receipt = queryset.filter(status=ClaimReceipt.VERIFIED).annotate(
+            total_price_float=Cast('total_price', FloatField())).values('user_profile').annotate(
+            sum_total_price=Sum('total_price_float')).order_by('-sum_total_price')
+        subquery_interacted_chains = DonationReceipt.objects.filter(
+            user_profile=OuterRef('user_profile')).filter(status=ClaimReceipt.VERIFIED).values_list(
+            'chain', flat=True).distinct()
+        queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
+        subquery_username = UserProfile.objects.filter(pk=OuterRef('user_profile')).values('username')
+        subquery_wallet = Wallet.objects.filter(user_profile=OuterRef('user_profile')).values('address')
+        queryset = queryset.annotate(username=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 def artwork_video(request):

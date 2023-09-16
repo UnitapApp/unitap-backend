@@ -4,7 +4,6 @@ import logging
 from django.core.cache import cache
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
-from web3.exceptions import TimeExhausted
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 from web3.middleware import geth_poa_middleware
 from faucet.faucet_manager.fund_manager_abi import manager_abi
@@ -44,7 +43,7 @@ class EVMFundManager:
             _w3 = Web3(Web3.HTTPProvider(self.chain.rpc_url_private))
             if self.chain.poa:
                 _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-            if _w3.isConnected():
+            if _w3.is_connected():
                 _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
                 return _w3
         except Exception as e:
@@ -67,11 +66,11 @@ class EVMFundManager:
 
     @property
     def account(self) -> LocalAccount:
-        return self.w3.eth.account.privateKeyToAccount(self.chain.wallet.main_key)
+        return self.w3.eth.account.from_key(self.chain.wallet.main_key)
 
     @staticmethod
     def to_checksum_address(address: str):
-        return Web3.toChecksumAddress(address.lower())
+        return Web3.to_checksum_address(address.lower())
 
     def get_fund_manager_checksum_address(self):
         return self.to_checksum_address(self.chain.fund_manager_address)
@@ -106,14 +105,14 @@ class EVMFundManager:
 
     def prepare_tx_for_broadcast(self, tx_function):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
-        gas_estimation = tx_function.estimateGas({"from": self.account.address})
+        gas_estimation = tx_function.estimate_gas({"from": self.account.address})
         if self.chain.chain_id == "997":
             gas_estimation = 100000
 
         if self.is_gas_price_too_high:
             raise FundMangerException.GasPriceTooHigh("Gas price is too high")
 
-        tx_data = tx_function.buildTransaction(
+        tx_data = tx_function.build_transaction(
             {
                 "nonce": nonce,
                 "from": self.account.address,
@@ -133,6 +132,9 @@ class EVMFundManager:
     def get_tx(self, tx_hash):
         tx = self.w3.eth.get_transaction(tx_hash)
         return tx
+
+    def from_wei(self, value: int, unit: str = 'ether'):
+        return self.w3.from_wei(value, unit)
 
 
 class SolanaFundManager:

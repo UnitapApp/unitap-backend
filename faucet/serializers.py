@@ -1,17 +1,8 @@
-import decimal
-
-from django.db.models import Func, F
 from rest_framework import serializers
-from rest_framework import status
-import web3.exceptions
-
-from authentication.models import UserProfile
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
 from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
 from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings, DonationReceipt
-from faucet.faucet_manager.fund_manager import EVMFundManager
-from core.models import TokenPrice
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -178,18 +169,18 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 
 class DonationReceiptSerializer(serializers.ModelSerializer):
-    chain_name = serializers.CharField(max_length=20, write_only=True)
+    chain_pk = serializers.CharField(max_length=20, write_only=True)
     chain = SmallChainSerializer(read_only=True)
 
     def validate(self, attrs):
-        chain = self._validate_chain(attrs.pop('chain_name'))
+        chain = self._validate_chain(attrs.pop('chain_pk'))
         attrs['user_profile'] = self.context.get('user')
         attrs['chain'] = chain
         return attrs
 
-    def _validate_chain(self, chain_name: str):
+    def _validate_chain(self, pk: str):
         try:
-            chain: Chain = Chain.objects.get(chain_name=chain_name, chain_type='EVM')
+            chain: Chain = Chain.objects.get(pk=pk, chain_type='EVM')
         except Chain.DoesNotExist:
             raise serializers.ValidationError({'chain': 'chain is not EVM or does not exist.'})
         return chain
@@ -203,7 +194,7 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             "datetime",
             "total_price",
             "value",
-            "chain_name",
+            "chain_pk",
             "status",
             "user_profile"
         ]
@@ -215,3 +206,11 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             'status',
             "user_profile"
         ]
+
+
+class LeaderboardSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150, read_only=True)
+    sum_total_price = serializers.CharField(max_length=150, read_only=True)
+    interacted_chains = serializers.ListField(child=serializers.IntegerField(), read_only=True)
+    wallet = serializers.CharField(max_length=512, read_only=True)
+    rank = serializers.IntegerField(read_only=True, required=False)
