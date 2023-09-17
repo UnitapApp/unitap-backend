@@ -16,7 +16,7 @@ class PrizetapContractClient(Web3Utils):
         self.set_account(self.raffle.chain.wallet.private_key)
 
     def draw_raffle(self):
-        func = self.contract.functions.heldRaffle(self.raffle.raffle_id)
+        func = self.contract.functions.heldRaffle(self.raffle.raffleId)
         return self.contract_txn(func)
 
 
