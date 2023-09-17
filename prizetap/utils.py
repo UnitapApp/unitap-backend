@@ -16,13 +16,13 @@ class PrizetapContractClient(Web3Utils):
         self.set_account(self.raffle.chain.wallet.private_key)
 
     def draw_raffle(self):
-        func = self.contract.functions.heldRaffle(self.raffle.raffle_id)
+        func = self.contract.functions.heldRaffle(self.raffle.raffleId)
         return self.contract_txn(func)
 
 
 class UnitapPassClient(Web3Utils):
     def __init__(self, chain: Chain) -> None:
-        super().__init__(chain.rpc_url_private)
+        super().__init__(chain.rpc_url_private, chain.poa)
         self.set_contract(
             "0x23826Fd930916718a98A21FF170088FBb4C30803", UNITAP_PASS_ABI)
 

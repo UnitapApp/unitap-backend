@@ -2,6 +2,7 @@ import datetime
 import pytz
 from time import time
 from web3 import Web3
+from web3.middleware import geth_poa_middleware
 from web3.contract.contract import Contract, ContractFunction
 from web3.types import Type, TxParams
 from django.utils import timezone
@@ -50,11 +51,12 @@ class TimeUtils:
 
 
 class Web3Utils:
-    def __init__(self, rpc_url) -> None:
+    def __init__(self, rpc_url, poa = False) -> None:
         self._rpc_url = rpc_url
         self._w3 = None
         self._account = None
         self._contract = None
+        self._poa = poa
 
     @property
     def w3(self) -> Web3:
@@ -62,11 +64,17 @@ class Web3Utils:
             return self._w3
 
         self._w3 = Web3(Web3.HTTPProvider(self._rpc_url))
+        if self.poa:
+            self._w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
         if self._w3.is_connected():
             return self._w3
 
         raise Exception(f"RPC provider is not connected ({self._rpc_url})")
+    
+    @property
+    def poa(self):
+        return self._poa
 
     @property
     def account(self):
@@ -83,7 +91,7 @@ class Web3Utils:
         self._contract = self.w3.eth.contract(address=address, abi=abi)
 
     def contract_txn(self, func: Type[ContractFunction]):
-        signed_tx = self.build_contract_call(func)
+        signed_tx = self.build_contract_txn(func)
         txn_hash = self.send_raw_tx(signed_tx)
         return txn_hash.hex()
 
@@ -92,8 +100,10 @@ class Web3Utils:
             return func.call({"from": from_address})
         return func.call()
 
-    def build_contract_call(self, func: Type[ContractFunction]):
-        tx_data = func.build_transaction({"from": self.account.address})
+    def build_contract_txn(self, func: Type[ContractFunction]):
+        nonce = self.w3.eth.get_transaction_count(self.account.address)
+        tx_data = func.build_transaction(
+            {"from": self.account.address, "nonce": nonce})
         return self.sign_tx(tx_data)
 
     def sign_tx(self, tx_data: TxParams):
