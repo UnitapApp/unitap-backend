@@ -22,7 +22,7 @@ class PrizetapContractClient(Web3Utils):
 
 class UnitapPassClient(Web3Utils):
     def __init__(self, chain: Chain) -> None:
-        super().__init__(chain.rpc_url_private)
+        super().__init__(chain.rpc_url_private, chain.poa)
         self.set_contract(
             "0x23826Fd930916718a98A21FF170088FBb4C30803", UNITAP_PASS_ABI)
 
