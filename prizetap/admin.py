@@ -10,7 +10,8 @@ class RaffleٍEntryAdmin(admin.ModelAdmin):
     list_display = [
         "pk", 
         "raffle", 
-        "get_wallet"
+        "get_wallet",
+        "age",
     ]
 
     @admin.display(ordering='user_profile__wallets', description='Wallet')
