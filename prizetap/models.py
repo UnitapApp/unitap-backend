@@ -126,6 +126,10 @@ class RaffleEntry(models.Model):
     def user(self):
         return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
 
+    @property
+    def age(self):
+        return timezone.now() - self.created_at
+
     def save(self, *args, **kwargs):
         if self.is_winner:
             try:
