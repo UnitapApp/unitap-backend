@@ -7,13 +7,14 @@ from authentication.models import NetworkTypes, UserProfile, Wallet
 from faucet.models import Chain, WalletAccount
 from .models import *
 from .constraints import *
+from .utils import PrizetapContractClient
 
 
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
-test_rpc_url_private = "http://ganache:7545"
+test_rpc_url_private = "https://rpc.ankr.com/eth_sepolia"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
-erc20_contract_address = "0xB67ec856346b22e4BDA2ab2B53d70D61a2014358"
-erc721_contract_address = "0xF927f491a99C653b39354c4A827b6368E5F714d6"
+erc20_contract_address = "0x5363502325735d7b27162b2b3482c107fD4c5B3C"
+erc721_contract_address = "0x334ab41d0F93d1d61178a21CD7A71387e5c75688"
 
 
 # # Create your tests here.
@@ -359,7 +360,7 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class UitlsTestCase(RaffleTestCase):
+class UtilsTestCase(RaffleTestCase):
     def setUp(self):
         super().setUp()
         self.mainnet_chain = Chain.objects.create(
@@ -377,3 +378,9 @@ class UitlsTestCase(RaffleTestCase):
     def test_unitappass_contraint(self):
         constraint = NotHaveUnitapPass(self.user_profile)
         self.assertTrue(constraint.is_observed())
+
+    def test_set_winner(self):
+        self.raffle.raffleId = 2
+        client = PrizetapContractClient(self.raffle)
+        winner = client.get_raffle_winner()
+        self.assertEqual(winner, "0x59351584417882EE549eE3B9BF398485ddB5B7E9")

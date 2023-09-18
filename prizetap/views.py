@@ -1,15 +1,21 @@
+import json
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.generics import ListAPIView,CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from .models import Raffle, RaffleEntry
-from .serializers import RaffleSerializer, RaffleEntrySerializer
+from .serializers import (
+    RaffleSerializer, 
+    RaffleEntrySerializer,
+    ConstraintSerializer
+)
 from .validators import (
     RaffleEnrollmentValidator,
     SetRaffleEntryTxValidator,
     SetClaimingPrizeTxValidator
 )
+from .constraints import *
 
 
 class RaffleListView(ListAPIView):
@@ -122,4 +128,40 @@ class GetRaffleEntryView(APIView):
                 "entry": RaffleEntrySerializer(raffle_entry).data
             },
             status=200,
+        )
+
+class GetRaffleConstraints(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, raffle_pk):
+        user_profile = request.user.profile
+        raffle = get_object_or_404(Raffle, pk=raffle_pk)
+        try:
+            param_values = json.loads(raffle.constraint_params)
+        except:
+            param_values = {}
+
+        response_constraints = []
+
+        for c in raffle.constraints.all():
+            constraint: ConstraintVerification = eval(c.name)(user_profile)
+            constraint.response = c.response
+            try:
+                constraint.set_param_values(param_values[c.name])
+            except KeyError:
+                pass
+            is_verified = False
+            if constraint.is_observed(raffle.constraint_params):
+                is_verified = True
+            response_constraints.append({
+                    **ConstraintSerializer(c).data,
+                    "is_verified": is_verified
+                })
+        
+        return Response(
+            {
+                "success": True,
+                "constraints": response_constraints 
+            },
+            status=200
         )

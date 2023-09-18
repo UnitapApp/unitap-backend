@@ -19,6 +19,11 @@ class PrizetapContractClient(Web3Utils):
         func = self.contract.functions.heldRaffle(self.raffle.raffleId)
         return self.contract_txn(func)
 
+    def get_raffle_winner(self):
+        func = self.contract.functions.raffles(self.raffle.raffleId)
+        raffle = self.contract_call(func)
+        return raffle[8]
+
 
 class UnitapPassClient(Web3Utils):
     def __init__(self, chain: Chain) -> None:

@@ -26,5 +26,10 @@ urlpatterns = [
         "set-claiming-prize-tx/<int:pk>/",
         SetClaimingPrizeTxView.as_view(),
         name="set-claiming-prize-tx",
+    ),
+    path(
+        "get-raffle-constraints/<int:raffle_pk>/",
+        GetRaffleConstraints.as_view(),
+        name="get-raffle-constraints",
     )
 ]
