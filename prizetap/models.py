@@ -36,7 +36,7 @@ class Raffle(models.Model):
     decimals = models.IntegerField(default=18)
 
     is_prize_nft = models.BooleanField(default=False)
-    nft_id = BigNumField(null=True, blank=True)
+    nft_id = models.CharField(max_length=256, null=True, blank=True)
     token_uri = models.TextField(null=True, blank=True)
 
     chain = models.ForeignKey(Chain, on_delete=models.CASCADE, related_name="raffles")

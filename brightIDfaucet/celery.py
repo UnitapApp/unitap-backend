@@ -45,6 +45,10 @@ app.conf.beat_schedule = {
     'update-donation-receipt-status': {
         "task": "faucet.tasks.update_donation_receipt_pending_status",
         "schedule": 60,
+    },
+    "draw-prizetap-raffles": {
+        "task": "prizetap.tasks.draw_the_expired_raffles",
+        "schedule": 60
     }
 }
 
