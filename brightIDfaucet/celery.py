@@ -49,6 +49,10 @@ app.conf.beat_schedule = {
     "draw-prizetap-raffles": {
         "task": "prizetap.tasks.draw_the_expired_raffles",
         "schedule": 60
+    },
+    "set-raffle-winner": {
+        "task": "prizetap.tasks.set_the_winner_of_raffles",
+        "schedule": 300
     }
 }
 

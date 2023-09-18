@@ -1,6 +1,7 @@
 from django.db import models
 from faucet.models import Chain
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from authentication.models import NetworkTypes, UserProfile
 from core.models import BigNumField, UserConstraint
 from .constraints import *
@@ -14,6 +15,12 @@ class Constraint(UserConstraint):
 
 
 class Raffle(models.Model):
+    class Status(models.TextChoices):
+        OPEN = "OPEN", _("Open")
+        REJECTED = "REJECTED", _("Rejected")
+        HELD = "HELD", _("Held")
+        WINNER_SET = "WS", _("Winner is set")
+
     class Meta:
         models.UniqueConstraint(
             fields=["chain", "contract", "raffleId"], name="unique_raffle"
@@ -50,6 +57,9 @@ class Raffle(models.Model):
     max_number_of_entries = models.IntegerField()
     max_multiplier = models.IntegerField(default=1)
 
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.OPEN
+    )
     is_active = models.BooleanField(default=True)
 
     @property
