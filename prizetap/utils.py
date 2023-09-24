@@ -9,7 +9,7 @@ from .constants import (
 
 class PrizetapContractClient(Web3Utils):
     def __init__(self, raffle) -> None:
-        super().__init__(raffle.chain.rpc_url_private)
+        super().__init__(raffle.chain.rpc_url_private, raffle.chain.poa)
         self.raffle = raffle
         abi = PRIZETAP_ERC721_ABI if self.raffle.is_prize_nft else PRIZETAP_ERC20_ABI
         self.set_contract(self.raffle.contract, abi)
