@@ -17,11 +17,11 @@ class ConstraintParam(Enum):
 
 class ConstraintVerification(ABC):
     _param_keys = []
-    _param_values = {}
     __response_text = ""
     
     def __init__(self, user_profile:UserProfile) -> None:
         self.user_profile = user_profile
+        self._param_values = {}
 
     @abstractmethod
     def is_observed(self, *args, **kwargs) -> bool:
@@ -31,13 +31,27 @@ class ConstraintVerification(ABC):
     def param_keys(cls) -> list:
         return cls._param_keys
     
+    @property
+    def param_values(self):
+        return self._param_values
+    
+    @param_values.setter
+    def param_values(self, values: dict):
+        self.is_valid_param_keys(values.keys())
+        self._param_values = copy.deepcopy(values)
+
     @classmethod
-    def set_param_values(cls, values: dict):
-        valid_keys = [key for key in cls.param_keys()]
-        for key in values:
+    def is_valid_param_keys(cls, keys):
+        valid_keys = [key.name for key in cls.param_keys()]
+        observed_keys = []
+        for key in keys:
             if key not in valid_keys:
-                raise Exception(f"Invalid param key {key}")
-        cls._param_values = copy.deepcopy(values)
+                raise KeyError(f"Invalid param key {key}")
+            observed_keys.append(key)
+        valid_keys.sort()
+        observed_keys.sort()
+        if valid_keys != observed_keys:
+            raise KeyError("Some param keys were not observed")
 
     @property
     def response(self) -> str:

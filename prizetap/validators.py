@@ -25,10 +25,10 @@ class RaffleEnrollmentValidator:
             constraint: ConstraintVerification = eval(c.name)(self.user_profile)
             constraint.response = c.response
             try:
-                constraint.set_param_values(param_values[c.name])
+                constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
-            if not constraint.is_observed(self.raffle.constraint_params):
+            if not constraint.is_observed():
                 raise PermissionDenied(
                     constraint.response
                 )
