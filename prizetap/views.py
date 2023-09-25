@@ -152,11 +152,11 @@ class GetRaffleConstraintsView(APIView):
             constraint: ConstraintVerification = eval(c.name)(user_profile)
             constraint.response = c.response
             try:
-                constraint.set_param_values(param_values[c.name])
+                constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
             is_verified = False
-            if constraint.is_observed(raffle.constraint_params):
+            if constraint.is_observed():
                 is_verified = True
             response_constraints.append({
                     **ConstraintSerializer(c).data,
