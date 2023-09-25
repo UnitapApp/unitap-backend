@@ -2801,3 +2801,10 @@ UNITAP_PASS_ABI = [
         "type": "function"
     }
 ]
+
+CONTRACT_ADDRESSES = {
+    '137': {
+      'erc20_prizetap_addr': "0xB521C36F76d28Edb287346C9D649Fa1A60754f04",
+      "erc721_prizetap_addr": "0xb68D3f2946Bf477978c68b509FD9f85E9e20F869"
+    }
+}

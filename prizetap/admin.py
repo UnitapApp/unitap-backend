@@ -4,7 +4,7 @@ from core.admin import UserConstraintBaseAdmin
 
 
 class RaffleAdmin(admin.ModelAdmin):
-    list_display = ["pk", "name", "creator"]
+    list_display = ["pk", "name", "creator_name"]
 
 class RaffleٍEntryAdmin(admin.ModelAdmin):
     list_display = [
