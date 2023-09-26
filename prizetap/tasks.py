@@ -18,17 +18,17 @@ def draw_the_expired_raffles(self):
         raffles_queryset = (
             Raffle.objects
             .filter(deadline__lt=timezone.now())
-            .filter(is_active=True)
-            .filter(status=Raffle.Status.OPEN)
+            .filter(status=Raffle.Status.PENDING)
         )
         if raffles_queryset.count() > 0:
             for raffle in raffles_queryset:
                 if raffle.number_of_onchain_entries > 0 and not raffle.winner_entry:
                     print(f"Drawing the raffle {raffle.name}")
                     raffle_client = PrizetapContractClient(raffle)
-                    if raffle_client.draw_raffle():
+                    tx_hash = raffle_client.draw_raffle()
+                    receipt = raffle_client.wait_for_transaction_receipt(tx_hash)
+                    if receipt['status'] == 1:
                         raffle.status = Raffle.Status.HELD
-                        raffle.is_active = False
                         raffle.save()
 
 
@@ -45,7 +45,6 @@ def set_the_winner_of_raffles(self):
         raffles_queryset = (
             Raffle.objects
             .filter(deadline__lt=timezone.now())
-            .filter(is_active=False)
             .filter(status=Raffle.Status.HELD)
         )
         if raffles_queryset.count() > 0:
