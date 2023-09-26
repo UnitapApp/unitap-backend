@@ -111,3 +111,6 @@ class Web3Utils:
 
     def send_raw_tx(self, signed_tx):
         return self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+
+    def wait_for_transaction_receipt(self, tx_hash):
+        return self.w3.eth.wait_for_transaction_receipt(tx_hash)
