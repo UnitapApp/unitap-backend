@@ -19,6 +19,14 @@ class ProfileManager(models.Manager):
             return _profile
 
 
+class WalletManager(models.Manager):
+    def get_primary_wallet(self):
+        try:
+            self.get(primary=True, wallet_type='EVM')
+        except Wallet.DoesNotExist:
+            return None
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="profile")
     initial_context_id = models.CharField(max_length=512, unique=True)
@@ -107,9 +115,9 @@ class Wallet(models.Model):
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
     )
     address = models.CharField(max_length=512, unique=True)
+    primary = models.BooleanField(default=False, null=False, blank=False)
 
-    class Meta:
-        unique_together = (("wallet_type", "user_profile"),)
+    objects = WalletManager()
 
     def __str__(self):
         return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"

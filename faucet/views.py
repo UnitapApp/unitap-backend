@@ -258,7 +258,7 @@ class UserLeaderboardView(RetrieveAPIView):
         user_rank = queryset.filter(sum_total_price__gt=user_obj.get('sum_total_price')).count() + 1
         user_obj['rank'] = user_rank
         user_obj['username'] = self.get_user().username
-        user_obj['wallet'] = self.get_user().wallets.all()[0].address
+        user_obj['wallet'] = self.get_user().wallets.get_primary_wallet()
         interacted_chains = list(DonationReceipt.objects.filter(
             user_profile=self.get_user()).filter(status=ClaimReceipt.VERIFIED).values_list(
             'chain', flat=True).distinct())
@@ -283,7 +283,8 @@ class LeaderboardView(ListAPIView):
             'chain', flat=True).distinct()
         queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
         subquery_username = UserProfile.objects.filter(pk=OuterRef('user_profile')).values('username')
-        subquery_wallet = Wallet.objects.filter(user_profile=OuterRef('user_profile')).values('address')
+        subquery_wallet = Wallet.objects.filter(user_profile=OuterRef('user_profile'), primary=True,
+                                                wallet_type='EVM').values('address')
         queryset = queryset.annotate(username=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
         page = self.paginate_queryset(queryset)
         if page is not None:

@@ -3,10 +3,12 @@ from django.urls import reverse
 from django.utils import timezone
 from django.urls import reverse
 from django.contrib.auth.models import User
+from rest_framework.response import Response
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_200_OK
-from authentication.models import UserProfile
+from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_200_OK, HTTP_400_BAD_REQUEST, \
+    HTTP_404_NOT_FOUND, HTTP_201_CREATED
+from authentication.models import UserProfile, Wallet
 from faucet.models import ClaimReceipt
 
 ### get address as username and signed address as password and verify signature
@@ -30,7 +32,7 @@ test_rpc_url = "http://127.0.0.1:7545"
     lambda a, b: True,
 )
 def create_new_user(
-    _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
+        _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
 ) -> UserProfile:
     # (u, created) = User.objects.get_or_create(username=_address, password="test")
     p = UserProfile.objects.get_or_create(_address)
@@ -49,6 +51,11 @@ def create_verified_user() -> UserProfile:
     user.save()
     return user
 
+
+def create_new_wallet(user_profile, _address, wallet_type) -> Wallet:
+    wallet, is_create = Wallet.objects.get_or_create(user_profile=user_profile, address=_address,
+                                                     wallet_type=wallet_type)
+    return wallet
 
 class CheckUsernameTestCase(APITestCase):
     def setUp(self) -> None:
@@ -219,74 +226,74 @@ class TestSponsorCheckOrMakeSponsored(APITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestSetWalletAddress(APITestCase):
+class TestListCreateWallet(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461G3Ef9A9"
-        self.endpoint = reverse("AUTHENTICATION:set-wallet-user")
+        self.endpoint = reverse("AUTHENTICATION:wallets-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
 
     def test_invalid_arguments_provided_should_fail(self):
         response = self.client.post(self.endpoint)
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         response = self.client.post(self.endpoint, data={"address": False})
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         response = self.client.post(self.endpoint, data={"wallet_type": False})
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    def test_set_same_address_for_multiple_users_should_fail(self):
+    def test_create_wallet_address(self):
+        response = self.client.post(self.endpoint,
+                                    data={"address": self._address, "wallet_type": "EVM", "primary": True})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_same_address_twice(self):
         response = self.client.post(
-            self.endpoint, data={"address": self._address, "wallet_type": "EVM"}
+            self.endpoint, data={"address": self._address, "wallet_type": "EVM", 'primary': True}
         )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        response = self.client.post(
+            self.endpoint, data={"address": self._address, "wallet_type": "EVM", 'primary': True}
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_get_wallet_list(self):
+        response = self.client.post(
+            self.endpoint, data={"address": self._address, "wallet_type": "EVM", 'primary': True}
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        response = self.client.get(self.endpoint, {'wallet_type': 'EVM'})
         self.assertEqual(response.status_code, HTTP_200_OK)
-
-        response = self.client.post(
-            self.endpoint, data={"address": self._address, "wallet_type": "Solana"}
-        )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-
-    def test_not_existing_wallet_then_create_and_set_address_for_that_is_ok(self):
-        response = self.client.post(
-            self.endpoint, data={"address": self._address, "wallet_type": "EVM"}
-        )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)
 
 
-# class TestGetWalletAddress(APITestCase):
-#     def setUp(self) -> None:
-#         self.password = "test"
-#         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-#         self.endpoint_set = reverse('AUTHENTICATION:set-wallet-user')
-#         self.endpoint_get = reverse('AUTHENTICATION:get-wallet-user')
-#         self.user_profile = create_new_user()
-#         self.client.force_authenticate(user=self.user_profile.user)
-#
-#     def test_get_existing_wallet_is_ok(self):
-#         response = self.client.post(self.endpoint_set, data={'address': self._address, 'wallet_type': "EVM"})
-#         self.assertEqual(response.status_code, HTTP_200_OK)
-#
-#         response = self.client.post(self.endpoint_get, data={'wallet_type': "EVM"})
-#         self.assertEqual(response.status_code, HTTP_200_OK)
-#
-#     def test_not_existing_wallet_should_fail_getting_profile(self):
-#         response = self.client.post(self.endpoint_get, data={'wallet_type': "EVM"})
-#         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-
-
-class TestGetWalletsView(APITestCase):
+class TestWalletView(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-        self.endpoint = reverse("AUTHENTICATION:get-wallets-user")
         self.user_profile = create_new_user()
+        wallet = create_new_wallet(self.user_profile, self._address, 'EVM')
+        self.endpoint = reverse("AUTHENTICATION:wallet-user", kwargs={'pk': wallet.pk})
         self.client.force_authenticate(user=self.user_profile.user)
 
     def test_request_to_this_api_is_ok(self):
         response = self.client.get(self.endpoint)
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_change_primary_ture(self):
+        response: Response = self.client.patch(self.endpoint, data={'primary': True})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data.get('primary'), True)
+
+    def test_access_to_another_user_wallet(self):
+        _address = '0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A2'
+        other_user = create_new_user(_address)
+        wallet = create_new_wallet(other_user, _address, 'EVM')
+        _endpoint = reverse('AUTHENTICATION:wallet-user', kwargs={'pk': wallet.pk})
+        response = self.client.get(_endpoint)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
 
 class TestGetProfileView(APITestCase):

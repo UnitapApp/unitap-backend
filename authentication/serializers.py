@@ -1,12 +1,11 @@
-from django.db import IntegrityError
+from rest_framework.authtoken.models import Token
+from rest_framework import serializers
+
 from authentication.models import (
     UserProfile,
     Wallet,
 )
-from rest_framework.authtoken.models import Token
-from rest_framework import serializers
 from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
-
 from faucet.models import GlobalSettings
 
 
@@ -28,23 +27,6 @@ class MessageResponseSerializer(serializers.Serializer):
         pass
 
 
-# class SetUsernameSerializer(serializers.Serializer):
-#     username = UsernameRequestSerializer.username
-
-#     def save(self, user_profile):
-#         username = self.validated_data.get("username")
-
-#         try:
-#             user_profile.username = username
-#             user_profile.save()
-#             return {"message": "Username Set"}
-
-#         except IntegrityError:
-#             raise ValidationError(
-#                 {"message": "This username already exists. Try another one."}
-#             )
-
-
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wallet
@@ -52,7 +34,23 @@ class WalletSerializer(serializers.ModelSerializer):
             "pk",
             "wallet_type",
             "address",
+            'primary'
         ]
+
+    def update(self, instance, validated_data):
+        if validated_data.get('primary') is False or instance.wallet_type != 'EVM':
+            raise serializers.ValidationError({'message': 'primary must be true or wallet_type must be EVM'})
+        user_profile = self.context["request"].user.profile
+        try:
+            wallet = Wallet.objects.get(user_profile=user_profile, primary=True)
+            wallet.primary = False
+            instance.primary = True
+            Wallet.objects.bulk_update([wallet, instance], ['primary'])
+            return instance
+        except Wallet.DoesNotExist:
+            instance.primary = True
+            instance.save()
+            return instance
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -81,10 +79,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             return (
-                gs.weekly_chain_claim_limit
-                - LimitedChainClaimManager.get_total_weekly_claims(instance)
+                    gs.weekly_chain_claim_limit
+                    - LimitedChainClaimManager.get_total_weekly_claims(instance)
             )
-        
+
+
 class SimpleProfilerSerializer(serializers.ModelSerializer):
     wallets = WalletSerializer(many=True, read_only=True)
     username = serializers.SerializerMethodField()

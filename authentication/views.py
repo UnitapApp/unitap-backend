@@ -1,12 +1,17 @@
 import time
 from django.db import IntegrityError
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
+from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, RetrieveUpdateAPIView, \
+    ListCreateAPIView
+from rest_framework.status import HTTP_409_CONFLICT
+
 from authentication.models import UserProfile, Wallet
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 from drf_yasg.utils import swagger_auto_schema
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
@@ -14,12 +19,15 @@ from authentication.helpers import (
     is_username_valid_and_available,
 )
 from drf_yasg import openapi
+
+from authentication.permissions import IsOwner
 from authentication.serializers import (
     UsernameRequestSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
     WalletSerializer,
 )
+from core.filters import IsOwnerFilterBackend
 
 
 class UserProfileCountView(ListAPIView):
@@ -245,119 +253,28 @@ class CheckUsernameView(CreateAPIView):
             return Response(request_serializer.errors, status=400)
 
 
-class SetWalletAddressView(CreateAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        address = request.data.get("address", None)
-        wallet_type = request.data.get("wallet_type", None)
-        if not address or not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        user_profile = request.user.profile
-
-        try:
-            w = Wallet.objects.get(user_profile=user_profile, wallet_type=wallet_type)
-            w.address = address
-            w.save()
-
-            return Response(
-                {"message": f"{wallet_type} wallet address updated"}, status=200
-            )
-
-        except Wallet.DoesNotExist:
-            try:
-                Wallet.objects.create(
-                    user_profile=user_profile, wallet_type=wallet_type, address=address
-                )
-                return Response(
-                    {"message": f"{wallet_type} wallet address set"}, status=200
-                )
-            # catch unique constraint error
-            except IntegrityError:
-                return Response(
-                    {
-                        "message": f"{wallet_type} wallet address is not unique. use another address"
-                    },
-                    status=403,
-                )
-
-
-class GetWalletAddressView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type", None)
-        if not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        # get user profile
-        user_profile = request.user.profile
-
-        try:
-            # check if wallet already exists
-            wallet = Wallet.objects.get(
-                user_profile=user_profile, wallet_type=wallet_type
-            )
-            return Response({"address": wallet.address}, status=200)
-
-        except Wallet.DoesNotExist:
-            return Response(
-                {"message": f"{wallet_type} wallet address not set"}, status=403
-            )
-
-
-class DeleteWalletAddressView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type", None)
-        if not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        # get user profile
-        user_profile = request.user.profile
-
-        try:
-            # check if wallet already exists
-            wallet = Wallet.objects.get(
-                user_profile=user_profile, wallet_type=wallet_type
-            )
-            wallet.delete()
-            return Response(
-                {"message": f"{wallet_type} wallet address deleted"}, status=200
-            )
-
-        except Wallet.DoesNotExist:
-            return Response(
-                {"message": f"{wallet_type} wallet address not set"}, status=403
-            )
-
-
-class GetWalletsView(ListAPIView):
+class WalletListCreateView(ListCreateAPIView):
+    queryset = Wallet.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = WalletSerializer
+    filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
+    filterset_fields = ['wallet_type']
 
-    def get_queryset(self):
-        return Wallet.objects.filter(user_profile=self.request.user.profile)
+    def perform_create(self, serializer):
+        serializer.save(user_profile=self.request.user.profile)
+
+
+class WalletView(RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated, IsOwner]
+    serializer_class = WalletSerializer
+    queryset = Wallet.objects.all()
+    filter_backends = [IsOwnerFilterBackend]
+    http_method_names = ['get', 'patch']
 
 
 class GetProfileView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
-
-    # def get(self, request, *args, **kwargs):
-    #     user = request.user
-
-    #     token, bol = Token.objects.get_or_create(user=user)
-    #     print("token", token)
-
-    #     # return Response({"token": token.key}, status=200)
-    #     # return token and profile using profile serializer for profile
-    #     return Response(
-    #         {"token": token.key, "profile": ProfileSerializer(user.profile).data},
-    #         status=200,
-    #     )
 
     def get_object(self):
         return self.request.user.profile
