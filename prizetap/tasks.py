@@ -26,7 +26,8 @@ def draw_the_expired_raffles(self):
                     print(f"Drawing the raffle {raffle.name}")
                     raffle_client = PrizetapContractClient(raffle)
                     tx_hash = raffle_client.draw_raffle()
-                    receipt = raffle_client.wait_for_transaction_receipt(tx_hash)
+                    receipt = raffle_client.wait_for_transaction_receipt(
+                        tx_hash)
                     if receipt['status'] == 1:
                         raffle.status = Raffle.Status.HELD
                         raffle.save()
@@ -52,7 +53,7 @@ def set_the_winner_of_raffles(self):
                 print(f"Setting the winner of raffle {raffle.name}")
                 raffle_client = PrizetapContractClient(raffle)
                 winner_address = raffle_client.get_raffle_winner()
-                if winner_address:
+                if winner_address and winner_address != "0x0000000000000000000000000000000000000000":
                     try:
                         winner_entry = raffle.entries.filter(
                             user_profile__wallets__address__iexact=winner_address).get()
