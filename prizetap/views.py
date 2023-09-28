@@ -2,7 +2,7 @@ import json
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.request import Request
-from rest_framework.generics import ListAPIView,CreateAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from faucet.models import Chain
@@ -17,7 +17,8 @@ from .serializers import (
 from .validators import (
     RaffleEnrollmentValidator,
     SetRaffleEntryTxValidator,
-    SetClaimingPrizeTxValidator
+    SetClaimingPrizeTxValidator,
+    SetRaffleTxValidator
 )
 from .constraints import *
 from .constants import CONTRACT_ADDRESSES
@@ -187,10 +188,34 @@ class CreateRaffleView(CreateAPIView):
         })
 
 
-class SetRaffleOnChainInfoView(APIView):
-    # It's better to fetch the raffle's info using tx_hash in backend
-    # and compare on-chain information such as initiator with those saved in it
-    pass
+class SetRaffleTXView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user_profile = request.user.profile
+        raffle = get_object_or_404(Raffle, pk=pk)
+
+        validator = SetRaffleTxValidator(
+            user_profile=user_profile,
+            raffle=raffle
+        )
+        
+        validator.is_valid(self.request.data)
+        
+        tx_hash = self.request.data.get("tx_hash", None)
+        raffle.tx_hash = tx_hash
+        raffle.save()
+
+        return Response(
+            {
+                "detail": "Raffle updated successfully",
+                "success": True,
+                "raffle": RaffleSerializer(raffle, context={
+                    'user': request.user.profile
+                }).data
+            },
+            status=200,
+        )
 
 class ValidChainsView(ListAPIView):
     queryset = Chain.objects.filter(chain_id__in=list(CONTRACT_ADDRESSES.keys()))

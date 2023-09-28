@@ -51,5 +51,10 @@ urlpatterns = [
         "get-constraints/",
         ConstraintsListView.as_view(),
         name="get-constraints",
+    ),
+    path(
+        "set-raffle-tx/<int:pk>/",
+        SetRaffleTXView.as_view(),
+        name="set-raffle-tx",
     )
 ]
