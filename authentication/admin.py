@@ -14,7 +14,7 @@ class WalletAdmin(admin.ModelAdmin):
         "user_profile__initial_context_id",
         "wallet_type",
         "user_profile__pk",
-        "user_profile__user__auth_token",
+        "user_profile__user__auth_token__token",
     ]
 
 
