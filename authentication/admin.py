@@ -13,6 +13,7 @@ class WalletAdmin(admin.ModelAdmin):
     search_fields = [
         "user_profile__initial_context_id",
         "wallet_type",
+        "address",
         "user_profile__pk",
         "user_profile__user__auth_token__key",
     ]
