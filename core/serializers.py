@@ -35,4 +35,4 @@ class UserConstraintBaseSerializer(serializers.Serializer):
 
     def get_params(self, constraint: UserConstraint):
         c_class: ConstraintVerification = eval(constraint.name)
-        return [p.value for p in c_class.param_keys()]
+        return [p.name for p in c_class.param_keys()]

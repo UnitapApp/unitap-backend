@@ -65,6 +65,7 @@ class RaffleTestCase(BaseTestCase):
             description="Test Raffle Description",
             contract=erc20_contract_address,
             raffleId=1,
+            creator_profile=self.user_profile,
             prize_amount=1e14,
             prize_asset="0x0000000000000000000000000000000000000000",
             prize_name="Test raffle",
@@ -73,6 +74,7 @@ class RaffleTestCase(BaseTestCase):
             chain=self.chain,
             deadline=timezone.now() + timezone.timedelta(days=1),
             max_number_of_entries=2,
+            status=Raffle.Status.VERIFIED
         )
         self.raffle.constraints.set([self.meet_constraint])
 
@@ -146,6 +148,10 @@ class RaffleAPITestCase(RaffleTestCase):
     def setUp(self) -> None:
         super().setUp()
 
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None)
+    )
     def test_raffle_list(self):
         self.raffle.constraints.add(
             Constraint.objects.create(

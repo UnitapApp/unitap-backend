@@ -29,7 +29,32 @@ urlpatterns = [
     ),
     path(
         "get-raffle-constraints/<int:raffle_pk>/",
-        GetRaffleConstraints.as_view(),
+        GetRaffleConstraintsView.as_view(),
         name="get-raffle-constraints",
+    ),
+    path(
+        "create-raffle/",
+        CreateRaffleView.as_view(),
+        name="create-raffle",
+    ),
+    path(
+        "get-valid-chains/",
+        ValidChainsView.as_view(),
+        name="get-valid-chains",
+    ),
+    path(
+        "get-user-raffles/",
+        UserRafflesListView.as_view(),
+        name="get-user-raffles",
+    ),
+    path(
+        "get-constraints/",
+        ConstraintsListView.as_view(),
+        name="get-constraints",
+    ),
+    path(
+        "set-raffle-tx/<int:pk>/",
+        SetRaffleTXView.as_view(),
+        name="set-raffle-tx",
     )
 ]

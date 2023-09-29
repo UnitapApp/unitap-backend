@@ -16,8 +16,9 @@ class Constraint(UserConstraint):
 
 class Raffle(models.Model):
     class Status(models.TextChoices):
-        OPEN = "OPEN", _("Open")
+        PENDING = "PENDING", _("Pending")
         REJECTED = "REJECTED", _("Rejected")
+        VERIFIED = "VERIFIED", _("Verified")
         HELD = "HELD", _("Held")
         WINNER_SET = "WS", _("Winner is set")
 
@@ -29,8 +30,10 @@ class Raffle(models.Model):
     name = models.CharField(max_length=256)
     description = models.TextField(null=True, blank=True)
     contract = models.CharField(max_length=256)
-    raffleId = models.BigIntegerField()
-    creator = models.CharField(max_length=256, null=True, blank=True)
+    raffleId = models.BigIntegerField(null=True, blank=True)
+    creator_name = models.CharField(max_length=255, null=True, blank=True)
+    creator_profile = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="raffles")
+    creator_address = models.CharField(max_length=255)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
@@ -58,8 +61,10 @@ class Raffle(models.Model):
     max_multiplier = models.IntegerField(default=1)
 
     status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.OPEN
+        max_length=10, choices=Status.choices, default=Status.PENDING
     )
+    rejection_reason = models.TextField(null=True, blank=True)
+    tx_hash = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     @property
@@ -81,7 +86,8 @@ class Raffle(models.Model):
     @property
     def is_claimable(self):
         return (
-            self.is_started
+            self.status == self.Status.VERIFIED
+            and self.is_started
             and not self.is_expired
             and not self.is_maxed_out
             and self.is_active
@@ -110,6 +116,13 @@ class Raffle(models.Model):
 
     def __str__(self):
         return f"{self.name}"
+    
+    def save(self, *args, **kwargs):
+        if self.status == self.Status.VERIFIED \
+            and not self.raffleId:
+            raise Exception("The raffleId of a verified raffle can't be empty")
+
+        super().save(*args, **kwargs)
 
 
 class RaffleEntry(models.Model):
