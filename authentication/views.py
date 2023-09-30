@@ -352,7 +352,7 @@ class UserHistoryCountView(RetrieveAPIView):
         data = {
             'gas_claim': user_profile.claims.filter(_status=ClaimReceipt.VERIFIED).count(),
             'token_claim': user_profile.tokentap_claims.filter(status=ClaimReceipt.VERIFIED).count(),
-            'raffle_win': user_profile.raffle_entries.filter(is_winner=True).count()
+            'raffle_win': user_profile.raffle_entries.count()
         }
         return data
 
