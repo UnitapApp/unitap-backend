@@ -1,4 +1,0 @@
-#!/bin/bash
-echo "this is pre_compile"
-pip --version
-python --version
