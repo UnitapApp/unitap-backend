@@ -51,9 +51,9 @@ class SimpleCreditStrategy(CreditStrategy):
         return _sum
 
     def get_unclaimed(self):
-        print("max_claim_amount", self.chain.max_claim_amount)
-        print("get_claimed", self.get_claimed())
-        return self.chain.max_claim_amount - self.get_claimed()
+        # print("max_claim_amount", self.chain.max_claim_amount)
+        # print("get_claimed", self.get_claimed())
+        return int(self.chain.max_claim_amount) - int(self.get_claimed())
 
 
 class WeeklyCreditStrategy(SimpleCreditStrategy):
