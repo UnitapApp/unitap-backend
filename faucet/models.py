@@ -239,7 +239,7 @@ class Chain(models.Model):
     show_in_gastap = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.pk} - {self.symbol}:{self.chain_id} - {self.chain_name}"
+        return f"{self.chain_name} - {self.pk} - {self.symbol}:{self.chain_id}"
 
     @property
     def has_enough_funds(self):
