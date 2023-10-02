@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      max-parallel: 4
       matrix:
         python-version: [3.10.13]
 
@@ -24,6 +24,11 @@ jobs:
         run: python -m pip install --upgrade pip
       - name: Install requests
         run: pip install requests
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Install Dependencies
         run: pip install -r requirements.txt
       - name: Run Tests
