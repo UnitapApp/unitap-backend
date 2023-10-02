@@ -162,7 +162,7 @@ class ClaimReceipt(models.Model):
 
     passive_address = models.CharField(max_length=512, null=True, blank=True)
 
-    amount = models.BigIntegerField()
+    amount = BigNumField()
     datetime = models.DateTimeField()
     last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
     batch = models.ForeignKey(

@@ -87,7 +87,7 @@ def process_batch(self, batch_pk):
                             user_profile=receipt.user_profile,
                             wallet_type=batch.chain.chain_type,
                         ).address,
-                        "amount": receipt.amount,
+                        "amount": int(receipt.amount),
                     }
                     for receipt in batch.claims.all()
                 ]
