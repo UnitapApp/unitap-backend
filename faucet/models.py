@@ -162,7 +162,7 @@ class ClaimReceipt(models.Model):
 
     passive_address = models.CharField(max_length=512, null=True, blank=True)
 
-    amount = BigNumField()
+    amount = models.BigIntegerField()
     datetime = models.DateTimeField()
     last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
     batch = models.ForeignKey(
@@ -239,7 +239,7 @@ class Chain(models.Model):
     show_in_gastap = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.pk} - {self.symbol}:{self.chain_id}"
+        return f"{self.pk} - {self.symbol}:{self.chain_id} - {self.chain_name}"
 
     @property
     def has_enough_funds(self):
