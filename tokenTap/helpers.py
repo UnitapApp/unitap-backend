@@ -20,9 +20,9 @@ def create_uint32_random_nonce():
 
 def hash_message(user, token, amount, nonce):
 
-    message_hash = Web3().solidityKeccak(
+    message_hash = Web3().solidity_keccak(
         ["address", "address", "uint256", "uint32"],
-        [Web3.toChecksumAddress(user), Web3.toChecksumAddress(token), amount, nonce],
+        [Web3.to_checksum_address(user), Web3.to_checksum_address(token), amount, nonce],
     )
     hashed_message = encode_defunct(hexstr=message_hash.hex())
 
