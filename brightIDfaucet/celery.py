@@ -40,11 +40,11 @@ app.conf.beat_schedule = {
     },
     'update-tokens-price': {
         "task": "faucet.tasks.update_tokens_price",
-        "schedule": 120,
+        "schedule": 600,
     },
     'update-donation-receipt-status': {
         "task": "faucet.tasks.update_donation_receipt_pending_status",
-        "schedule": 60,
+        "schedule": 180,
     },
     "draw-prizetap-raffles": {
         "task": "prizetap.tasks.draw_the_expired_raffles",
