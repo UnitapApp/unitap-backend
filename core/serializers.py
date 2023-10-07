@@ -11,6 +11,7 @@ class UserConstraintBaseSerializer(serializers.Serializer):
     )
     description = serializers.CharField()
     response = serializers.CharField()
+    icon_url = serializers.CharField()
     params = serializers.SerializerMethodField()
 
     class Meta:
@@ -21,6 +22,7 @@ class UserConstraintBaseSerializer(serializers.Serializer):
             "type",
             "description",
             "response",
+            "icon_url",
             "params"
         ]
         read_only_fields = [
@@ -30,6 +32,7 @@ class UserConstraintBaseSerializer(serializers.Serializer):
             "type",
             "description",
             "response",
+            "icon_url",
             "params"
         ]
 
