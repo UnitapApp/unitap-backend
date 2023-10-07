@@ -1,5 +1,6 @@
 from django.db import models
 from faucet.models import Chain
+from faucet.constraints import OptimismDonationConstraint
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from authentication.models import NetworkTypes, UserProfile
@@ -10,7 +11,11 @@ from .constraints import *
 
 
 class Constraint(UserConstraint):
-    constraints = UserConstraint.constraints + [HaveUnitapPass, NotHaveUnitapPass]
+    constraints = UserConstraint.constraints + [
+        HaveUnitapPass, 
+        NotHaveUnitapPass,
+        OptimismDonationConstraint
+    ]
     name = UserConstraint.create_name_field(constraints)
 
 
