@@ -207,6 +207,8 @@ class Chain(models.Model):
     decimals = models.IntegerField(default=18)
 
     explorer_url = models.URLField(max_length=255, blank=True, null=True)
+    explorer_api_url = models.URLField(max_length=255, blank=True, null=True)
+    explorer_api_key = models.CharField(max_length=255, blank=True, null=True)
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
     logo_url = models.URLField(max_length=255, blank=True, null=True)
     modal_url = models.URLField(max_length=255, blank=True, null=True)
