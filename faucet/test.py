@@ -657,6 +657,8 @@ class TestConstraints(APITestCase):
             name="Test Wallet", private_key=test_wallet_key
         )
 
+        self.test_chain = create_test_chain(self.wallet)
+
         self.optimism = Chain.objects.create(
             chain_name="Optimism",
             native_currency_name="ETH",
@@ -678,6 +680,22 @@ class TestConstraints(APITestCase):
             address="0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F2",
         )
         self.client.force_authenticate(user=self.user_profile.user)
+
+    def test_optimism_donation_contraint(self):
+        constraint = OptimismDonationConstraint(self.user_profile)
+        self.assertFalse(constraint.is_observed())
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash = "0x0",
+            chain = self.test_chain   
+        )
+        self.assertFalse(constraint.is_observed())
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash = "0x0",
+            chain = self.optimism   
+        )
+        self.assertTrue(constraint.is_observed())
 
     def test_optimism_claiming_gas_contraint(self):
         constraint = OptimismClaimingGasConstraint(self.user_profile)
