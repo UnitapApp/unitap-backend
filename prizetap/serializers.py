@@ -184,3 +184,9 @@ class RaffleSerializer(serializers.ModelSerializer):
             ).data
         except RaffleEntry.DoesNotExist:
             return None
+
+
+class LineaRaffleEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LineaRaffleEntries
+        fields = "__all__"

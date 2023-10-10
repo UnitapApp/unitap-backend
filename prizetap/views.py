@@ -8,12 +8,13 @@ from rest_framework.views import APIView
 from faucet.models import Chain
 from faucet.serializers import SmallChainSerializer
 from faucet.constraints import *
-from .models import Raffle, RaffleEntry, Constraint
+from .models import Raffle, RaffleEntry, Constraint, LineaRaffleEntries
 from .serializers import (
     RaffleSerializer, 
     RaffleEntrySerializer,
     ConstraintSerializer,
-    CreateRaffleSerializer
+    CreateRaffleSerializer,
+    LineaRaffleEntrySerializer
 )
 from .validators import (
     RaffleEnrollmentValidator,
@@ -250,3 +251,23 @@ class ConstraintsListView(ListAPIView):
     queryset = Constraint.objects.all()
     serializer_class = ConstraintSerializer
 
+
+class LineaRaffleView(ListAPIView):
+    serializer_class = LineaRaffleEntrySerializer
+
+    def get_queryset(self):
+        return LineaRaffleEntries.objects.all()
+    
+
+class SetLineaTxHashView(CreateAPIView):
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        tx_hash = request.data.get('tx_hash')
+        raffle_entry = get_object_or_404(LineaRaffleEntries, pk=pk)
+        raffle_entry.claim_tx = tx_hash
+        raffle_entry.save()
+        return Response({
+            'success': True,
+            'data': LineaRaffleEntrySerializer(raffle_entry).data
+        })
