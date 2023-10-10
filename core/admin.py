@@ -8,7 +8,8 @@ class UserConstraintBaseAdmin(admin.ModelAdmin):
         'title',
         'type',
         'description',
-        'response'
+        'response',
+        "icon_url"
     ]
     list_display = [
         "pk",

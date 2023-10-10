@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from faucet.models import Chain
 from faucet.serializers import SmallChainSerializer
+from faucet.constraints import *
 from .models import Raffle, RaffleEntry, Constraint
 from .serializers import (
     RaffleSerializer, 

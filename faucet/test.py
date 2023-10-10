@@ -24,12 +24,15 @@ from faucet.models import (
     GlobalSettings,
     WalletAccount,
     TransactionBatch,
-    LightningConfig
+    LightningConfig,
+    Wallet,
+    NetworkTypes
 )
 from unittest.mock import patch
 from dotenv import dotenv_values
 from faucet.helpers import memcache_lock
 from faucet.constants import *
+from faucet.constraints import *
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
@@ -646,3 +649,60 @@ class TestWeeklyCreditStrategy(APITestCase):
 
         unclaimed = self.strategy.get_unclaimed()
         self.assertEqual(unclaimed, t_chain_max - 100)
+
+
+class TestConstraints(APITestCase):
+    def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+
+        self.test_chain = create_test_chain(self.wallet)
+
+        self.optimism = Chain.objects.create(
+            chain_name="Optimism",
+            native_currency_name="ETH",
+            symbol="ETH",
+            rpc_url_private="https://optimism.llamarpc.com",
+            wallet=self.wallet,
+            fund_manager_address="0xb3A97684Eb67182BAa7994b226e6315196D8b364",
+            chain_id=10,
+            max_claim_amount=t_chain_max,
+            explorer_url="https://optimistic.etherscan.io/",
+            explorer_api_url = "https://api-optimistic.etherscan.io",
+            explorer_api_key = "6PGF5HBTT7DG9CQCQZK3MWR9146JAWQKAC"
+        )
+
+        self.user_profile = create_new_user("0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F2")
+        self.wallet = Wallet.objects.create(
+            user_profile=self.user_profile,
+            wallet_type=NetworkTypes.EVM,
+            address="0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F2",
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+
+    def test_optimism_donation_contraint(self):
+        constraint = OptimismDonationConstraint(self.user_profile)
+        self.assertFalse(constraint.is_observed())
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash = "0x0",
+            chain = self.test_chain   
+        )
+        self.assertFalse(constraint.is_observed())
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash = "0x0",
+            chain = self.optimism   
+        )
+        self.assertTrue(constraint.is_observed())
+
+    def test_optimism_claiming_gas_contraint(self):
+        constraint = OptimismClaimingGasConstraint(self.user_profile)
+        self.assertTrue(constraint.is_observed())
+        self.wallet.address = "0xE3eEBaB360E367b4e200759F0D955D1140F27430"
+        self.wallet.save()
+        self.assertTrue(constraint.is_observed())
+        self.wallet.address = "0xB9e291b68E584be657477289389B3a6DEED3E34C"
+        self.wallet.save()
+        self.assertFalse(constraint.is_observed())
