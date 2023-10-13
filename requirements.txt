@@ -89,7 +89,6 @@ jsonalias==0.1.1
 jsonrpcclient==4.0.2
 jsonschema==4.4.0
 kombu==5.2.4
-lnpay-py==0.1.0
 locust==2.15.1
 lru-dict==1.1.7
 MarkupSafe==2.1.1
