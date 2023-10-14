@@ -77,7 +77,9 @@ class EVMFundManager:
 
     @property
     def contract(self):
-        return self.w3.eth.contract(address=self.get_fund_manager_checksum_address(), abi=self.abi)
+        return self.w3.eth.contract(
+            address=self.get_fund_manager_checksum_address(), abi=self.abi
+        )
 
     def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
@@ -133,7 +135,7 @@ class EVMFundManager:
         tx = self.w3.eth.get_transaction(tx_hash)
         return tx
 
-    def from_wei(self, value: int, unit: str = 'ether'):
+    def from_wei(self, value: int, unit: str = "ether"):
         return self.w3.from_wei(value, unit)
 
 
@@ -223,14 +225,15 @@ class SolanaFundManager:
         if self.is_initialized:
             instruction = [
                 instructions.withdraw(
-                    {"amount": item['amount']},
+                    {"amount": item["amount"]},
                     {
                         "lock_account": self.lock_account_address,
                         "operator": self.operator,
-                        "recipient": Pubkey.from_string(item["to"])
+                        "recipient": Pubkey.from_string(item["to"]),
                     },
-                    self.program_id
-                ) for item in data
+                    self.program_id,
+                )
+                for item in data
             ]
             if self.is_gas_price_too_high(instruction):
                 raise FundMangerException.GasPriceTooHigh()
@@ -302,7 +305,6 @@ class LightningFundManager:
 
     def multi_transfer(self, data):
         client = self.lnpay_client
-
         with memcache_lock(MEMCACHE_LIGHTNING_LOCK_KEY, os.getpid()) as acquired:
             assert acquired, "Could not acquire Lightning multi-transfer lock"
 

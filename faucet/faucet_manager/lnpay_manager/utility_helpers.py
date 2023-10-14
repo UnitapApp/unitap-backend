@@ -1,3 +1,4 @@
+import pprint
 import requests
 from .lnpay_main import __ENDPOINT_URL__, __PUBLIC_API_KEY__, __VERSION__
 import json
@@ -44,7 +45,9 @@ def post_request(location, params):
         "X-Api-Key": __PUBLIC_API_KEY__,
         "X-LNPay-sdk": __VERSION__,
     }
+
     data = json.dumps(params)
 
     r = requests.post(url=endpoint, data=data, headers=headers)
+    print("salam", r.text)
     return r.json()
