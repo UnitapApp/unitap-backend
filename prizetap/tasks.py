@@ -131,12 +131,12 @@ def draw_linea_raffle(raffle: Raffle):
         f"https://shield.unitap.app/v1/?app=stage_unitap&method=random-words&params[chainId]={raffle.chain.chain_id}&params[prizetapRaffle]={raffle.contract}&params[raffleId]={raffle.raffleId}"
     )
     muon_response = muon_response.json()
-    print(muon_response)
     if muon_response['success']:
         muon_response = muon_response['result']
         muon_data = muon_response['data']['result']
         raffle_client = LineaPrizetapContractClient(raffle)
         tx_hash = raffle_client.draw_raffle(
+            raffle.raffleId,
             muon_data['expirationTime'],
             muon_data['randomWords'],
             muon_response['reqId'],
