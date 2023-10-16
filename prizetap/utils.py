@@ -18,15 +18,8 @@ class PrizetapContractClient(Web3Utils):
         self.set_contract(self.raffle.contract, abi)
         self.set_account(self.raffle.chain.wallet.private_key)
 
-    def draw_raffle(self, expiration_time, random_words, reqId, muon_sig, gateway_sig):
-        func = self.contract.functions.drawRaffle(
-            self.raffle.raffleId,
-            expiration_time,
-            random_words,
-            reqId,
-            muon_sig,
-            gateway_sig
-        )
+    def draw_raffle(self):
+        func = self.contract.functions.heldRaffle(self.raffle.raffleId)
         return self.contract_txn(func)
 
     def get_raffle_winner(self):
@@ -39,6 +32,17 @@ class LineaPrizetapContractClient(PrizetapContractClient):
         super().__init__(raffle)
         abi = LINEA_PRIZETAP_ABI
         self.set_contract(self.raffle.contract, abi)
+
+    def draw_raffle(self, expiration_time, random_words, reqId, muon_sig, gateway_sig):
+        func = self.contract.functions.drawRaffle(
+            self.raffle.raffleId,
+            expiration_time,
+            random_words,
+            reqId,
+            muon_sig,
+            gateway_sig
+        )
+        return self.contract_txn(func)
 
     def get_raffle_winners(self):
         func = self.contract.functions.getWinners(self.raffle.raffleId)
