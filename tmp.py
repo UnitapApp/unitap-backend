@@ -44,9 +44,8 @@ def add_entries(data_dict):
         LineaRaffleEntries.objects.create(
             wallet_address=data_dict[i]["address"],
             raffle=linea_raffle,
-            raffle_entry_id=i,
         )
 
 
-# add_entries(data_dict)
+add_entries(data_dict)
 print(LineaRaffleEntries.objects.all().count())
