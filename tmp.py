@@ -48,5 +48,5 @@ def add_entries(data_dict):
         )
 
 
-# add_entries(data_dict)
+add_entries(data_dict)
 print(LineaRaffleEntries.objects.all().count())
