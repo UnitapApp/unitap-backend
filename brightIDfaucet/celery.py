@@ -60,11 +60,11 @@ app.conf.beat_schedule = {
     },
     "draw-linea-raffles": {
         "task": "prizetap.tasks.draw_expired_linea_raffles",
-        "schedule": 300
+        "schedule": 60
     },
     "set-linea-raffle-winners": {
         "task": "prizetap.tasks.set_the_winner_of_linea_raffles",
-        "schedule": 300
+        "schedule": 60
     }
 }
 
