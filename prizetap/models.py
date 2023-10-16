@@ -26,6 +26,7 @@ class Raffle(models.Model):
         REJECTED = "REJECTED", _("Rejected")
         VERIFIED = "VERIFIED", _("Verified")
         HELD = "HELD", _("Held")
+        CLOSED = "CLOSED", _("Closed")
         WINNER_SET = "WS", _("Winner is set")
 
     class Meta:
@@ -71,6 +72,7 @@ class Raffle(models.Model):
     )
     rejection_reason = models.TextField(null=True, blank=True)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
+    vrf_tx_hash = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     @property
@@ -172,7 +174,7 @@ class RaffleEntry(models.Model):
 
 class LineaRaffleEntries(models.Model):
     wallet_address = models.CharField(max_length=255)
-    raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="linear_entries")
+    raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="linea_entries")
     is_winner = models.BooleanField(blank=True, default=False)
     claim_tx = models.CharField(max_length=255, blank=True, null=True)
 
