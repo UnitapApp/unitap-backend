@@ -143,7 +143,7 @@ def draw_linea_raffle(raffle: Raffle):
             (
                 muon_response['signatures'][0]['signature'],
                 muon_response['signatures'][0]['owner'],
-                muon_data['init']['nonceAddress']
+                muon_response['data']['init']['nonceAddress']
             ),
             muon_response['shieldSignature']
         )
