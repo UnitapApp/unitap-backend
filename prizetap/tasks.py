@@ -99,10 +99,8 @@ def request_random_words_for_linea_raffle(raffle: Raffle):
     raffle_client = LineaPrizetapContractClient(raffle)
     winners_count = raffle_client.get_raffle_winners_count()
     tx_hash = vrf_client.request_random_words(winners_count)
-    receipt = raffle_client.wait_for_transaction_receipt(tx_hash)
-    if receipt['status'] == 1:
-        raffle.vrf_tx_hash = tx_hash
-        raffle.save()
+    raffle.vrf_tx_hash = tx_hash
+    raffle.save()
 
 @shared_task(bind=True)
 def draw_expired_linea_raffles(self):
@@ -149,11 +147,9 @@ def draw_linea_raffle(raffle: Raffle):
             ),
             muon_response['shieldSignature']
         )
-        receipt = raffle_client.wait_for_transaction_receipt(
-            tx_hash)
-        if receipt['status'] == 1:
-            raffle.status = Raffle.Status.CLOSED
-            raffle.save()
+        print(tx_hash)
+        raffle.status = Raffle.Status.CLOSED
+        raffle.save()
 
 
 @shared_task(bind=True)
