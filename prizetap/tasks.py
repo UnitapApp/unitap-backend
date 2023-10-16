@@ -135,9 +135,10 @@ def draw_linea_raffle(raffle: Raffle):
         muon_response = muon_response['result']
         muon_data = muon_response['data']['result']
         raffle_client = LineaPrizetapContractClient(raffle)
+        random_words = [int(r) for r in muon_data['randomWords']]
         tx_hash = raffle_client.draw_raffle(
-            muon_data['expirationTime'],
-            muon_data['randomWords'],
+            int(muon_data['expirationTime']),
+            random_words,
             muon_response['reqId'],
             [
                 muon_response['signatures'][0]['signature'],
