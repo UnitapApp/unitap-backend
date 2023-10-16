@@ -56,7 +56,7 @@ app.conf.beat_schedule = {
     },
     "request-random-words-for-linea-raffles": {
         "task": "prizetap.tasks.request_random_words_for_expired_linea_raffles",
-        "schedule": 300
+        "schedule": 150
     },
     "draw-linea-raffles": {
         "task": "prizetap.tasks.draw_expired_linea_raffles",
