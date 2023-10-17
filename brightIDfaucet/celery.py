@@ -53,6 +53,18 @@ app.conf.beat_schedule = {
     "set-raffle-winner": {
         "task": "prizetap.tasks.set_the_winner_of_raffles",
         "schedule": 300
+    },
+    "request-random-words-for-linea-raffles": {
+        "task": "prizetap.tasks.request_random_words_for_expired_linea_raffles",
+        "schedule": 150
+    },
+    "draw-linea-raffles": {
+        "task": "prizetap.tasks.draw_expired_linea_raffles",
+        "schedule": 60
+    },
+    "set-linea-raffle-winners": {
+        "task": "prizetap.tasks.set_the_winner_of_linea_raffles",
+        "schedule": 60
     }
 }
 

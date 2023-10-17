@@ -56,5 +56,15 @@ urlpatterns = [
         "set-raffle-tx/<int:pk>/",
         SetRaffleTXView.as_view(),
         name="set-raffle-tx",
+    ),
+    path(
+        "get-linea-entries/",
+        LineaRaffleView.as_view(),
+        name="get-linea-entries",
+    ),
+    path(
+        "set-linea-hash/<int:pk>/",
+        SetLineaTxHashView.as_view(),
+        name="set-linea-hash",
     )
 ]

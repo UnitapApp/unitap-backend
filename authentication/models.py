@@ -13,8 +13,6 @@ class ProfileManager(models.Manager):
         except UserProfile.DoesNotExist:
             _user = User.objects.create_user(username=first_context_id)
             _profile = UserProfile(user=_user, initial_context_id=first_context_id)
-            # _profile.is_aura_verified
-            # _profile.is_meet_verified
             _profile.save()
             return _profile
 
