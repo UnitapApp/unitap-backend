@@ -140,11 +140,11 @@ def draw_linea_raffle(raffle: Raffle):
             int(muon_data['expirationTime']),
             random_words,
             muon_response['reqId'],
-            [
-                muon_response['signatures'][0]['signature'],
-                muon_response['signatures'][0]['owner'],
-                muon_response['data']['init']['nonceAddress']
-            ],
+            {
+                "signature": muon_response['signatures'][0]['signature'],
+                "owner": muon_response['signatures'][0]['owner'],
+                "nonce": muon_response['data']['init']['nonceAddress']
+            },
             muon_response['shieldSignature']
         )
         print(tx_hash)
