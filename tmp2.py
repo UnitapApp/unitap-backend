@@ -89,12 +89,14 @@ winners = [
 
 print(len(winners))
 
+winners = [i.lower() for i in winners]
+
 
 print(LineaRaffleEntries.objects.filter(is_winner=True).count())
 
 
 for i in LineaRaffleEntries.objects.all():
-    if i.wallet_address in winners:
+    if str(i.wallet_address).lower() in winners:
         i.is_winner = True
         i.save()
 
