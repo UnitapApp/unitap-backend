@@ -27,8 +27,8 @@ def split_list(input_list, chunk_size):
     ]
 
 
-addresses_chunks = split_list(addresses, 100)
-chances_chunks = split_list(chances, 100)
+addresses_chunks = split_list(addresses[369:], 100)
+chances_chunks = split_list(chances[369:], 100)
 
 
 for i in addresses_chunks:
@@ -51,5 +51,5 @@ def add_entries(data_dict):
         )
 
 
-add_entries(data_dict)
+# add_entries(data_dict)
 print(LineaRaffleEntries.objects.all().count())
