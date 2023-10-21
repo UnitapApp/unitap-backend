@@ -1,8 +1,7 @@
 from faucet.serializers import SmallChainSerializer
 from rest_framework import serializers
 from core.serializers import UserConstraintBaseSerializer
-from core.models import UserConstraint
-from tokenTap.models import TokenDistribution, TokenDistributionClaim, Constraint
+from tokenTap.models import *
 from .constraints import *
 
 
