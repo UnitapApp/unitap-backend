@@ -172,7 +172,7 @@ class GetTokenDistributionConstraintsView(APIView):
             except KeyError:
                 pass
             is_verified = False
-            if constraint.is_observed():
+            if constraint.is_observed(token_distribution=td):
                 is_verified = True
             response_constraints.append(
                 {**ConstraintSerializer(c).data, "is_verified": is_verified}
