@@ -117,7 +117,7 @@ class TokenDistributionClaimView(CreateAPIView):
                     "detail": "Signature Was Already Created",
                     "signature": TokenDistributionClaimSerializer(tdc).data,
                 },
-                status=403,
+                status=200,
             )
 
         except TokenDistributionClaim.DoesNotExist:
