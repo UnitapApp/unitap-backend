@@ -1,6 +1,7 @@
 from core.constraints import *
 from core.utils import TimeUtils
 from faucet.constraints import OptimismHasClaimedGasInThisRound
+from faucet.models import ClaimReceipt
 
 
 class OncePerWeekVerification(ConstraintVerification):
@@ -26,4 +27,5 @@ class OnceInALifeTimeVerification(ConstraintVerification):
         token_distribution = kwargs["token_distribution"]
         return not token_distribution.claims.filter(
             user_profile=self.user_profile,
+            status=ClaimReceipt.VERIFIED,
         ).exists()
