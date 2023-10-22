@@ -102,11 +102,28 @@ class TokenDistributionClaimView(CreateAPIView):
 
         self.check_token_distribution_is_claimable(token_distribution)
 
-        self.check_user_weekly_credit(user_profile)
+        self.check_user_has_wallet(user_profile)
 
         self.check_user_permissions(token_distribution, user_profile)
 
-        self.check_user_has_wallet(user_profile)
+        try:
+            tdc = TokenDistributionClaim.objects.get(
+                user_profile=user_profile,
+                token_distribution=token_distribution,
+                status=ClaimReceipt.PENDING,
+            )
+            return Response(
+                {
+                    "detail": "Signature Was Already Created",
+                    "signature": TokenDistributionClaimSerializer(tdc).data,
+                },
+                status=403,
+            )
+
+        except TokenDistributionClaim.DoesNotExist:
+            pass
+
+        self.check_user_weekly_credit(user_profile)
 
         nonce = create_uint32_random_nonce()
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
