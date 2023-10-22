@@ -19,6 +19,22 @@ SENTRY_DSN="DEBUG-DSN"
 
 _read more about `DATABASE_URL` in the [dj-database-url](https://github.com/kennethreitz/dj-database-url#url-schema) docs_
 
+### Setup pre-commit
+pre-commit works with python3.10.
+
+create a new virtualenv and activate it:
+
+```shell
+python -m virtualenv .venv
+source .venv/bin/activate
+```
+
+install pre-commit:
+
+```shell
+make setup-pre-commit
+```
+
 ### Using Docker Compose
 
 you might need "sudo" privilege to run the following.
@@ -26,7 +42,7 @@ you might need "sudo" privilege to run the following.
 run the following command from projects root directory to build a docker image from this repo and run it:
 
 ```shell
-docker compose up -d
+make docker-up-dev
 ```
 
 #### create a superuser:
@@ -62,14 +78,14 @@ you can exit the terminal now. You should now be able to visit the site on `http
 create a new virtualenv and activate it:
 
 ```shell
-python3.8 -m virtualenv .venv
+python -m virtualenv .venv
 source .venv/bin/activate
 ```
 
 install requirements:
 
 ```shell
-pip install -r requirements.txt
+pip install -r requirements/base.txt
 ```
 
 run migrations:
