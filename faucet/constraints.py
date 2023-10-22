@@ -90,7 +90,7 @@ class HasClaimedGasInThisRound(ConstraintVerification):
         return ClaimReceipt.objects.filter(
             user_profile=self.user_profile,
             chain=chain,
-            status=ClaimReceipt.VERIFIED,
+            _status=ClaimReceipt.VERIFIED,
             datetime__gte=WeeklyCreditStrategy.get_last_monday(),
         ).exists()
 
