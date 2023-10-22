@@ -1,3 +1,5 @@
+import json
+from django.shortcuts import get_object_or_404
 import rest_framework.exceptions
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.response import Response
@@ -8,8 +10,10 @@ from authentication.models import NetworkTypes, UserProfile, Wallet
 from authentication.serializers import MessageResponseSerializer
 from faucet.models import Chain, ClaimReceipt, GlobalSettings
 from permissions.models import Permission
+from rest_framework.views import APIView
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
+    ConstraintSerializer,
     DetailResponseSerializer,
     TokenDistributionClaimResponseSerializer,
     TokenDistributionClaimSerializer,
@@ -32,14 +36,13 @@ class TokenDistributionListView(ListAPIView):
     queryset = TokenDistribution.objects.filter(is_active=True)
 
     def get_queryset(self):
-        q =  TokenDistribution.objects.filter(is_active=True)
+        q = TokenDistribution.objects.filter(is_active=True)
 
         sorted_queryset = sorted(
             q, key=lambda obj: obj.total_claims_since_last_round, reverse=True
         )
 
         return sorted_queryset
-        
 
 
 class TokenDistributionClaimView(CreateAPIView):
@@ -99,11 +102,28 @@ class TokenDistributionClaimView(CreateAPIView):
 
         self.check_token_distribution_is_claimable(token_distribution)
 
-        self.check_user_weekly_credit(user_profile)
+        self.check_user_has_wallet(user_profile)
 
         self.check_user_permissions(token_distribution, user_profile)
 
-        self.check_user_has_wallet(user_profile)
+        try:
+            tdc = TokenDistributionClaim.objects.get(
+                user_profile=user_profile,
+                token_distribution=token_distribution,
+                status=ClaimReceipt.PENDING,
+            )
+            return Response(
+                {
+                    "detail": "Signature Was Already Created",
+                    "signature": TokenDistributionClaimSerializer(tdc).data,
+                },
+                status=200,
+            )
+
+        except TokenDistributionClaim.DoesNotExist:
+            pass
+
+        self.check_user_weekly_credit(user_profile)
 
         nonce = create_uint32_random_nonce()
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
@@ -145,6 +165,38 @@ class TokenDistributionClaimView(CreateAPIView):
                 "signature": TokenDistributionClaimSerializer(tdc).data,
             },
             status=200,
+        )
+
+
+class GetTokenDistributionConstraintsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, td_id):
+        user_profile = request.user.profile
+        td = get_object_or_404(TokenDistribution, pk=td_id)
+        try:
+            param_values = json.loads(td.constraint_params)
+        except:
+            param_values = {}
+
+        response_constraints = []
+
+        for c in td.permissions.all():
+            constraint: ConstraintVerification = eval(c.name)(user_profile)
+            constraint.response = c.response
+            try:
+                constraint.param_values = param_values[c.name]
+            except KeyError:
+                pass
+            is_verified = False
+            if constraint.is_observed(token_distribution=td):
+                is_verified = True
+            response_constraints.append(
+                {**ConstraintSerializer(c).data, "is_verified": is_verified}
+            )
+
+        return Response(
+            {"success": True, "constraints": response_constraints}, status=200
         )
 
 
