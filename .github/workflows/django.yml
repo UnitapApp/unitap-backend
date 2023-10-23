@@ -33,3 +33,6 @@ jobs:
           DEBUG: False
           SENTRY_DSN: "DEBUG-DSN"
           DATABASE_URL: sqlite:///db/db.sqlite3
+          MEMCACHEDCLOUD_SERVERS: " "
+          MEMCACHEDCLOUD_USERNAME: " "
+          MEMCACHEDCLOUD_PASSWORD: " "
