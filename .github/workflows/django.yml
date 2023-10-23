@@ -36,3 +36,7 @@ jobs:
           MEMCACHEDCLOUD_SERVERS: " "
           MEMCACHEDCLOUD_USERNAME: " "
           MEMCACHEDCLOUD_PASSWORD: " "
+          LIGHTNING_INVOICE: lnbc100n1pjxtceppp5q65xc3w8tnnmzkhqgg9c7h4a8hzplm0dppr944upwsq4q62sjeesdqu2askcmr9wssx7e3q2dshgmmndp5scqzzsxqyz5vqsp5hj2vzha0x4qvuyzrym6ryvxwnccn4kjwa57037dgcshl5ls4tves9qyyssqj24t4j2dkp2r29ptgxqz2etsk0qp8ggwmt20czfu48h5akgme43zevg6x040scjzx3qgtp8mkcg2gurv0hy8d8xm3hhf8k68uefl9sqqqscuvz
+          LIGHTNING_RPC_URL: https://api.lnpay.co/v1/
+          LIGHTNING_WALLET: ${{ secrets.LIGHTNING_WALLET }}
+          LIGHTNING_FUND_MANAGER: ${{ secrets.LIGHTNING_FUND_MANAGER }}
