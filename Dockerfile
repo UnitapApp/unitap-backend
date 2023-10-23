@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
-FROM --platform=linux/amd64 python:3.10.12
+FROM --platform=linux/amd64 python:3.10.11
 WORKDIR /code
-COPY requirements.txt /code/
+RUN apt update && apt install gcc
+COPY ./requirements/ /code/requirements/
 RUN pip install pip --upgrade
 RUN pip install -r requirements.txt
 COPY . .

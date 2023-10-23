@@ -1,0 +1,33 @@
+exclude: .*migrations\/.*
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+  - id: check-added-large-files
+    args: ['--maxkb=100']
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: check-executables-have-shebangs
+  - id: check-merge-conflict
+  - id: check-shebang-scripts-are-executable
+  - id: no-commit-to-branch
+    args: ['--branch', main, '--branch', develop ]
+
+- repo: https://github.com/pycqa/isort
+  rev: 5.12.0
+  hooks:
+   - id: isort
+     name: isort (python)
+
+- repo: https://github.com/psf/black
+  rev: 23.10.0
+  hooks:
+  - id: black
+    language_version: python3.10
+
+- repo: https://github.com/pycqa/flake8
+  rev: 6.0.0
+  hooks:
+    - id: flake8
+      language_version: python3.10

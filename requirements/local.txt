@@ -1,0 +1,2 @@
+pre-commit~=3.5
+isort~=5.1.0

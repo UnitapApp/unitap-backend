@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.db import models
 from authentication.models import NetworkTypes, UserProfile
 from faucet.models import Chain, ClaimReceipt
+from faucet.constraints import OptimismHasClaimedGasInThisRound
 from core.models import UserConstraint
 from .constraints import *
 from django.core.cache import cache
@@ -12,6 +13,7 @@ class Constraint(UserConstraint):
         OncePerWeekVerification,
         OncePerMonthVerification,
         OnceInALifeTimeVerification,
+        OptimismHasClaimedGasInThisRound,
     ]
     name = UserConstraint.create_name_field(constraints)
 
