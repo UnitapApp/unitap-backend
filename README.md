@@ -85,7 +85,7 @@ source .venv/bin/activate
 install requirements:
 
 ```shell
-pip install -r requirements/base.txt
+pip install -r requirements.txt
 ```
 
 run migrations:
