@@ -1,10 +1,11 @@
 import pprint
 import requests
-from .lnpay_main import __ENDPOINT_URL__, __PUBLIC_API_KEY__, __VERSION__
 import json
 
 
 def get_request(location):
+    from .lnpay_main import __ENDPOINT_URL__, __PUBLIC_API_KEY__, __VERSION__
+
     """
     Network utility method for making a GET call to a LNPay endpoint
 
@@ -27,6 +28,8 @@ def get_request(location):
 
 
 def post_request(location, params):
+    from .lnpay_main import __ENDPOINT_URL__, __PUBLIC_API_KEY__, __VERSION__
+
     """
     Network utility method for making a POST call to a LNPay endpoint
 
@@ -39,6 +42,7 @@ def post_request(location, params):
     -------
     Network response as a JSON Object.
     """
+
     endpoint = __ENDPOINT_URL__ + location
     headers = {
         "Content-Type": "application/json",

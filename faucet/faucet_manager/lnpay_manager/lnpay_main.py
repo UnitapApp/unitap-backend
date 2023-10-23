@@ -3,7 +3,7 @@
 __version__ = "0.1.1"
 
 __VERSION__ = "py" + __version__
-__ENDPOINT_URL__ = "https://lnpay.co/v1/"
+__ENDPOINT_URL__ = "https://api.lnpay.co/v1/"
 __DEFAULT_WAK__ = ""
 __PUBLIC_API_KEY__ = ""
 
