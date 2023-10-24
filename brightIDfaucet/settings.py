@@ -1,51 +1,51 @@
+import logging
 import os
 from pathlib import Path
-from faucet.faucet_manager.bright_id_interface import BrightIDInterface
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-from dotenv import load_dotenv
+
 import dj_database_url
-import logging
+import sentry_sdk
+from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
+
+from faucet.faucet_manager.bright_id_interface import BrightIDInterface
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'WARNING',
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
-        'django.server': {
-            'handlers': ['console'],
-            'level': 'INFO',
+        "django.server": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'INFO',
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
-        'django.core.cache': {
-            'handlers': ['console'],
-            'level': 'ERROR',  # Change this to control the log level
-        }
-    }
+        "django.core.cache": {
+            "handlers": ["console"],
+            "level": "ERROR",  # Change this to control the log level
+        },
+    },
 }
 
 
@@ -117,7 +117,7 @@ INSTALLED_APPS = [
     "encrypted_model_fields",
     "drf_yasg",
     "corsheaders",
-    "django_filters"
+    "django_filters",
 ]
 
 MIDDLEWARE = [

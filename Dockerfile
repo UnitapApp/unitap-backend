@@ -4,8 +4,6 @@ WORKDIR /code
 RUN apt update && apt install gcc
 COPY ./requirements.txt /code/requirements.txt
 RUN pip install pip --upgrade
-#installing requests befor the rest for lnpay compatibility
-RUN pip install requests
 RUN pip install -r requirements.txt
 COPY . .
 RUN mkdir db
