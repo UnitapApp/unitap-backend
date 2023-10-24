@@ -1,10 +1,9 @@
 # syntax=docker/dockerfile:1
-FROM --platform=linux/amd64 python:3.10
+FROM --platform=linux/amd64 python:3.10.11
 WORKDIR /code
-COPY requirements.txt /code/
+RUN apt update && apt install gcc
+COPY ./requirements.txt /code/requirements.txt
 RUN pip install pip --upgrade
-RUN echo installing requests befor the rest for lnpay compatibility
-RUN pip install requests
 RUN pip install -r requirements.txt
 COPY . .
 RUN mkdir db
