@@ -279,7 +279,8 @@ def process_verified_lighning_claim(gas_tap_claim_id):
         )
 
         if not tokentap_lightning_claim:
-            raise Exception("No tokentap claim found for user")
+            print("No tokentap claim found for user")
+            return
 
         tokentap_lightning_claim.status = ClaimReceipt.VERIFIED
         tokentap_lightning_claim.tx_hash = claim.tx_hash
@@ -308,7 +309,8 @@ def process_rejected_lighning_claim(gas_tap_claim_id):
         )
 
         if not tokentap_lightning_claim:
-            raise Exception("No tokentap claim found for user")
+            print("No tokentap claim found for user")
+            return
 
         tokentap_lightning_claim.delete()
 
