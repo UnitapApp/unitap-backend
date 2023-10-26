@@ -53,11 +53,6 @@ app.conf.beat_schedule = {
     "set-raffle-random-words": {"task": "prizetap.tasks.set_raffle_random_words", "schedule": 120},
     "set-raffle-winners": {"task": "prizetap.tasks.set_raffle_winners", "schedule": 300},
     "get-raffle-winners": {"task": "prizetap.tasks.get_raffle_winners", "schedule": 300},
-    "request-random-words-for-linea-raffles": {
-        "task": "prizetap.tasks.request_random_words_for_expired_linea_raffles",
-        "schedule": 150,
-    },
-    "set-linea-raffle-winners": {"task": "prizetap.tasks.set_the_winner_of_linea_raffles", "schedule": 60},
 }
 
 # Load task modules from all registered Django apps.

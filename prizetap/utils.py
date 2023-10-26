@@ -4,7 +4,6 @@ from core.utils import Web3Utils
 from faucet.models import Chain
 
 from .constants import (
-    LINEA_PRIZETAP_ABI,
     PRIZETAP_ERC20_ABI,
     PRIZETAP_ERC721_ABI,
     UNITAP_PASS_ABI,
@@ -57,28 +56,6 @@ class PrizetapContractClient(Web3Utils):
     def get_raffle_winners_count(self):
         func = self.contract.functions.getWinnersCount(self.raffle.raffleId)
         return self.contract_call(func)
-
-
-class LineaPrizetapContractClient(PrizetapContractClient):
-    def __init__(self, raffle) -> None:
-        super().__init__(raffle)
-        abi = LINEA_PRIZETAP_ABI
-        self.set_contract(self.raffle.contract, abi)
-
-    def draw_raffle(self, expiration_time, random_words, reqId, muon_sig, gateway_sig):
-        func = self.contract.functions.drawRaffle(
-            self.raffle.raffleId, expiration_time, random_words, reqId, muon_sig, gateway_sig
-        )
-        return self.contract_txn(func)
-
-    def get_raffle_winners(self):
-        func = self.contract.functions.getWinners(self.raffle.raffleId)
-        return self.contract_call(func)
-
-    def get_raffle_winners_count(self):
-        func = self.contract.functions.raffles(self.raffle.raffleId)
-        raffle = self.contract_call(func)
-        return raffle[6]
 
 
 class VRFClientContractClient(Web3Utils):
