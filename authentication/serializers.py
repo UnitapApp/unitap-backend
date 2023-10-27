@@ -53,7 +53,7 @@ class WalletSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     wallets = WalletSerializer(many=True, read_only=True)
-    total_weekly_claims_remaining = serializers.SerializerMethodField()
+    total_round_claims_remaining = serializers.SerializerMethodField()
     token = serializers.SerializerMethodField()
 
     class Meta:
@@ -65,7 +65,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "initial_context_id",
             "is_meet_verified",
             "is_aura_verified",
-            "total_weekly_claims_remaining",
+            "total_round_claims_remaining",
             "wallets",
         ]
 
@@ -73,7 +73,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         token, bol = Token.objects.get_or_create(user=instance.user)
         return token.key
 
-    def get_total_weekly_claims_remaining(self, instance):
+    def get_total_round_claims_remaining(self, instance):
         gs = GlobalSettings.objects.first()
         if gs is not None:
             return gs.gastap_round_claim_limit - LimitedChainClaimManager.get_total_round_claims(instance)
