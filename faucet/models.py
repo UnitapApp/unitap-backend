@@ -361,55 +361,35 @@ class Chain(models.Model):
         return total_claims
 
     @property
-    def total_claims_since_last_monday(self):
-        cached_total_claims_since_last_monday = cache.get(f"gas_tap_chain_total_claims_since_last_monday_{self.pk}")
-        if cached_total_claims_since_last_monday:
-            return cached_total_claims_since_last_monday
-        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+    def total_claims_this_round(self):
+        cached_total_claims_this_round = cache.get(f"gas_tap_chain_total_claims_this_round_{self.pk}")
+        if cached_total_claims_this_round:
+            return cached_total_claims_this_round
+        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
-        total_claims_since_last_monday = ClaimReceipt.objects.filter(
+        total_claims_this_round = ClaimReceipt.objects.filter(
             chain=self,
-            datetime__gte=WeeklyCreditStrategy.get_last_monday(),
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+            datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
+            _status__in=[ClaimReceipt.VERIFIED],
         ).count()
         cache.set(
-            f"gas_tap_chain_total_claims_since_last_monday_{self.pk}",
-            total_claims_since_last_monday,
+            f"gas_tap_chain_total_claims_this_round_{self.pk}",
+            total_claims_this_round,
             get_cache_time(self.pk),
         )
-        return total_claims_since_last_monday
-
-    @property
-    def total_claims_for_last_round(self):
-        cached_total_claims_for_last_round = cache.get(f"gas_tap_chain_total_claims_for_last_round_{self.pk}")
-        if cached_total_claims_for_last_round:
-            return cached_total_claims_for_last_round
-        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
-
-        total_claims_for_last_round = ClaimReceipt.objects.filter(
-            chain=self,
-            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
-            datetime__lte=WeeklyCreditStrategy.get_last_monday(),
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
-        ).count()
-        cache.set(
-            f"gas_tap_chain_total_claims_for_last_round_{self.pk}",
-            total_claims_for_last_round,
-            get_cache_time(self.pk),
-        )
-        return total_claims_for_last_round
+        return total_claims_this_round
 
     @property
     def total_claims_since_last_round(self):
         cached_total_claims_since_last_round = cache.get(f"gas_tap_chain_total_claims_since_last_round_{self.pk}")
         if cached_total_claims_since_last_round:
             return cached_total_claims_since_last_round
-        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
         total_claims_since_last_round = ClaimReceipt.objects.filter(
             chain=self,
-            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+            datetime__gte=RoundCreditStrategy.get_start_of_previous_round(),
+            _status__in=[ClaimReceipt.VERIFIED],
         ).count()
         cache.set(
             f"gas_tap_chain_total_claims_since_last_round_{self.pk}",

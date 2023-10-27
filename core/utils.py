@@ -1,47 +1,46 @@
 import datetime
+
 import pytz
-from time import time
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
 from web3.contract.contract import Contract, ContractFunction
-from web3.types import Type, TxParams
-from django.utils import timezone
+from web3.middleware import geth_poa_middleware
+from web3.types import TxParams, Type
 
 
 class TimeUtils:
-    @staticmethod
-    def get_last_monday():
-        now = int(time())
-        day = 86400  # seconds in a day
-        week = 7 * day
-        weeks = now // week  # number of weeks since epoch
-        monday = 345600  # first monday midnight
-        last_monday_midnight = monday + (weeks * week)
+    #     @staticmethod
+    #     def get_last_monday():
+    #         now = int(time())
+    #         day = 86400  # seconds in a day
+    #         week = 7 * day
+    #         weeks = now // week  # number of weeks since epoch
+    #         monday = 345600  # first monday midnight
+    #         last_monday_midnight = monday + (weeks * week)
 
-        # last monday could be off by one week
-        if last_monday_midnight > now:
-            last_monday_midnight -= week
+    #         # last monday could be off by one week
+    #         if last_monday_midnight > now:
+    #             last_monday_midnight -= week
 
-        return timezone.make_aware(
-            datetime.datetime.fromtimestamp(last_monday_midnight)
-        )
+    #         return timezone.make_aware(
+    #             datetime.datetime.fromtimestamp(last_monday_midnight)
+    #         )
 
-    @staticmethod
-    def get_second_last_monday():
-        now = int(time())
-        day = 86400  # seconds in a day
-        week = 7 * day
-        weeks = now // week  # number of weeks since epoch
-        monday = 345600  # first monday midnight
-        last_monday_midnight = monday + (weeks * week)
+    #     @staticmethod
+    #     def get_second_last_monday():
+    #         now = int(time())
+    #         day = 86400  # seconds in a day
+    #         week = 7 * day
+    #         weeks = now // week  # number of weeks since epoch
+    #         monday = 345600  # first monday midnight
+    #         last_monday_midnight = monday + (weeks * week)
 
-        # last monday could be off by one week
-        if last_monday_midnight > now:
-            last_monday_midnight -= week
+    #         # last monday could be off by one week
+    #         if last_monday_midnight > now:
+    #             last_monday_midnight -= week
 
-        return timezone.make_aware(
-            datetime.datetime.fromtimestamp(last_monday_midnight - week)
-        )
+    #         return timezone.make_aware(
+    #             datetime.datetime.fromtimestamp(last_monday_midnight - week)
+    #         )
 
     @staticmethod
     def get_first_day_of_the_month():
@@ -49,9 +48,17 @@ class TimeUtils:
         first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         return first_day
 
+    @staticmethod
+    def get_first_day_of_last_month():
+        now = datetime.datetime.now(pytz.timezone("UTC"))
+        first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_month = first_day - datetime.timedelta(days=1)
+        first_day_of_last_month = last_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        return first_day_of_last_month
+
 
 class Web3Utils:
-    def __init__(self, rpc_url, poa = False) -> None:
+    def __init__(self, rpc_url, poa=False) -> None:
         self._rpc_url = rpc_url
         self._w3 = None
         self._account = None
@@ -71,7 +78,7 @@ class Web3Utils:
             return self._w3
 
         raise Exception(f"RPC provider is not connected ({self._rpc_url})")
-    
+
     @property
     def poa(self):
         return self._poa
@@ -102,8 +109,7 @@ class Web3Utils:
 
     def build_contract_txn(self, func: Type[ContractFunction]):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
-        tx_data = func.build_transaction(
-            {"from": self.account.address, "nonce": nonce})
+        tx_data = func.build_transaction({"from": self.account.address, "nonce": nonce})
         return self.sign_tx(tx_data)
 
     def sign_tx(self, tx_data: TxParams):
@@ -117,6 +123,6 @@ class Web3Utils:
 
     def current_block(self):
         return self.w3.eth.block_number
-    
+
     def get_transaction_by_hash(self, hash):
         return self.w3.eth.get_transaction(hash)
