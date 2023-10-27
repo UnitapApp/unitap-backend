@@ -1,6 +1,8 @@
 from django.db import models
 from polymorphic.models import PolymorphicModel
 
+from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
+
 
 class Permission(PolymorphicModel):
     name = models.CharField(max_length=200)
@@ -30,28 +32,28 @@ class BrightIDAuraVerification(Permission):
         return "You must be Aura verified on BrightID to claim this token."
 
 
-# class OncePerWeekVerification(Permission):
-#     def is_valid(self, user_profile, *args, **kwargs):
-#         token_distribution = kwargs.get("token_distribution")
-#         return not token_distribution.claims.filter(
-#             user_profile=user_profile,
-#             created_at__gte=WeeklyCreditStrategy.get_last_monday(),
-#         ).exists()
+class OncePerWeekVerification(Permission):
+    def is_valid(self, user_profile, *args, **kwargs):
+        token_distribution = kwargs.get("token_distribution")
+        return not token_distribution.claims.filter(
+            user_profile=user_profile,
+            created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
+        ).exists()
 
-#     def response(self):
-#         return "You have already claimed this token this week"
+    def response(self):
+        return "You have already claimed this token this week"
 
 
-# class OncePerMonthVerification(Permission):
-#     def is_valid(self, user_profile, *args, **kwargs):
-#         token_distribution = kwargs.get("token_distribution")
-#         return not token_distribution.claims.filter(
-#             user_profile=user_profile,
-#             created_at__gte=WeeklyCreditStrategy.get_first_day_of_the_month(),
-#         ).exists()
+class OncePerMonthVerification(Permission):
+    def is_valid(self, user_profile, *args, **kwargs):
+        token_distribution = kwargs.get("token_distribution")
+        return not token_distribution.claims.filter(
+            user_profile=user_profile,
+            created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
+        ).exists()
 
-#     def response(self):
-#         return "You have already claimed this token this month"
+    def response(self):
+        return "You have already claimed this token this month"
 
 
 class OnceInALifeTimeVerification(Permission):
