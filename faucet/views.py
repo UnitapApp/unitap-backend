@@ -84,7 +84,7 @@ class ListClaims(ListAPIView):
         ).order_by("-pk")
 
 
-class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
+class GetTotalRoundClaimsRemainingView(RetrieveAPIView):
     """
     Return the total weekly claims remaining for the given user
     """
@@ -95,8 +95,8 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
         user_profile = request.user.profile
         gs = GlobalSettings.objects.first()
         if gs is not None:
-            result = gs.weekly_chain_claim_limit - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
-            return Response({"total_weekly_claims_remaining": result}, status=200)
+            result = gs.gastap_round_claim_limit - LimitedChainClaimManager.get_total_round_claims(user_profile)
+            return Response({"total_round_claims_remaining": result}, status=200)
         else:
             raise Http404("Global Settings Not Found")
 
