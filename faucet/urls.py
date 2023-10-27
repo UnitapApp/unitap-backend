@@ -8,7 +8,7 @@ from faucet.views import (
     ClaimCountView,
     ClaimMaxView,
     DonationReceiptView,
-    GetTotalWeeklyClaimsRemainingView,
+    GetTotalRoundClaimsRemainingView,
     GlobalSettingsView,
     LastClaimView,
     LeaderboardView,
@@ -35,7 +35,7 @@ app_name = "FAUCET"
 urlpatterns = [
     path(
         "user/remainig-claims/",
-        GetTotalWeeklyClaimsRemainingView.as_view(),
+        GetTotalRoundClaimsRemainingView.as_view(),
         name="remaining-claims",
     ),
     path("user/last-claim/", LastClaimView.as_view(), name="last-claim"),
