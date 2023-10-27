@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from .constraints import *
+
+from .constraints import BrightIDAuraVerification, BrightIDMeetVerification
 
 
 class UserConstraint(models.Model):
@@ -19,9 +20,7 @@ class UserConstraint(models.Model):
         choices=[(c.__name__, c.__name__) for c in constraints],
     )
     title = models.CharField(max_length=255)
-    type = models.CharField(
-        max_length=10, choices=Type.choices, default=Type.VERIFICATION
-    )
+    type = models.CharField(max_length=10, choices=Type.choices, default=Type.VERIFICATION)
     description = models.TextField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
     icon_url = models.CharField(max_length=255, null=True, blank=True)
@@ -42,10 +41,8 @@ class TokenPrice(models.Model):
     usd_price = models.CharField(max_length=255, null=False)
     datetime = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
-    price_url = models.URLField(max_length=255, null=True)
-    symbol = models.CharField(
-        max_length=255, db_index=True, unique=True, null=False, blank=False
-    )
+    price_url = models.URLField(max_length=255, null=True, blank=True)
+    symbol = models.CharField(max_length=255, db_index=True, unique=True, null=False, blank=False)
 
 
 class BigNumField(models.Field):
