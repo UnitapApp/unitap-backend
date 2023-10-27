@@ -6,6 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('permissions', '0004_oncepermonthverification'),
         ('prizetap', '0002_raffle_is_prize_nft'),
     ]
 
