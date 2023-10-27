@@ -1,31 +1,38 @@
-# from django.contrib import admin
-# from .models import *
+from django.contrib import admin
 
-# # Register your models here.
+from .models import (
+    BrightIDAuraVerification,
+    BrightIDMeetVerification,
+    OnceInALifeTimeVerification,
+    OncePerMonthVerification,
+    OncePerWeekVerification,
+)
 
-
-# class BrightIDMeetVerificationAdmin(admin.ModelAdmin):
-#     list_display = ["pk", "name"]
-
-
-# class BrightIDAuraVerificationAdmin(admin.ModelAdmin):
-#     list_display = ["pk", "name"]
-
-
-# class OncePerWeekVerificationAdmin(admin.ModelAdmin):
-#     list_display = ["pk", "name"]
+# Register your models here.
 
 
-# class OncePerMonthVerificationAdmin(admin.ModelAdmin):
-#     list_display = ["pk", "name"]
+class BrightIDMeetVerificationAdmin(admin.ModelAdmin):
+    list_display = ["pk", "name"]
 
 
-# class OnceInALifeTimeVerificationAdmin(admin.ModelAdmin):
-#     list_display = ["pk", "name"]
+class BrightIDAuraVerificationAdmin(admin.ModelAdmin):
+    list_display = ["pk", "name"]
 
 
-# admin.site.register(BrightIDMeetVerification, BrightIDMeetVerificationAdmin)
-# admin.site.register(BrightIDAuraVerification, BrightIDAuraVerificationAdmin)
-# admin.site.register(OncePerWeekVerification, OncePerWeekVerificationAdmin)
-# admin.site.register(OncePerMonthVerification, OncePerMonthVerificationAdmin)
-# admin.site.register(OnceInALifeTimeVerification, OnceInALifeTimeVerificationAdmin)
+class OncePerWeekVerificationAdmin(admin.ModelAdmin):
+    list_display = ["pk", "name"]
+
+
+class OncePerMonthVerificationAdmin(admin.ModelAdmin):
+    list_display = ["pk", "name"]
+
+
+class OnceInALifeTimeVerificationAdmin(admin.ModelAdmin):
+    list_display = ["pk", "name"]
+
+
+admin.site.register(BrightIDMeetVerification, BrightIDMeetVerificationAdmin)
+admin.site.register(BrightIDAuraVerification, BrightIDAuraVerificationAdmin)
+admin.site.register(OncePerWeekVerification, OncePerWeekVerificationAdmin)
+admin.site.register(OncePerMonthVerification, OncePerMonthVerificationAdmin)
+admin.site.register(OnceInALifeTimeVerification, OnceInALifeTimeVerificationAdmin)
