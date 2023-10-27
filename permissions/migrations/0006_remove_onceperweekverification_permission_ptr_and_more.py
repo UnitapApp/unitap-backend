@@ -10,10 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='onceperweekverification',
-            name='permission_ptr',
-        ),
+        # migrations.RemoveField(
+        #     model_name='onceperweekverification',
+        #     name='permission_ptr',
+        # ),
         migrations.DeleteModel(
             name='OncePerMonthVerification',
         ),
