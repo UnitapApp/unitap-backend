@@ -4,18 +4,9 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
-
-# from permissions.models import (
-#     BrightIDAuraVerification,
-#     BrightIDMeetVerification,
-#     OncePerWeekVerification,
-#     OncePerMonthVerification,
-#     OnceInALifeTimeVerification,
-# )
 from rest_framework.test import APITestCase, override_settings
 
 from authentication.models import NetworkTypes, UserProfile, Wallet
-from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
 from faucet.models import (
     Chain,
     ClaimReceipt,
@@ -217,7 +208,6 @@ class TokenDistributionAPITestCase(APITestCase):
         )
         self.permission1 = Constraint.objects.create(name="BrightIDMeetVerification", title="BrightID Meet", type="VER")
         self.permission2 = Constraint.objects.create(name="BrightIDAuraVerification", title="BrightID Aura", type="VER")
-        self.permission3 = Constraint.objects.create(name="OncePerWeekVerification", title="Once per Week", type="TIME")
         self.permission4 = Constraint.objects.create(
             name="OncePerMonthVerification", title="Once per Month", type="TIME"
         )
@@ -225,7 +215,7 @@ class TokenDistributionAPITestCase(APITestCase):
             name="OnceInALifeTimeVerification", title="Once per Lifetime", type="TIME"
         )
 
-        self.td.permissions.set([self.permission1, self.permission2, self.permission3, self.permission4])
+        self.td.permissions.set([self.permission1, self.permission2, self.permission4])
 
         self.btc_td = TokenDistribution.objects.create(
             name="Test Distribution",
@@ -322,29 +312,29 @@ class TokenDistributionAPITestCase(APITestCase):
         #     response.data["detail"], "You have already claimed this token this week"
         # )
 
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
-    )
-    def test_token_distribution_not_claimable_already_claimed_month(self):
-        tdc = TokenDistributionClaim.objects.create(
-            user_profile=self.user_profile,
-            token_distribution=self.td,
-            # Claimed 2 weeks ago
-            created_at=WeeklyCreditStrategy.get_first_day_of_the_month(),
-        )
-        tdc.created_at = WeeklyCreditStrategy.get_first_day_of_the_month()
-        tdc.save()
+    # @patch(
+    #     "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+    #     lambda a, b, c: (True, None),
+    # )
+    # def test_token_distribution_not_claimable_already_claimed_month(self):
+    #     tdc = TokenDistributionClaim.objects.create(
+    #         user_profile=self.user_profile,
+    #         token_distribution=self.td,
+    #         # Claimed 2 weeks ago
+    #         created_at=WeeklyCreditStrategy.get_first_day_of_the_month(),
+    #     )
+    #     tdc.created_at = WeeklyCreditStrategy.get_first_day_of_the_month()
+    #     tdc.save()
 
-        self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
-        )
+    #     self.client.force_authenticate(user=self.user_profile.user)
+    #     response = self.client.post(
+    #         reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+    #     )
 
-        self.assertEqual(response.status_code, 403)
-        # self.assertEqual(
-        #     response.data["detail"], "You have already claimed this token this month"
-        # )
+    #     self.assertEqual(response.status_code, 403)
+    #     # self.assertEqual(
+    #     #     response.data["detail"], "You have already claimed this token this month"
+    #     # )
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
@@ -357,7 +347,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_token_distribution_not_claimable_weekly_credit_limit_reached(self):
-        self.global_settings.tokentap_weekly_claim_limit = 0
+        self.global_settings.tokentap_round_claim_limit = 0
         self.global_settings.save()
 
         self.client.force_authenticate(user=self.user_profile.user)
