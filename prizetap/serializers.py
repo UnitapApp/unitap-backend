@@ -1,11 +1,16 @@
-import json
+# flake8: noqa
 import base64
+import json
+
 from rest_framework import serializers
-from core.serializers import UserConstraintBaseSerializer
+
 from authentication.serializers import SimpleProfilerSerializer
+from core.serializers import UserConstraintBaseSerializer
 from faucet.serializers import SmallChainSerializer
+
+from .constraints import *
 from .models import *
-from .constants import *
+
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
     class Meta(UserConstraintBaseSerializer.Meta):
@@ -15,6 +20,7 @@ class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerial
     def get_params(self, constraint: UserConstraint):
         c_class: ConstraintVerification = eval(constraint.name)
         return [p.name for p in c_class.param_keys()]
+
 
 class SimpleRaffleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,11 +38,13 @@ class SimpleRaffleSerializer(serializers.ModelSerializer):
             "raffleId",
         ]
 
+
 class RaffleEntrySerializer(serializers.ModelSerializer):
     raffle = SimpleRaffleSerializer()
     user_profile = SimpleProfilerSerializer()
     chain = serializers.SerializerMethodField()
     wallet = serializers.SerializerMethodField()
+
     class Meta:
         model = RaffleEntry
         fields = [
@@ -48,7 +56,7 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "created_at",
             "multiplier",
             "tx_hash",
-            "claiming_prize_tx"
+            "claiming_prize_tx",
         ]
         read_only_fields = [
             "pk",
@@ -62,25 +70,18 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
 
     def get_chain(self, entry: RaffleEntry):
         return entry.raffle.chain.chain_id
-    
+
     def get_wallet(self, entry: RaffleEntry):
-        return entry.user_profile.wallets.get(
-            wallet_type=entry.raffle.chain.chain_type).address
+        return entry.user_profile.wallets.get(wallet_type=entry.raffle.chain.chain_type).address
+
 
 class WinnerEntrySerializer(serializers.ModelSerializer):
     user_profile = SimpleProfilerSerializer()
     wallet = serializers.SerializerMethodField()
+
     class Meta:
         model = RaffleEntry
-        fields = [
-            "pk",
-            "user_profile",
-            "wallet",
-            "created_at",
-            "multiplier",
-            "tx_hash",
-            "claiming_prize_tx"
-        ]
+        fields = ["pk", "user_profile", "wallet", "created_at", "multiplier", "tx_hash", "claiming_prize_tx"]
         read_only_fields = [
             "pk",
             "user_profile",
@@ -90,13 +91,13 @@ class WinnerEntrySerializer(serializers.ModelSerializer):
         ]
 
     def get_wallet(self, entry: RaffleEntry):
-        return entry.user_profile.wallets.get(
-            wallet_type=entry.raffle.chain.chain_type).address
+        return entry.user_profile.wallets.get(wallet_type=entry.raffle.chain.chain_type).address
+
 
 class CreateRaffleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Raffle
-        fields = '__all__'
+        fields = "__all__"
 
         read_only_fields = [
             "pk",
@@ -105,13 +106,13 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
             "created_at",
             "status",
             "rejection_reason",
-            "is_active"
+            "is_active",
         ]
 
     def validate(self, data):
-        constraints = data['constraints']
-        constraint_params = json.loads(base64.b64decode(data['constraint_params']))
-        data['constraint_params'] = base64.b64decode(data['constraint_params']).decode("utf-8")
+        constraints = data["constraints"]
+        constraint_params = json.loads(base64.b64decode(data["constraint_params"]))
+        data["constraint_params"] = base64.b64decode(data["constraint_params"]).decode("utf-8")
         if len(constraints) != 0:
             for c in constraints:
                 constraint_class: ConstraintVerification = eval(c.name)
@@ -119,13 +120,10 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
                     if len(constraint_class.param_keys()) != 0:
                         constraint_class.is_valid_param_keys(constraint_params[c.name])
                 except KeyError as e:
-                    raise serializers.ValidationError({
-                        "constraint_params": [{
-                            f"{c.name}": str(e)
-                        }]
-                    })
-        data['creator_profile'] = self.context['user_profile']
+                    raise serializers.ValidationError({"constraint_params": [{f"{c.name}": str(e)}]})
+        data["creator_profile"] = self.context["user_profile"]
         return data
+
 
 class RaffleSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer()
@@ -174,14 +172,12 @@ class RaffleSerializer(serializers.ModelSerializer):
             "user_entry",
             "number_of_entries",
             "number_of_onchain_entries",
-            "max_multiplier"
+            "max_multiplier",
         ]
-        
+
     def get_user_entry(self, raffle: Raffle):
         try:
-            return RaffleEntrySerializer(
-                raffle.entries.get(user_profile=self.context['user'])
-            ).data
+            return RaffleEntrySerializer(raffle.entries.get(user_profile=self.context["user"])).data
         except RaffleEntry.DoesNotExist:
             return None
 
