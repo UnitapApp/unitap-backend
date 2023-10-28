@@ -1,11 +1,10 @@
 from django.db import models
 from polymorphic.models import PolymorphicModel
 
-from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
+from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
 
 
 class Permission(PolymorphicModel):
-
     name = models.CharField(max_length=200)
     description = models.TextField(null=True, blank=True)
 
@@ -38,7 +37,7 @@ class OncePerWeekVerification(Permission):
         token_distribution = kwargs.get("token_distribution")
         return not token_distribution.claims.filter(
             user_profile=user_profile,
-            created_at__gte=WeeklyCreditStrategy.get_last_monday(),
+            created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
         ).exists()
 
     def response(self):
@@ -50,7 +49,7 @@ class OncePerMonthVerification(Permission):
         token_distribution = kwargs.get("token_distribution")
         return not token_distribution.claims.filter(
             user_profile=user_profile,
-            created_at__gte=WeeklyCreditStrategy.get_first_day_of_the_month(),
+            created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
         ).exists()
 
     def response(self):

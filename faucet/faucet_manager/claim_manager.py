@@ -1,19 +1,19 @@
-import logging
 import abc
+import logging
 from abc import ABC
-from django.utils import timezone
-from authentication.models import UserProfile
-from authentication.models import NetworkTypes
-from faucet.faucet_manager.lnpay_client import LNPayClient
 
+from django.db import transaction
+from django.utils import timezone
+
+from authentication.models import NetworkTypes, UserProfile
 from faucet.faucet_manager.credit_strategy import (
     CreditStrategy,
     CreditStrategyFactory,
-    WeeklyCreditStrategy,
+    RoundCreditStrategy,
 )
 from faucet.faucet_manager.fund_manager import EVMFundManager
-from faucet.models import ClaimReceipt, BrightUser, GlobalSettings
-from django.db import transaction
+from faucet.faucet_manager.lnpay_client import LNPayClient
+from faucet.models import BrightUser, ClaimReceipt, GlobalSettings
 
 
 class ClaimManager(ABC):
@@ -36,9 +36,7 @@ class SimpleClaimManager(ClaimManager):
 
     def claim(self, amount, passive_address=None):
         with transaction.atomic():
-            user_profile = UserProfile.objects.select_for_update().get(
-                pk=self.credit_strategy.user_profile.pk
-            )
+            user_profile = UserProfile.objects.select_for_update().get(pk=self.credit_strategy.user_profile.pk)
             self.assert_pre_claim_conditions(amount, user_profile)
             return self.create_pending_claim_receipt(
                 amount, passive_address
@@ -46,8 +44,7 @@ class SimpleClaimManager(ClaimManager):
 
     def assert_pre_claim_conditions(self, amount, user_profile):
         assert amount <= self.credit_strategy.get_unclaimed()
-        # TODO: uncomment this
-        assert self.user_is_meet_verified() == True
+        assert self.user_is_meet_verified() is True
         assert not ClaimReceipt.objects.filter(
             chain=self.credit_strategy.chain,
             user_profile=user_profile,
@@ -72,13 +69,13 @@ class SimpleClaimManager(ClaimManager):
 
 
 class LimitedChainClaimManager(SimpleClaimManager):
-    def get_weekly_limit(self):
-        limit = GlobalSettings.objects.first().weekly_chain_claim_limit
+    def get_round_limit(self):
+        limit = GlobalSettings.objects.first().gastap_round_claim_limit
         return limit
 
     @staticmethod
-    def get_total_weekly_claims(user_profile):
-        last_monday = WeeklyCreditStrategy.get_last_monday()
+    def get_total_round_claims(user_profile):
+        start_of_the_round = RoundCreditStrategy.get_start_of_the_round()
         return ClaimReceipt.objects.filter(
             user_profile=user_profile,
             _status__in=[
@@ -87,27 +84,28 @@ class LimitedChainClaimManager(SimpleClaimManager):
                 BrightUser.PENDING,
                 BrightUser.VERIFIED,
             ],
-            datetime__gte=last_monday,
+            datetime__gte=start_of_the_round,
         ).count()
 
     def assert_pre_claim_conditions(self, amount, user_profile):
         super().assert_pre_claim_conditions(amount, user_profile)
-        total_claims = self.get_total_weekly_claims(user_profile)
-        assert total_claims < self.get_weekly_limit()
+        total_claims = self.get_total_round_claims(user_profile)
+        assert total_claims < self.get_round_limit()
+
 
 class LightningClaimManger(LimitedChainClaimManager):
     def claim(self, amount, passive_address):
         try:
             lnpay_client = LNPayClient(
-                self.credit_strategy.chain.rpc_url_private, 
-                self.credit_strategy.chain.wallet.main_key, 
-                self.credit_strategy.chain.fund_manager_address
+                self.credit_strategy.chain.rpc_url_private,
+                self.credit_strategy.chain.wallet.main_key,
+                self.credit_strategy.chain.fund_manager_address,
             )
             decoded_invoice = lnpay_client.decode_invoice(passive_address)
         except Exception as e:
             logging.error(e)
             raise AssertionError("Could not decode the invoice")
-        assert int(decoded_invoice['num_satoshis']) == amount, "Invalid amount"
+        assert int(decoded_invoice["num_satoshis"]) == amount, "Invalid amount"
         return super().claim(amount, passive_address)
 
 

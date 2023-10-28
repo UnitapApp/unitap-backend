@@ -1,15 +1,9 @@
-import time
-import os
 import logging
+import os
+import time
+
 from django.core.cache import cache
 from eth_account.signers.local import LocalAccount
-from web3 import Web3
-from web3.gas_strategies.rpc import rpc_gas_price_strategy
-from web3.middleware import geth_poa_middleware
-from faucet.faucet_manager.fund_manager_abi import manager_abi
-from faucet.models import Chain, BrightUser, LightningConfig
-from faucet.helpers import memcache_lock
-from faucet.constants import *
 from solana.rpc.api import Client
 from solana.rpc.core import RPCException, RPCNoResultException
 from solana.transaction import Transaction
@@ -17,10 +11,19 @@ from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.signature import Signature
 from solders.transaction_status import TransactionConfirmationStatus
-from .anchor_client.accounts.lock_account import LockAccount
+from web3 import Web3
+from web3.gas_strategies.rpc import rpc_gas_price_strategy
+from web3.middleware import geth_poa_middleware
+
+from faucet.constants import MEMCACHE_LIGHTNING_LOCK_KEY
+from faucet.faucet_manager.fund_manager_abi import manager_abi
+from faucet.helpers import memcache_lock
+from faucet.models import BrightUser, Chain, LightningConfig
+
 from .anchor_client import instructions
-from .solana_client import SolanaClient
+from .anchor_client.accounts.lock_account import LockAccount
 from .lnpay_client import LNPayClient
+from .solana_client import SolanaClient
 
 
 class FundMangerException:
@@ -48,9 +51,7 @@ class EVMFundManager:
                 return _w3
         except Exception as e:
             logging.error(e)
-            raise FundMangerException.RPCError(
-                f"Could not connect to rpc {self.chain.rpc_url_private}"
-            )
+            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
 
     @property
     def is_gas_price_too_high(self):
@@ -77,9 +78,7 @@ class EVMFundManager:
 
     @property
     def contract(self):
-        return self.w3.eth.contract(
-            address=self.get_fund_manager_checksum_address(), abi=self.abi
-        )
+        return self.w3.eth.contract(address=self.get_fund_manager_checksum_address(), abi=self.abi)
 
     def transfer(self, bright_user: BrightUser, amount: int):
         tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
@@ -153,9 +152,7 @@ class SolanaFundManager:
                 return _w3
         except Exception as e:
             logging.error(e)
-            raise FundMangerException.RPCError(
-                f"Could not connect to rpc {self.chain.rpc_url_private}"
-            )
+            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
 
     @property
     def account(self) -> Keypair:
@@ -171,9 +168,7 @@ class SolanaFundManager:
 
     @property
     def lock_account_address(self) -> Pubkey:
-        lock_account_address, nonce = Pubkey.find_program_address(
-            [self.lock_account_seed], self.program_id
-        )
+        lock_account_address, nonce = Pubkey.find_program_address([self.lock_account_seed], self.program_id)
         return lock_account_address
 
     @property
@@ -247,23 +242,17 @@ class SolanaFundManager:
     def is_tx_verified(self, tx_hash):
         try:
             confirmation_status = (
-                self.w3.get_signature_statuses([Signature.from_string(tx_hash)])
-                .value[0]
-                .confirmation_status
+                self.w3.get_signature_statuses([Signature.from_string(tx_hash)]).value[0].confirmation_status
             )
             return confirmation_status in [
                 TransactionConfirmationStatus.Confirmed,
                 TransactionConfirmationStatus.Finalized,
             ]
         except RPCException:
-            logging.warning(
-                "Solana raised the RPCException at get_signature_statuses()"
-            )
+            logging.warning("Solana raised the RPCException at get_signature_statuses()")
             return False
         except RPCNoResultException:
-            logging.warning(
-                "Solana raised the RPCNoResultException at get_signature_statuses()"
-            )
+            logging.warning("Solana raised the RPCNoResultException at get_signature_statuses()")
             return False
         except Exception:
             raise
@@ -285,9 +274,7 @@ class LightningFundManager:
 
     @property
     def lnpay_client(self):
-        return LNPayClient(
-            self.chain.rpc_url_private, self.api_key, self.chain.fund_manager_address
-        )
+        return LNPayClient(self.chain.rpc_url_private, self.api_key, self.chain.fund_manager_address)
 
     def __check_max_cap_exceeds(self, amount) -> bool:
         try:
@@ -309,9 +296,7 @@ class LightningFundManager:
             assert acquired, "Could not acquire Lightning multi-transfer lock"
 
             item = data[0]
-            assert not self.__check_max_cap_exceeds(
-                item["amount"]
-            ), "Lightning periodic max cap exceeded"
+            assert not self.__check_max_cap_exceeds(item["amount"]), "Lightning periodic max cap exceeded"
             try:
                 pay_result = client.pay_invoice(item["to"])
 
