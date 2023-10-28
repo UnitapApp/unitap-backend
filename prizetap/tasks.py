@@ -42,9 +42,11 @@ def set_raffle_random_words(self):
 
 def set_random_words(raffle: Raffle):
     muon_response = requests.get(
-        f"https://shield.unitap.app/v1/?app=stage_unitap&method=random-words&\
-            params[chainId]={raffle.chain.chain_id}&params[prizetapRaffle]={raffle.contract}&\
-            params[raffleId]={raffle.raffleId}"
+        (
+            "https://shield.unitap.app/v1/?app=stage_unitap&method=random-words&"
+            f"params[chainId]={raffle.chain.chain_id}&params[prizetapRaffle]={raffle.contract}&"
+            f"params[raffleId]={raffle.raffleId}"
+        )
     )
     muon_response = muon_response.json()
     if muon_response["success"]:
@@ -65,6 +67,8 @@ def set_random_words(raffle: Raffle):
         )
         raffle.status = Raffle.Status.RANDOM_WORDS_SET
         raffle.save()
+    else:
+        print(muon_response["error"]["message"])
 
 
 @shared_task(bind=True)
