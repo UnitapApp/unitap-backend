@@ -19,3 +19,6 @@ docker-up-dev:
 
 docker-down-dev:
 	docker-compose down
+
+docker-coverage-report:
+	docker-compose exec -i backend bash -c "coverage run manage.py test; coverage report"
