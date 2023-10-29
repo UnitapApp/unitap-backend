@@ -95,7 +95,7 @@ class GetTotalRoundClaimsRemainingView(RetrieveAPIView):
         user_profile = request.user.profile
         gs = GlobalSettings.objects.first()
         if gs is not None:
-            result = gs.gastap_round_claim_limit - LimitedChainClaimManager.get_total_round_claims(user_profile)
+            result = max(gs.gastap_round_claim_limit - LimitedChainClaimManager.get_total_round_claims(user_profile), 0)
             return Response({"total_round_claims_remaining": result}, status=200)
         else:
             raise Http404("Global Settings Not Found")
