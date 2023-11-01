@@ -31,6 +31,7 @@ from .constraints import (  # noqa: F401
     ConstraintVerification,
     OnceInALifeTimeVerification,
     OncePerMonthVerification,
+    OptimismHasClaimedGasInThisRound,
 )
 from .helpers import (
     create_uint32_random_nonce,
