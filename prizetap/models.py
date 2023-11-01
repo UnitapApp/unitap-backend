@@ -1,21 +1,23 @@
 from django.db import models
-from faucet.models import Chain
-from faucet.constraints import OptimismDonationConstraint, OptimismClaimingGasConstraint
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
 from authentication.models import NetworkTypes, UserProfile
 from core.models import BigNumField, UserConstraint
-from .constraints import *
+from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
+from faucet.models import Chain
+
+from .constraints import HaveUnitapPass, NotHaveUnitapPass
 
 # Create your models here.
 
 
 class Constraint(UserConstraint):
     constraints = UserConstraint.constraints + [
-        HaveUnitapPass, 
+        HaveUnitapPass,
         NotHaveUnitapPass,
         OptimismDonationConstraint,
-        OptimismClaimingGasConstraint
+        OptimismClaimingGasConstraint,
     ]
     name = UserConstraint.create_name_field(constraints)
 
@@ -25,14 +27,12 @@ class Raffle(models.Model):
         PENDING = "PENDING", _("Pending")
         REJECTED = "REJECTED", _("Rejected")
         VERIFIED = "VERIFIED", _("Verified")
-        HELD = "HELD", _("Held")
+        RANDOM_WORDS_SET = "RWS", _("Random words are set")
+        WINNERS_SET = "WS", _("Winners are set")
         CLOSED = "CLOSED", _("Closed")
-        WINNER_SET = "WS", _("Winner is set")
 
     class Meta:
-        models.UniqueConstraint(
-            fields=["chain", "contract", "raffleId"], name="unique_raffle"
-        )
+        models.UniqueConstraint(fields=["chain", "contract", "raffleId"], name="unique_raffle")
 
     name = models.CharField(max_length=256)
     description = models.TextField(null=True, blank=True)
@@ -66,10 +66,9 @@ class Raffle(models.Model):
     deadline = models.DateTimeField()
     max_number_of_entries = models.IntegerField()
     max_multiplier = models.IntegerField(default=1)
+    winners_count = models.IntegerField(default=1)
 
-    status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.PENDING
-    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     rejection_reason = models.TextField(null=True, blank=True)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
     vrf_tx_hash = models.CharField(max_length=255, blank=True, null=True)
@@ -124,10 +123,9 @@ class Raffle(models.Model):
 
     def __str__(self):
         return f"{self.name}"
-    
+
     def save(self, *args, **kwargs):
-        if self.status == self.Status.VERIFIED \
-            and not self.raffleId:
+        if self.status == self.Status.VERIFIED and not self.raffleId:
             raise Exception("The raffleId of a verified raffle can't be empty")
 
         super().save(*args, **kwargs)
@@ -139,9 +137,7 @@ class RaffleEntry(models.Model):
         verbose_name_plural = "raffle entries"
 
     raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="entries")
-    user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.CASCADE, related_name="raffle_entries"
-    )
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="raffle_entries")
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
@@ -160,16 +156,6 @@ class RaffleEntry(models.Model):
     @property
     def age(self):
         return timezone.now() - self.created_at
-
-    def save(self, *args, **kwargs):
-        if self.is_winner:
-            try:
-                entry = RaffleEntry.objects.get(is_winner=True, raffle=self.raffle)
-                assert entry.pk == self.pk, "The raffle already has a winner"
-            except RaffleEntry.DoesNotExist:
-                pass
-
-        super().save(*args, **kwargs)
 
 
 class LineaRaffleEntries(models.Model):

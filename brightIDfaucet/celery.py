@@ -38,34 +38,21 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.update_tokentap_claim_for_verified_lightning_claims",
         "schedule": 9,
     },
-    'update-tokens-price': {
+    "update-tokens-price": {
         "task": "faucet.tasks.update_tokens_price",
         "schedule": 600,
     },
-    'update-donation-receipt-status': {
+    "update-donation-receipt-status": {
         "task": "faucet.tasks.update_donation_receipt_pending_status",
         "schedule": 180,
     },
-    "draw-prizetap-raffles": {
-        "task": "prizetap.tasks.draw_the_expired_raffles",
-        "schedule": 300
+    "request-random-words-for-raffles": {
+        "task": "prizetap.tasks.request_random_words_for_expired_raffles",
+        "schedule": 120,
     },
-    "set-raffle-winner": {
-        "task": "prizetap.tasks.set_the_winner_of_raffles",
-        "schedule": 300
-    },
-    "request-random-words-for-linea-raffles": {
-        "task": "prizetap.tasks.request_random_words_for_expired_linea_raffles",
-        "schedule": 150
-    },
-    "draw-linea-raffles": {
-        "task": "prizetap.tasks.draw_expired_linea_raffles",
-        "schedule": 60
-    },
-    "set-linea-raffle-winners": {
-        "task": "prizetap.tasks.set_the_winner_of_linea_raffles",
-        "schedule": 60
-    }
+    "set-raffle-random-words": {"task": "prizetap.tasks.set_raffle_random_words", "schedule": 120},
+    "set-raffle-winners": {"task": "prizetap.tasks.set_raffle_winners", "schedule": 300},
+    "get-raffle-winners": {"task": "prizetap.tasks.get_raffle_winners", "schedule": 300},
 }
 
 # Load task modules from all registered Django apps.

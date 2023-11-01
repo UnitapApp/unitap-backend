@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import *
+
+from .models import (
+    BrightIDAuraVerification,
+    BrightIDMeetVerification,
+    OnceInALifeTimeVerification,
+    OncePerMonthVerification,
+    OncePerWeekVerification,
+)
 
 # Register your models here.
 

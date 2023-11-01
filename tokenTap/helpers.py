@@ -1,11 +1,13 @@
 import random
-from web3 import Web3, Account
-from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
-from faucet.models import GlobalSettings
-from .models import TokenDistributionClaim
-from authentication.models import NetworkTypes
-from faucet.models import WalletAccount
+
 from eth_account.messages import encode_defunct
+from web3 import Account, Web3
+
+from authentication.models import NetworkTypes
+from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
+from faucet.models import GlobalSettings, WalletAccount
+
+from .models import TokenDistributionClaim
 
 
 def create_uint32_random_nonce():
@@ -19,7 +21,6 @@ def create_uint32_random_nonce():
 
 
 def hash_message(user, token, amount, nonce):
-
     message_hash = Web3().solidity_keccak(
         ["address", "address", "uint256", "uint32"],
         [Web3.to_checksum_address(user), Web3.to_checksum_address(token), amount, nonce],
@@ -30,7 +31,6 @@ def hash_message(user, token, amount, nonce):
 
 
 def sign_hashed_message(hashed_message):
-
     private_key = WalletAccount.objects.get(network_type=NetworkTypes.EVM).private_key
     account = Account.from_key(private_key)
 
@@ -43,7 +43,7 @@ def has_weekly_credit_left(user_profile):
     return (
         TokenDistributionClaim.objects.filter(
             user_profile=user_profile,
-            created_at__gte=WeeklyCreditStrategy.get_last_monday(),
+            created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
         ).count()
-        < GlobalSettings.objects.first().tokentap_weekly_claim_limit
+        < GlobalSettings.objects.first().tokentap_round_claim_limit
     )
