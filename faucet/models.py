@@ -32,13 +32,11 @@ class WalletAccount(models.Model):
         try:
             node = Bip44.FromPrivateKey(binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM)
             return node.PublicKey().ToAddress()
-        except Exception as e:
-            logging.exception(f"Error getting address for {self.name} error is {e}")
+        except:  # noqa: E722
             try:
                 keypair = Keypair.from_base58_string(self.private_key)
                 return str(keypair.pubkey())
-            except Exception as e2:
-                logging.exception(f"Error getting address for {self.name} error is {e2}")
+            except:  # noqa: E722
                 pass
 
     def __str__(self) -> str:
