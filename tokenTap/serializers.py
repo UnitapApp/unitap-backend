@@ -17,6 +17,7 @@ from .constraints import (  # noqa: F401
     ConstraintVerification,
     OnceInALifeTimeVerification,
     OncePerMonthVerification,
+    OptimismHasClaimedGasInThisRound,
 )
 
 

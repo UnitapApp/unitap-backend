@@ -1,5 +1,6 @@
 from core.constraints import ConstraintVerification
 from core.utils import TimeUtils
+from faucet.constraints import OptimismHasClaimedGasInThisRound  # noqa: F401
 from faucet.models import ClaimReceipt
 
 # class OncePerWeekVerification(ConstraintVerification):
