@@ -7,10 +7,10 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from authentication.models import NetworkTypes, UserProfile, Wallet
+from core.constraints import BrightIDAuraVerification, BrightIDMeetVerification
 from faucet.models import Chain, WalletAccount
 
-from .constraints import *
-from .models import *
+from .models import Constraint, NotHaveUnitapPass, Raffle, RaffleEntry
 
 # from .utils import PrizetapContractClient
 
@@ -53,7 +53,7 @@ class BaseTestCase(APITestCase):
             max_claim_amount=1e11,
         )
         self.meet_constraint = Constraint.objects.create(
-            name=BrightIDMeetVerification.__name__,
+            name="core.BrightIDMeetVerification",
             title="BrightID meet",
             description="You have to be BrightID verified.",
         )
@@ -144,7 +144,7 @@ class RaffleAPITestCase(RaffleTestCase):
     def test_raffle_list(self):
         self.raffle.constraints.add(
             Constraint.objects.create(
-                name=BrightIDAuraVerification.__name__,
+                name="core.BrightIDAuraVerification",
                 title="BrightID aura",
                 description="You have to be Aura verified.",
             )
@@ -154,7 +154,7 @@ class RaffleAPITestCase(RaffleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(len(raffle["constraints"]), 2)
-        self.assertEqual(raffle["constraints"][1]["name"], BrightIDAuraVerification.__name__)
+        self.assertEqual(raffle["constraints"][1]["name"], "core.BrightIDAuraVerification")
         self.assertEqual(raffle["number_of_entries"], 0)
         self.assertEqual(raffle["user_entry"], None)
         self.assertEqual(raffle["winner_entry"], None)
