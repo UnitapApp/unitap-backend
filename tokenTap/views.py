@@ -1,30 +1,44 @@
+import json
+import logging
+
 import rest_framework.exceptions
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
-from django.urls import reverse
-from authentication.models import NetworkTypes, UserProfile, Wallet
-from authentication.serializers import MessageResponseSerializer
-from faucet.models import Chain, ClaimReceipt, GlobalSettings
-from permissions.models import Permission
+from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from authentication.models import NetworkTypes
+from core.constraints import (  # noqa: F401
+    BrightIDAuraVerification,
+    BrightIDMeetVerification,
+)
+from faucet.models import ClaimReceipt
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
+    ConstraintSerializer,
     DetailResponseSerializer,
     TokenDistributionClaimResponseSerializer,
     TokenDistributionClaimSerializer,
     TokenDistributionSerializer,
 )
-from django.utils import timezone
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+
+from .constraints import (  # noqa: F401
+    ConstraintVerification,
+    OnceInALifeTimeVerification,
+    OncePerMonthVerification,
+    OptimismHasClaimedGasInThisRound,
+)
 from .helpers import (
     create_uint32_random_nonce,
+    has_weekly_credit_left,
     hash_message,
     sign_hashed_message,
-    has_weekly_credit_left,
 )
-from .constraints import *
 
 
 class TokenDistributionListView(ListAPIView):
@@ -32,14 +46,11 @@ class TokenDistributionListView(ListAPIView):
     queryset = TokenDistribution.objects.filter(is_active=True)
 
     def get_queryset(self):
-        q =  TokenDistribution.objects.filter(is_active=True)
+        q = TokenDistribution.objects.filter(is_active=True)
 
-        sorted_queryset = sorted(
-            q, key=lambda obj: obj.total_claims_since_last_round, reverse=True
-        )
+        sorted_queryset = sorted(q, key=lambda obj: obj.total_claims_since_last_round, reverse=True)
 
         return sorted_queryset
-        
 
 
 class TokenDistributionClaimView(CreateAPIView):
@@ -47,9 +58,7 @@ class TokenDistributionClaimView(CreateAPIView):
 
     def check_token_distribution_is_claimable(self, token_distribution):
         if not token_distribution.is_claimable:
-            raise rest_framework.exceptions.PermissionDenied(
-                "This token is not claimable"
-            )
+            raise rest_framework.exceptions.PermissionDenied("This token is not claimable")
 
     def check_user_permissions(self, token_distribution, user_profile):
         for c in token_distribution.permissions.all():
@@ -60,15 +69,11 @@ class TokenDistributionClaimView(CreateAPIView):
 
     def check_user_weekly_credit(self, user_profile):
         if not has_weekly_credit_left(user_profile):
-            raise rest_framework.exceptions.PermissionDenied(
-                "You have reached your weekly claim limit"
-            )
+            raise rest_framework.exceptions.PermissionDenied("You have reached your weekly claim limit")
 
     def check_user_has_wallet(self, user_profile):
         if not user_profile.wallets.filter(wallet_type=NetworkTypes.EVM).exists():
-            raise rest_framework.exceptions.PermissionDenied(
-                "You have not connected an EVM wallet to your account"
-            )
+            raise rest_framework.exceptions.PermissionDenied("You have not connected an EVM wallet to your account")
 
     @swagger_auto_schema(
         responses={
@@ -99,11 +104,28 @@ class TokenDistributionClaimView(CreateAPIView):
 
         self.check_token_distribution_is_claimable(token_distribution)
 
-        self.check_user_weekly_credit(user_profile)
+        self.check_user_has_wallet(user_profile)
 
         self.check_user_permissions(token_distribution, user_profile)
 
-        self.check_user_has_wallet(user_profile)
+        try:
+            tdc = TokenDistributionClaim.objects.get(
+                user_profile=user_profile,
+                token_distribution=token_distribution,
+                status=ClaimReceipt.PENDING,
+            )
+            return Response(
+                {
+                    "detail": "Signature Was Already Created",
+                    "signature": TokenDistributionClaimSerializer(tdc).data,
+                },
+                status=200,
+            )
+
+        except TokenDistributionClaim.DoesNotExist:
+            pass
+
+        self.check_user_weekly_credit(user_profile)
 
         nonce = create_uint32_random_nonce()
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
@@ -130,7 +152,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 signature=lightning_invoice,
                 token_distribution=token_distribution,
             )
-            gas_tap_claim = ClaimReceipt.objects.create(
+            ClaimReceipt.objects.create(
                 chain=token_distribution.chain,
                 user_profile=user_profile,
                 datetime=timezone.now(),
@@ -148,6 +170,37 @@ class TokenDistributionClaimView(CreateAPIView):
         )
 
 
+class GetTokenDistributionConstraintsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, td_id):
+        # from .constraints import
+
+        user_profile = request.user.profile
+        td = get_object_or_404(TokenDistribution, pk=td_id)
+        try:
+            param_values = json.loads(td.constraint_params)
+        except Exception as e:
+            logging.error("Error parsing constraint params", e)
+            param_values = {}
+
+        response_constraints = []
+
+        for c in td.permissions.all():
+            constraint: ConstraintVerification = eval(c.name)(user_profile)
+            constraint.response = c.response
+            try:
+                constraint.param_values = param_values[c.name]
+            except KeyError:
+                pass
+            is_verified = False
+            if constraint.is_observed(token_distribution=td):
+                is_verified = True
+            response_constraints.append({**ConstraintSerializer(c).data, "is_verified": is_verified})
+
+        return Response({"success": True, "constraints": response_constraints}, status=200)
+
+
 class TokenDistributionClaimStatusUpdateView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -158,18 +211,12 @@ class TokenDistributionClaimStatusUpdateView(CreateAPIView):
         )
         tx_hash = request.data.get("tx_hash", None)
         if tx_hash is None:
-            raise rest_framework.exceptions.ValidationError(
-                "tx_hash is a required field"
-            )
+            raise rest_framework.exceptions.ValidationError("tx_hash is a required field")
 
         if token_distribution_claim.user_profile != user_profile:
-            raise rest_framework.exceptions.PermissionDenied(
-                "You do not have permission to update this claim"
-            )
+            raise rest_framework.exceptions.PermissionDenied("You do not have permission to update this claim")
         if token_distribution_claim.status != ClaimReceipt.PENDING:
-            raise rest_framework.exceptions.PermissionDenied(
-                "This claim has already been updated"
-            )
+            raise rest_framework.exceptions.PermissionDenied("This claim has already been updated")
         token_distribution_claim.tx_hash = tx_hash
         token_distribution_claim.status = ClaimReceipt.VERIFIED
         token_distribution_claim.save()
@@ -195,6 +242,4 @@ class TokenDistributionClaimRetrieveView(RetrieveAPIView):
 
     def get_object(self):
         user_profile = self.request.user.profile
-        return TokenDistributionClaim.objects.get(
-            pk=self.kwargs["pk"], user_profile=user_profile
-        )
+        return TokenDistributionClaim.objects.get(pk=self.kwargs["pk"], user_profile=user_profile)

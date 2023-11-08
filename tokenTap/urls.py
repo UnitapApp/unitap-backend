@@ -23,4 +23,9 @@ urlpatterns = [
         TokenDistributionClaimStatusUpdateView.as_view(),
         name="claim-update",
     ),
+    path(
+        "get-token-constraints/<int:td_id>/",
+        GetTokenDistributionConstraintsView.as_view(),
+        name="get-token-distribution-constraints",
+    ),
 ]
