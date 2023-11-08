@@ -17,7 +17,7 @@ class DonationConstraint(ConstraintVerification):
         return (
             DonationReceipt.objects.filter(chain__pk=chain_pk)
             .filter(user_profile=self.user_profile)
-            .filter(status=ClaimReceipt.PROCESSED_FOR_TOKENTAP)
+            .filter(status=ClaimReceipt.VERIFIED)
             .exists()
         )
 
