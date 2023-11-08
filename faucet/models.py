@@ -256,8 +256,8 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                if self.chain_id == 500:
-                    logging.debug("chain XDC NONEVM is checking its balances")
+                # if self.chain_id == 500:
+                #     logging.debug("chain XDC NONEVM is checking its balances")
                 funds = EVMFundManager(self).w3.eth.get_balance(self.fund_manager_address)
                 return funds
 
@@ -326,8 +326,8 @@ class Chain(models.Model):
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
             return EVMFundManager(self).w3.eth.gas_price
-        except Exception as e:
-            logging.exception(f"Error getting gas price for {self.chain_name} error is {e}")
+        except:  # noqa: E722
+            logging.exception(f"Error getting gas price for {self.chain_name}")
             return self.max_gas_price + 1
 
     @property
