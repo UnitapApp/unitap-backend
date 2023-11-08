@@ -1,8 +1,12 @@
+import logging
+
 import requests
-from core.constraints import *
+
+from core.constraints import ConstraintParam, ConstraintVerification
 from core.utils import Web3Utils
-from faucet.faucet_manager.credit_strategy import WeeklyCreditStrategy
-from .models import DonationReceipt, Chain, ClaimReceipt
+from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
+
+from .models import Chain, ClaimReceipt, DonationReceipt
 
 
 class DonationConstraint(ConstraintVerification):
@@ -24,7 +28,8 @@ class OptimismDonationConstraint(DonationConstraint):
     def is_observed(self, *args, **kwargs):
         try:
             chain = Chain.objects.get(chain_id=10)
-        except:
+        except Exception as e:
+            logging.error(e)
             return False
         self._param_values[ConstraintParam.CHAIN] = chain.pk
         return super().is_observed(*args, **kwargs)
@@ -38,12 +43,11 @@ class EvmClaimingGasConstraint(ConstraintVerification):
         chain = Chain.objects.get(pk=chain_pk)
         w3 = Web3Utils(chain.rpc_url_private, chain.poa)
         current_block = w3.current_block()
-        user_address = self.user_profile.wallets.get(
-            wallet_type=chain.chain_type
-        ).address
+        user_address = self.user_profile.wallets.get(wallet_type=chain.chain_type).address
 
         first_internal_tx = requests.get(
-            f"{chain.explorer_api_url}/api?module=account&action=txlistinternal&address={user_address}&startblock=0&endblock={current_block}&page=1&offset=1&sort=asc&apikey={chain.explorer_api_key}"
+            f"{chain.explorer_api_url}/api?module=account&action=txlistinternal&address={user_address}&start"
+            f"block=0&endblock={current_block}&page=1&offset=1&sort=asc&apikey={chain.explorer_api_key}"
         )
         first_internal_tx = first_internal_tx.json()
         if first_internal_tx and first_internal_tx["status"] == "1":
@@ -54,16 +58,15 @@ class EvmClaimingGasConstraint(ConstraintVerification):
                 and first_internal_tx["isError"] == "0"
             ):
                 first_tx = requests.get(
-                    f"{chain.explorer_api_url}/api?module=account&action=txlist&address={user_address}&startblock=0&endblock={current_block}&page=1&offset=1&sort=asc&apikey={chain.explorer_api_key}"
+                    f"{chain.explorer_api_url}/api?module=account&action=txlist&address={user_address}&startblock=0&"
+                    f"endblock={current_block}&page=1&offset=1&sort=asc&apikey={chain.explorer_api_key}"
                 )
                 first_tx = first_tx.json()
                 if first_tx:
                     if not first_tx["result"]:
                         return True
                     first_tx = first_tx["result"][0]
-                    claiming_gas_tx = w3.get_transaction_by_hash(
-                        first_internal_tx["hash"]
-                    )
+                    claiming_gas_tx = w3.get_transaction_by_hash(first_internal_tx["hash"])
                     web3_first_tx = w3.get_transaction_by_hash(first_tx["hash"])
                     return web3_first_tx["blockNumber"] > claiming_gas_tx["blockNumber"]
         return False
@@ -75,7 +78,8 @@ class OptimismClaimingGasConstraint(EvmClaimingGasConstraint):
     def is_observed(self, *args, **kwargs):
         try:
             chain = Chain.objects.get(chain_id=10)
-        except:
+        except Exception as e:
+            logging.error(e)
             return False
         self._param_values[ConstraintParam.CHAIN] = chain.pk
         return super().is_observed(*args, **kwargs)
@@ -90,8 +94,8 @@ class HasClaimedGasInThisRound(ConstraintVerification):
         return ClaimReceipt.objects.filter(
             user_profile=self.user_profile,
             chain=chain,
-            status=ClaimReceipt.VERIFIED,
-            datetime__gte=WeeklyCreditStrategy.get_last_monday(),
+            _status=ClaimReceipt.VERIFIED,
+            datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
         ).exists()
 
 
@@ -101,7 +105,8 @@ class OptimismHasClaimedGasInThisRound(HasClaimedGasInThisRound):
     def is_observed(self, *args, **kwargs):
         try:
             chain = Chain.objects.get(chain_id=10)
-        except:
+        except Exception as e:
+            logging.error(e)
             return False
         self._param_values[ConstraintParam.CHAIN] = chain.pk
         return super().is_observed(*args, **kwargs)

@@ -1,8 +1,24 @@
-from faucet.serializers import SmallChainSerializer
 from rest_framework import serializers
+
+from core.constraints import (  # noqa: F401
+    BrightIDAuraVerification,
+    BrightIDMeetVerification,
+)
 from core.serializers import UserConstraintBaseSerializer
-from tokenTap.models import *
-from .constraints import *
+from faucet.serializers import SmallChainSerializer
+from tokenTap.models import (
+    Constraint,
+    TokenDistribution,
+    TokenDistributionClaim,
+    UserConstraint,
+)
+
+from .constraints import (  # noqa: F401
+    ConstraintVerification,
+    OnceInALifeTimeVerification,
+    OncePerMonthVerification,
+    OptimismHasClaimedGasInThisRound,
+)
 
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):

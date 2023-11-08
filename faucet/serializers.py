@@ -1,46 +1,43 @@
 from rest_framework import serializers
-from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
 
-from faucet.faucet_manager.credit_strategy import CreditStrategyFactory
-from faucet.models import BrightUser, Chain, ClaimReceipt, GlobalSettings, DonationReceipt
+from faucet.models import Chain, ClaimReceipt, DonationReceipt, GlobalSettings
 
+# class UserSerializer(serializers.ModelSerializer):
+#     total_weekly_claims_remaining = serializers.SerializerMethodField()
 
-class UserSerializer(serializers.ModelSerializer):
-    total_weekly_claims_remaining = serializers.SerializerMethodField()
+#     class Meta:
+#         model = BrightUser
+#         fields = [
+#             "pk",
+#             "context_id",
+#             "address",
+#             "verification_url",
+#             "verification_status",
+#             "total_weekly_claims_remaining",
+#         ]
+#         read_only_fields = ["context_id"]
 
-    class Meta:
-        model = BrightUser
-        fields = [
-            "pk",
-            "context_id",
-            "address",
-            "verification_url",
-            "verification_status",
-            "total_weekly_claims_remaining",
-        ]
-        read_only_fields = ["context_id"]
+#     def get_total_weekly_claims_remaining(self, instance):
+#         gs = GlobalSettings.objects.first()
+#         if gs is not None:
+#             return (
+#                     gs.weekly_chain_claim_limit
+#                     - LimitedChainClaimManager.get_total_weekly_claims(instance)
+#             )
 
-    def get_total_weekly_claims_remaining(self, instance):
-        gs = GlobalSettings.objects.first()
-        if gs is not None:
-            return (
-                    gs.weekly_chain_claim_limit
-                    - LimitedChainClaimManager.get_total_weekly_claims(instance)
-            )
-
-    def create(self, validated_data):
-        address = validated_data["address"]
-        bright_user = BrightUser.objects.get_or_create(address)
-        return bright_user
+#     def create(self, validated_data):
+#         address = validated_data["address"]
+#         bright_user = BrightUser.objects.get_or_create(address)
+#         return bright_user
 
 
 class GlobalSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GlobalSettings
         fields = [
-            "weekly_chain_claim_limit",
-            "tokentap_weekly_claim_limit",
-            "prizetap_weekly_claim_limit",
+            "gastap_round_claim_limit",
+            "tokentap_round_claim_limit",
+            "prizetap_round_claim_limit",
             "is_gas_tap_available",
         ]
 
@@ -104,8 +101,8 @@ class SmallChainSerializer(serializers.ModelSerializer):
 
 
 class ChainSerializer(serializers.ModelSerializer):
-    claimed = serializers.SerializerMethodField()
-    unclaimed = serializers.SerializerMethodField()
+    # claimed = serializers.SerializerMethodField()
+    # unclaimed = serializers.SerializerMethodField()
 
     class Meta:
         model = Chain
@@ -123,11 +120,10 @@ class ChainSerializer(serializers.ModelSerializer):
             "modal_url",
             "gas_image_url",
             "max_claim_amount",
-            "claimed",
-            "unclaimed",
-            # "order",
+            # "claimed",
+            # "unclaimed",
             "total_claims",
-            "total_claims_since_last_monday",
+            "total_claims_this_round",
             "tokentap_contract_address",
             "needs_funding",
             "is_testnet",
@@ -135,21 +131,21 @@ class ChainSerializer(serializers.ModelSerializer):
             "block_scan_address",
         ]
 
-    def get_claimed(self, chain) -> int:
-        user = self.context["request"].user
+    # def get_claimed(self, chain) -> int:
+    #     user = self.context["request"].user
 
-        if not user.is_authenticated:
-            return "N/A"
-        user_profile = user.profile
-        return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
+    #     if not user.is_authenticated:
+    #         return "N/A"
+    #     user_profile = user.profile
+    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
 
-    def get_unclaimed(self, chain) -> int:
-        user = self.context["request"].user
+    # def get_unclaimed(self, chain) -> int:
+    #     user = self.context["request"].user
 
-        if not user.is_authenticated:
-            return "N/A"
-        user_profile = user.profile
-        return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
+    #     if not user.is_authenticated:
+    #         return "N/A"
+    #     user_profile = user.profile
+    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
@@ -173,39 +169,23 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
     chain = SmallChainSerializer(read_only=True)
 
     def validate(self, attrs):
-        chain = self._validate_chain(attrs.pop('chain_pk'))
-        attrs['user_profile'] = self.context.get('user')
-        attrs['chain'] = chain
+        chain = self._validate_chain(attrs.pop("chain_pk"))
+        attrs["user_profile"] = self.context.get("user")
+        attrs["chain"] = chain
         return attrs
 
     def _validate_chain(self, pk: str):
         try:
-            chain: Chain = Chain.objects.get(pk=pk, chain_type='EVM')
+            chain: Chain = Chain.objects.get(pk=pk, chain_type="EVM")
         except Chain.DoesNotExist:
-            raise serializers.ValidationError({'chain': 'chain is not EVM or does not exist.'})
+            raise serializers.ValidationError({"chain": "chain is not EVM or does not exist."})
         return chain
 
     class Meta:
         model = DonationReceipt
         depth = 1
-        fields = [
-            "tx_hash",
-            "chain",
-            "datetime",
-            "total_price",
-            "value",
-            "chain_pk",
-            "status",
-            "user_profile"
-        ]
-        read_only_fields = [
-            'value',
-            'datetime',
-            'total_price',
-            'chain',
-            'status',
-            "user_profile"
-        ]
+        fields = ["tx_hash", "chain", "datetime", "total_price", "value", "chain_pk", "status", "user_profile"]
+        read_only_fields = ["value", "datetime", "total_price", "chain", "status", "user_profile"]
 
 
 class LeaderboardSerializer(serializers.Serializer):
