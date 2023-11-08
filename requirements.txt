@@ -26,3 +26,4 @@ web3==6.9.0
 whitenoise==6.1.0
 solana==0.29.1
 solders==0.14.3
+coverage~=7.3.2
