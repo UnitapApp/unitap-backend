@@ -1,5 +1,6 @@
 import time
 
+from brightIDfaucet.settings import DEPLOYMENT_ENV
 from core.utils import Web3Utils
 from faucet.models import Chain
 
@@ -8,6 +9,7 @@ from .constants import (
     PRIZETAP_ERC721_ABI,
     UNITAP_PASS_ABI,
     VRF_CLIENT_ABI,
+    VRF_CLIENT_MUMBAI_ADDRESS,
     VRF_CLIENT_POLYGON_ADDRESS,
 )
 
@@ -61,7 +63,8 @@ class PrizetapContractClient(Web3Utils):
 class VRFClientContractClient(Web3Utils):
     def __init__(self, chain) -> None:
         super().__init__(chain.rpc_url_private, chain.poa)
-        self.set_contract(VRF_CLIENT_POLYGON_ADDRESS, VRF_CLIENT_ABI)
+        address = VRF_CLIENT_POLYGON_ADDRESS if DEPLOYMENT_ENV == "main" else VRF_CLIENT_MUMBAI_ADDRESS
+        self.set_contract(address, VRF_CLIENT_ABI)
         self.set_account(chain.wallet.private_key)
 
     def get_last_request_id(self):

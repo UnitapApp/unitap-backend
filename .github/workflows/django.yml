@@ -40,3 +40,4 @@ jobs:
           LIGHTNING_RPC_URL: https://api.lnpay.co/v1/
           LIGHTNING_WALLET: ${{ secrets.LIGHTNING_WALLET }}
           LIGHTNING_FUND_MANAGER: ${{ secrets.LIGHTNING_FUND_MANAGER }}
+          DEPLOYMENT_ENV: "dev"

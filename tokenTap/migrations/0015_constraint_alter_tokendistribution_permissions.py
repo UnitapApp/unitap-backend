@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 'abstract': False,
             },
         ),
-        migrations.AlterField(
+        migrations.AddField(
             model_name='tokendistribution',
             name='permissions',
             field=models.ManyToManyField(blank=True, to='tokenTap.constraint'),
