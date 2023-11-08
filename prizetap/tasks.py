@@ -4,6 +4,7 @@ import requests
 from celery import shared_task
 from django.utils import timezone
 
+from brightIDfaucet.settings import DEPLOYMENT_ENV
 from core.helpers import memcache_lock
 
 from .models import Raffle
@@ -41,9 +42,10 @@ def set_raffle_random_words(self):
 
 
 def set_random_words(raffle: Raffle):
+    app = "unitap" if DEPLOYMENT_ENV == "main" else "stage_unitap"
     muon_response = requests.get(
         (
-            "https://shield.unitap.app/v1/?app=stage_unitap&method=random-words&"
+            f"https://shield.unitap.app/v1/?app={app}&method=random-words&"
             f"params[chainId]={raffle.chain.chain_id}&params[prizetapRaffle]={raffle.contract}&"
             f"params[raffleId]={raffle.raffleId}"
         )
