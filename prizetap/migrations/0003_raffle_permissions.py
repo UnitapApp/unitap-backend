@@ -6,14 +6,14 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('permissions', '0004_oncepermonthverification'),
+        # ('permissions', '0004_oncepermonthverification'),
         ('prizetap', '0002_raffle_is_prize_nft'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='raffle',
-            name='permissions',
-            field=models.ManyToManyField(blank=True, to='permissions.permission'),
-        ),
+        # migrations.AddField(
+        #     model_name='raffle',
+        #     name='permissions',
+        #     field=models.ManyToManyField(blank=True, to='permissions.permission'),
+        # ),
     ]

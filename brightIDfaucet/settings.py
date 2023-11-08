@@ -68,6 +68,9 @@ REDIS_URL = os.environ.get("REDIS_URL")
 MEMCACHED_URL = os.environ.get("MEMCACHEDCLOUD_SERVERS")
 MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
 MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
+DEPLOYMENT_ENV = os.environ.get("DEPLOYMENT_ENV")
+
+assert DEPLOYMENT_ENV in ["dev", "main"]
 
 
 def before_send(event, hint):
@@ -110,7 +113,7 @@ INSTALLED_APPS = [
     "faucet.apps.FaucetConfig",
     "tokenTap.apps.TokentapConfig",
     "prizetap.apps.PrizetapConfig",
-    "permissions.apps.PermissionsConfig",
+    # "permissions.apps.PermissionsConfig",
     "authentication.apps.AuthenticationConfig",
     "rest_framework",
     "rest_framework.authtoken",

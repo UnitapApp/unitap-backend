@@ -245,6 +245,13 @@ PRIZETAP_ERC20_ABI = [
         "type": "function",
     },
     {
+        "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "name": "lastNotWinnerIndexes",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
         "inputs": [],
         "name": "lastRaffleId",
         "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
@@ -544,7 +551,6 @@ PRIZETAP_ERC20_ABI = [
         "type": "function",
     },
 ]
-
 PRIZETAP_ERC721_ABI = [
     {
         "inputs": [
@@ -795,6 +801,13 @@ PRIZETAP_ERC721_ABI = [
         ],
         "name": "isWinnerClaimed",
         "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "name": "lastNotWinnerIndexes",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
         "type": "function",
     },
@@ -1629,7 +1642,8 @@ VRF_CLIENT_ABI = [
     },
 ]
 
-VRF_CLIENT_POLYGON_ADDRESS = "0xD1E7877A1C3F782dec76FB58C2B926365433d46F"
+VRF_CLIENT_POLYGON_ADDRESS = "0xd713f3584EADc92848d64C31fD66CD50AdF272CD"
+VRF_CLIENT_MUMBAI_ADDRESS = "0xD1E7877A1C3F782dec76FB58C2B926365433d46F"
 
 CONTRACT_ADDRESSES = {
     "137": {
