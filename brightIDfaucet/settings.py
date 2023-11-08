@@ -113,7 +113,7 @@ INSTALLED_APPS = [
     "faucet.apps.FaucetConfig",
     "tokenTap.apps.TokentapConfig",
     "prizetap.apps.PrizetapConfig",
-    "permissions.apps.PermissionsConfig",
+    # "permissions.apps.PermissionsConfig",
     "authentication.apps.AuthenticationConfig",
     "rest_framework",
     "rest_framework.authtoken",
