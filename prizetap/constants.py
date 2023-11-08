@@ -245,6 +245,13 @@ PRIZETAP_ERC20_ABI = [
         "type": "function",
     },
     {
+        "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "name": "lastNotWinnerIndexes",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
         "inputs": [],
         "name": "lastRaffleId",
         "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
@@ -544,7 +551,6 @@ PRIZETAP_ERC20_ABI = [
         "type": "function",
     },
 ]
-
 PRIZETAP_ERC721_ABI = [
     {
         "inputs": [
@@ -795,6 +801,13 @@ PRIZETAP_ERC721_ABI = [
         ],
         "name": "isWinnerClaimed",
         "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "name": "lastNotWinnerIndexes",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
         "type": "function",
     },
