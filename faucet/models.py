@@ -339,8 +339,8 @@ class Chain(models.Model):
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
             return EVMFundManager(self).is_gas_price_too_high
-        except Exception as e:
-            logging.exception(f"Error getting gas price for {self.chain_name} error is {e}")
+        except Exception:  # noqa: E722
+            logging.exception(f"Error getting gas price for {self.chain_name}")
             return True
 
     @property
