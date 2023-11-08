@@ -398,7 +398,6 @@ def process_donation_receipt(self, donation_receipt_pk):
                 except TokenPrice.DoesNotExist:
                     logging.error(f"TokenPrice for Chain: {donation_receipt.chain.chain_name} did not defined")
                     donation_receipt.status = ClaimReceipt.REJECTED
-
                     donation_receipt.save()
                     return
             else:
