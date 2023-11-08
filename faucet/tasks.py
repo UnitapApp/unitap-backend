@@ -397,7 +397,7 @@ def process_donation_receipt(self, donation_receipt_pk):
                     )
                 except TokenPrice.DoesNotExist:
                     logging.error(f"TokenPrice for Chain: {donation_receipt.chain.chain_name} did not defined")
-                    donation_receipt.status = ClaimReceipt.PROCESSED_FOR_TOKENTAP_REJECT
+                    donation_receipt.status = ClaimReceipt.REJECTED
                     donation_receipt.save()
                     return
             else:
@@ -414,6 +414,6 @@ def update_donation_receipt_pending_status():
     """
     update status of pending donation receipt
     """
-    pending_donation_receipts = DonationReceipt.objects.filter(status=ClaimReceipt.PROCESSED_FOR_TOKENTAP)
+    pending_donation_receipts = DonationReceipt.objects.filter(status=ClaimReceipt.PENDING)
     for pending_donation_receipt in pending_donation_receipts:
         process_donation_receipt.delay(pending_donation_receipt.pk)

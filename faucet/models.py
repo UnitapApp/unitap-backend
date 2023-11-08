@@ -465,6 +465,11 @@ class LightningConfig(models.Model):
 
 
 class DonationReceipt(models.Model):
+    states = (
+        (ClaimReceipt.PENDING, "Pending"),
+        (ClaimReceipt.VERIFIED, "Verified"),
+        (ClaimReceipt.REJECTED, "Rejected"),
+    )
     user_profile = models.ForeignKey(
         UserProfile,
         related_name="donations",
@@ -485,8 +490,8 @@ class DonationReceipt(models.Model):
     datetime = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=30,
-        choices=ClaimReceipt.states,
-        default=ClaimReceipt.PROCESSED_FOR_TOKENTAP,
+        choices=states,
+        default=ClaimReceipt.PENDING,
     )
 
     class Meta:

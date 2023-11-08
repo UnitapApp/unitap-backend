@@ -649,7 +649,9 @@ class TestConstraints(APITestCase):
         self.assertFalse(constraint.is_observed())
         DonationReceipt.objects.create(user_profile=self.user_profile, tx_hash="0x0", chain=self.test_chain)
         self.assertFalse(constraint.is_observed())
-        DonationReceipt.objects.create(user_profile=self.user_profile, tx_hash="0x0", chain=self.optimism)
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile, tx_hash="0x0", chain=self.optimism, status=ClaimReceipt.VERIFIED
+        )
         self.assertTrue(constraint.is_observed())
 
     def test_optimism_claiming_gas_contraint(self):
