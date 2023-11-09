@@ -121,6 +121,8 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
                         constraint_class.is_valid_param_keys(constraint_params[c.name])
                 except KeyError as e:
                     raise serializers.ValidationError({"constraint_params": [{f"{c.name}": str(e)}]})
+        if data["winners_count"] > data["max_number_of_entries"]:
+            raise serializers.ValidationError({"winners_count": "Invalid value"})
         data["creator_profile"] = self.context["user_profile"]
         return data
 
@@ -151,7 +153,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "prize_symbol",
             "decimals",
             "is_prize_nft",
-            "nft_id",
+            "nft_ids",
             "token_uri",
             "chain",
             "contract",
@@ -173,6 +175,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "number_of_entries",
             "number_of_onchain_entries",
             "max_multiplier",
+            "winners_count",
         ]
 
     def get_user_entry(self, raffle: Raffle):
