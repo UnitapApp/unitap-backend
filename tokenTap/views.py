@@ -13,10 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from authentication.models import NetworkTypes
-from core.constraints import (  # noqa: F401
-    BrightIDAuraVerification,
-    BrightIDMeetVerification,
-)
+from core.constraints import ConstraintVerification, get_constraint
 from faucet.models import ClaimReceipt
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
@@ -27,12 +24,6 @@ from tokenTap.serializers import (
     TokenDistributionSerializer,
 )
 
-from .constraints import (  # noqa: F401
-    ConstraintVerification,
-    OnceInALifeTimeVerification,
-    OncePerMonthVerification,
-    OptimismHasClaimedGasInThisRound,
-)
 from .helpers import (
     create_uint32_random_nonce,
     has_weekly_credit_left,
@@ -62,7 +53,7 @@ class TokenDistributionClaimView(CreateAPIView):
 
     def check_user_permissions(self, token_distribution, user_profile):
         for c in token_distribution.permissions.all():
-            constraint: ConstraintVerification = eval(c.name)(user_profile)
+            constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
             constraint.response = c.response
             if not constraint.is_observed(token_distribution=token_distribution):
                 raise PermissionDenied(constraint.response)
@@ -174,8 +165,6 @@ class GetTokenDistributionConstraintsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, td_id):
-        # from .constraints import
-
         user_profile = request.user.profile
         td = get_object_or_404(TokenDistribution, pk=td_id)
         try:
@@ -187,7 +176,7 @@ class GetTokenDistributionConstraintsView(APIView):
         response_constraints = []
 
         for c in td.permissions.all():
-            constraint: ConstraintVerification = eval(c.name)(user_profile)
+            constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
             constraint.response = c.response
             try:
                 constraint.param_values = param_values[c.name]
