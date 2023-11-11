@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('prizetap', '0038_rename_nft_id_raffle_nft_ids'),
+        ('prizetap', '0039_rename_nft_id_raffle_nft_ids'),
     ]
 
     operations = [

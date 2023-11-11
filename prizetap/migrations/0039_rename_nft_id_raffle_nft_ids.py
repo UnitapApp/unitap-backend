@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('prizetap', '0037_alter_raffle_status'),
+        ('prizetap', '0038_alter_constraint_name'),
     ]
 
     operations = [
