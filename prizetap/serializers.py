@@ -5,10 +5,10 @@ import json
 from rest_framework import serializers
 
 from authentication.serializers import SimpleProfilerSerializer
+from core.constraints import ConstraintVerification, get_constraint
 from core.serializers import UserConstraintBaseSerializer
 from faucet.serializers import SmallChainSerializer
 
-from .constraints import *
 from .models import *
 
 
@@ -18,7 +18,7 @@ class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerial
         model = Constraint
 
     def get_params(self, constraint: UserConstraint):
-        c_class: ConstraintVerification = eval(constraint.name)
+        c_class: ConstraintVerification = get_constraint(constraint.name)
         return [p.name for p in c_class.param_keys()]
 
 

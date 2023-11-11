@@ -43,7 +43,9 @@ class TokenDistributionTestCase(APITestCase):
             tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
-        self.permission = Constraint.objects.create(name="BrightIDMeetVerification", title="BrightID Meet", type="VER")
+        self.permission = Constraint.objects.create(
+            name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
+        )
 
     def test_token_distribution_creation(self):
         td = TokenDistribution.objects.create(
@@ -206,13 +208,17 @@ class TokenDistributionAPITestCase(APITestCase):
             max_number_of_claims=100,
             notes="Test Notes",
         )
-        self.permission1 = Constraint.objects.create(name="BrightIDMeetVerification", title="BrightID Meet", type="VER")
-        self.permission2 = Constraint.objects.create(name="BrightIDAuraVerification", title="BrightID Aura", type="VER")
+        self.permission1 = Constraint.objects.create(
+            name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
+        )
+        self.permission2 = Constraint.objects.create(
+            name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
+        )
         self.permission4 = Constraint.objects.create(
-            name="OncePerMonthVerification", title="Once per Month", type="TIME"
+            name="tokenTap.OncePerMonthVerification", title="Once per Month", type="TIME"
         )
         self.permission5 = Constraint.objects.create(
-            name="OnceInALifeTimeVerification", title="Once per Lifetime", type="TIME"
+            name="tokenTap.OnceInALifeTimeVerification", title="Once per Lifetime", type="TIME"
         )
 
         self.td.permissions.set([self.permission1, self.permission2, self.permission4])
@@ -239,8 +245,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]["name"], "Test Distribution")
-        self.assertEqual(response.data[0]["permissions"][0]["name"], "BrightIDMeetVerification")
-        self.assertEqual(response.data[0]["permissions"][1]["name"], "BrightIDAuraVerification")
+        self.assertEqual(response.data[0]["permissions"][0]["name"], "core.BrightIDMeetVerification")
+        self.assertEqual(response.data[0]["permissions"][1]["name"], "core.BrightIDAuraVerification")
 
     def test_token_distribution_not_claimable_max_reached(self):
         ltd = TokenDistribution.objects.create(
@@ -519,8 +525,12 @@ class TokenDistributionClaimAPITestCase(APITestCase):
             max_number_of_claims=100,
             notes="Test Notes",
         )
-        self.permission1 = Constraint.objects.create(name="BrightIDMeetVerification", title="BrightID Meet", type="VER")
-        self.permission2 = Constraint.objects.create(name="BrightIDAuraVerification", title="BrightID Aura", type="VER")
+        self.permission1 = Constraint.objects.create(
+            name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
+        )
+        self.permission2 = Constraint.objects.create(
+            name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
+        )
         self.td.permissions.set([self.permission1, self.permission2])
 
         self.tdc = TokenDistributionClaim.objects.create(
