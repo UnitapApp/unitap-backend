@@ -1,3 +1,4 @@
+import logging
 import time
 
 import requests
@@ -149,3 +150,70 @@ def request_random_words(raffle: Raffle):
     if tx_hash:
         raffle.vrf_tx_hash = tx_hash
         raffle.save()
+
+
+@shared_task(bind=True)
+def set_raffle_ids(self):
+    id = f"{self.name}-LOCK"
+
+    with memcache_lock(id, self.app.oid) as acquired:
+        if not acquired:
+            print(f"Could not acquire process lock at {self.name}")
+            return
+        raffles_queryset = (
+            Raffle.objects.filter(status=Raffle.Status.PENDING).filter(raffleId__isnull=True).order_by("id")
+        )
+        if raffles_queryset.count() > 0:
+            for raffle in raffles_queryset:
+                contract_client = PrizetapContractClient(raffle)
+
+                receipt = contract_client.get_transaction_receipt(raffle.tx_hash)
+                raffle_created_log = receipt["logs"][1]
+                log = contract_client.contract.events.RaffleCreated().process_log(raffle_created_log)
+
+                raffle.raffleId = log["args"]["raffleId"]
+                onchain_raffle = contract_client.get_raffle()
+                is_valid = True
+                if onchain_raffle["status"] != 0:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} status")
+                if onchain_raffle["lastParticipantIndex"] != 0:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} lastParticipantIndex")
+                if onchain_raffle["lastWinnerIndex"] != 0:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} lastWinnerIndex")
+                if onchain_raffle["participantsCount"] != 0:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} participantsCount")
+                if raffle.creator_address != onchain_raffle["initiator"]:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} initiator")
+                if raffle.max_number_of_entries != onchain_raffle["maxParticipants"]:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} maxParticipants")
+                if raffle.max_multiplier != onchain_raffle["maxMultiplier"]:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} maxMultiplier")
+                if raffle.start_at != onchain_raffle["startTime"]:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} startTime")
+                if raffle.deadline != onchain_raffle["endTime"]:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} endTime")
+                if raffle.winners_count != onchain_raffle["winnersCount"]:
+                    is_valid = False
+                    logging.error(f"Mismatch raffle {raffle.raffleId} winnersCount")
+                if raffle.is_prize_nft:
+                    if raffle.prize_asset != onchain_raffle["collection"]:
+                        is_valid = False
+                        logging.error(f"Mismatch raffle {raffle.raffleId} collection")
+                else:
+                    if raffle.prize_amount != onchain_raffle["prizeAmount"]:
+                        is_valid = False
+                        logging.error(f"Mismatch raffle {raffle.raffleId} prizeAmount")
+                    if raffle.prize_asset != onchain_raffle["currency"]:
+                        is_valid = False
+                        logging.error(f"Mismatch raffle {raffle.raffleId} currency")
+                if is_valid:
+                    raffle.save()
