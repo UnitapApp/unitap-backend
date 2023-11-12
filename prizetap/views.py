@@ -1,6 +1,7 @@
 import json
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -29,7 +30,8 @@ from .validators import (
 
 
 class RaffleListView(ListAPIView):
-    queryset = Raffle.objects.filter(is_active=True).order_by("-pk")
+    valid_time = timezone.now() - timezone.timedelta(days=4)
+    queryset = Raffle.objects.filter(is_active=True).filter(deadline__gte=valid_time).order_by("-pk")
     serializer_class = RaffleSerializer
 
     def get(self, request):
