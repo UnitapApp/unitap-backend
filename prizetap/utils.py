@@ -30,7 +30,8 @@ class PrizetapContractClient(Web3Utils):
 
     def get_raffle(self):
         func = self.contract.functions.raffles(self.raffle.raffleId)
-        return self.contract_call(func)
+        output = self.contract_call(func)
+        return self.__process_raffle(output)
 
     def get_last_winner_index(self):
         raffle = self.get_raffle()
@@ -58,6 +59,15 @@ class PrizetapContractClient(Web3Utils):
     def get_raffle_winners_count(self):
         func = self.contract.functions.getWinnersCount(self.raffle.raffleId)
         return self.contract_call(func)
+
+    def __process_raffle(self, output):
+        raffles_abi = [item for item in self.contract.abi if item.get("name") == "raffles"]
+        assert len(raffles_abi) == 1, "The raffles abi not found"
+        raffles_abi = raffles_abi[0]
+        result = {}
+        for index, item in enumerate(raffles_abi["outputs"]):
+            result[item["name"]] = output[index]
+        return result
 
 
 class VRFClientContractClient(Web3Utils):
