@@ -35,8 +35,7 @@ class PrizetapContractClient(Web3Utils):
 
     def get_last_winner_index(self):
         raffle = self.get_raffle()
-        last_index = raffle[8] if not self.raffle.is_prize_nft else raffle[7]
-        return last_index
+        return raffle["lastWinnerIndex"]
 
     def set_winners(self):
         winners_count = self.raffle.winners_count
