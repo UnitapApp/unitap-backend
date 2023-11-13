@@ -2,8 +2,6 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
 from authentication.models import UserProfile, Wallet
-from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
-from faucet.models import GlobalSettings
 
 
 class UsernameRequestSerializer(serializers.Serializer):
@@ -88,8 +86,6 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
         fields = [
             "pk",
             "username",
-            "is_meet_verified",
-            "is_aura_verified",
             "wallets",
         ]
 
