@@ -36,6 +36,7 @@ class Raffle(models.Model):
 
     name = models.CharField(max_length=256)
     description = models.TextField(null=True, blank=True)
+    necessary_information = models.TextField(null=True, blank=True)
     contract = models.CharField(max_length=256)
     raffleId = models.BigIntegerField(null=True, blank=True)
     creator_name = models.CharField(max_length=255, null=True, blank=True)
@@ -43,7 +44,9 @@ class Raffle(models.Model):
     creator_address = models.CharField(max_length=255)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
-    twitter_url = models.URLField(max_length=255, null=True, blank=True)
+    twitter_url = models.URLField(max_length=255)
+    email_url = models.EmailField(max_length=255)
+    telegram_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
 
     prize_amount = BigNumField()
