@@ -115,7 +115,7 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
         data["constraint_params"] = base64.b64decode(data["constraint_params"]).decode("utf-8")
         if len(constraints) != 0:
             for c in constraints:
-                constraint_class: ConstraintVerification = eval(c.name)
+                constraint_class: ConstraintVerification = get_constraint(c.name)
                 try:
                     if len(constraint_class.param_keys()) != 0:
                         constraint_class.is_valid_param_keys(constraint_params[c.name])
