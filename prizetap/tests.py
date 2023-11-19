@@ -1,4 +1,5 @@
-# flake8: noqa
+import base64
+import json
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
@@ -7,7 +8,6 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from authentication.models import NetworkTypes, UserProfile, Wallet
-from core.constraints import BrightIDAuraVerification, BrightIDMeetVerification
 from faucet.models import Chain, WalletAccount
 
 from .models import Constraint, NotHaveUnitapPass, Raffle, RaffleEntry
@@ -56,6 +56,32 @@ class BaseTestCase(APITestCase):
             name="core.BrightIDMeetVerification",
             title="BrightID meet",
             description="You have to be BrightID verified.",
+        )
+
+    def create_polygon_chain(self):
+        Chain.objects.create(
+            chain_name="Polygon",
+            wallet=self.wallet,
+            rpc_url_private="https://rpc.ankr.com/polygon",
+            explorer_url="https://polygonscan.com/",
+            fund_manager_address=fund_manager,
+            native_currency_name="MATIC",
+            symbol="MATIC",
+            chain_id="137",
+            max_claim_amount=1e11,
+        )
+
+    def create_mumbai_chain(self):
+        Chain.objects.create(
+            chain_name="Mumbai",
+            wallet=self.wallet,
+            rpc_url_private="https://rpc.ankr.com/polygon_mumbai",
+            explorer_url="https://mumbai.polygonscan.com/",
+            fund_manager_address=fund_manager,
+            native_currency_name="MATIC",
+            symbol="MATIC",
+            chain_id="80001",
+            max_claim_amount=1e11,
         )
 
 
@@ -139,6 +165,27 @@ class RaffleTestCase(BaseTestCase):
 class RaffleAPITestCase(RaffleTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.raffle_data = {
+            "name": "test_create_raffle_api",
+            "description": "A test raffle",
+            "contract": "0x5363502325735d7b27162b2b3482c107fD4c5B3C",
+            "creator_name": "unitap",
+            "creator_address": self.wallet.address,
+            "twitter_url": "https://twitter.com/unitap_app",
+            "email_url": "blobl@gmail.com",
+            "prize_amount": "100000000",
+            "prize_asset": "0x0000000000000000000000000000000000000000",
+            "prize_name": "1 ETH",
+            "prize_symbol": "ETH",
+            "decimals": 18,
+            "chain": self.chain.pk,
+            "constraints": [self.meet_constraint.pk],
+            "constraint_params": base64.b64encode(json.dumps({}).encode("utf-8")).decode("utf-8"),
+            "deadline": "2023-09-25 21:00",
+            "max_number_of_entries": 1000,
+            "start_at": "2023-09-25 10:00",
+            "winners_count": 5,
+        }
 
     @patch("authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status", lambda a, b, c: (True, None))
     def test_raffle_list(self):
@@ -171,6 +218,116 @@ class RaffleAPITestCase(RaffleTestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk}))
         self.assertEqual(response.status_code, 403)
+
+    def test_create_raffle(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(reverse("create-raffle"), self.raffle_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Raffle.objects.count(), 2)
+        self.assertEqual(Raffle.objects.get(pk=2).name, "test_create_raffle_api")
+
+    def test_create_raffle_with_invalid_constraint_params(self):
+        constraint = Constraint.objects.create(
+            name="faucet.HasClaimedGasInThisRound",
+            title="Has claimed gas in the round",
+            description="You should have claimed gas in this round",
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle_data["constraints"] = [constraint.pk]
+        response = self.client.post(reverse("create-raffle"), self.raffle_data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Raffle.objects.count(), 1)
+        raffle = None
+        try:
+            raffle = Raffle.objects.get(pk=2)
+        except Raffle.DoesNotExist:
+            pass
+
+        self.assertEqual(raffle, None)
+
+    def test_create_raffle_with_invalid_winners_count(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle_data["max_number_of_entries"] = 10
+        self.raffle_data["winners_count"] = 11
+        response = self.client.post(reverse("create-raffle"), self.raffle_data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Raffle.objects.count(), 1)
+        raffle = None
+        try:
+            raffle = Raffle.objects.get(pk=2)
+        except Raffle.DoesNotExist:
+            pass
+
+        self.assertEqual(raffle, None)
+
+    def test_set_raffle_tx(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        tx_hash = "0xb164ab20b5b9ada53906572dee4847b46f7be7b692c805619eb35be2d5053ace"
+        response = self.client.post(reverse("set-raffle-tx", kwargs={"pk": self.raffle.pk}), data={"tx_hash": tx_hash})
+        self.raffle.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.raffle.tx_hash, tx_hash)
+
+    def test_set_not_owned_raffle_tx(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle.creator_profile = UserProfile.objects.create(
+            user=User.objects.create_user(username="test_2", password="1234"),
+            initial_context_id="test_2",
+            username="test_2",
+        )
+        self.raffle.save()
+        tx_hash = "0xb164ab20b5b9ada53906572dee4847b46f7be7b692c805619eb35be2d5053ace"
+        response = self.client.post(reverse("set-raffle-tx", kwargs={"pk": self.raffle.pk}), data={"tx_hash": tx_hash})
+        self.raffle.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.raffle.tx_hash, None)
+
+    def test_overwrite_raffle_tx(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        tx_hash = "0xb164ab20b5b9ada53906572dee4847b46f7be7b692c805619eb35be2d5053ace"
+        self.client.post(reverse("set-raffle-tx", kwargs={"pk": self.raffle.pk}), data={"tx_hash": tx_hash})
+        new_tx_hash = "0xd2f06c076e688de472fcb7e8a62c08e261947e28c073725a4095e362f1fa2d6a"
+        response = self.client.post(
+            reverse("set-raffle-tx", kwargs={"pk": self.raffle.pk}), data={"tx_hash": new_tx_hash}
+        )
+        self.raffle.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.raffle.tx_hash, tx_hash)
+
+    def test_set_invalid_raffle_tx(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        tx_hash = "0xb164ab20b5b9ada53906572dee4847b46f7be7b692c805619eb35be2d5053ac"
+        response = self.client.post(reverse("set-raffle-tx", kwargs={"pk": self.raffle.pk}), data={"tx_hash": tx_hash})
+        self.raffle.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.raffle.tx_hash, None)
+
+    def test_get_valid_chains(self):
+        self.create_polygon_chain()
+        self.create_mumbai_chain()
+        response = self.client.get(reverse("get-valid-chains"))
+        self.assertEqual(response.status_code, 200)
+        data = response.data["data"]
+        self.assertEqual(data[0]["chain_id"], "137")
+        self.assertEqual(data[0]["erc20_prizetap_addr"], "0xB521C36F76d28Edb287346C9D649Fa1A60754f04")
+        self.assertEqual(data[0]["erc721_prizetap_addr"], "0xb68D3f2946Bf477978c68b509FD9f85E9e20F869")
+        self.assertEqual(data[1]["chain_id"], "80001")
+        self.assertEqual(data[1]["erc20_prizetap_addr"], "0x5AD9BAf388E6E4F7c40652e21545F700C2104FF0")
+        self.assertEqual(data[1]["erc721_prizetap_addr"], "0x9E5c0d8a54D93956f26935447BBADd629f13a0dE")
+
+    def test_get_user_raffles(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.get(reverse("get-user-raffles"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["pk"], self.raffle.pk)
+        self.assertEqual(response.data[0]["name"], self.raffle.name)
+
+    def test_get_constraints(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.get(reverse("get-constraints"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["pk"], self.meet_constraint.pk)
+        self.assertEqual(response.data[0]["name"], self.meet_constraint.name)
 
 
 class RaffleEntryTestCase(RaffleTestCase):
