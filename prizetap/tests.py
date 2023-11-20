@@ -17,8 +17,8 @@ from .models import Constraint, NotHaveUnitapPass, Raffle, RaffleEntry
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
 test_rpc_url_private = "https://rpc.ankr.com/eth_sepolia"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
-erc20_contract_address = "0x5363502325735d7b27162b2b3482c107fD4c5B3C"
-erc721_contract_address = "0x334ab41d0F93d1d61178a21CD7A71387e5c75688"
+erc20_contract_address = "0x5AD9BAf388E6E4F7c40652e21545F700C2104FF0"
+erc721_contract_address = "0x9E5c0d8a54D93956f26935447BBADd629f13a0dE"
 
 
 # # Create your tests here.
@@ -41,17 +41,7 @@ class BaseTestCase(APITestCase):
             private_key=test_wallet_key,
             network_type=NetworkTypes.EVM,
         )
-        self.chain = Chain.objects.create(
-            chain_name="Sepolia",
-            wallet=self.wallet,
-            rpc_url_private=test_rpc_url_private,
-            explorer_url="https://sepolia.etherscan.io/",
-            fund_manager_address=fund_manager,
-            native_currency_name="ETH",
-            symbol="ETH",
-            chain_id="11155111",
-            max_claim_amount=1e11,
-        )
+        self.chain = self.create_mumbai_chain()
         self.meet_constraint = Constraint.objects.create(
             name="core.BrightIDMeetVerification",
             title="BrightID meet",
@@ -59,7 +49,7 @@ class BaseTestCase(APITestCase):
         )
 
     def create_polygon_chain(self):
-        Chain.objects.create(
+        return Chain.objects.create(
             chain_name="Polygon",
             wallet=self.wallet,
             rpc_url_private="https://rpc.ankr.com/polygon",
@@ -72,7 +62,7 @@ class BaseTestCase(APITestCase):
         )
 
     def create_mumbai_chain(self):
-        Chain.objects.create(
+        return Chain.objects.create(
             chain_name="Mumbai",
             wallet=self.wallet,
             rpc_url_private="https://rpc.ankr.com/polygon_mumbai",
@@ -168,7 +158,7 @@ class RaffleAPITestCase(RaffleTestCase):
         self.raffle_data = {
             "name": "test_create_raffle_api",
             "description": "A test raffle",
-            "contract": "0x5363502325735d7b27162b2b3482c107fD4c5B3C",
+            "contract": erc20_contract_address,
             "creator_name": "unitap",
             "creator_address": self.wallet.address,
             "twitter_url": "https://twitter.com/unitap_app",
@@ -304,16 +294,15 @@ class RaffleAPITestCase(RaffleTestCase):
 
     def test_get_valid_chains(self):
         self.create_polygon_chain()
-        self.create_mumbai_chain()
         response = self.client.get(reverse("get-valid-chains"))
         self.assertEqual(response.status_code, 200)
         data = response.data["data"]
-        self.assertEqual(data[0]["chain_id"], "137")
-        self.assertEqual(data[0]["erc20_prizetap_addr"], "0xB521C36F76d28Edb287346C9D649Fa1A60754f04")
-        self.assertEqual(data[0]["erc721_prizetap_addr"], "0xb68D3f2946Bf477978c68b509FD9f85E9e20F869")
-        self.assertEqual(data[1]["chain_id"], "80001")
-        self.assertEqual(data[1]["erc20_prizetap_addr"], "0x5AD9BAf388E6E4F7c40652e21545F700C2104FF0")
-        self.assertEqual(data[1]["erc721_prizetap_addr"], "0x9E5c0d8a54D93956f26935447BBADd629f13a0dE")
+        self.assertEqual(data[0]["chain_id"], "80001")
+        self.assertEqual(data[0]["erc20_prizetap_addr"], "0x5AD9BAf388E6E4F7c40652e21545F700C2104FF0")
+        self.assertEqual(data[0]["erc721_prizetap_addr"], "0x9E5c0d8a54D93956f26935447BBADd629f13a0dE")
+        self.assertEqual(data[1]["chain_id"], "137")
+        self.assertEqual(data[1]["erc20_prizetap_addr"], "0xB521C36F76d28Edb287346C9D649Fa1A60754f04")
+        self.assertEqual(data[1]["erc721_prizetap_addr"], "0xb68D3f2946Bf477978c68b509FD9f85E9e20F869")
 
     def test_get_user_raffles(self):
         self.client.force_authenticate(user=self.user_profile.user)

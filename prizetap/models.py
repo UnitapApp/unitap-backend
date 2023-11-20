@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -67,9 +68,9 @@ class Raffle(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     start_at = models.DateTimeField(default=timezone.now)
     deadline = models.DateTimeField()
-    max_number_of_entries = models.IntegerField()
-    max_multiplier = models.IntegerField(default=1)
-    winners_count = models.IntegerField(default=1)
+    max_number_of_entries = models.IntegerField(validators=[MinValueValidator(1)])
+    max_multiplier = models.IntegerField(default=1, validators=[MinValueValidator(1)])
+    winners_count = models.IntegerField(default=1, validators=[MinValueValidator(1)])
 
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     rejection_reason = models.TextField(null=True, blank=True)

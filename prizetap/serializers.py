@@ -8,6 +8,7 @@ from core.constraints import ConstraintVerification, get_constraint
 from core.serializers import UserConstraintBaseSerializer
 from faucet.serializers import SmallChainSerializer
 
+from .constants import CONTRACT_ADDRESSES
 from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry, UserConstraint
 
 
@@ -120,8 +121,15 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
                         constraint_class.is_valid_param_keys(constraint_params[c.name])
                 except KeyError as e:
                     raise serializers.ValidationError({"constraint_params": [{f"{c.name}": str(e)}]})
-        if data["winners_count"] > data["max_number_of_entries"]:
+        if "winners_count" in data and data["winners_count"] > data["max_number_of_entries"]:
             raise serializers.ValidationError({"winners_count": "Invalid value"})
+        valid_chains = list(CONTRACT_ADDRESSES.keys())
+        chain_id = data["chain"].chain_id
+        if chain_id not in valid_chains:
+            raise serializers.ValidationError({"chain": "Invalid value"})
+        valid_contracts = list(CONTRACT_ADDRESSES[chain_id].values())
+        if data["contract"] not in valid_contracts:
+            raise serializers.ValidationError({"contract": "Invalid value"})
         data["creator_profile"] = self.context["user_profile"]
         return data
 
