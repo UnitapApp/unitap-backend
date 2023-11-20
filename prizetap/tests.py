@@ -323,11 +323,34 @@ class RaffleAPITestCase(RaffleTestCase):
         self.assertEqual(response.data[0]["name"], self.raffle.name)
 
     def test_get_constraints(self):
-        self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.get(reverse("get-constraints"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data[0]["pk"], self.meet_constraint.pk)
         self.assertEqual(response.data[0]["name"], self.meet_constraint.name)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (False, None),
+    )
+    def test_get_raffle_constraints(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.get(reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk}))
+        data = response.data["constraints"][0]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["pk"], self.meet_constraint.pk)
+        self.assertEqual(data["is_verified"], False)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_get_raffle_constraints_when_is_verified(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.get(reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk}))
+        data = response.data["constraints"][0]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["pk"], self.meet_constraint.pk)
+        self.assertEqual(data["is_verified"], True)
 
 
 class RaffleEntryTestCase(RaffleTestCase):
@@ -441,6 +464,23 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
             reverse("set-claiming-prize-tx", kwargs={"pk": self.raffle.pk}), data={"tx_hash": tx_hash}
         )
         self.assertEqual(response.status_code, 403)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_get_raffle_entry(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk}))
+        first_entry = self.raffle.entries.first()
+        response = self.client.get(reverse("raflle-enrollment-detail", kwargs={"pk": first_entry.pk}))
+        self.assertEqual(response.status_code, 200)
+        data = response.data["entry"]
+        self.assertEqual(data["pk"], first_entry.pk)
+        self.assertEqual(data["chain"], self.raffle.chain.chain_id)
+        self.assertEqual(data["user_profile"]["pk"], self.user_profile.pk)
+        self.assertEqual(data["raffle"]["name"], self.raffle.name)
+        self.assertEqual(data["raffle"]["raffleId"], self.raffle.raffleId)
 
 
 class UtilsTestCase(RaffleTestCase):
