@@ -1,4 +1,3 @@
-# flake8: noqa
 import base64
 import json
 
@@ -9,7 +8,7 @@ from core.constraints import ConstraintVerification, get_constraint
 from core.serializers import UserConstraintBaseSerializer
 from faucet.serializers import SmallChainSerializer
 
-from .models import *
+from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry, UserConstraint
 
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
