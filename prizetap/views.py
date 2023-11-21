@@ -201,7 +201,7 @@ class SetRaffleTXView(APIView):
 
 
 class ValidChainsView(ListAPIView):
-    queryset = Chain.objects.filter(chain_id__in=list(CONTRACT_ADDRESSES.keys()))
+    queryset = Chain.objects.filter(chain_id__in=list(CONTRACT_ADDRESSES.keys())).order_by("pk")
     serializer_class = SmallChainSerializer
 
     def get(self, request):
