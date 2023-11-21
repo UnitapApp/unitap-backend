@@ -250,6 +250,46 @@ class RaffleAPITestCase(RaffleTestCase):
 
         self.assertEqual(raffle, None)
 
+    def test_create_raffle_with_invalid_chain_id(self):
+        Chain.objects.create(
+            chain_name="Sepolia",
+            wallet=self.wallet,
+            rpc_url_private=test_rpc_url_private,
+            explorer_url="https://sepolia.etherscan.io/",
+            fund_manager_address=fund_manager,
+            native_currency_name="ETH",
+            symbol="ETH",
+            chain_id="11155111",
+            max_claim_amount=1e11,
+        )
+
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle_data["chain"] = 3
+        response = self.client.post(reverse("create-raffle"), self.raffle_data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Raffle.objects.count(), 1)
+        raffle = None
+        try:
+            raffle = Raffle.objects.get(pk=2)
+        except Raffle.DoesNotExist:
+            pass
+
+        self.assertEqual(raffle, None)
+
+    def test_create_raffle_with_invalid_contract_address(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle_data["contract"] = "0x5363502325735d7b27162b2b3482c107fD4c5B3C"
+        response = self.client.post(reverse("create-raffle"), self.raffle_data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Raffle.objects.count(), 1)
+        raffle = None
+        try:
+            raffle = Raffle.objects.get(pk=2)
+        except Raffle.DoesNotExist:
+            pass
+
+        self.assertEqual(raffle, None)
+
     def test_set_raffle_tx(self):
         self.client.force_authenticate(user=self.user_profile.user)
         tx_hash = "0xb164ab20b5b9ada53906572dee4847b46f7be7b692c805619eb35be2d5053ace"
