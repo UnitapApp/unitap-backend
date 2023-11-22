@@ -24,6 +24,7 @@ class UserConstraint(models.Model):
     title = models.CharField(max_length=255)
     type = models.CharField(max_length=10, choices=Type.choices, default=Type.VERIFICATION)
     description = models.TextField(null=True, blank=True)
+    explanation = models.TextField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
     icon_url = models.CharField(max_length=255, null=True, blank=True)
 
