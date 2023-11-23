@@ -15,6 +15,7 @@ from sentry_sdk import capture_exception
 
 from authentication.models import NetworkTypes, Wallet
 from core.models import TokenPrice
+from core.utils import Web3Utils
 from tokenTap.models import TokenDistributionClaim
 
 from .faucet_manager.fund_manager import (
@@ -382,10 +383,7 @@ def process_donation_receipt(self, donation_receipt_pk):
             ).values_list("lower_address", flat=True):
                 donation_receipt.delete()
                 return
-            if (
-                evm_fund_manager.to_checksum_address(tx.get("to"))
-                != evm_fund_manager.get_fund_manager_checksum_address()
-            ):
+            if Web3Utils.to_checksum_address(tx.get("to")) != evm_fund_manager.get_fund_manager_checksum_address():
                 donation_receipt.delete()
                 return
             donation_receipt.value = str(evm_fund_manager.from_wei(tx.get("value")))
