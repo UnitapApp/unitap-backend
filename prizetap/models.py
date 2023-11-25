@@ -64,6 +64,7 @@ class Raffle(models.Model):
 
     constraints = models.ManyToManyField(Constraint, blank=True, related_name="raffles")
     constraint_params = models.TextField(null=True, blank=True)
+    reversed_constraints = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     start_at = models.DateTimeField(default=timezone.now)

@@ -1,16 +1,19 @@
 import base64
 import json
-from unittest.mock import PropertyMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.test import APITestCase
 
+from authentication.helpers import BrightIDSoulboundAPIInterface
 from authentication.models import NetworkTypes, UserProfile, Wallet
 from faucet.models import Chain, WalletAccount
 
 from .models import Constraint, NotHaveUnitapPass, Raffle, RaffleEntry
+from .validators import RaffleEnrollmentValidator
 
 # from .utils import PrizetapContractClient
 
@@ -234,6 +237,52 @@ class RaffleAPITestCase(RaffleTestCase):
             pass
 
         self.assertEqual(raffle, None)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_reversed_constraints(self):
+        self.raffle.reversed_constraints = "core.BrightIDMeetVerification"
+        self.raffle.save()
+        validator = RaffleEnrollmentValidator(user_profile=self.user_profile, raffle=self.raffle)
+        self.assertRaises(PermissionDenied, validator.check_user_constraints)
+
+    def test_create_raffle_with_invalid_reversed_constraints(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle_data["constraints"] = [self.meet_constraint.pk]
+        self.raffle_data["reversed_constraints"] = "core.BrightIDAuraVerification"
+        response = self.client.post(reverse("create-raffle"), self.raffle_data)
+        self.assertEqual(
+            str(response.data["reversed_constraints"][0]["core.BrightIDAuraVerification"]), "Invalid constraint name"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Raffle.objects.count(), 1)
+        raffle = None
+        try:
+            raffle = Raffle.objects.get(pk=2)
+        except Raffle.DoesNotExist:
+            pass
+
+        self.assertEqual(raffle, None)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (False, None),
+    )
+    def test_create_raffle_with_reversed_constraints(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle_data["constraints"] = [self.meet_constraint.pk]
+        self.raffle_data["reversed_constraints"] = self.meet_constraint.name
+        response = self.client.post(reverse("create-raffle"), self.raffle_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Raffle.objects.count(), 2)
+        raffle = Raffle.objects.get(pk=response.data["data"]["id"])
+        self.assertEqual(raffle.name, self.raffle_data["name"])
+        validator = RaffleEnrollmentValidator(user_profile=self.user_profile, raffle=raffle)
+        validator.check_user_constraints()
+        BrightIDSoulboundAPIInterface.get_verification_status = MagicMock(return_value=(True, None))
+        self.assertRaises(PermissionDenied, validator.check_user_constraints)
 
     def test_create_raffle_with_invalid_winners_count(self):
         self.client.force_authenticate(user=self.user_profile.user)
