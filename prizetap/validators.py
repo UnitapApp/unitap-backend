@@ -22,6 +22,7 @@ class RaffleEnrollmentValidator:
             param_values = json.loads(self.raffle.constraint_params)
         except Exception:
             param_values = {}
+        reversed_constraints = self.raffle.reversed_constraints.split(",") if self.raffle.reversed_constraints else []
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(self.user_profile)
             constraint.response = c.response
@@ -29,8 +30,12 @@ class RaffleEnrollmentValidator:
                 constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
-            if not constraint.is_observed():
-                raise PermissionDenied(constraint.response)
+            if c.name in reversed_constraints:
+                if constraint.is_observed():
+                    raise PermissionDenied(constraint.response)
+            else:
+                if not constraint.is_observed():
+                    raise PermissionDenied(constraint.response)
 
     def check_user_has_wallet(self):
         if not self.user_profile.wallets.filter(wallet_type=self.raffle.chain.chain_type).exists():
