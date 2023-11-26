@@ -97,8 +97,12 @@ class Web3Utils:
     def set_contract(self, address, abi):
         self._contract = self.w3.eth.contract(address=address, abi=abi)
 
-    def contract_txn(self, func: Type[ContractFunction]):
-        signed_tx = self.build_contract_txn(func)
+    def get_contract_function(self, func_name: str):
+        func = getattr(self.contract.functions, func_name)
+        return func
+
+    def contract_txn(self, func: Type[ContractFunction], **kwargs):
+        signed_tx = self.build_contract_txn(func, **kwargs)
         txn_hash = self.send_raw_tx(signed_tx)
         return txn_hash.hex()
 
@@ -107,9 +111,12 @@ class Web3Utils:
             return func.call({"from": from_address})
         return func.call()
 
-    def build_contract_txn(self, func: Type[ContractFunction]):
+    def get_gas_estimate(self, func: Type[ContractFunction]):
+        return func.estimate_gas({"from": self.account.address})
+
+    def build_contract_txn(self, func: Type[ContractFunction], **kwargs):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
-        tx_data = func.build_transaction({"from": self.account.address, "nonce": nonce})
+        tx_data = func.build_transaction({"from": self.account.address, "nonce": nonce, **kwargs})
         return self.sign_tx(tx_data)
 
     def sign_tx(self, tx_data: TxParams):
@@ -126,3 +133,16 @@ class Web3Utils:
 
     def get_transaction_by_hash(self, hash):
         return self.w3.eth.get_transaction(hash)
+
+    def get_gas_price(self):
+        return self.w3.eth.gas_price
+
+    def from_wei(self, value: int, unit: str = "ether"):
+        return self.w3.from_wei(value, unit)
+
+    @staticmethod
+    def to_checksum_address(address: str):
+        return Web3.to_checksum_address(address.lower())
+
+    def get_transaction_receipt(self, hash):
+        return self.w3.eth.get_transaction_receipt(hash)

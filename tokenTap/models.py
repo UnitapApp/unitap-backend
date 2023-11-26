@@ -4,12 +4,12 @@ from django.utils import timezone
 
 from authentication.models import NetworkTypes, UserProfile
 from core.models import UserConstraint
+from faucet.constraints import OptimismHasClaimedGasInThisRound
 from faucet.models import Chain, ClaimReceipt
 
 from .constraints import (
     OnceInALifeTimeVerification,
     OncePerMonthVerification,
-    OptimismHasClaimedGasInThisRound,
     TimeUtils,
 )
 

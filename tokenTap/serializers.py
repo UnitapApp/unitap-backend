@@ -1,9 +1,6 @@
 from rest_framework import serializers
 
-from core.constraints import (  # noqa: F401
-    BrightIDAuraVerification,
-    BrightIDMeetVerification,
-)
+from core.constraints import ConstraintVerification, get_constraint
 from core.serializers import UserConstraintBaseSerializer
 from faucet.serializers import SmallChainSerializer
 from tokenTap.models import (
@@ -13,13 +10,6 @@ from tokenTap.models import (
     UserConstraint,
 )
 
-from .constraints import (  # noqa: F401
-    ConstraintVerification,
-    OnceInALifeTimeVerification,
-    OncePerMonthVerification,
-    OptimismHasClaimedGasInThisRound,
-)
-
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
     class Meta(UserConstraintBaseSerializer.Meta):
@@ -27,7 +17,7 @@ class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerial
         model = Constraint
 
     def get_params(self, constraint: UserConstraint):
-        c_class: ConstraintVerification = eval(constraint.name)
+        c_class: ConstraintVerification = get_constraint(constraint.name)
         return [p.name for p in c_class.param_keys()]
 
 

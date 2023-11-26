@@ -17,6 +17,9 @@ docker-build-dev:
 docker-up-dev:
 	docker-compose up -d --force-recreate --build
 
+docker-up-dev-log:
+	docker-compose up --force-recreate --build
+
 docker-down-dev:
 	docker-compose down
 
@@ -28,3 +31,5 @@ docker-run-tests:
 
 docker-run-tests-no-i:
 	docker-compose exec backend bash -c "python manage.py test"
+docker-coverage-report-no-i:
+	docker-compose exec backend bash -c "coverage run manage.py test; coverage report"
