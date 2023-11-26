@@ -13,6 +13,7 @@ from faucet.views import (
     LastClaimView,
     LeaderboardView,
     ListClaims,
+    ListOneTimeClaims,
     SmallChainListView,
     UserLeaderboardView,
     artwork_video,
@@ -40,6 +41,7 @@ urlpatterns = [
     ),
     path("user/last-claim/", LastClaimView.as_view(), name="last-claim"),
     path("user/claims/", ListClaims.as_view(), name="claims"),
+    path("user/one-time-claims/", ListOneTimeClaims.as_view(), name="one-time-claims"),
     path("claims/count/", ClaimCountView.as_view(), name="claims-count"),
     path("chain/list/", ChainListView.as_view(), name="chain-list"),  # can have auth token for more user specific info
     path("chain/small-list/", SmallChainListView.as_view(), name="small-chain-list"),
