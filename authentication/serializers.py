@@ -1,12 +1,7 @@
-from rest_framework.authtoken.models import Token
 from rest_framework import serializers
+from rest_framework.authtoken.models import Token
 
-from authentication.models import (
-    UserProfile,
-    Wallet,
-)
-from faucet.faucet_manager.claim_manager import LimitedChainClaimManager
-from faucet.models import GlobalSettings
+from authentication.models import UserProfile, Wallet
 
 
 class UsernameRequestSerializer(serializers.Serializer):
@@ -30,22 +25,17 @@ class MessageResponseSerializer(serializers.Serializer):
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wallet
-        fields = [
-            "pk",
-            "wallet_type",
-            "address",
-            'primary'
-        ]
+        fields = ["pk", "wallet_type", "address", "primary"]
 
     def update(self, instance, validated_data):
-        if validated_data.get('primary') is False or instance.wallet_type != 'EVM':
-            raise serializers.ValidationError({'message': 'primary must be true or wallet_type must be EVM'})
+        if validated_data.get("primary") is False or instance.wallet_type != "EVM":
+            raise serializers.ValidationError({"message": "primary must be true or wallet_type must be EVM"})
         user_profile = self.context["request"].user.profile
         try:
             wallet = Wallet.objects.get(user_profile=user_profile, primary=True)
             wallet.primary = False
             instance.primary = True
-            Wallet.objects.bulk_update([wallet, instance], ['primary'])
+            Wallet.objects.bulk_update([wallet, instance], ["primary"])
             return instance
         except Wallet.DoesNotExist:
             instance.primary = True
@@ -55,7 +45,7 @@ class WalletSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     wallets = WalletSerializer(many=True, read_only=True)
-    total_weekly_claims_remaining = serializers.SerializerMethodField()
+    # total_round_claims_remaining = serializers.SerializerMethodField()
     token = serializers.SerializerMethodField()
 
     class Meta:
@@ -67,7 +57,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "initial_context_id",
             "is_meet_verified",
             "is_aura_verified",
-            "total_weekly_claims_remaining",
+            # "total_round_claims_remaining",
             "wallets",
         ]
 
@@ -75,13 +65,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         token, bol = Token.objects.get_or_create(user=instance.user)
         return token.key
 
-    def get_total_weekly_claims_remaining(self, instance):
-        gs = GlobalSettings.objects.first()
-        if gs is not None:
-            return (
-                    gs.weekly_chain_claim_limit
-                    - LimitedChainClaimManager.get_total_weekly_claims(instance)
-            )
+    # def get_total_round_claims_remaining(self, instance):
+    #     gs = GlobalSettings.objects.first()
+    #     if gs is not None:
+    #         return gs.gastap_round_claim_limit - LimitedChainClaimManager.get_total_round_claims(instance)
 
 
 class SimpleProfilerSerializer(serializers.ModelSerializer):
@@ -93,8 +80,6 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
         fields = [
             "pk",
             "username",
-            "is_meet_verified",
-            "is_aura_verified",
             "wallets",
         ]
 

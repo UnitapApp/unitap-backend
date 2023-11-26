@@ -6,14 +6,14 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('permissions', '0001_initial'),
+        # ('permissions', '0001_initial'),
         ('tokenTap', '0001_initial'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='tokendistribution',
-            name='permissions',
-            field=models.ManyToManyField(blank=True, to='permissions.permission'),
-        ),
+        # migrations.AddField(
+        #     model_name='tokendistribution',
+        #     name='permissions',
+        #     field=models.ManyToManyField(blank=True, to='permissions.permission'),
+        # ),
     ]

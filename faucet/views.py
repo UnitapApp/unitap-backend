@@ -1,41 +1,42 @@
 import json
-from django.http import FileResponse
+import logging
 import os
+
 import rest_framework.exceptions
-from django.http import Http404
+from django.conf import settings
+from django.contrib.postgres.expressions import ArraySubquery
+from django.db.models import FloatField, OuterRef, Subquery, Sum
+from django.db.models.functions import Cast
+from django.http import FileResponse, Http404, HttpResponse
+from django.urls import reverse
 from rest_framework.generics import (
-    RetrieveAPIView,
     ListAPIView,
-    ListCreateAPIView, get_object_or_404,
+    ListCreateAPIView,
+    RetrieveAPIView,
+    get_object_or_404,
 )
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from django.http import HttpResponse
-from rest_framework.permissions import IsAuthenticated
-from django.urls import reverse
 from authentication.models import UserProfile, Wallet
+from core.filters import ChainFilterBackend, IsOwnerFilterBackend
+from core.paginations import StandardResultsSetPagination
 from faucet.faucet_manager.claim_manager import (
     ClaimManagerFactory,
     LimitedChainClaimManager,
 )
-from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
-from faucet.models import Chain, ClaimReceipt, GlobalSettings, DonationReceipt
+from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
+from faucet.models import Chain, ClaimReceipt, DonationReceipt, GlobalSettings
 from faucet.serializers import (
     ChainBalanceSerializer,
-    GlobalSettingsSerializer,
-    ReceiptSerializer,
     ChainSerializer,
+    DonationReceiptSerializer,
+    GlobalSettingsSerializer,
+    LeaderboardSerializer,
+    ReceiptSerializer,
     SmallChainSerializer,
-    DonationReceiptSerializer, LeaderboardSerializer,
 )
-from core.paginations import StandardResultsSetPagination
-from core.filters import ChainFilterBackend, IsOwnerFilterBackend
-# import BASE_DIR from django settings
-from django.conf import settings
-from django.db.models import FloatField, Sum, OuterRef, Subquery, Window, F, Count
-from django.db.models.functions import Cast
-from django.contrib.postgres.expressions import ArraySubquery
 
 
 class CustomException(Exception):
@@ -55,11 +56,7 @@ class LastClaimView(RetrieveAPIView):
     def get_object(self):
         user_profile = self.request.user.profile
         try:
-            return (
-                ClaimReceipt.objects.filter(user_profile=user_profile)
-                .order_by("pk")
-                .last()
-            )
+            return ClaimReceipt.objects.filter(user_profile=user_profile).order_by("pk").last()
         except ClaimReceipt.DoesNotExist:
             raise Http404("Claim Receipt for this user does not exist")
 
@@ -83,11 +80,11 @@ class ListClaims(ListAPIView):
                 ClaimReceipt.PENDING,
                 ClaimReceipt.REJECTED,
             ],
-            datetime__gte=WeeklyCreditStrategy.get_last_monday(),
+            datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
         ).order_by("-pk")
 
 
-class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
+class GetTotalRoundClaimsRemainingView(RetrieveAPIView):
     """
     Return the total weekly claims remaining for the given user
     """
@@ -98,11 +95,8 @@ class GetTotalWeeklyClaimsRemainingView(RetrieveAPIView):
         user_profile = request.user.profile
         gs = GlobalSettings.objects.first()
         if gs is not None:
-            result = (
-                    gs.weekly_chain_claim_limit
-                    - LimitedChainClaimManager.get_total_weekly_claims(user_profile)
-            )
-            return Response({"total_weekly_claims_remaining": result}, status=200)
+            result = max(gs.gastap_round_claim_limit - LimitedChainClaimManager.get_total_round_claims(user_profile), 0)
+            return Response({"total_round_claims_remaining": result}, status=200)
         else:
             raise Http404("Global Settings Not Found")
 
@@ -119,9 +113,7 @@ class ChainListView(ListAPIView):
     def get_queryset(self):
         queryset = Chain.objects.filter(is_active=True, show_in_gastap=True)
 
-        sorted_queryset = sorted(
-            queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
-        )
+        sorted_queryset = sorted(queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True)
         return sorted_queryset
 
 
@@ -169,13 +161,11 @@ class ClaimMaxView(APIView):
         chain = self.get_chain()
 
         try:
-            _wallet = Wallet.objects.get(
-                user_profile=self.get_user(), wallet_type=chain.chain_type
-            )
+            Wallet.objects.get(user_profile=self.get_user(), wallet_type=chain.chain_type)
             return True, None
         except Exception as e:
+            logging.error("wallet address not set", e)
             raise CustomException("wallet address not set")
-            # return Response({"message": "wallet address not set"}, status=403)
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get("chain_pk", None)
@@ -194,7 +184,7 @@ class ClaimMaxView(APIView):
             assert max_credit > 0
             return manager.claim(max_credit, passive_address=passive_address)
         except AssertionError as e:
-            # return Response({"message": "no credit left"}, status=403)
+            logging.error("no credit left for user", e)
             raise CustomException("no credit left")
         except ValueError as e:
             raise rest_framework.exceptions.APIException(e)
@@ -228,7 +218,7 @@ class DonationReceiptView(ListCreateAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context.update({'user': self.get_user()})
+        context.update({"user": self.get_user()})
         return context
 
     def get_queryset(self):
@@ -249,20 +239,24 @@ class UserLeaderboardView(RetrieveAPIView):
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())
-        queryset = queryset.filter(status=ClaimReceipt.VERIFIED) \
-            .annotate(
-            total_price_float=Cast('total_price', FloatField())).values('user_profile') \
-            .annotate(
-            sum_total_price=Sum('total_price_float'))
+        queryset = (
+            queryset.filter(status=ClaimReceipt.VERIFIED)
+            .annotate(total_price_float=Cast("total_price", FloatField()))
+            .values("user_profile")
+            .annotate(sum_total_price=Sum("total_price_float"))
+        )
         user_obj = get_object_or_404(queryset, user_profile=self.get_user().pk)
-        user_rank = queryset.filter(sum_total_price__gt=user_obj.get('sum_total_price')).count() + 1
-        user_obj['rank'] = user_rank
-        user_obj['username'] = self.get_user().username
-        user_obj['wallet'] = self.get_user().wallets.get_primary_wallet()
-        interacted_chains = list(DonationReceipt.objects.filter(
-            user_profile=self.get_user()).filter(status=ClaimReceipt.VERIFIED).values_list(
-            'chain', flat=True).distinct())
-        user_obj['interacted_chains'] = interacted_chains
+        user_rank = queryset.filter(sum_total_price__gt=user_obj.get("sum_total_price")).count() + 1
+        user_obj["rank"] = user_rank
+        user_obj["username"] = self.get_user().username
+        user_obj["wallet"] = self.get_user().wallets.get_primary_wallet()
+        interacted_chains = list(
+            DonationReceipt.objects.filter(user_profile=self.get_user())
+            .filter(status=ClaimReceipt.VERIFIED)
+            .values_list("chain", flat=True)
+            .distinct()
+        )
+        user_obj["interacted_chains"] = interacted_chains
 
         return user_obj
 
@@ -275,16 +269,24 @@ class LeaderboardView(ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        donation_receipt = queryset.filter(status=ClaimReceipt.VERIFIED).annotate(
-            total_price_float=Cast('total_price', FloatField())).values('user_profile').annotate(
-            sum_total_price=Sum('total_price_float')).order_by('-sum_total_price')
-        subquery_interacted_chains = DonationReceipt.objects.filter(
-            user_profile=OuterRef('user_profile')).filter(status=ClaimReceipt.VERIFIED).values_list(
-            'chain', flat=True).distinct()
+        donation_receipt = (
+            queryset.filter(status=ClaimReceipt.VERIFIED)
+            .annotate(total_price_float=Cast("total_price", FloatField()))
+            .values("user_profile")
+            .annotate(sum_total_price=Sum("total_price_float"))
+            .order_by("-sum_total_price")
+        )
+        subquery_interacted_chains = (
+            DonationReceipt.objects.filter(user_profile=OuterRef("user_profile"))
+            .filter(status=ClaimReceipt.VERIFIED)
+            .values_list("chain", flat=True)
+            .distinct()
+        )
         queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
-        subquery_username = UserProfile.objects.filter(pk=OuterRef('user_profile')).values('username')
-        subquery_wallet = Wallet.objects.filter(user_profile=OuterRef('user_profile'), primary=True,
-                                                wallet_type='EVM').values('address')
+        subquery_username = UserProfile.objects.filter(pk=OuterRef("user_profile")).values("username")
+        subquery_wallet = Wallet.objects.filter(
+            user_profile=OuterRef("user_profile"), primary=True, wallet_type="EVM"
+        ).values("address")
         queryset = queryset.annotate(username=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -296,7 +298,7 @@ class LeaderboardView(ListAPIView):
 
 
 def artwork_video(request):
-    video_file = os.path.join(settings.BASE_DIR, f"faucet/artwork.mp4")
+    video_file = os.path.join(settings.BASE_DIR, "faucet/artwork.mp4")
     return FileResponse(open(video_file, "rb"), content_type="video/mp4")
 
 
@@ -306,7 +308,9 @@ def artwork_view(request, token_id):
 
     response = {
         "name": "Unitap Pass",
-        "description": "Unitap is an onboarding tool for networks and communities and a gateway for users to web3. https://unitap.app . Unitap Pass is a VIP pass for Unitap. Holders will enjoy various benefits as Unitap grows.",
+        "description": "Unitap is an onboarding tool for networks and communities and a gateway for users to web3."
+        " https://unitap.app . Unitap Pass is a VIP pass for Unitap. Holders"
+        " will enjoy various benefits as Unitap grows.",
         "image": artwork_video_url,
         "animation_url": artwork_video_url,
     }

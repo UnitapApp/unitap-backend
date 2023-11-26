@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import *
+
+from .models import (
+    BrightUser,
+    Chain,
+    ClaimReceipt,
+    DonationReceipt,
+    GlobalSettings,
+    LightningConfig,
+    TransactionBatch,
+    WalletAccount,
+)
 
 
 class ChainAdmin(admin.ModelAdmin):
@@ -27,6 +37,23 @@ def last_updated_with_seconds(obj):
 last_updated_with_seconds.short_description = "Last Updated"
 
 
+class TXHashFilter(admin.SimpleListFilter):
+    title = "has tx hash"  # or use _('country') for translated title
+    parameter_name = "has_tx_hash"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("has tx hash", ("has tx hash")),
+            ("no tx hash", ("no tx hash")),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "has tx hash":
+            return queryset.filter(batch__tx_hash__isnull=False)
+        if self.value() == "no tx hash":
+            return queryset.filter(batch__tx_hash__isnull=True)
+
+
 class ClaimReceiptAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
@@ -37,7 +64,7 @@ class ClaimReceiptAdmin(admin.ModelAdmin):
         "age",
         last_updated_with_seconds,
     ]
-    list_filter = ["chain", "_status"]
+    list_filter = ["chain", "_status", TXHashFilter]
 
     def batch__tx_hash(self, obj):
         if obj.batch:
@@ -49,8 +76,8 @@ class WalletAccountAdmin(admin.ModelAdmin):
 
 
 class GlobalSettingsAdmin(admin.ModelAdmin):
-    list_display = ["pk", "weekly_chain_claim_limit", "tokentap_weekly_claim_limit"]
-    list_editable = ["weekly_chain_claim_limit", "tokentap_weekly_claim_limit"]
+    list_display = ["pk", "gastap_round_claim_limit", "tokentap_round_claim_limit"]
+    list_editable = ["gastap_round_claim_limit", "tokentap_round_claim_limit"]
 
 
 class TransactionBatchAdmin(admin.ModelAdmin):
@@ -63,7 +90,7 @@ class TransactionBatchAdmin(admin.ModelAdmin):
         "age",
         "is_expired",
         "claims_count",
-        "claims_amount",
+        # "claims_amount",
     ]
     search_fields = ["tx_hash"]
     list_filter = ["chain", "_status", "updating"]
@@ -75,16 +102,9 @@ class LightningConfigAdmin(admin.ModelAdmin):
 
 
 class DonationReceiptAdmin(admin.ModelAdmin):
-    list_display = [
-        'tx_hash',
-        'user_profile',
-        'chain',
-        'value',
-        'total_price',
-        'datetime'
-    ]
-    search_fields = ['tx_hash']
-    list_filter = ['chain', 'user_profile']
+    list_display = ["tx_hash", "user_profile", "chain", "value", "total_price", "datetime"]
+    search_fields = ["tx_hash"]
+    list_filter = ["chain", "user_profile"]
 
 
 admin.site.register(WalletAccount, WalletAccountAdmin)

@@ -1,9 +1,10 @@
-from django.db import models
 from django.contrib.auth.models import User
-from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
-from django.utils import timezone
-from django.core.validators import RegexValidator
 from django.core.cache import cache
+from django.core.validators import RegexValidator
+from django.db import models
+from django.utils import timezone
+
+from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 
 
 class ProfileManager(models.Manager):
@@ -13,8 +14,6 @@ class ProfileManager(models.Manager):
         except UserProfile.DoesNotExist:
             _user = User.objects.create_user(username=first_context_id)
             _profile = UserProfile(user=_user, initial_context_id=first_context_id)
-            # _profile.is_aura_verified
-            # _profile.is_meet_verified
             _profile.save()
             return _profile
 
@@ -22,7 +21,7 @@ class ProfileManager(models.Manager):
 class WalletManager(models.Manager):
     def get_primary_wallet(self):
         try:
-            self.get(primary=True, wallet_type='EVM')
+            self.get(primary=True, wallet_type="EVM")
         except Wallet.DoesNotExist:
             return None
 
@@ -59,9 +58,7 @@ class UserProfile(models.Model):
         (
             is_verified,
             context_ids,
-        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
-            self.initial_context_id, "Meet"
-        )
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(self.initial_context_id, "Meet")
 
         return is_verified
 
@@ -70,9 +67,7 @@ class UserProfile(models.Model):
         (
             is_verified,
             context_ids,
-        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
-            self.initial_context_id, "Aura"
-        )
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(self.initial_context_id, "Aura")
 
         return is_verified
 
@@ -111,9 +106,7 @@ class NetworkTypes:
 
 class Wallet(models.Model):
     wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
-    user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.PROTECT, related_name="wallets"
-    )
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.PROTECT, related_name="wallets")
     address = models.CharField(max_length=512, unique=True)
     primary = models.BooleanField(default=False, null=False, blank=False)
 

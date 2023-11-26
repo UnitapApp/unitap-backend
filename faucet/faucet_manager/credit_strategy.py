@@ -1,16 +1,12 @@
 import abc
-from abc import ABC
-from time import time
 import datetime
+from abc import ABC
 
-from django.db.models import Sum
-from django.utils import timezone
 import pytz
-from authentication.models import UserProfile
+from django.db.models import Sum
 
-from brightIDfaucet import settings
-from faucet.faucet_manager.brightid_user_registry import BrightIdUserRegistry
-from faucet.models import ClaimReceipt, BrightUser, Chain
+from authentication.models import UserProfile
+from faucet.models import Chain, ClaimReceipt
 
 
 class CreditStrategy(ABC):
@@ -51,12 +47,68 @@ class SimpleCreditStrategy(CreditStrategy):
         return _sum
 
     def get_unclaimed(self):
-        print("max_claim_amount", self.chain.max_claim_amount)
-        print("get_claimed", self.get_claimed())
-        return self.chain.max_claim_amount - self.get_claimed()
+        return int(self.chain.max_claim_amount) - int(self.get_claimed())
 
 
-class WeeklyCreditStrategy(SimpleCreditStrategy):
+# class WeeklyCreditStrategy(SimpleCreditStrategy):
+#     def __int__(self, chain: Chain, user_profile: UserProfile):
+#         self.chain = chain
+#         self.user_profile = user_profile
+
+#     def get_claim_receipts(self):
+#         return ClaimReceipt.objects.filter(
+#             chain=self.chain,
+#             user_profile=self.user_profile,
+#             _status=ClaimReceipt.VERIFIED,
+#             datetime__gte=self.get_last_monday(),
+#         )
+
+#     @staticmethod
+#     def get_last_monday():
+#         now = int(time())
+#         day = 86400  # seconds in a day
+#         week = 7 * day
+#         weeks = now // week  # number of weeks since epoch
+#         monday = 345600  # first monday midnight
+#         last_monday_midnight = monday + (weeks * week)
+
+#         # last monday could be off by one week
+#         if last_monday_midnight > now:
+#             last_monday_midnight -= week
+
+#         return timezone.make_aware(datetime.datetime.fromtimestamp(last_monday_midnight))
+
+#     @staticmethod
+#     def get_second_last_monday():
+#         now = int(time())
+#         day = 86400  # seconds in a day
+#         week = 7 * day
+#         weeks = now // week  # number of weeks since epoch
+#         monday = 345600  # first monday midnight
+#         last_monday_midnight = monday + (weeks * week)
+
+#         # last monday could be off by one week
+#         if last_monday_midnight > now:
+#             last_monday_midnight -= week
+
+#         return timezone.make_aware(datetime.datetime.fromtimestamp(last_monday_midnight - week))
+
+
+# class ArbitrumCreditStrategy(WeeklyCreditStrategy):
+#     def get_unclaimed(self):
+#         contract_address = "0x631a12430F94207De980D9b6A744AEB4093DCeC1"
+#         max_claim_amount = self.chain.max_claim_amount
+#         is_verified_user = BrightIdUserRegistry(self.chain, contract_address).is_verified_user(
+#             self.user_profile.initial_context_id
+#         )
+
+#         if is_verified_user:
+#             max_claim_amount = 5000000000000000
+
+#         return max_claim_amount - self.get_claimed()
+
+
+class RoundCreditStrategy(SimpleCreditStrategy):
     def __int__(self, chain: Chain, user_profile: UserProfile):
         self.chain = chain
         self.user_profile = user_profile
@@ -66,62 +118,30 @@ class WeeklyCreditStrategy(SimpleCreditStrategy):
             chain=self.chain,
             user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
-            datetime__gte=self.get_last_monday(),
+            datetime__gte=self._get_first_day_of_the_month(),
         )
 
     @staticmethod
-    def get_last_monday():
-        now = int(time())
-        day = 86400  # seconds in a day
-        week = 7 * day
-        weeks = now // week  # number of weeks since epoch
-        monday = 345600  # first monday midnight
-        last_monday_midnight = monday + (weeks * week)
-
-        # last monday could be off by one week
-        if last_monday_midnight > now:
-            last_monday_midnight -= week
-
-        return timezone.make_aware(
-            datetime.datetime.fromtimestamp(last_monday_midnight)
-        )
+    def get_start_of_the_round():
+        return RoundCreditStrategy._get_first_day_of_the_month()
 
     @staticmethod
-    def get_second_last_monday():
-        now = int(time())
-        day = 86400  # seconds in a day
-        week = 7 * day
-        weeks = now // week  # number of weeks since epoch
-        monday = 345600  # first monday midnight
-        last_monday_midnight = monday + (weeks * week)
+    def get_start_of_previous_round():
+        return RoundCreditStrategy._get_first_day_of_last_month()
 
-        # last monday could be off by one week
-        if last_monday_midnight > now:
-            last_monday_midnight -= week
-
-        return timezone.make_aware(
-            datetime.datetime.fromtimestamp(last_monday_midnight - week)
-        )
-
-    @staticmethod
-    def get_first_day_of_the_month():
+    @classmethod
+    def _get_first_day_of_the_month(cls):
         now = datetime.datetime.now(pytz.timezone("UTC"))
         first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         return first_day
 
-
-class ArbitrumCreditStrategy(WeeklyCreditStrategy):
-    def get_unclaimed(self):
-        contract_address = "0x631a12430F94207De980D9b6A744AEB4093DCeC1"
-        max_claim_amount = self.chain.max_claim_amount
-        is_verified_user = BrightIdUserRegistry(
-            self.chain, contract_address
-        ).is_verified_user(self.user_profile.initial_context_id)
-
-        if is_verified_user:
-            max_claim_amount = 5000000000000000
-
-        return max_claim_amount - self.get_claimed()
+    @classmethod
+    def _get_first_day_of_last_month(cls):
+        now = datetime.datetime.now(pytz.timezone("UTC"))
+        first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_month = first_day - datetime.timedelta(days=1)
+        first_day_of_last_month = last_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        return first_day_of_last_month
 
 
 class CreditStrategyFactory:
@@ -130,9 +150,7 @@ class CreditStrategyFactory:
         self.user_profile = user_profile
 
     def get_strategy_class(self):
-        return WeeklyCreditStrategy
-        if self.chain.chain_id == "42161":
-            return ArbitrumCreditStrategy
+        return RoundCreditStrategy
 
     def get_strategy(self) -> CreditStrategy:
         _Strategy = self.get_strategy_class()

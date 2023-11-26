@@ -21,10 +21,10 @@ class Migration(migrations.Migration):
                 'abstract': False,
             },
         ),
-        migrations.RemoveField(
-            model_name='raffle',
-            name='permissions',
-        ),
+        # migrations.RemoveField(
+        #     model_name='raffle',
+        #     name='permissions',
+        # ),
         migrations.AddField(
             model_name='raffle',
             name='constraints',

@@ -1,25 +1,21 @@
-from decimal import Decimal
-from datetime import datetime, timedelta
+import binascii
 import logging
-from django.db import models
 import uuid
+from datetime import datetime, timedelta
+
+from bip_utils import Bip44, Bip44Coins
+from django.conf import settings
+from django.core.cache import cache
+from django.db import models
 from django.utils import timezone
 from encrypted_model_fields.fields import EncryptedCharField
-import binascii
-from bip_utils import Bip44Coins, Bip44
-from web3.exceptions import TimeExhausted
-from django.conf import settings
-from authentication.models import NetworkTypes, UserProfile, Wallet
-from solders.pubkey import Pubkey
 from solders.keypair import Keypair
-from faucet.faucet_manager.lnpay_client import LNPayClient
-from django.core.cache import cache
-from core.models import BigNumField
+from solders.pubkey import Pubkey
 
+from authentication.models import NetworkTypes, UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-
-# import django transaction
-from django.db import transaction
+from core.models import BigNumField
+from faucet.faucet_manager.lnpay_client import LNPayClient
 
 
 def get_cache_time(id):
@@ -29,22 +25,18 @@ def get_cache_time(id):
 class WalletAccount(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     private_key = EncryptedCharField(max_length=100)
-    network_type = models.CharField(
-        choices=NetworkTypes.networks, max_length=10, default=NetworkTypes.EVM
-    )
+    network_type = models.CharField(choices=NetworkTypes.networks, max_length=10, default=NetworkTypes.EVM)
 
     @property
     def address(self):
         try:
-            node = Bip44.FromPrivateKey(
-                binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
-            )
+            node = Bip44.FromPrivateKey(binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM)
             return node.PublicKey().ToAddress()
-        except:
+        except:  # noqa: E722   #dont change this, somehow it creates a bug if changed to Exception
             try:
                 keypair = Keypair.from_base58_string(self.private_key)
                 return str(keypair.pubkey())
-            except:
+            except:  # noqa: E722   #dont change this, somehow it creates a bug if changed to Exception
                 pass
 
     def __str__(self) -> str:
@@ -83,12 +75,8 @@ class BrightUser(models.Model):
     address = models.CharField(max_length=45, unique=True)
     context_id = models.UUIDField(default=uuid.uuid4, unique=True)
 
-    _verification_status = models.CharField(
-        max_length=1, choices=states, default=PENDING
-    )
-    _last_verified_datetime = models.DateTimeField(
-        default=timezone.make_aware(datetime.utcfromtimestamp(0))
-    )
+    _verification_status = models.CharField(max_length=1, choices=states, default=PENDING)
+    _last_verified_datetime = models.DateTimeField(default=timezone.make_aware(datetime.utcfromtimestamp(0)))
     _sponsored = models.BooleanField(default=False)
 
     objects = BrightUserManager()
@@ -162,7 +150,7 @@ class ClaimReceipt(models.Model):
 
     passive_address = models.CharField(max_length=512, null=True, blank=True)
 
-    amount = models.BigIntegerField()
+    amount = BigNumField()
     datetime = models.DateTimeField()
     last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
     batch = models.ForeignKey(
@@ -191,9 +179,7 @@ class ClaimReceipt(models.Model):
         cached_count = cache.get("gastap_claims_count")
         if cached_count:
             return cached_count
-        count = ClaimReceipt.objects.filter(
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
-        ).count()
+        count = ClaimReceipt.objects.filter(_status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]).count()
         cache.set("gastap_claims_count", count, 600)
         return count
 
@@ -207,6 +193,8 @@ class Chain(models.Model):
     decimals = models.IntegerField(default=18)
 
     explorer_url = models.URLField(max_length=255, blank=True, null=True)
+    explorer_api_url = models.URLField(max_length=255, blank=True, null=True)
+    explorer_api_key = models.CharField(max_length=255, blank=True, null=True)
     rpc_url = models.URLField(max_length=255, blank=True, null=True)
     logo_url = models.URLField(max_length=255, blank=True, null=True)
     modal_url = models.URLField(max_length=255, blank=True, null=True)
@@ -220,9 +208,7 @@ class Chain(models.Model):
     fund_manager_address = models.CharField(max_length=255)
     tokentap_contract_address = models.CharField(max_length=255, null=True, blank=True)
 
-    wallet = models.ForeignKey(
-        WalletAccount, related_name="chains", on_delete=models.PROTECT
-    )
+    wallet = models.ForeignKey(WalletAccount, related_name="chains", on_delete=models.PROTECT)
 
     max_gas_price = models.BigIntegerField(default=250000000000)
     gas_multiplier = models.FloatField(default=1)
@@ -230,16 +216,14 @@ class Chain(models.Model):
 
     needs_funding = models.BooleanField(default=False)
     is_testnet = models.BooleanField(default=False)
-    chain_type = models.CharField(
-        max_length=10, choices=NetworkTypes.networks, default=NetworkTypes.EVM
-    )
+    chain_type = models.CharField(max_length=10, choices=NetworkTypes.networks, default=NetworkTypes.EVM)
     order = models.IntegerField(default=0)
 
     is_active = models.BooleanField(default=True)
     show_in_gastap = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.pk} - {self.symbol}:{self.chain_id}"
+        return f"{self.chain_name} - {self.pk} - {self.symbol}:{self.chain_id}"
 
     @property
     def has_enough_funds(self):
@@ -272,11 +256,9 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                if self.chain_id == 500:
-                    logging.debug("chain XDC NONEVM is checking its balances")
-                funds = EVMFundManager(self).w3.eth.get_balance(
-                    self.fund_manager_address
-                )
+                # if self.chain_id == 500:
+                #     logging.debug("chain XDC NONEVM is checking its balances")
+                funds = EVMFundManager(self).w3.eth.get_balance(self.fund_manager_address)
                 return funds
 
             elif self.chain_type == NetworkTypes.SOLANA:
@@ -293,9 +275,7 @@ class Chain(models.Model):
 
             raise Exception("Invalid chain type")
         except Exception as e:
-            logging.exception(
-                f"Error getting manager balance for {self.chain_name} error is {e}"
-            )
+            logging.exception(f"Error getting manager balance for {self.chain_name} error is {e}")
             return 0
 
     @property
@@ -316,9 +296,7 @@ class Chain(models.Model):
                 return EVMFundManager(self).w3.eth.get_balance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
-                v = fund_manager.w3.get_balance(
-                    Pubkey.from_string(self.wallet.address)
-                ).value
+                v = fund_manager.w3.get_balance(Pubkey.from_string(self.wallet.address)).value
                 return v
             elif self.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
@@ -329,9 +307,7 @@ class Chain(models.Model):
                 return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
         except Exception as e:
-            logging.exception(
-                f"Error getting wallet balance for {self.chain_name} error is {e}"
-            )
+            logging.exception(f"Error getting wallet balance for {self.chain_name} error is {e}")
             return 0
 
     @property
@@ -350,7 +326,8 @@ class Chain(models.Model):
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
             return EVMFundManager(self).w3.eth.gas_price
-        except:
+        except:  # noqa: E722
+            logging.exception(f"Error getting gas price for {self.chain_name}")
             return self.max_gas_price + 1
 
     @property
@@ -362,7 +339,8 @@ class Chain(models.Model):
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
             return EVMFundManager(self).is_gas_price_too_high
-        except:
+        except Exception:  # noqa: E722
+            logging.exception(f"Error getting gas price for {self.chain_name}")
             return True
 
     @property
@@ -381,61 +359,35 @@ class Chain(models.Model):
         return total_claims
 
     @property
-    def total_claims_since_last_monday(self):
-        cached_total_claims_since_last_monday = cache.get(
-            f"gas_tap_chain_total_claims_since_last_monday_{self.pk}"
-        )
-        if cached_total_claims_since_last_monday:
-            return cached_total_claims_since_last_monday
-        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+    def total_claims_this_round(self):
+        cached_total_claims_this_round = cache.get(f"gas_tap_chain_total_claims_this_round_{self.pk}")
+        if cached_total_claims_this_round:
+            return cached_total_claims_this_round
+        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
-        total_claims_since_last_monday = ClaimReceipt.objects.filter(
+        total_claims_this_round = ClaimReceipt.objects.filter(
             chain=self,
-            datetime__gte=WeeklyCreditStrategy.get_last_monday(),
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+            datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
+            _status__in=[ClaimReceipt.VERIFIED],
         ).count()
         cache.set(
-            f"gas_tap_chain_total_claims_since_last_monday_{self.pk}",
-            total_claims_since_last_monday,
+            f"gas_tap_chain_total_claims_this_round_{self.pk}",
+            total_claims_this_round,
             get_cache_time(self.pk),
         )
-        return total_claims_since_last_monday
-
-    @property
-    def total_claims_for_last_round(self):
-        cached_total_claims_for_last_round = cache.get(
-            f"gas_tap_chain_total_claims_for_last_round_{self.pk}"
-        )
-        if cached_total_claims_for_last_round:
-            return cached_total_claims_for_last_round
-        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
-
-        total_claims_for_last_round = ClaimReceipt.objects.filter(
-            chain=self,
-            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
-            datetime__lte=WeeklyCreditStrategy.get_last_monday(),
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
-        ).count()
-        cache.set(
-            f"gas_tap_chain_total_claims_for_last_round_{self.pk}",
-            total_claims_for_last_round,
-            get_cache_time(self.pk),
-        )
-        return total_claims_for_last_round
+        return total_claims_this_round
 
     @property
     def total_claims_since_last_round(self):
-        cached_total_claims_since_last_round = cache.get(
-            f"gas_tap_chain_total_claims_since_last_round_{self.pk}"
-        )
+        cached_total_claims_since_last_round = cache.get(f"gas_tap_chain_total_claims_since_last_round_{self.pk}")
         if cached_total_claims_since_last_round:
             return cached_total_claims_since_last_round
-        from faucet.faucet_manager.claim_manager import WeeklyCreditStrategy
+        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
         total_claims_since_last_round = ClaimReceipt.objects.filter(
             chain=self,
-            datetime__gte=WeeklyCreditStrategy.get_second_last_monday(),
-            _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED],
+            datetime__gte=RoundCreditStrategy.get_start_of_previous_round(),
+            _status__in=[ClaimReceipt.VERIFIED],
         ).count()
         cache.set(
             f"gas_tap_chain_total_claims_since_last_round_{self.pk}",
@@ -446,16 +398,14 @@ class Chain(models.Model):
 
 
 class GlobalSettings(models.Model):
-    weekly_chain_claim_limit = models.IntegerField(default=5)
-    tokentap_weekly_claim_limit = models.IntegerField(default=3)
-    prizetap_weekly_claim_limit = models.IntegerField(default=3)
+    gastap_round_claim_limit = models.IntegerField(default=5)
+    tokentap_round_claim_limit = models.IntegerField(default=3)
+    prizetap_round_claim_limit = models.IntegerField(default=3)
     is_gas_tap_available = models.BooleanField(default=True)
 
 
 class TransactionBatch(models.Model):
-    chain = models.ForeignKey(
-        Chain, related_name="batches", on_delete=models.PROTECT, db_index=True
-    )
+    chain = models.ForeignKey(Chain, related_name="batches", on_delete=models.PROTECT, db_index=True)
     datetime = models.DateTimeField(auto_now_add=True)
     tx_hash = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
@@ -515,6 +465,11 @@ class LightningConfig(models.Model):
 
 
 class DonationReceipt(models.Model):
+    states = (
+        (ClaimReceipt.PENDING, "Pending"),
+        (ClaimReceipt.VERIFIED, "Verified"),
+        (ClaimReceipt.REJECTED, "Rejected"),
+    )
     user_profile = models.ForeignKey(
         UserProfile,
         related_name="donations",
@@ -535,8 +490,8 @@ class DonationReceipt(models.Model):
     datetime = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=30,
-        choices=ClaimReceipt.states,
-        default=ClaimReceipt.PROCESSED_FOR_TOKENTAP,
+        choices=states,
+        default=ClaimReceipt.PENDING,
     )
 
     class Meta:

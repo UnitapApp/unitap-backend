@@ -1,24 +1,23 @@
 from django.urls import path
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
 
 from faucet.views import (
+    ChainBalanceView,
     ChainListView,
     ClaimCountView,
     ClaimMaxView,
+    DonationReceiptView,
+    GetTotalRoundClaimsRemainingView,
     GlobalSettingsView,
     LastClaimView,
+    LeaderboardView,
     ListClaims,
-    GetTotalWeeklyClaimsRemainingView,
+    SmallChainListView,
+    UserLeaderboardView,
     artwork_video,
     error500,
-    ChainBalanceView,
-    SmallChainListView,
-    DonationReceiptView,
-    LeaderboardView,
-    UserLeaderboardView
 )
-
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -36,15 +35,13 @@ app_name = "FAUCET"
 urlpatterns = [
     path(
         "user/remainig-claims/",
-        GetTotalWeeklyClaimsRemainingView.as_view(),
+        GetTotalRoundClaimsRemainingView.as_view(),
         name="remaining-claims",
     ),
     path("user/last-claim/", LastClaimView.as_view(), name="last-claim"),
     path("user/claims/", ListClaims.as_view(), name="claims"),
     path("claims/count/", ClaimCountView.as_view(), name="claims-count"),
-    path(
-        "chain/list/", ChainListView.as_view(), name="chain-list"
-    ),  # can have auth token for more user specific info
+    path("chain/list/", ChainListView.as_view(), name="chain-list"),  # can have auth token for more user specific info
     path("chain/small-list/", SmallChainListView.as_view(), name="small-chain-list"),
     path(
         "chain/<int:chain_pk>/claim-max/",
@@ -67,5 +64,5 @@ urlpatterns = [
     ),
     path("user/donation/", DonationReceiptView.as_view(), name="donation-receipt"),
     path("gas-tap/leaderboard/", LeaderboardView.as_view(), name="gas-tap-leaderboard"),
-    path("user/gas-tap/leaderboard/", UserLeaderboardView.as_view(), name="user-gas-tap-leaderboard")
+    path("user/gas-tap/leaderboard/", UserLeaderboardView.as_view(), name="user-gas-tap-leaderboard"),
 ]

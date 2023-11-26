@@ -1,0 +1,32 @@
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.coverage.run]
+source = [ "." ]
+branch ='true'
+omit = [
+    "*/migrations/*",
+    "*/test*.*",
+    "*/*/__init__.py",
+    "*/apps.py",
+    "*/admin.py",
+    "*/urls.py",
+    "tmp.py",
+    "manage.py",
+    "load_test.py",
+    "faucet/management/*",
+    "faucet/faucet_manager/*_abi.py",
+    "faucet/faucet_manager/anchor_client/*",
+    "faucet/faucet_manager/brightid_user_registry.py",
+    "faucet/faucet_manager/bright_id_interface.py",
+    "faucet/faucet_manager/lnpay_manager/*",
+    "*/settings.py",
+    "*/asgi.py",
+    "*/wsgi.py",
+    "*/celery.py"
+]
