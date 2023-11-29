@@ -30,7 +30,7 @@ class RaffleEnrollmentValidator:
                 constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
-            if c.name in reversed_constraints:
+            if str(c.pk) in reversed_constraints:
                 if constraint.is_observed():
                     raise PermissionDenied(constraint.response)
             else:
