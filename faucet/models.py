@@ -260,7 +260,7 @@ class Chain(models.Model):
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
                 # if self.chain_id == 500:
                 #     logging.debug("chain XDC NONEVM is checking its balances")
-                funds = EVMFundManager(self).w3.eth.get_balance(self.fund_manager_address)
+                funds = EVMFundManager(self).get_balance(self.fund_manager_address)
                 return funds
 
             elif self.chain_type == NetworkTypes.SOLANA:
@@ -295,7 +295,7 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                return EVMFundManager(self).w3.eth.get_balance(self.wallet.address)
+                return EVMFundManager(self).get_balance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(Pubkey.from_string(self.wallet.address)).value
@@ -327,7 +327,7 @@ class Chain(models.Model):
         try:
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
-            return EVMFundManager(self).w3.eth.gas_price
+            return EVMFundManager(self).get_gas_price()
         except:  # noqa: E722
             logging.exception(f"Error getting gas price for {self.chain_name}")
             return self.max_gas_price + 1
