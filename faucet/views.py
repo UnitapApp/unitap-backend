@@ -19,7 +19,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from authentication.models import UserProfile, Wallet
+from authentication.models import UserProfile
 from core.filters import ChainFilterBackend, IsOwnerFilterBackend
 from core.paginations import StandardResultsSetPagination
 from faucet.faucet_manager.claim_manager import (
@@ -237,7 +237,6 @@ class UserLeaderboardView(RetrieveAPIView):
         user_rank = queryset.filter(sum_total_price__gt=user_obj.get("sum_total_price")).count() + 1
         user_obj["rank"] = user_rank
         user_obj["username"] = self.get_user().username
-        user_obj["wallet"] = self.get_user().wallets.get_primary_wallet()
         interacted_chains = list(
             DonationReceipt.objects.filter(user_profile=self.get_user())
             .filter(status=ClaimReceipt.VERIFIED)
@@ -272,10 +271,7 @@ class LeaderboardView(ListAPIView):
         )
         queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
         subquery_username = UserProfile.objects.filter(pk=OuterRef("user_profile")).values("username")
-        subquery_wallet = Wallet.objects.filter(
-            user_profile=OuterRef("user_profile"), primary=True, wallet_type="EVM"
-        ).values("address")
-        queryset = queryset.annotate(username=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
+        queryset = queryset.annotate(username=Subquery(subquery_username))
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
