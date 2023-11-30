@@ -3,6 +3,7 @@ import datetime
 import pytz
 from web3 import Web3
 from web3.contract.contract import Contract, ContractFunction
+from web3.logs import DISCARD, IGNORE, STRICT, WARN
 from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
 
@@ -58,6 +59,11 @@ class TimeUtils:
 
 
 class Web3Utils:
+    LOG_STRICT = STRICT
+    LOG_IGNORE = IGNORE
+    LOG_DISCARD = DISCARD
+    LOG_WARN = WARN
+
     def __init__(self, rpc_url, poa=False) -> None:
         self._rpc_url = rpc_url
         self._w3 = None
@@ -146,3 +152,6 @@ class Web3Utils:
 
     def get_transaction_receipt(self, hash):
         return self.w3.eth.get_transaction_receipt(hash)
+
+    def get_balance(self, address):
+        self.w3.eth.get_balance(address)

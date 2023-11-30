@@ -39,10 +39,13 @@ class EVMFundManager:
         self.web3_utils.set_account(self.chain.wallet.main_key)
         self.web3_utils.set_contract(self.get_fund_manager_checksum_address(), abi=manager_abi)
 
+    def get_gas_price(self):
+        return self.web3_utils.get_gas_price()
+
     @property
     def is_gas_price_too_high(self):
         try:
-            gas_price = self.web3_utils.get_gas_price()
+            gas_price = self.get_gas_price()
             logging.info(f"Gas price: {gas_price} vs max: {self.chain.max_gas_price}")
             if gas_price > self.chain.max_gas_price:
                 return True
@@ -50,6 +53,9 @@ class EVMFundManager:
         except Exception as e:
             logging.error(e)
             return True
+
+    def get_balance(self, address):
+        return self.web3_utils.get_balance(address)
 
     def get_fund_manager_checksum_address(self):
         return self.web3_utils.to_checksum_address(self.chain.fund_manager_address)
@@ -63,7 +69,7 @@ class EVMFundManager:
     def _transfer(self, tx_function_str, *args):
         tx = self.prepare_tx_for_broadcast(tx_function_str, *args)
         try:
-            self.web3_utils.send_raw_tx(tx.rawTransaction)
+            self.web3_utils.send_raw_tx(tx)
             return tx["hash"].hex()
         except Exception as e:
             raise FundMangerException.RPCError(str(e))

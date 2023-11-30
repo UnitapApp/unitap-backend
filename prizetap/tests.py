@@ -243,7 +243,7 @@ class RaffleAPITestCase(RaffleTestCase):
         lambda a, b, c: (True, None),
     )
     def test_reversed_constraints(self):
-        self.raffle.reversed_constraints = "core.BrightIDMeetVerification"
+        self.raffle.reversed_constraints = str(self.meet_constraint.pk)
         self.raffle.save()
         validator = RaffleEnrollmentValidator(user_profile=self.user_profile, raffle=self.raffle)
         self.assertRaises(PermissionDenied, validator.check_user_constraints)
@@ -251,10 +251,15 @@ class RaffleAPITestCase(RaffleTestCase):
     def test_create_raffle_with_invalid_reversed_constraints(self):
         self.client.force_authenticate(user=self.user_profile.user)
         self.raffle_data["constraints"] = [self.meet_constraint.pk]
-        self.raffle_data["reversed_constraints"] = "core.BrightIDAuraVerification"
+        aura_verified_constraint = Constraint.objects.create(
+            name="core.BrightIDAuraVerification",
+            title="BrightID aura",
+            description="You have to be Aura verified.",
+        )
+        self.raffle_data["reversed_constraints"] = str(aura_verified_constraint.pk)
         response = self.client.post(reverse("create-raffle"), self.raffle_data)
         self.assertEqual(
-            str(response.data["reversed_constraints"][0]["core.BrightIDAuraVerification"]), "Invalid constraint name"
+            str(response.data["reversed_constraints"][0][str(aura_verified_constraint.pk)]), "Invalid constraint pk"
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Raffle.objects.count(), 1)
@@ -273,7 +278,7 @@ class RaffleAPITestCase(RaffleTestCase):
     def test_create_raffle_with_reversed_constraints(self):
         self.client.force_authenticate(user=self.user_profile.user)
         self.raffle_data["constraints"] = [self.meet_constraint.pk]
-        self.raffle_data["reversed_constraints"] = self.meet_constraint.name
+        self.raffle_data["reversed_constraints"] = str(self.meet_constraint.pk)
         response = self.client.post(reverse("create-raffle"), self.raffle_data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Raffle.objects.count(), 2)
@@ -424,6 +429,27 @@ class RaffleAPITestCase(RaffleTestCase):
     )
     def test_get_raffle_constraints_when_is_verified(self):
         self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.get(reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk}))
+        data = response.data["constraints"][0]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["pk"], self.meet_constraint.pk)
+        self.assertEqual(data["is_verified"], True)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_get_raffle_constraints_when_constraint_is_reversed(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle.reversed_constraints = str(self.meet_constraint.pk)
+        self.raffle.save()
+        response = self.client.get(reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk}))
+        data = response.data["constraints"][0]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["pk"], self.meet_constraint.pk)
+        self.assertEqual(data["is_verified"], False)
+
+        BrightIDSoulboundAPIInterface.get_verification_status = MagicMock(return_value=(False, None))
         response = self.client.get(reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk}))
         data = response.data["constraints"][0]
         self.assertEqual(response.status_code, 200)

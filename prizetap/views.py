@@ -145,6 +145,7 @@ class GetRaffleConstraintsView(APIView):
         except Exception:
             param_values = {}
 
+        reversed_constraints = raffle.reversed_constraints.split(",") if raffle.reversed_constraints else []
         response_constraints = []
 
         for c in raffle.constraints.all():
@@ -155,8 +156,12 @@ class GetRaffleConstraintsView(APIView):
             except KeyError:
                 pass
             is_verified = False
-            if constraint.is_observed():
-                is_verified = True
+            if str(c.pk) in reversed_constraints:
+                if not constraint.is_observed():
+                    is_verified = True
+            else:
+                if constraint.is_observed():
+                    is_verified = True
             response_constraints.append({**ConstraintSerializer(c).data, "is_verified": is_verified})
 
         return Response({"success": True, "constraints": response_constraints}, status=200)

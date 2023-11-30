@@ -124,11 +124,11 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
                         constraint_class.is_valid_param_keys(constraint_params[c.name])
                 except KeyError as e:
                     raise serializers.ValidationError({"constraint_params": [{f"{c.name}": str(e)}]})
-        valid_constraints = [c.name for c in constraints]
+        valid_constraints = [str(c.pk) for c in constraints]
         if len(reversed_constraints) > 0:
             for c in reversed_constraints:
                 if c not in valid_constraints:
-                    raise serializers.ValidationError({"reversed_constraints": [{f"{c}": "Invalid constraint name"}]})
+                    raise serializers.ValidationError({"reversed_constraints": [{f"{c}": "Invalid constraint pk"}]})
         if "winners_count" in data and data["winners_count"] > data["max_number_of_entries"]:
             raise serializers.ValidationError({"winners_count": "Invalid value"})
         valid_chains = list(CONTRACT_ADDRESSES.keys())
@@ -178,6 +178,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "raffleId",
             "constraints",
             "constraint_params",
+            "reversed_constraints",
             "created_at",
             "start_at",
             "deadline",
