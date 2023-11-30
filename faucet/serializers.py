@@ -2,34 +2,6 @@ from rest_framework import serializers
 
 from faucet.models import Chain, ClaimReceipt, DonationReceipt, GlobalSettings
 
-# class UserSerializer(serializers.ModelSerializer):
-#     total_weekly_claims_remaining = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = BrightUser
-#         fields = [
-#             "pk",
-#             "context_id",
-#             "address",
-#             "verification_url",
-#             "verification_status",
-#             "total_weekly_claims_remaining",
-#         ]
-#         read_only_fields = ["context_id"]
-
-#     def get_total_weekly_claims_remaining(self, instance):
-#         gs = GlobalSettings.objects.first()
-#         if gs is not None:
-#             return (
-#                     gs.weekly_chain_claim_limit
-#                     - LimitedChainClaimManager.get_total_weekly_claims(instance)
-#             )
-
-#     def create(self, validated_data):
-#         address = validated_data["address"]
-#         bright_user = BrightUser.objects.get_or_create(address)
-#         return bright_user
-
 
 class GlobalSettingsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -101,9 +73,6 @@ class SmallChainSerializer(serializers.ModelSerializer):
 
 
 class ChainSerializer(serializers.ModelSerializer):
-    # claimed = serializers.SerializerMethodField()
-    # unclaimed = serializers.SerializerMethodField()
-
     class Meta:
         model = Chain
         fields = [
@@ -120,8 +89,6 @@ class ChainSerializer(serializers.ModelSerializer):
             "modal_url",
             "gas_image_url",
             "max_claim_amount",
-            # "claimed",
-            # "unclaimed",
             "total_claims",
             "total_claims_this_round",
             "tokentap_contract_address",
@@ -130,22 +97,6 @@ class ChainSerializer(serializers.ModelSerializer):
             "chain_type",
             "block_scan_address",
         ]
-
-    # def get_claimed(self, chain) -> int:
-    #     user = self.context["request"].user
-
-    #     if not user.is_authenticated:
-    #         return "N/A"
-    #     user_profile = user.profile
-    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
-
-    # def get_unclaimed(self, chain) -> int:
-    #     user = self.context["request"].user
-
-    #     if not user.is_authenticated:
-    #         return "N/A"
-    #     user_profile = user.profile
-    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
@@ -156,6 +107,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
         fields = [
             "pk",
             "tx_hash",
+            "to_address",
             "chain",
             "datetime",
             "amount",
@@ -192,5 +144,4 @@ class LeaderboardSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, read_only=True)
     sum_total_price = serializers.CharField(max_length=150, read_only=True)
     interacted_chains = serializers.ListField(child=serializers.IntegerField(), read_only=True)
-    wallet = serializers.CharField(max_length=512, read_only=True)
     rank = serializers.IntegerField(read_only=True, required=False)

@@ -151,21 +151,12 @@ class ClaimMaxView(APIView):
         # _is_verified = True
         if not _is_verified:
             # return Response({"message": "You are not BrighID verified"}, status=403)
-            raise CustomException("You are not BrighID verified")
+            raise rest_framework.exceptions.PermissionDenied("You are not BrighID verified")
 
-    def wallet_address_is_set(self):
-        passive_address = self.request.data.get("address", None)
-        if passive_address is not None:
-            return True, passive_address
-
-        chain = self.get_chain()
-
-        try:
-            Wallet.objects.get(user_profile=self.get_user(), wallet_type=chain.chain_type)
-            return True, None
-        except Exception as e:
-            logging.error("wallet address not set", e)
-            raise CustomException("wallet address not set")
+    def to_address_is_provided(self):
+        to_address = self.request.data.get("address", None)
+        if not to_address:
+            raise rest_framework.exceptions.ParseError("wallet address not set")
 
     def get_chain(self) -> Chain:
         chain_pk = self.kwargs.get("chain_pk", None)
@@ -177,26 +168,23 @@ class ClaimMaxView(APIView):
     def get_claim_manager(self):
         return ClaimManagerFactory(self.get_chain(), self.get_user()).get_manager()
 
-    def claim_max(self, passive_address) -> ClaimReceipt:
+    def claim_max(self, to_address) -> ClaimReceipt:
         manager = self.get_claim_manager()
         max_credit = manager.get_credit_strategy().get_unclaimed()
         try:
             assert max_credit > 0
-            return manager.claim(max_credit, passive_address=passive_address)
+            return manager.claim(max_credit, to_address=to_address)
         except AssertionError as e:
             logging.error("no credit left for user", e)
-            raise CustomException("no credit left")
+            raise rest_framework.exceptions.PermissionDenied("no credit left")
         except ValueError as e:
             raise rest_framework.exceptions.APIException(e)
 
     def post(self, request, *args, **kwargs):
-        try:
-            self.check_user_is_verified()
-            s, passive_address = self.wallet_address_is_set()
-        except CustomException as e:
-            return Response({"message": str(e)}, status=403)
+        self.check_user_is_verified()
+        self.to_address_is_provided()
 
-        receipt = self.claim_max(passive_address)
+        receipt = self.claim_max(to_address=request.data.get("address"))
         return Response(ReceiptSerializer(instance=receipt).data)
 
 
