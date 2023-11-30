@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 
 from faucet.views import artwork_view
 
@@ -25,7 +25,7 @@ admin.site.site_title = "Unitap Administration"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("pass/art/<int:token_id>/", artwork_view),
-    path("api/v1/", include("faucet.urls")),
+    path("api/gastap/", include("faucet.urls")),
     path("api/auth/", include("authentication.urls")),
     path("api/tokentap/", include("tokenTap.urls")),
     path("api/prizetap/", include("prizetap.urls")),
