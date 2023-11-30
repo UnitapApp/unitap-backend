@@ -25,22 +25,22 @@ class MessageResponseSerializer(serializers.Serializer):
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wallet
-        fields = ["pk", "wallet_type", "address", "primary"]
+        fields = ["pk", "wallet_type", "address"]
 
-    def update(self, instance, validated_data):
-        if validated_data.get("primary") is False or instance.wallet_type != "EVM":
-            raise serializers.ValidationError({"message": "primary must be true or wallet_type must be EVM"})
-        user_profile = self.context["request"].user.profile
-        try:
-            wallet = Wallet.objects.get(user_profile=user_profile, primary=True)
-            wallet.primary = False
-            instance.primary = True
-            Wallet.objects.bulk_update([wallet, instance], ["primary"])
-            return instance
-        except Wallet.DoesNotExist:
-            instance.primary = True
-            instance.save()
-            return instance
+    # def update(self, instance, validated_data):
+    #     if validated_data.get("primary") is False or instance.wallet_type != "EVM":
+    #         raise serializers.ValidationError({"message": "primary must be true or wallet_type must be EVM"})
+    #     user_profile = self.context["request"].user.profile
+    #     try:
+    #         wallet = Wallet.objects.get(user_profile=user_profile, primary=True)
+    #         wallet.primary = False
+    #         instance.primary = True
+    #         Wallet.objects.bulk_update([wallet, instance], ["primary"])
+    #         return instance
+    #     except Wallet.DoesNotExist:
+    #         instance.primary = True
+    #         instance.save()
+    #         return instance
 
 
 class ProfileSerializer(serializers.ModelSerializer):

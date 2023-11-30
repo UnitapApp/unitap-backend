@@ -1,5 +1,14 @@
 from django.urls import path
-from authentication.views import *
+
+from authentication.views import (
+    CheckUsernameView,
+    GetProfileView,
+    LoginView,
+    SetUsernameView,
+    SponsorView,
+    UserProfileCountView,
+    WalletListCreateView,
+)
 
 app_name = "AUTHENTICATION"
 
@@ -21,11 +30,11 @@ urlpatterns = [
         WalletListCreateView.as_view(),
         name="wallets-user",
     ),
-    path(
-        "user/wallets/<int:pk>/",
-        WalletView.as_view(),
-        name="wallet-user",
-    ),
+    # path(
+    #     "user/wallets/<int:pk>/",
+    #     WalletView.as_view(),
+    #     name="wallet-user",
+    # ),
     path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
     path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
 ]

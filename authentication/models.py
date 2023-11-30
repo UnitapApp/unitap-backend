@@ -18,12 +18,12 @@ class ProfileManager(models.Manager):
             return _profile
 
 
-class WalletManager(models.Manager):
-    def get_primary_wallet(self):
-        try:
-            self.get(primary=True, wallet_type="EVM")
-        except Wallet.DoesNotExist:
-            return None
+# class WalletManager(models.Manager):
+#     def get_primary_wallet(self):
+#         try:
+#             self.get(primary=True, wallet_type="EVM")
+#         except Wallet.DoesNotExist:
+#             return None
 
 
 class UserProfile(models.Model):
@@ -108,9 +108,9 @@ class Wallet(models.Model):
     wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
     user_profile = models.ForeignKey(UserProfile, on_delete=models.PROTECT, related_name="wallets")
     address = models.CharField(max_length=512, unique=True)
-    primary = models.BooleanField(default=False, null=False, blank=False)
+    # primary = models.BooleanField(default=False, null=False, blank=False)
 
-    objects = WalletManager()
+    # objects = WalletManager()
 
     def __str__(self):
         return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"

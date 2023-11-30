@@ -1,30 +1,28 @@
-import time
 from django.db import IntegrityError
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, RetrieveUpdateAPIView, \
-    ListCreateAPIView
-from rest_framework.status import HTTP_409_CONFLICT
-
-from authentication.models import UserProfile, Wallet
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.generics import (
+    CreateAPIView,
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveAPIView,
+)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import ValidationError
-from drf_yasg.utils import swagger_auto_schema
+
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
-    verify_signature_eth_scheme,
     is_username_valid_and_available,
+    verify_signature_eth_scheme,
 )
-from drf_yasg import openapi
-
-from authentication.permissions import IsOwner
+from authentication.models import UserProfile, Wallet
 from authentication.serializers import (
-    UsernameRequestSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
+    UsernameRequestSerializer,
     WalletSerializer,
 )
 from core.filters import IsOwnerFilterBackend
@@ -41,9 +39,7 @@ class SponsorView(CreateAPIView):
         if not address:
             return Response({"message": "Invalid request"}, status=403)
 
-        verification_link = BRIGHTID_SOULDBOUND_INTERFACE.create_verification_link(
-            address
-        )
+        verification_link = BRIGHTID_SOULDBOUND_INTERFACE.create_verification_link(address)
         qr_content = BRIGHTID_SOULDBOUND_INTERFACE.create_qr_content(address)
 
         if BRIGHTID_SOULDBOUND_INTERFACE.check_sponsorship(address):
@@ -82,16 +78,12 @@ class LoginView(APIView):
         if not is_sponsored:
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
                 return Response(
-                    {
-                        "message": "We are in the process of sponsoring you. Please try again in five minutes."
-                    },
+                    {"message": "We are in the process of sponsoring you. Please try again in five minutes."},
                     status=403,
                 )
             else:
                 return Response(
-                    {
-                        "message": "We have requested to sponsor you on BrightID. Please try again in five minutes."
-                    },
+                    {"message": "We have requested to sponsor you on BrightID. Please try again in five minutes."},
                     status=409,
                 )
 
@@ -110,18 +102,19 @@ class LoginView(APIView):
 
         context_ids = []
 
-        if is_meet_verified == False and is_aura_verified == False:
+        if is_meet_verified is False and is_aura_verified is False:
             if meet_context_ids == 3:  # is not verified
                 context_ids = address
             elif aura_context_ids == 4:  # is not linked
                 return Response(
                     {
-                        "message": "Something went wrong with the linking process. please link BrightID with Unitap.\nIf the problem persists, clear your browser cache and try again."
+                        "message": "Something went wrong with the linking process. please link BrightID with Unitap.\n"
+                        "If the problem persists, clear your browser cache and try again."
                     },
                     status=403,
                 )
 
-        elif is_meet_verified == True or is_aura_verified == True:
+        elif is_meet_verified is True or is_aura_verified is True:
             if meet_context_ids is not None:
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:
@@ -148,9 +141,7 @@ class SetUsernameView(CreateAPIView):
                 description="Username successfully Set",
                 schema=MessageResponseSerializer(),
             ),
-            400: openapi.Response(
-                description="Bad request", schema=MessageResponseSerializer()
-            ),
+            400: openapi.Response(description="Bad request", schema=MessageResponseSerializer()),
             403: openapi.Response(
                 description="This username already exists.\ntry another one.",
                 schema=MessageResponseSerializer(),
@@ -175,17 +166,13 @@ class SetUsernameView(CreateAPIView):
                 user_profile.username = username
                 user_profile.save()
                 return Response(
-                    MessageResponseSerializer(
-                        {"message": "Username successfully Set"}
-                    ).data,
+                    MessageResponseSerializer({"message": "Username successfully Set"}).data,
                     status=200,
                 )
 
             except IntegrityError:
                 return Response(
-                    MessageResponseSerializer(
-                        {"message": "This username already exists.\ntry another one."}
-                    ).data,
+                    MessageResponseSerializer({"message": "This username already exists.\ntry another one."}).data,
                     status=403,
                 )
 
@@ -212,7 +199,8 @@ class CheckUsernameView(CreateAPIView):
                 schema=MessageResponseSerializer(),
             ),
             403: openapi.Response(
-                description="Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
+                description="Username must be more than 2 characters, contain at least"
+                " one letter, and only contain letters, digits and @/./+/-/_.",
                 schema=MessageResponseSerializer(),
             ),
         },
@@ -241,9 +229,7 @@ class CheckUsernameView(CreateAPIView):
             status, message, flag = is_username_valid_and_available(username)
 
             if status:
-                return Response(
-                    MessageResponseSerializer({"message": message}).data, status=200
-                )
+                return Response(MessageResponseSerializer({"message": message}).data, status=200)
             return Response(
                 MessageResponseSerializer({"message": message}).data,
                 status=403 if flag == "validation_error" else 409,
@@ -258,18 +244,18 @@ class WalletListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = WalletSerializer
     filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
-    filterset_fields = ['wallet_type']
+    filterset_fields = ["wallet_type"]
 
     def perform_create(self, serializer):
         serializer.save(user_profile=self.request.user.profile)
 
 
-class WalletView(RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated, IsOwner]
-    serializer_class = WalletSerializer
-    queryset = Wallet.objects.all()
-    filter_backends = [IsOwnerFilterBackend]
-    http_method_names = ['get', 'patch']
+# class WalletView(RetrieveUpdateAPIView):
+#     permission_classes = [IsAuthenticated, IsOwner]
+#     serializer_class = WalletSerializer
+#     queryset = Wallet.objects.all()
+#     filter_backends = [IsOwnerFilterBackend]
+#     http_method_names = ['get', 'patch']
 
 
 class GetProfileView(RetrieveAPIView):
