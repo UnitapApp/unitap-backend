@@ -52,7 +52,7 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "chain",
             "raffle",
             "user_profile",
-            "wallet",
+            "user_wallet__address",
             "created_at",
             "multiplier",
             "tx_hash",
@@ -63,7 +63,7 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "chain",
             "raffle",
             "user_profile",
-            "wallet",
+            "user_wallet",
             "created_at",
             "multiplier",
         ]
