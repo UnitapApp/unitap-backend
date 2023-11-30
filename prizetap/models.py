@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from authentication.models import NetworkTypes, UserProfile
+from authentication.models import NetworkTypes, UserProfile, Wallet
 from core.models import BigNumField, UserConstraint
 from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
 from faucet.models import Chain
@@ -141,8 +141,10 @@ class RaffleEntry(models.Model):
         unique_together = (("raffle", "user_profile"),)
         verbose_name_plural = "raffle entries"
 
-    raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="entries")
-    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="raffle_entries")
+    raffle = models.ForeignKey(Raffle, on_delete=models.PROTECT, related_name="entries")
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.PROTECT, related_name="raffle_entries")
+
+    user_wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="raffle_entries", null=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 

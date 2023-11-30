@@ -109,6 +109,7 @@ class Wallet(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.PROTECT, related_name="wallets")
     address = models.CharField(max_length=512, unique=True)
     # primary = models.BooleanField(default=False, null=False, blank=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     # objects = WalletManager()
 
