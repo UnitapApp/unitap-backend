@@ -1,33 +1,37 @@
 import json
+
 from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
-from rest_framework.request import Request
-from rest_framework.generics import ListAPIView, CreateAPIView
+from django.utils import timezone
+from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from core.constraints import ConstraintVerification, get_constraint
 from faucet.models import Chain
 from faucet.serializers import SmallChainSerializer
-from faucet.constraints import *
-from .models import Raffle, RaffleEntry, Constraint, LineaRaffleEntries
+
+from .constants import CONTRACT_ADDRESSES
+from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry
 from .serializers import (
-    RaffleSerializer,
-    RaffleEntrySerializer,
     ConstraintSerializer,
     CreateRaffleSerializer,
     LineaRaffleEntrySerializer,
+    RaffleEntrySerializer,
+    RaffleSerializer,
 )
 from .validators import (
     RaffleEnrollmentValidator,
-    SetRaffleEntryTxValidator,
     SetClaimingPrizeTxValidator,
+    SetRaffleEntryTxValidator,
     SetRaffleTxValidator,
 )
-from .constraints import *
-from .constants import CONTRACT_ADDRESSES
 
 
 class RaffleListView(ListAPIView):
-    queryset = Raffle.objects.filter(is_active=True).order_by("-pk")
+    valid_time = timezone.now() - timezone.timedelta(days=30)
+    queryset = Raffle.objects.filter(is_active=True).filter(deadline__gte=valid_time).order_by("-pk")
     serializer_class = RaffleSerializer
 
     def get(self, request):
@@ -35,9 +39,7 @@ class RaffleListView(ListAPIView):
         serializer = RaffleSerializer(
             queryset,
             many=True,
-            context={
-                "user": request.user.profile if request.user.is_authenticated else None
-            },
+            context={"user": request.user.profile if request.user.is_authenticated else None},
         )
         return Response(serializer.data)
 
@@ -78,9 +80,7 @@ class SetEnrollmentTxView(APIView):
         user_profile = request.user.profile
         raffle_entry = get_object_or_404(RaffleEntry, pk=pk)
 
-        validator = SetRaffleEntryTxValidator(
-            user_profile=user_profile, raffle_entry=raffle_entry
-        )
+        validator = SetRaffleEntryTxValidator(user_profile=user_profile, raffle_entry=raffle_entry)
 
         validator.is_valid(self.request.data)
 
@@ -104,13 +104,9 @@ class SetClaimingPrizeTxView(APIView):
     def post(self, request, pk):
         user_profile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
-        raffle_entry = get_object_or_404(
-            RaffleEntry, raffle=raffle, user_profile=user_profile
-        )
+        raffle_entry = get_object_or_404(RaffleEntry, raffle=raffle, user_profile=user_profile)
 
-        validator = SetClaimingPrizeTxValidator(
-            user_profile=user_profile, raffle_entry=raffle_entry
-        )
+        validator = SetClaimingPrizeTxValidator(user_profile=user_profile, raffle_entry=raffle_entry)
 
         validator.is_valid(self.request.data)
 
@@ -146,28 +142,29 @@ class GetRaffleConstraintsView(APIView):
         raffle = get_object_or_404(Raffle, pk=raffle_pk)
         try:
             param_values = json.loads(raffle.constraint_params)
-        except:
+        except Exception:
             param_values = {}
 
+        reversed_constraints = raffle.reversed_constraints.split(",") if raffle.reversed_constraints else []
         response_constraints = []
 
         for c in raffle.constraints.all():
-            constraint: ConstraintVerification = eval(c.name)(user_profile)
+            constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
             constraint.response = c.response
             try:
                 constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
             is_verified = False
-            if constraint.is_observed():
-                is_verified = True
-            response_constraints.append(
-                {**ConstraintSerializer(c).data, "is_verified": is_verified}
-            )
+            if str(c.pk) in reversed_constraints:
+                if not constraint.is_observed():
+                    is_verified = True
+            else:
+                if constraint.is_observed():
+                    is_verified = True
+            response_constraints.append({**ConstraintSerializer(c).data, "is_verified": is_verified})
 
-        return Response(
-            {"success": True, "constraints": response_constraints}, status=200
-        )
+        return Response({"success": True, "constraints": response_constraints}, status=200)
 
 
 class CreateRaffleView(CreateAPIView):
@@ -202,16 +199,14 @@ class SetRaffleTXView(APIView):
             {
                 "detail": "Raffle updated successfully",
                 "success": True,
-                "raffle": RaffleSerializer(
-                    raffle, context={"user": request.user.profile}
-                ).data,
+                "raffle": RaffleSerializer(raffle, context={"user": request.user.profile}).data,
             },
             status=200,
         )
 
 
 class ValidChainsView(ListAPIView):
-    queryset = Chain.objects.filter(chain_id__in=list(CONTRACT_ADDRESSES.keys()))
+    queryset = Chain.objects.filter(chain_id__in=list(CONTRACT_ADDRESSES.keys())).order_by("pk")
     serializer_class = SmallChainSerializer
 
     def get(self, request):
@@ -227,12 +222,8 @@ class UserRafflesListView(ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        queryset = Raffle.objects.filter(creator_profile=request.user.profile).order_by(
-            "pk"
-        )
-        serializer = RaffleSerializer(
-            queryset, many=True, context={"user": request.user.profile}
-        )
+        queryset = Raffle.objects.filter(creator_profile=request.user.profile).order_by("pk")
+        serializer = RaffleSerializer(queryset, many=True, context={"user": request.user.profile})
         return Response(serializer.data)
 
 
@@ -255,6 +246,4 @@ class SetLineaTxHashView(CreateAPIView):
         raffle_entry = get_object_or_404(LineaRaffleEntries, pk=pk)
         raffle_entry.claim_tx = tx_hash
         raffle_entry.save()
-        return Response(
-            {"success": True, "data": LineaRaffleEntrySerializer(raffle_entry).data}
-        )
+        return Response({"success": True, "data": LineaRaffleEntrySerializer(raffle_entry).data})

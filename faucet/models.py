@@ -32,11 +32,11 @@ class WalletAccount(models.Model):
         try:
             node = Bip44.FromPrivateKey(binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM)
             return node.PublicKey().ToAddress()
-        except:  # noqa: E722
+        except:  # noqa: E722   #dont change this, somehow it creates a bug if changed to Exception
             try:
                 keypair = Keypair.from_base58_string(self.private_key)
                 return str(keypair.pubkey())
-            except:  # noqa: E722
+            except:  # noqa: E722   #dont change this, somehow it creates a bug if changed to Exception
                 pass
 
     def __str__(self) -> str:
@@ -256,9 +256,9 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                if self.chain_id == 500:
-                    logging.debug("chain XDC NONEVM is checking its balances")
-                funds = EVMFundManager(self).w3.eth.get_balance(self.fund_manager_address)
+                # if self.chain_id == 500:
+                #     logging.debug("chain XDC NONEVM is checking its balances")
+                funds = EVMFundManager(self).get_balance(self.fund_manager_address)
                 return funds
 
             elif self.chain_type == NetworkTypes.SOLANA:
@@ -293,7 +293,7 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                return EVMFundManager(self).w3.eth.get_balance(self.wallet.address)
+                return EVMFundManager(self).get_balance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(Pubkey.from_string(self.wallet.address)).value
@@ -325,9 +325,9 @@ class Chain(models.Model):
         try:
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
-            return EVMFundManager(self).w3.eth.gas_price
-        except Exception as e:
-            logging.exception(f"Error getting gas price for {self.chain_name} error is {e}")
+            return EVMFundManager(self).get_gas_price()
+        except:  # noqa: E722
+            logging.exception(f"Error getting gas price for {self.chain_name}")
             return self.max_gas_price + 1
 
     @property
@@ -339,8 +339,8 @@ class Chain(models.Model):
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
             return EVMFundManager(self).is_gas_price_too_high
-        except Exception as e:
-            logging.exception(f"Error getting gas price for {self.chain_name} error is {e}")
+        except Exception:  # noqa: E722
+            logging.exception(f"Error getting gas price for {self.chain_name}")
             return True
 
     @property
@@ -465,6 +465,11 @@ class LightningConfig(models.Model):
 
 
 class DonationReceipt(models.Model):
+    states = (
+        (ClaimReceipt.PENDING, "Pending"),
+        (ClaimReceipt.VERIFIED, "Verified"),
+        (ClaimReceipt.REJECTED, "Rejected"),
+    )
     user_profile = models.ForeignKey(
         UserProfile,
         related_name="donations",
@@ -485,8 +490,8 @@ class DonationReceipt(models.Model):
     datetime = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=30,
-        choices=ClaimReceipt.states,
-        default=ClaimReceipt.PROCESSED_FOR_TOKENTAP,
+        choices=states,
+        default=ClaimReceipt.PENDING,
     )
 
     class Meta:

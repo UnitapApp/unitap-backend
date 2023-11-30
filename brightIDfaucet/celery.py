@@ -53,6 +53,7 @@ app.conf.beat_schedule = {
     "set-raffle-random-words": {"task": "prizetap.tasks.set_raffle_random_words", "schedule": 120},
     "set-raffle-winners": {"task": "prizetap.tasks.set_raffle_winners", "schedule": 300},
     "get-raffle-winners": {"task": "prizetap.tasks.get_raffle_winners", "schedule": 300},
+    "set-raffle-ids": {"task": "prizetap.tasks.set_raffle_ids", "schedule": 300},
 }
 
 # Load task modules from all registered Django apps.

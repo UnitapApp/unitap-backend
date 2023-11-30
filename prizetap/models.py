@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -36,6 +37,7 @@ class Raffle(models.Model):
 
     name = models.CharField(max_length=256)
     description = models.TextField(null=True, blank=True)
+    necessary_information = models.TextField(null=True, blank=True)
     contract = models.CharField(max_length=256)
     raffleId = models.BigIntegerField(null=True, blank=True)
     creator_name = models.CharField(max_length=255, null=True, blank=True)
@@ -43,7 +45,9 @@ class Raffle(models.Model):
     creator_address = models.CharField(max_length=255)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
-    twitter_url = models.URLField(max_length=255, null=True, blank=True)
+    twitter_url = models.URLField(max_length=255)
+    email_url = models.EmailField(max_length=255)
+    telegram_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
 
     prize_amount = BigNumField()
@@ -53,20 +57,21 @@ class Raffle(models.Model):
     decimals = models.IntegerField(default=18)
 
     is_prize_nft = models.BooleanField(default=False)
-    nft_id = models.CharField(max_length=256, null=True, blank=True)
+    nft_ids = models.TextField(null=True, blank=True)
     token_uri = models.TextField(null=True, blank=True)
 
     chain = models.ForeignKey(Chain, on_delete=models.CASCADE, related_name="raffles")
 
     constraints = models.ManyToManyField(Constraint, blank=True, related_name="raffles")
     constraint_params = models.TextField(null=True, blank=True)
+    reversed_constraints = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
     start_at = models.DateTimeField(default=timezone.now)
     deadline = models.DateTimeField()
-    max_number_of_entries = models.IntegerField()
-    max_multiplier = models.IntegerField(default=1)
-    winners_count = models.IntegerField(default=1)
+    max_number_of_entries = models.IntegerField(validators=[MinValueValidator(1)])
+    max_multiplier = models.IntegerField(default=1, validators=[MinValueValidator(1)])
+    winners_count = models.IntegerField(default=1, validators=[MinValueValidator(1)])
 
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     rejection_reason = models.TextField(null=True, blank=True)

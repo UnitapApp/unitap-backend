@@ -1,3 +1,5 @@
+import inspect
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -17,11 +19,12 @@ class UserConstraint(models.Model):
     name = models.CharField(
         max_length=255,
         unique=True,
-        choices=[(c.__name__, c.__name__) for c in constraints],
+        choices=[(f'{inspect.getmodule(c).__name__.split(".")[0]}.{c.__name__}', c.__name__) for c in constraints],
     )
     title = models.CharField(max_length=255)
     type = models.CharField(max_length=10, choices=Type.choices, default=Type.VERIFICATION)
     description = models.TextField(null=True, blank=True)
+    explanation = models.TextField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
     icon_url = models.CharField(max_length=255, null=True, blank=True)
 
@@ -33,7 +36,7 @@ class UserConstraint(models.Model):
         return models.CharField(
             max_length=255,
             unique=True,
-            choices=[(c.__name__, c.__name__) for c in constraints],
+            choices=[(f'{inspect.getmodule(c).__name__.split(".")[0]}.{c.__name__}', c.__name__) for c in constraints],
         )
 
 

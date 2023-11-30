@@ -15,6 +15,7 @@ from sentry_sdk import capture_exception
 
 from authentication.models import NetworkTypes, Wallet
 from core.models import TokenPrice
+from core.utils import Web3Utils
 from tokenTap.models import TokenDistributionClaim
 
 from .faucet_manager.fund_manager import (
@@ -382,10 +383,7 @@ def process_donation_receipt(self, donation_receipt_pk):
             ).values_list("lower_address", flat=True):
                 donation_receipt.delete()
                 return
-            if (
-                evm_fund_manager.to_checksum_address(tx.get("to"))
-                != evm_fund_manager.get_fund_manager_checksum_address()
-            ):
+            if Web3Utils.to_checksum_address(tx.get("to")) != evm_fund_manager.get_fund_manager_checksum_address():
                 donation_receipt.delete()
                 return
             donation_receipt.value = str(evm_fund_manager.from_wei(tx.get("value")))
@@ -397,7 +395,7 @@ def process_donation_receipt(self, donation_receipt_pk):
                     )
                 except TokenPrice.DoesNotExist:
                     logging.error(f"TokenPrice for Chain: {donation_receipt.chain.chain_name} did not defined")
-                    donation_receipt.status = ClaimReceipt.PROCESSED_FOR_TOKENTAP_REJECT
+                    donation_receipt.status = ClaimReceipt.REJECTED
                     donation_receipt.save()
                     return
             else:
@@ -414,6 +412,6 @@ def update_donation_receipt_pending_status():
     """
     update status of pending donation receipt
     """
-    pending_donation_receipts = DonationReceipt.objects.filter(status=ClaimReceipt.PROCESSED_FOR_TOKENTAP)
+    pending_donation_receipts = DonationReceipt.objects.filter(status=ClaimReceipt.PENDING)
     for pending_donation_receipt in pending_donation_receipts:
         process_donation_receipt.delay(pending_donation_receipt.pk)

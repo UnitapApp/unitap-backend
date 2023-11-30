@@ -11,10 +11,8 @@ from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.signature import Signature
 from solders.transaction_status import TransactionConfirmationStatus
-from web3 import Web3
-from web3.gas_strategies.rpc import rpc_gas_price_strategy
-from web3.middleware import geth_poa_middleware
 
+from core.utils import Web3Utils
 from faucet.constants import MEMCACHE_LIGHTNING_LOCK_KEY
 from faucet.faucet_manager.fund_manager_abi import manager_abi
 from faucet.helpers import memcache_lock
@@ -37,27 +35,18 @@ class FundMangerException:
 class EVMFundManager:
     def __init__(self, chain: Chain):
         self.chain = chain
-        self.abi = manager_abi
+        self.web3_utils = Web3Utils(self.chain.rpc_url_private)
+        self.web3_utils.set_account(self.chain.wallet.main_key)
+        self.web3_utils.set_contract(self.get_fund_manager_checksum_address(), abi=manager_abi)
 
-    @property
-    def w3(self) -> Web3:
-        assert self.chain.rpc_url_private is not None
-        try:
-            _w3 = Web3(Web3.HTTPProvider(self.chain.rpc_url_private))
-            if self.chain.poa:
-                _w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-            if _w3.is_connected():
-                _w3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
-                return _w3
-        except Exception as e:
-            logging.error(e)
-            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
+    def get_gas_price(self):
+        return self.web3_utils.get_gas_price()
 
     @property
     def is_gas_price_too_high(self):
         try:
-            gas_price = self.w3.eth.gas_price
-            print(f"Gas price: {gas_price} vs max: {self.chain.max_gas_price}")
+            gas_price = self.get_gas_price()
+            logging.info(f"Gas price: {gas_price} vs max: {self.chain.max_gas_price}")
             if gas_price > self.chain.max_gas_price:
                 return True
             return False
@@ -65,77 +54,55 @@ class EVMFundManager:
             logging.error(e)
             return True
 
-    @property
-    def account(self) -> LocalAccount:
-        return self.w3.eth.account.from_key(self.chain.wallet.main_key)
-
-    @staticmethod
-    def to_checksum_address(address: str):
-        return Web3.to_checksum_address(address.lower())
+    def get_balance(self, address):
+        return self.web3_utils.get_balance(address)
 
     def get_fund_manager_checksum_address(self):
-        return self.to_checksum_address(self.chain.fund_manager_address)
-
-    @property
-    def contract(self):
-        return self.w3.eth.contract(address=self.get_fund_manager_checksum_address(), abi=self.abi)
+        return self.web3_utils.to_checksum_address(self.chain.fund_manager_address)
 
     def transfer(self, bright_user: BrightUser, amount: int):
-        tx = self.single_eth_transfer_signed_tx(amount, bright_user.address)
-        try:
-            self.w3.eth.send_raw_transaction(tx.rawTransaction)
-            return tx["hash"].hex()
-        except Exception as e:
-            raise FundMangerException.RPCError(str(e))
+        return self._transfer("withdrawEth", amount, bright_user.address)
 
     def multi_transfer(self, data):
-        tx = self.multi_eth_transfer_signed_tx(data)
+        return self._transfer("multiWithdrawEth", data)
+
+    def _transfer(self, tx_function_str, *args):
+        tx = self.prepare_tx_for_broadcast(tx_function_str, *args)
         try:
-            self.w3.eth.send_raw_transaction(tx.rawTransaction)
+            self.web3_utils.send_raw_tx(tx)
             return tx["hash"].hex()
         except Exception as e:
             raise FundMangerException.RPCError(str(e))
 
-    def single_eth_transfer_signed_tx(self, amount: int, to: str):
-        tx_function = self.contract.functions.withdrawEth(amount, to)
-        return self.prepare_tx_for_broadcast(tx_function)
-
-    def multi_eth_transfer_signed_tx(self, data):
-        tx_function = self.contract.functions.multiWithdrawEth(data)
-        return self.prepare_tx_for_broadcast(tx_function)
-
-    def prepare_tx_for_broadcast(self, tx_function):
-        nonce = self.w3.eth.get_transaction_count(self.account.address)
-        gas_estimation = tx_function.estimate_gas({"from": self.account.address})
+    def prepare_tx_for_broadcast(self, tx_function_str, *args):
+        tx_function = self.web3_utils.get_contract_function(tx_function_str)(*args)
+        gas_estimation = self.web3_utils.get_gas_estimate(tx_function)
         if self.chain.chain_id == "997":
             gas_estimation = 100000
 
         if self.is_gas_price_too_high:
             raise FundMangerException.GasPriceTooHigh("Gas price is too high")
 
-        tx_data = tx_function.build_transaction(
-            {
-                "nonce": nonce,
-                "from": self.account.address,
-                "gas": gas_estimation,
-                "gasPrice": int(self.w3.eth.gas_price * self.chain.gas_multiplier),
-            }
-        )
-        signed_tx = self.w3.eth.account.sign_transaction(tx_data, self.account.key)
+        tx_params = {
+            "gas": gas_estimation,
+            "gasPrice": int(self.web3_utils.get_gas_price() * self.chain.gas_multiplier),
+        }
+
+        signed_tx = self.web3_utils.build_contract_txn(tx_function, **tx_params)
         return signed_tx
 
     def is_tx_verified(self, tx_hash):
-        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        receipt = self.web3_utils.wait_for_transaction_receipt(tx_hash)
         if receipt["status"] == 1:
             return True
         return False
 
     def get_tx(self, tx_hash):
-        tx = self.w3.eth.get_transaction(tx_hash)
+        tx = self.web3_utils.get_transaction_by_hash(tx_hash)
         return tx
 
     def from_wei(self, value: int, unit: str = "ether"):
-        return self.w3.from_wei(value, unit)
+        return self.web3_utils.from_wei(value, unit)
 
 
 class SolanaFundManager:
