@@ -246,7 +246,7 @@ class WalletListCreateView(ListCreateAPIView):
     filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
     filterset_fields = ["wallet_type"]
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer):  # TODO check signature to make sure the user is the owner of the wallet
         serializer.save(user_profile=self.request.user.profile)
 
 
