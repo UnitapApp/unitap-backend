@@ -297,7 +297,7 @@ class TestClaim(APITestCase):
         claim_amount = 100
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
         credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
-        r = claim_manager_x_dai.claim(claim_amount)
+        r = claim_manager_x_dai.claim(claim_amount, "0x12345")
         r._status = ClaimReceipt.VERIFIED
         r.save()
 
@@ -312,7 +312,7 @@ class TestClaim(APITestCase):
         claim_amount_1 = 100
         claim_amount_2 = 50
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
-        claim_manager_x_dai.claim(claim_amount_1)
+        claim_manager_x_dai.claim(claim_amount_1, "0x12345")
 
         try:
             claim_manager_x_dai.claim(claim_amount_2)
@@ -327,11 +327,11 @@ class TestClaim(APITestCase):
         claim_amount_1 = 100
         claim_amount_2 = 50
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
         try:
-            claim_manager_x_dai.claim(claim_amount_2)
+            claim_manager_x_dai.claim(claim_amount_2, "0x12345")
         except AssertionError:
             self.assertEqual(False, True)
 
@@ -343,11 +343,11 @@ class TestClaim(APITestCase):
         claim_amount_1 = 100
         claim_amount_2 = 50
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
         try:
-            claim_manager_x_dai.claim(claim_amount_2)
+            claim_manager_x_dai.claim(claim_amount_2, "0x12345")
         except AssertionError:
             self.assertEqual(True, False)
 
@@ -360,15 +360,15 @@ class TestClaim(APITestCase):
         claim_amount_2 = 5
         claim_amount_3 = 1
         claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
-        claim_2 = claim_manager_x_dai.claim(claim_amount_2)
+        claim_2 = claim_manager_x_dai.claim(claim_amount_2, "0x12345")
         claim_2._status = ClaimReceipt.VERIFIED
         claim_2.save()
 
         try:
-            claim_manager_x_dai.claim(claim_amount_3)
+            claim_manager_x_dai.claim(claim_amount_3, "0x12345")
         except AssertionError:
             self.assertEqual(True, True)
 
@@ -379,7 +379,7 @@ class TestClaim(APITestCase):
     @skipIf(not DEBUG, "only on debug")
     def test_simple_claim_manager_transfer(self):
         manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
-        manager.claim(100)
+        manager.claim(100, "0x12345")
 
 
 class TestClaimAPI(APITestCase):
@@ -403,55 +403,42 @@ class TestClaimAPI(APITestCase):
         self.client.force_authenticate(user=self.verified_user.user)
         self.user_profile = self.verified_user
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (False, None),
     )
     def test_claim_max_api_should_fail_if_not_verified(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"chain_pk": self.x_dai.pk},
-        )
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
 
-        response = self.client.post(endpoint)
+        response = self.client.post(endpoint, data={"address": "0x12345"})
         self.assertEqual(response.status_code, 403)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
     )
     def test_claim_max_api_should_claim_all(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"chain_pk": self.x_dai.pk},
-        )
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
 
-        response = self.client.post(endpoint)
+        response = self.client.post(endpoint, data={"address": "0x12345"})
         claim_receipt = json.loads(response.content)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(claim_receipt["amount"], self.x_dai.max_claim_amount)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
     )
     def test_claim_max_twice_should_fail(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"chain_pk": self.x_dai.pk},
-        )
-        response_1 = self.client.post(endpoint)
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
+        response_1 = self.client.post(endpoint, data={"address": "0x12345"})
         self.assertEqual(response_1.status_code, 200)
         try:
             self.client.post(endpoint)
         except CustomException:
             self.assertEqual(True, True)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -494,7 +481,6 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(claim_data["txHash"], last_claim.tx_hash)
         self.assertEqual(claim_data["chain"]["pk"], last_claim.chain.pk)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
