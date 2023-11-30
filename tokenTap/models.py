@@ -98,6 +98,8 @@ class TokenDistributionClaim(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="tokentap_claims")
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
+    user_wallet_address = models.CharField(max_length=255, null=True, blank=True)
+
     notes = models.TextField(null=True, blank=True)
 
     signature = models.CharField(max_length=1024, blank=True, null=True)

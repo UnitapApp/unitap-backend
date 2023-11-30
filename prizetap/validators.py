@@ -37,16 +37,16 @@ class RaffleEnrollmentValidator:
                 if not constraint.is_observed():
                     raise PermissionDenied(constraint.response)
 
-    def check_user_has_wallet(self):
-        if not self.user_profile.wallets.filter(wallet_type=self.raffle.chain.chain_type).exists():
-            raise PermissionDenied(f"You have not connected an {self.raffle.chain.chain_type} wallet to your account")
+    def check_user_wallet_address_is_registered_wallet_for_user(self, user_wallet_address):
+        if not self.user_profile.wallets.filter(address=user_wallet_address).exists():
+            raise PermissionDenied("This wallet is not registered for this user")
 
     def is_valid(self, data):
         self.can_enroll_in_raffle()
 
         self.check_user_constraints()
 
-        self.check_user_has_wallet()
+        self.check_user_wallet_address_is_registered_wallet_for_user(data.get("user_wallet_address"))
 
 
 class SetRaffleEntryTxValidator:

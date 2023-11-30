@@ -5,26 +5,36 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('authentication', '0023_wallet_created_at'),
-        ('prizetap', '0044_raffle_reversed_constraints'),
+        ("authentication", "0023_wallet_created_at"),
+        ("prizetap", "0044_raffle_reversed_constraints"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='raffleentry',
-            name='user_wallet',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='raffle_entries', to='authentication.wallet'),
+            model_name="raffleentry",
+            name="user_wallet",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="raffle_entries",
+                to="authentication.wallet",
+            ),
         ),
         migrations.AlterField(
-            model_name='raffleentry',
-            name='raffle',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='entries', to='prizetap.raffle'),
+            model_name="raffleentry",
+            name="raffle",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, related_name="entries", to="prizetap.raffle"
+            ),
         ),
         migrations.AlterField(
-            model_name='raffleentry',
-            name='user_profile',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='raffle_entries', to='authentication.userprofile'),
+            model_name="raffleentry",
+            name="user_profile",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="raffle_entries",
+                to="authentication.userprofile",
+            ),
         ),
     ]

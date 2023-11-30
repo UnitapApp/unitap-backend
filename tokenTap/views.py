@@ -149,7 +149,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 datetime=timezone.now(),
                 amount=token_distribution.amount,
                 _status=ClaimReceipt.PENDING,
-                passive_address=lightning_invoice,
+                to_address=lightning_invoice,
             )
 
         return Response(
