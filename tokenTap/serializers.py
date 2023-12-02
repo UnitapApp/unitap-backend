@@ -93,7 +93,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
 class PayloadSerializer(serializers.ModelSerializer):
     class Meta:
         model = TokenDistributionClaim
-        fields = ["user", "token", "amount", "nonce", "signature"]
+        fields = ["user_wallet_address", "token", "amount", "nonce", "signature"]
 
 
 class TokenDistributionClaimSerializer(serializers.ModelSerializer):
@@ -106,6 +106,7 @@ class TokenDistributionClaimSerializer(serializers.ModelSerializer):
             "id",
             "token_distribution",
             "user_profile",
+            "user_wallet_address",
             "created_at",
             "payload",
             "status",

@@ -58,7 +58,9 @@ class UserProfile(models.Model):
         (
             is_verified,
             context_ids,
-        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(self.initial_context_id, "Meet")
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
+            self.initial_context_id, "Meet"
+        )
 
         return is_verified
 
@@ -67,9 +69,14 @@ class UserProfile(models.Model):
         (
             is_verified,
             context_ids,
-        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(self.initial_context_id, "Aura")
+        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
+            self.initial_context_id, "Aura"
+        )
 
         return is_verified
+
+    def owns_wallet(self, wallet_address):
+        return self.wallets.filter(address=wallet_address).exists()
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -106,7 +113,9 @@ class NetworkTypes:
 
 class Wallet(models.Model):
     wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
-    user_profile = models.ForeignKey(UserProfile, on_delete=models.PROTECT, related_name="wallets")
+    user_profile = models.ForeignKey(
+        UserProfile, on_delete=models.PROTECT, related_name="wallets"
+    )
     address = models.CharField(max_length=512, unique=True)
     # primary = models.BooleanField(default=False, null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -114,4 +123,5 @@ class Wallet(models.Model):
     # objects = WalletManager()
 
     def __str__(self):
-        return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"
+        return f"{self.wallet_type} Wallet for profile with contextId \
+        {self.user_profile.initial_context_id}"

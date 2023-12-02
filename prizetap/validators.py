@@ -22,9 +22,15 @@ class RaffleEnrollmentValidator:
             param_values = json.loads(self.raffle.constraint_params)
         except Exception:
             param_values = {}
-        reversed_constraints = self.raffle.reversed_constraints.split(",") if self.raffle.reversed_constraints else []
+        reversed_constraints = (
+            self.raffle.reversed_constraints.split(",")
+            if self.raffle.reversed_constraints
+            else []
+        )
         for c in self.raffle.constraints.all():
-            constraint: ConstraintVerification = get_constraint(c.name)(self.user_profile)
+            constraint: ConstraintVerification = get_constraint(c.name)(
+                self.user_profile
+            )
             constraint.response = c.response
             try:
                 constraint.param_values = param_values[c.name]
@@ -37,8 +43,8 @@ class RaffleEnrollmentValidator:
                 if not constraint.is_observed():
                     raise PermissionDenied(constraint.response)
 
-    def check_user_wallet_address_is_registered_wallet_for_user(self, user_wallet_address):
-        if not self.user_profile.wallets.filter(address=user_wallet_address).exists():
+    def check_user_owns_wallet(self, user_wallet_address):
+        if not self.user_profile.owns_wallet(user_wallet_address):
             raise PermissionDenied("This wallet is not registered for this user")
 
     def is_valid(self, data):
@@ -46,7 +52,7 @@ class RaffleEnrollmentValidator:
 
         self.check_user_constraints()
 
-        self.check_user_wallet_address_is_registered_wallet_for_user(data.get("user_wallet_address"))
+        self.check_user_owns_wallet(data.get("user_wallet_address"))
 
 
 class SetRaffleEntryTxValidator:
@@ -56,7 +62,9 @@ class SetRaffleEntryTxValidator:
 
     def is_owner_of_raffle_entry(self):
         if not self.raffle_entry.user_profile == self.user_profile:
-            raise PermissionDenied("You don't have permission to update this raffle entry")
+            raise PermissionDenied(
+                "You don't have permission to update this raffle entry"
+            )
 
     def is_tx_empty(self):
         if self.raffle_entry.tx_hash:

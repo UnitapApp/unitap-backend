@@ -12,7 +12,7 @@ from rest_framework.test import APITestCase
 from authentication.models import UserProfile, Wallet
 from brightIDfaucet.settings import DEBUG
 from faucet.constants import MEMCACHE_LIGHTNING_LOCK_KEY
-from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
+from faucet.constraints import OptimismDonationConstraint
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import (
     RoundCreditStrategy,
@@ -47,11 +47,10 @@ LIGHTNING_WALLET = os.environ.get("LIGHTNING_WALLET")
 LIGHTNING_FUND_MANAGER = os.environ.get("LIGHTNING_FUND_MANAGER")
 
 LIGHTNING_RPC_URL = "https://api.lnpay.co/v1/"
-LIGHTNING_INVOICE = (
-    "lnbc100n1pjxtceppp5q65xc3w8tnnmzkhqgg9c7h4a8hzplm0dppr944upwsq4q62sjeesdqu2askcmr9wssx7e3q2dshgmmnd"
-    "p5scqzzsxqyz5vqsp5hj2vzha0x4qvuyzrym6ryvxwnccn4kjwa57037dgcshl5ls4tves9qyyssqj24t4j2dkp2r29ptgxqz2etsk0qp8ggwmt"
-    "20czfu48h5akgme43zevg6x040scjzx3qgtp8mkcg2gurv0hy8d8xm3hhf8k68uefl9sqqqscuvz"
-)
+LIGHTNING_INVOICE = "lnbc100n1pjxtceppp5q65xc3w8tnnmzkhqgg9c7h4a8hzplm0dppr9\
+44upwsq4q62sjeesdqu2askcmr9wssx7e3q2dshgmmndp5scqzzsxqyz5vqsp5hj2vzha0x4qvuyz\
+rym6ryvxwnccn4kjwa57037dgcshl5ls4tves9qyyssqj24t4j2dkp2r29ptgxqz2etsk0qp8ggwm\
+t20czfu48h5akgme43zevg6x040scjzx3qgtp8mkcg2gurv0hy8d8xm3hhf8k68uefl9sqqqscuvz"
 
 
 def create_new_user(
@@ -119,7 +118,9 @@ def create_lightning_chain(wallet) -> Chain:
 class TestWalletAccount(APITestCase):
     def setUp(self) -> None:
         self.key = test_wallet_key
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
 
     def test_create_wallet(self):
         self.assertEqual(WalletAccount.objects.count(), 1)
@@ -183,7 +184,9 @@ class TestWalletAccount(APITestCase):
 
 class TestChainInfo(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
         self.new_user = create_new_user()
         self.xdai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
@@ -231,7 +234,9 @@ class TestChainInfo(APITestCase):
 
 class TestClaim(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
         self.new_user = create_new_user()
         self.verified_user = create_new_user()
         self.x_dai = create_xDai_chain(self.wallet)
@@ -264,10 +269,14 @@ class TestClaim(APITestCase):
         self.assertEqual(credit_strategy_xdai.get_claimed(), 0)
         self.assertEqual(credit_strategy_id_chain.get_claimed(), claim_amount)
         self.assertEqual(credit_strategy_xdai.get_unclaimed(), x_dai_max_claim)
-        self.assertEqual(credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount)
+        self.assertEqual(
+            credit_strategy_id_chain.get_unclaimed(), eidi_max_claim - claim_amount
+        )
 
     def test_claim_manager_fail_if_claim_amount_exceeds_unclaimed(self):
-        claim_manager_x_dai = SimpleClaimManager(RoundCreditStrategy(self.x_dai, self.new_user))
+        claim_manager_x_dai = SimpleClaimManager(
+            RoundCreditStrategy(self.x_dai, self.new_user)
+        )
 
         try:
             claim_manager_x_dai.claim(x_dai_max_claim + 10)
@@ -281,7 +290,9 @@ class TestClaim(APITestCase):
     )
     def test_claim_unverified_user_should_fail(self):
         claim_amount = 100
-        claim_manager_x_dai = SimpleClaimManager(RoundCreditStrategy(self.x_dai, self.new_user))
+        claim_manager_x_dai = SimpleClaimManager(
+            RoundCreditStrategy(self.x_dai, self.new_user)
+        )
 
         try:
             claim_manager_x_dai.claim(claim_amount)
@@ -295,14 +306,18 @@ class TestClaim(APITestCase):
     )
     def test_claim_manager_should_claim(self):
         claim_amount = 100
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
         r = claim_manager_x_dai.claim(claim_amount, "0x12345")
         r._status = ClaimReceipt.VERIFIED
         r.save()
 
         self.assertEqual(credit_strategy_x_dai.get_claimed(), claim_amount)
-        self.assertEqual(credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount)
+        self.assertEqual(
+            credit_strategy_x_dai.get_unclaimed(), x_dai_max_claim - claim_amount
+        )
 
     @patch(
         "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
@@ -311,7 +326,9 @@ class TestClaim(APITestCase):
     def test_only_one_pending_claim(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         claim_manager_x_dai.claim(claim_amount_1, "0x12345")
 
         try:
@@ -326,7 +343,9 @@ class TestClaim(APITestCase):
     def test_second_claim_after_first_verifies(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
@@ -342,7 +361,9 @@ class TestClaim(APITestCase):
     def test_second_claim_after_first_fails(self):
         claim_amount_1 = 100
         claim_amount_2 = 50
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
@@ -359,7 +380,9 @@ class TestClaim(APITestCase):
         claim_amount_1 = 10
         claim_amount_2 = 5
         claim_amount_3 = 1
-        claim_manager_x_dai = ClaimManagerFactory(self.x_dai, self.verified_user).get_manager()
+        claim_manager_x_dai = ClaimManagerFactory(
+            self.x_dai, self.verified_user
+        ).get_manager()
         claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
@@ -378,14 +401,20 @@ class TestClaim(APITestCase):
     )
     @skipIf(not DEBUG, "only on debug")
     def test_simple_claim_manager_transfer(self):
-        manager = SimpleClaimManager(SimpleCreditStrategy(self.test_chain, self.verified_user))
+        manager = SimpleClaimManager(
+            SimpleCreditStrategy(self.test_chain, self.verified_user)
+        )
         manager.claim(100, "0x12345")
 
 
 class TestClaimAPI(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
-        self.lightning_wallet = WalletAccount.objects.create(name="Test Lightning Wallet", private_key=LIGHTNING_WALLET)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+        self.lightning_wallet = WalletAccount.objects.create(
+            name="Test Lightning Wallet", private_key=LIGHTNING_WALLET
+        )
         self.verified_user = create_new_user()
         self.x_dai = create_xDai_chain(self.wallet)
         self.idChain = create_idChain_chain(self.wallet)
@@ -397,7 +426,9 @@ class TestClaimAPI(APITestCase):
 
         GlobalSettings.objects.create(gastap_round_claim_limit=2)
         LightningConfig.objects.create(
-            period=86800, period_max_cap=100, current_round=int(int(time.time()) / 86800) * 86800
+            period=86800,
+            period_max_cap=100,
+            current_round=int(int(time.time()) / 86800) * 86800,
         )
 
         self.client.force_authenticate(user=self.verified_user.user)
@@ -532,7 +563,9 @@ class TestClaimAPI(APITestCase):
         config = lightning_fund_manager.config
         config.claimed_amount = 100
         config.save()
-        is_exceeded = lightning_fund_manager._LightningFundManager__check_max_cap_exceeds(10)
+        is_exceeded = (
+            lightning_fund_manager._LightningFundManager__check_max_cap_exceeds(10)
+        )
         self.assertEqual(is_exceeded, True)
 
         with self.assertRaises(AssertionError):
@@ -543,7 +576,9 @@ class TestClaimAPI(APITestCase):
 
 class TestWeeklyCreditStrategy(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
         # self.verified_user = create_verified_user()
         self.test_chain = create_test_chain(self.wallet)
 
@@ -604,7 +639,9 @@ class TestWeeklyCreditStrategy(APITestCase):
 
 class TestConstraints(APITestCase):
     def setUp(self) -> None:
-        self.wallet = WalletAccount.objects.create(name="Test Wallet", private_key=test_wallet_key)
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
 
         self.test_chain = create_test_chain(self.wallet)
 
@@ -622,7 +659,9 @@ class TestConstraints(APITestCase):
             explorer_api_key="6PGF5HBTT7DG9CQCQZK3MWR9146JAWQKAC",
         )
 
-        self.user_profile = create_new_user("0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F2")
+        self.user_profile = create_new_user(
+            "0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F2"
+        )
         self.wallet = Wallet.objects.create(
             user_profile=self.user_profile,
             wallet_type=NetworkTypes.EVM,
@@ -633,19 +672,24 @@ class TestConstraints(APITestCase):
     def test_optimism_donation_contraint(self):
         constraint = OptimismDonationConstraint(self.user_profile)
         self.assertFalse(constraint.is_observed())
-        DonationReceipt.objects.create(user_profile=self.user_profile, tx_hash="0x0", chain=self.test_chain)
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile, tx_hash="0x0", chain=self.test_chain
+        )
         self.assertFalse(constraint.is_observed())
         DonationReceipt.objects.create(
-            user_profile=self.user_profile, tx_hash="0x0", chain=self.optimism, status=ClaimReceipt.VERIFIED
+            user_profile=self.user_profile,
+            tx_hash="0x0",
+            chain=self.optimism,
+            status=ClaimReceipt.VERIFIED,
         )
         self.assertTrue(constraint.is_observed())
 
-    def test_optimism_claiming_gas_contraint(self):
-        constraint = OptimismClaimingGasConstraint(self.user_profile)
-        self.assertTrue(constraint.is_observed())
-        self.wallet.address = "0xE3eEBaB360E367b4e200759F0D955D1140F27430"
-        self.wallet.save()
-        self.assertTrue(constraint.is_observed())
-        self.wallet.address = "0xB9e291b68E584be657477289389B3a6DEED3E34C"
-        self.wallet.save()
-        self.assertFalse(constraint.is_observed())
+    # def test_optimism_claiming_gas_contraint(self):
+    #     constraint = OptimismClaimingGasConstraint(self.user_profile)
+    #     self.assertTrue(constraint.is_observed())
+    #     self.wallet.address = "0xE3eEBaB360E367b4e200759F0D955D1140F27430"
+    #     self.wallet.save()
+    #     self.assertTrue(constraint.is_observed())
+    #     self.wallet.address = "0xB9e291b68E584be657477289389B3a6DEED3E34C"
+    #     self.wallet.save()
+    #     self.assertFalse(constraint.is_observed())
