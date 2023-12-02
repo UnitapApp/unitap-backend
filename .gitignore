@@ -8,6 +8,7 @@ __pycache__/
 
 tmp.py
 dbdata.json
+dbdata2.json
 
 # Distribution / packaging
 .Python
