@@ -144,12 +144,29 @@ class RoundCreditStrategy(SimpleCreditStrategy):
         return first_day_of_last_month
 
 
+class OneTimeCreditStrategy(SimpleCreditStrategy):
+    def __int__(self, chain: Chain, user_profile: UserProfile):
+        self.chain = chain
+        self.user_profile = user_profile
+
+    def get_claim_receipts(self):
+        return ClaimReceipt.objects.filter(
+            chain=self.chain,
+            user_profile=self.user_profile,
+            _status=ClaimReceipt.VERIFIED,
+            # 1 December 2023
+            datetime__gte=datetime.datetime(2023, 12, 1, 0, 0, 0, 0, pytz.timezone("UTC")),  # also change in views.py
+        )
+
+
 class CreditStrategyFactory:
-    def __init__(self, chain, user_profile):
+    def __init__(self, chain: Chain, user_profile):
         self.chain = chain
         self.user_profile = user_profile
 
     def get_strategy_class(self):
+        if self.chain.is_one_time_claim:
+            return OneTimeCreditStrategy
         return RoundCreditStrategy
 
     def get_strategy(self) -> CreditStrategy:

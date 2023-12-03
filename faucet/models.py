@@ -219,6 +219,8 @@ class Chain(models.Model):
     chain_type = models.CharField(max_length=10, choices=NetworkTypes.networks, default=NetworkTypes.EVM)
     order = models.IntegerField(default=0)
 
+    is_one_time_claim = models.BooleanField(default=False)
+
     is_active = models.BooleanField(default=True)
     show_in_gastap = models.BooleanField(default=True)
 
