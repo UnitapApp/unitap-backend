@@ -178,6 +178,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "raffleId",
             "constraints",
             "constraint_params",
+            "reversed_constraints",
             "created_at",
             "start_at",
             "deadline",

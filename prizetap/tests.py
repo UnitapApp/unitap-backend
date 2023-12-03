@@ -435,6 +435,27 @@ class RaffleAPITestCase(RaffleTestCase):
         self.assertEqual(data["pk"], self.meet_constraint.pk)
         self.assertEqual(data["is_verified"], True)
 
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_get_raffle_constraints_when_constraint_is_reversed(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.raffle.reversed_constraints = str(self.meet_constraint.pk)
+        self.raffle.save()
+        response = self.client.get(reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk}))
+        data = response.data["constraints"][0]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["pk"], self.meet_constraint.pk)
+        self.assertEqual(data["is_verified"], False)
+
+        BrightIDSoulboundAPIInterface.get_verification_status = MagicMock(return_value=(False, None))
+        response = self.client.get(reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk}))
+        data = response.data["constraints"][0]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["pk"], self.meet_constraint.pk)
+        self.assertEqual(data["is_verified"], True)
+
 
 class RaffleEntryTestCase(RaffleTestCase):
     def setUp(self):
