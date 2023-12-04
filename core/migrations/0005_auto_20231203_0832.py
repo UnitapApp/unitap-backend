@@ -6,6 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('faucet', '0066_rename_is_one_time_chain_is_one_time_claim'),
         ('core', '0004_walletaccount_chain'),
     ]
 
