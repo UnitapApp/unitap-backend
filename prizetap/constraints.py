@@ -1,5 +1,7 @@
-from core.constraints import *
-from faucet.models import Chain
+from authentication.models import UserProfile
+from core.constraints import ConstraintVerification
+from core.models import Chain
+
 from .utils import UnitapPassClient
 
 
@@ -11,7 +13,8 @@ class HaveUnitapPass(ConstraintVerification):
         chain = Chain.objects.get(chain_id=1)
         self.unitappass_client = UnitapPassClient(chain)
         user_address: str = self.user_profile.wallets.get(
-            wallet_type=chain.chain_type).address
+            wallet_type=chain.chain_type
+        ).address
         user_address = self.unitappass_client.w3.to_checksum_address(
             user_address.lower()
         )
