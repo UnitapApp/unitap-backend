@@ -154,4 +154,4 @@ class Web3Utils:
         return self.w3.eth.get_transaction_receipt(hash)
 
     def get_balance(self, address):
-        self.w3.eth.get_balance(address)
+        return self.w3.eth.get_balance(address)
