@@ -3,9 +3,9 @@ from django.db import models
 from django.utils import timezone
 
 from authentication.models import NetworkTypes, UserProfile
-from core.models import UserConstraint
+from core.models import Chain, UserConstraint
 from faucet.constraints import OptimismHasClaimedGasInThisRound
-from faucet.models import Chain, ClaimReceipt
+from faucet.models import ClaimReceipt
 
 from .constraints import (
     OnceInALifeTimeVerification,
@@ -36,7 +36,9 @@ class TokenDistribution(models.Model):
     token = models.CharField(max_length=100)
     token_address = models.CharField(max_length=255)
     amount = models.BigIntegerField()
-    chain = models.ForeignKey(Chain, on_delete=models.CASCADE, related_name="token_distribution")
+    chain = models.ForeignKey(
+        Chain, on_delete=models.CASCADE, related_name="token_distribution"
+    )
 
     permissions = models.ManyToManyField(Constraint, blank=True)
 
@@ -94,8 +96,12 @@ class TokenDistribution(models.Model):
 
 
 class TokenDistributionClaim(models.Model):
-    token_distribution = models.ForeignKey(TokenDistribution, on_delete=models.CASCADE, related_name="claims")
-    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="tokentap_claims")
+    token_distribution = models.ForeignKey(
+        TokenDistribution, on_delete=models.CASCADE, related_name="claims"
+    )
+    user_profile = models.ForeignKey(
+        UserProfile, on_delete=models.CASCADE, related_name="tokentap_claims"
+    )
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
     notes = models.TextField(null=True, blank=True)
@@ -103,7 +109,9 @@ class TokenDistributionClaim(models.Model):
     signature = models.CharField(max_length=1024, blank=True, null=True)
     nonce = models.BigIntegerField(null=True, blank=True)
 
-    status = models.CharField(max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING)
+    status = models.CharField(
+        max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING
+    )
 
     tx_hash = models.CharField(max_length=255, null=True, blank=True)
 
