@@ -173,9 +173,7 @@ def set_raffle_ids(self):
                     contract_client = PrizetapContractClient(raffle)
 
                     receipt = contract_client.get_transaction_receipt(raffle.tx_hash)
-                    log = contract_client.contract.events.RaffleCreated().process_receipt(
-                        receipt, errors=contract_client.LOG_DISCARD
-                    )[0]
+                    log = contract_client.process_raffle_receipt(receipt)
 
                     raffle.raffleId = log["args"]["raffleId"]
                     onchain_raffle = contract_client.get_raffle()
