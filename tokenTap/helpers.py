@@ -4,8 +4,9 @@ from eth_account.messages import encode_defunct
 from web3 import Account, Web3
 
 from authentication.models import NetworkTypes
+from core.models import WalletAccount
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
-from faucet.models import GlobalSettings, WalletAccount
+from faucet.models import GlobalSettings
 
 from .models import TokenDistributionClaim
 
@@ -23,7 +24,12 @@ def create_uint32_random_nonce():
 def hash_message(user, token, amount, nonce):
     message_hash = Web3().solidity_keccak(
         ["address", "address", "uint256", "uint32"],
-        [Web3.to_checksum_address(user), Web3.to_checksum_address(token), amount, nonce],
+        [
+            Web3.to_checksum_address(user),
+            Web3.to_checksum_address(token),
+            amount,
+            nonce,
+        ],
     )
     hashed_message = encode_defunct(hexstr=message_hash.hex())
 

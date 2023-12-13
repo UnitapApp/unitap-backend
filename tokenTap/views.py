@@ -12,8 +12,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from authentication.models import NetworkTypes
 from core.constraints import ConstraintVerification, get_constraint
+from core.models import NetworkTypes
+from faucet.models import Chain as FaucetChain
 from faucet.models import ClaimReceipt
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
@@ -39,7 +40,9 @@ class TokenDistributionListView(ListAPIView):
     def get_queryset(self):
         q = TokenDistribution.objects.filter(is_active=True)
 
-        sorted_queryset = sorted(q, key=lambda obj: obj.total_claims_since_last_round, reverse=True)
+        sorted_queryset = sorted(
+            q, key=lambda obj: obj.total_claims_since_last_round, reverse=True
+        )
 
         return sorted_queryset
 
@@ -49,7 +52,9 @@ class TokenDistributionClaimView(CreateAPIView):
 
     def check_token_distribution_is_claimable(self, token_distribution):
         if not token_distribution.is_claimable:
-            raise rest_framework.exceptions.PermissionDenied("This token is not claimable")
+            raise rest_framework.exceptions.PermissionDenied(
+                "This token is not claimable"
+            )
 
     def check_user_permissions(self, token_distribution, user_profile):
         for c in token_distribution.permissions.all():
@@ -60,11 +65,15 @@ class TokenDistributionClaimView(CreateAPIView):
 
     def check_user_weekly_credit(self, user_profile):
         if not has_weekly_credit_left(user_profile):
-            raise rest_framework.exceptions.PermissionDenied("You have reached your weekly claim limit")
+            raise rest_framework.exceptions.PermissionDenied(
+                "You have reached your weekly claim limit"
+            )
 
     def check_user_has_wallet(self, user_profile):
         if not user_profile.wallets.filter(wallet_type=NetworkTypes.EVM).exists():
-            raise rest_framework.exceptions.PermissionDenied("You have not connected an EVM wallet to your account")
+            raise rest_framework.exceptions.PermissionDenied(
+                "You have not connected an EVM wallet to your account"
+            )
 
     @swagger_auto_schema(
         responses={
@@ -144,7 +153,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 token_distribution=token_distribution,
             )
             ClaimReceipt.objects.create(
-                chain=token_distribution.chain,
+                chain=FaucetChain.objects.get(chain_type=NetworkTypes.LIGHTNING),
                 user_profile=user_profile,
                 datetime=timezone.now(),
                 amount=token_distribution.amount,
@@ -185,9 +194,13 @@ class GetTokenDistributionConstraintsView(APIView):
             is_verified = False
             if constraint.is_observed(token_distribution=td):
                 is_verified = True
-            response_constraints.append({**ConstraintSerializer(c).data, "is_verified": is_verified})
+            response_constraints.append(
+                {**ConstraintSerializer(c).data, "is_verified": is_verified}
+            )
 
-        return Response({"success": True, "constraints": response_constraints}, status=200)
+        return Response(
+            {"success": True, "constraints": response_constraints}, status=200
+        )
 
 
 class TokenDistributionClaimStatusUpdateView(CreateAPIView):
@@ -200,12 +213,18 @@ class TokenDistributionClaimStatusUpdateView(CreateAPIView):
         )
         tx_hash = request.data.get("tx_hash", None)
         if tx_hash is None:
-            raise rest_framework.exceptions.ValidationError("tx_hash is a required field")
+            raise rest_framework.exceptions.ValidationError(
+                "tx_hash is a required field"
+            )
 
         if token_distribution_claim.user_profile != user_profile:
-            raise rest_framework.exceptions.PermissionDenied("You do not have permission to update this claim")
+            raise rest_framework.exceptions.PermissionDenied(
+                "You do not have permission to update this claim"
+            )
         if token_distribution_claim.status != ClaimReceipt.PENDING:
-            raise rest_framework.exceptions.PermissionDenied("This claim has already been updated")
+            raise rest_framework.exceptions.PermissionDenied(
+                "This claim has already been updated"
+            )
         token_distribution_claim.tx_hash = tx_hash
         token_distribution_claim.status = ClaimReceipt.VERIFIED
         token_distribution_claim.save()
@@ -231,4 +250,6 @@ class TokenDistributionClaimRetrieveView(RetrieveAPIView):
 
     def get_object(self):
         user_profile = self.request.user.profile
-        return TokenDistributionClaim.objects.get(pk=self.kwargs["pk"], user_profile=user_profile)
+        return TokenDistributionClaim.objects.get(
+            pk=self.kwargs["pk"], user_profile=user_profile
+        )
