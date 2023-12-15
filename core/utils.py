@@ -54,7 +54,9 @@ class TimeUtils:
         now = datetime.datetime.now(pytz.timezone("UTC"))
         first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_month = first_day - datetime.timedelta(days=1)
-        first_day_of_last_month = last_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        first_day_of_last_month = last_month.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         return first_day_of_last_month
 
 
@@ -122,7 +124,9 @@ class Web3Utils:
 
     def build_contract_txn(self, func: Type[ContractFunction], **kwargs):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
-        tx_data = func.build_transaction({"from": self.account.address, "nonce": nonce, **kwargs})
+        tx_data = func.build_transaction(
+            {"from": self.account.address, "nonce": nonce, **kwargs}
+        )
         return self.sign_tx(tx_data)
 
     def sign_tx(self, tx_data: TxParams):

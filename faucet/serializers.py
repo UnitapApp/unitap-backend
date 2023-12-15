@@ -97,6 +97,7 @@ class SmallChainSerializer(serializers.ModelSerializer):
             "tokentap_contract_address",
             "chain_type",
             "block_scan_address",
+            "is_one_time_claim",
         ]
 
 
@@ -129,6 +130,7 @@ class ChainSerializer(serializers.ModelSerializer):
             "is_testnet",
             "chain_type",
             "block_scan_address",
+            "is_one_time_claim",
         ]
 
     # def get_claimed(self, chain) -> int:

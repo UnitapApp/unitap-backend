@@ -1,7 +1,9 @@
+import datetime
 import json
 import logging
 import os
 
+import pytz
 import rest_framework.exceptions
 from django.conf import settings
 from django.contrib.postgres.expressions import ArraySubquery
@@ -81,6 +83,27 @@ class ListClaims(ListAPIView):
                 ClaimReceipt.REJECTED,
             ],
             datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
+        ).order_by("-pk")
+
+
+class ListOneTimeClaims(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ReceiptSerializer
+
+    def get_queryset(self):
+        user_profile = self.request.user.profile
+        return ClaimReceipt.objects.filter(
+            user_profile=user_profile,
+            chain__in=Chain.objects.filter(is_one_time_claim=True),
+            _status__in=[
+                ClaimReceipt.VERIFIED,
+                ClaimReceipt.PENDING,
+                ClaimReceipt.REJECTED,
+            ],
+            # 1 December 2023
+            datetime__lt=datetime.datetime(
+                2023, 12, 1, 0, 0, 0, 0, pytz.timezone("UTC")
+            ),  # also change in credit_strategy.py
         ).order_by("-pk")
 
 

@@ -1,8 +1,8 @@
 import time
 
 from brightIDfaucet.settings import DEPLOYMENT_ENV
+from core.models import Chain
 from core.utils import Web3Utils
-from faucet.models import Chain
 
 from .constants import (
     PRIZETAP_ERC20_ABI,
@@ -22,9 +22,16 @@ class PrizetapContractClient(Web3Utils):
         self.set_contract(self.raffle.contract, abi)
         self.set_account(self.raffle.chain.wallet.private_key)
 
-    def set_raffle_random_words(self, expiration_time, random_words, reqId, muon_sig, gateway_sig):
+    def set_raffle_random_words(
+        self, expiration_time, random_words, reqId, muon_sig, gateway_sig
+    ):
         func = self.contract.functions.setRaffleRandomNumbers(
-            self.raffle.raffleId, expiration_time, random_words, reqId, muon_sig, gateway_sig
+            self.raffle.raffleId,
+            expiration_time,
+            random_words,
+            reqId,
+            muon_sig,
+            gateway_sig,
         )
         return self.contract_txn(func)
 
@@ -52,7 +59,9 @@ class PrizetapContractClient(Web3Utils):
         return tx_hash
 
     def get_raffle_winners(self):
-        func = self.contract.functions.getWinners(self.raffle.raffleId, 1, self.raffle.winners_count)
+        func = self.contract.functions.getWinners(
+            self.raffle.raffleId, 1, self.raffle.winners_count
+        )
         return self.contract_call(func)
 
     def get_raffle_winners_count(self):
@@ -60,7 +69,9 @@ class PrizetapContractClient(Web3Utils):
         return self.contract_call(func)
 
     def __process_raffle(self, output):
-        raffles_abi = [item for item in self.contract.abi if item.get("name") == "raffles"]
+        raffles_abi = [
+            item for item in self.contract.abi if item.get("name") == "raffles"
+        ]
         assert len(raffles_abi) == 1, "The raffles abi not found"
         raffles_abi = raffles_abi[0]
         result = {}
@@ -72,7 +83,11 @@ class PrizetapContractClient(Web3Utils):
 class VRFClientContractClient(Web3Utils):
     def __init__(self, chain) -> None:
         super().__init__(chain.rpc_url_private, chain.poa)
-        address = VRF_CLIENT_POLYGON_ADDRESS if DEPLOYMENT_ENV == "main" else VRF_CLIENT_MUMBAI_ADDRESS
+        address = (
+            VRF_CLIENT_POLYGON_ADDRESS
+            if DEPLOYMENT_ENV == "main"
+            else VRF_CLIENT_MUMBAI_ADDRESS
+        )
         self.set_contract(address, VRF_CLIENT_ABI)
         self.set_account(chain.wallet.private_key)
 

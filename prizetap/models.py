@@ -4,9 +4,8 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import NetworkTypes, UserProfile
-from core.models import BigNumField, UserConstraint
+from core.models import BigNumField, Chain, UserConstraint
 from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
-from faucet.models import Chain
 
 from .constraints import HaveUnitapPass, NotHaveUnitapPass
 
@@ -33,7 +32,9 @@ class Raffle(models.Model):
         CLOSED = "CLOSED", _("Closed")
 
     class Meta:
-        models.UniqueConstraint(fields=["chain", "contract", "raffleId"], name="unique_raffle")
+        models.UniqueConstraint(
+            fields=["chain", "contract", "raffleId"], name="unique_raffle"
+        )
 
     name = models.CharField(max_length=256)
     description = models.TextField(null=True, blank=True)
@@ -41,7 +42,9 @@ class Raffle(models.Model):
     contract = models.CharField(max_length=256)
     raffleId = models.BigIntegerField(null=True, blank=True)
     creator_name = models.CharField(max_length=255, null=True, blank=True)
-    creator_profile = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="raffles")
+    creator_profile = models.ForeignKey(
+        UserProfile, on_delete=models.DO_NOTHING, related_name="raffles"
+    )
     creator_address = models.CharField(max_length=255)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
@@ -73,7 +76,9 @@ class Raffle(models.Model):
     max_multiplier = models.IntegerField(default=1, validators=[MinValueValidator(1)])
     winners_count = models.IntegerField(default=1, validators=[MinValueValidator(1)])
 
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
     rejection_reason = models.TextField(null=True, blank=True)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
     vrf_tx_hash = models.CharField(max_length=255, blank=True, null=True)
@@ -142,7 +147,9 @@ class RaffleEntry(models.Model):
         verbose_name_plural = "raffle entries"
 
     raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="entries")
-    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="raffle_entries")
+    user_profile = models.ForeignKey(
+        UserProfile, on_delete=models.CASCADE, related_name="raffle_entries"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
@@ -165,7 +172,9 @@ class RaffleEntry(models.Model):
 
 class LineaRaffleEntries(models.Model):
     wallet_address = models.CharField(max_length=255)
-    raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="linea_entries")
+    raffle = models.ForeignKey(
+        Raffle, on_delete=models.CASCADE, related_name="linea_entries"
+    )
     is_winner = models.BooleanField(blank=True, default=False)
     claim_tx = models.CharField(max_length=255, blank=True, null=True)
 
