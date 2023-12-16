@@ -66,6 +66,15 @@ class CheckUserExistsView(APIView):
         return Response({"exists": user_exists}, status=200)
 
 
+class LoginRegisterView(CreateAPIView):
+    def post(self, request, *args, **kwargs):
+        wallet_address = request.data.get("wallet_address", None)
+        signature = request.data.get("signature", None)
+        message = request.data.get("message", None)
+        if not wallet_address or not signature or not message:
+            return Response({"message": "Invalid request"}, status=403)
+
+
 class SponsorView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         address = request.data.get("address", None)
