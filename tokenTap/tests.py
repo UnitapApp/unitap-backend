@@ -6,8 +6,8 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase, override_settings
 
-from authentication.models import NetworkTypes, UserProfile, Wallet
-from core.models import Chain, WalletAccount
+from authentication.models import UserProfile, Wallet
+from core.models import Chain, NetworkTypes, WalletAccount
 from faucet.models import Chain as FaucetChain
 from faucet.models import ClaimReceipt, GlobalSettings, TransactionBatch
 from faucet.models import WalletAccount as FaucetWalletAccount

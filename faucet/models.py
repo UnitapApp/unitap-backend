@@ -12,9 +12,9 @@ from encrypted_model_fields.fields import EncryptedCharField
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
-from authentication.models import NetworkTypes, UserProfile
+from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-from core.models import BigNumField
+from core.models import BigNumField, NetworkTypes
 from faucet.faucet_manager.lnpay_client import LNPayClient
 
 

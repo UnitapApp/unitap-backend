@@ -2,8 +2,8 @@ from django.core.cache import cache
 from django.db import models
 from django.utils import timezone
 
-from authentication.models import NetworkTypes, UserProfile
-from core.models import Chain, UserConstraint
+from authentication.models import UserProfile
+from core.models import Chain, NetworkTypes, UserConstraint
 from faucet.constraints import OptimismHasClaimedGasInThisRound
 from faucet.models import ClaimReceipt
 

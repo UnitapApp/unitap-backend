@@ -1,9 +1,11 @@
-from django.db import models
 from django.contrib.auth.models import User
-from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
-from django.utils import timezone
-from django.core.validators import RegexValidator
 from django.core.cache import cache
+from django.core.validators import RegexValidator
+from django.db import models
+from django.utils import timezone
+
+from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
+from core.models import NetworkTypes
 
 
 class ProfileManager(models.Manager):
@@ -83,22 +85,6 @@ class UserProfile(models.Model):
         return count
 
 
-class NetworkTypes:
-    EVM = "EVM"
-    SOLANA = "Solana"
-    LIGHTNING = "Lightning"
-    NONEVM = "NONEVM"
-    NONEVMXDC = "NONEVMXDC"
-
-    networks = (
-        (EVM, "EVM"),
-        (SOLANA, "Solana"),
-        (LIGHTNING, "Lightning"),
-        (NONEVM, "NONEVM"),
-        (NONEVMXDC, "NONEVMXDC"),
-    )
-
-
 class Wallet(models.Model):
     wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
     user_profile = models.ForeignKey(
@@ -110,4 +96,7 @@ class Wallet(models.Model):
         unique_together = (("wallet_type", "user_profile"),)
 
     def __str__(self):
-        return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"
+        return (
+            f"{self.wallet_type} Wallet for profile with contextId "
+            f"{self.user_profile.initial_context_id}"
+        )

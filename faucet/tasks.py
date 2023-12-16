@@ -13,8 +13,8 @@ from django.db.models import F, Func
 from django.utils import timezone
 from sentry_sdk import capture_exception
 
-from authentication.models import NetworkTypes, Wallet
-from core.models import TokenPrice
+from authentication.models import Wallet
+from core.models import NetworkTypes, TokenPrice
 from core.utils import Web3Utils
 from tokenTap.models import TokenDistributionClaim
 
@@ -46,7 +46,9 @@ def memcache_lock(lock_id, oid, lock_expire=60):
 
 
 def has_pending_batch(chain):
-    return TransactionBatch.objects.filter(chain=chain, _status=ClaimReceipt.PENDING).exists()
+    return TransactionBatch.objects.filter(
+        chain=chain, _status=ClaimReceipt.PENDING
+    ).exists()
 
 
 def passive_address_is_not_none(address):
@@ -101,10 +103,16 @@ def process_batch(self, batch_pk):
                         manager = SolanaFundManager(batch.chain)
                     elif batch.chain.chain_type == NetworkTypes.LIGHTNING:
                         manager = LightningFundManager(batch.chain)
-                    elif batch.chain.chain_type == NetworkTypes.EVM or batch.chain.chain_type == NetworkTypes.NONEVMXDC:
+                    elif (
+                        batch.chain.chain_type == NetworkTypes.EVM
+                        or batch.chain.chain_type == NetworkTypes.NONEVMXDC
+                    ):
                         manager = EVMFundManager(batch.chain)
                     else:
-                        raise Exception(f"Invalid chain type to process batch, chain type {batch.chain.chain_type}")
+                        raise Exception(
+                            "Invalid chain type to process batch, chain type "
+                            f"{batch.chain.chain_type}"
+                        )
                     tx_hash = manager.multi_transfer(data)
                     batch.tx_hash = tx_hash
                     batch.save()
@@ -123,7 +131,9 @@ def process_batch(self, batch_pk):
 
 @shared_task
 def process_pending_batches():
-    batches = TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING, tx_hash=None)
+    batches = TransactionBatch.objects.filter(
+        _status=ClaimReceipt.PENDING, tx_hash=None
+    )
     for _batch in batches:
         process_batch.delay(_batch.pk)
 
@@ -148,10 +158,16 @@ def update_pending_batch_with_tx_hash(self, batch_pk):
                     manager = SolanaFundManager(batch.chain)
                 elif batch.chain.chain_type == NetworkTypes.LIGHTNING:
                     manager = LightningFundManager(batch.chain)
-                elif batch.chain.chain_type == NetworkTypes.EVM or batch.chain.chain_type == NetworkTypes.NONEVMXDC:
+                elif (
+                    batch.chain.chain_type == NetworkTypes.EVM
+                    or batch.chain.chain_type == NetworkTypes.NONEVMXDC
+                ):
                     manager = EVMFundManager(batch.chain)
                 else:
-                    raise Exception(f"Invalid chain type to update pending batch, chain type {batch.chain.chain_type}")
+                    raise Exception(
+                        "Invalid chain type to update pending batch, chain type "
+                        f"{batch.chain.chain_type}"
+                    )
 
                 if manager.is_tx_verified(batch.tx_hash):
                     batch._status = ClaimReceipt.VERIFIED
@@ -174,14 +190,17 @@ def reject_expired_pending_claims():
     ClaimReceipt.objects.filter(
         batch=None,
         _status=ClaimReceipt.PENDING,
-        datetime__lte=timezone.now() - timezone.timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION),
+        datetime__lte=timezone.now()
+        - timezone.timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION),
     ).update(_status=ClaimReceipt.REJECTED)
 
 
 @shared_task
 def update_pending_batches_with_tx_hash_status():
     batches_queryset = (
-        TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING).exclude(tx_hash=None).exclude(updating=True)
+        TransactionBatch.objects.filter(_status=ClaimReceipt.PENDING)
+        .exclude(tx_hash=None)
+        .exclude(updating=True)
     )
     for _batch in batches_queryset:
         update_pending_batch_with_tx_hash.delay(_batch.pk)
@@ -190,7 +209,9 @@ def update_pending_batches_with_tx_hash_status():
 @shared_task
 def process_chain_pending_claims(chain_id):  # locks chain
     with transaction.atomic():
-        chain = Chain.objects.select_for_update().get(pk=chain_id)  # lock based on chain
+        chain = Chain.objects.select_for_update().get(
+            pk=chain_id
+        )  # lock based on chain
 
         # all pending batches must be resolved before new transactions can be made
         if has_pending_batch(chain):
@@ -198,7 +219,9 @@ def process_chain_pending_claims(chain_id):  # locks chain
 
         # get all pending receipts for this chain
         # pending receipts are receipts that have not been batched yet
-        receipts = ClaimReceipt.objects.filter(chain=chain, _status=ClaimReceipt.PENDING, batch=None)
+        receipts = ClaimReceipt.objects.filter(
+            chain=chain, _status=ClaimReceipt.PENDING, batch=None
+        )
 
         if receipts.count() == 0:
             return
@@ -334,30 +357,39 @@ def update_tokens_price():
     update token.usd_price for all TokenPrice records in DB
     """
 
-    # TODO: we can make this function performance better by using aiohttp and asyncio or Threads
+    # TODO: we can make this function performance better
+    # by using aiohttp and asyncio or Threads
     tokens = TokenPrice.objects.exclude(price_url__isnull=True).exclude(price_url="")
-    res_gen = map(lambda token: (token, requests.get(token.price_url, timeout=5)), tokens)
+    res_gen = map(
+        lambda token: (token, requests.get(token.price_url, timeout=5)), tokens
+    )
 
     def parse_request(token: TokenPrice, request_res: requests.Response):
         try:
             request_res.raise_for_status()
             json_data = request_res.json()
             token.usd_price = json_data["data"]["rates"]["USD"]
-            # TODO: save all change when this function ended for all url done for better performance
+            # TODO: save all change when this function ended for
+            # all url done for better performance
             token.save()
         except requests.HTTPError as e:
             logging.exception(
-                f"requests for url: {request_res.url} can not fetched with status_code: {request_res.status_code}. \
+                f"requests for url: {request_res.url} can not fetched with "
+                f"status_code: {request_res.status_code}. \
                 {str(e)}"
             )
 
         except KeyError as e:
             logging.exception(
-                f"requests for url: {request_res.url} data do not have property keys for loading data. {str(e)}"
+                f"requests for url: {request_res.url} data do not have property "
+                f"keys for loading data. {str(e)}"
             )
 
         except Exception as e:
-            logging.exception(f"requests for url: {request_res.url} got error {type(e).__name__}. {str(e)}")
+            logging.exception(
+                f"requests for url: {request_res.url} got error "
+                f"{type(e).__name__}. {str(e)}"
+            )
 
     [parse_request(*res) for res in res_gen]
 
@@ -383,18 +415,27 @@ def process_donation_receipt(self, donation_receipt_pk):
             ).values_list("lower_address", flat=True):
                 donation_receipt.delete()
                 return
-            if Web3Utils.to_checksum_address(tx.get("to")) != evm_fund_manager.get_fund_manager_checksum_address():
+            if (
+                Web3Utils.to_checksum_address(tx.get("to"))
+                != evm_fund_manager.get_fund_manager_checksum_address()
+            ):
                 donation_receipt.delete()
                 return
             donation_receipt.value = str(evm_fund_manager.from_wei(tx.get("value")))
             if donation_receipt.chain.is_testnet is False:
                 try:
-                    token_price = TokenPrice.objects.get(symbol=donation_receipt.chain.symbol)
+                    token_price = TokenPrice.objects.get(
+                        symbol=donation_receipt.chain.symbol
+                    )
                     donation_receipt.total_price = str(
-                        decimal.Decimal(donation_receipt.value) * decimal.Decimal(token_price.usd_price)
+                        decimal.Decimal(donation_receipt.value)
+                        * decimal.Decimal(token_price.usd_price)
                     )
                 except TokenPrice.DoesNotExist:
-                    logging.error(f"TokenPrice for Chain: {donation_receipt.chain.chain_name} did not defined")
+                    logging.error(
+                        f"TokenPrice for Chain: {donation_receipt.chain.chain_name} "
+                        "did not defined"
+                    )
                     donation_receipt.status = ClaimReceipt.REJECTED
                     donation_receipt.save()
                     return
@@ -412,6 +453,8 @@ def update_donation_receipt_pending_status():
     """
     update status of pending donation receipt
     """
-    pending_donation_receipts = DonationReceipt.objects.filter(status=ClaimReceipt.PENDING)
+    pending_donation_receipts = DonationReceipt.objects.filter(
+        status=ClaimReceipt.PENDING
+    )
     for pending_donation_receipt in pending_donation_receipts:
         process_donation_receipt.delay(pending_donation_receipt.pk)

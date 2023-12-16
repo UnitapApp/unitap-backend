@@ -5,8 +5,6 @@ from enum import Enum
 
 from django.core.exceptions import ImproperlyConfigured
 
-from authentication.models import UserProfile
-
 
 class ConstraintParam(Enum):
     CHAIN = "chain"
@@ -25,7 +23,7 @@ class ConstraintVerification(ABC):
     _param_keys = []
     __response_text = ""
 
-    def __init__(self, user_profile: UserProfile) -> None:
+    def __init__(self, user_profile) -> None:
         self.user_profile = user_profile
         self._param_values = {}
 
@@ -61,7 +59,9 @@ class ConstraintVerification(ABC):
 
     @property
     def response(self) -> str:
-        return self.__response_text or f"{self.__class__.__name__} constraint is violated"
+        return (
+            self.__response_text or f"{self.__class__.__name__} constraint is violated"
+        )
 
     @response.setter
     def response(self, text: str):
@@ -81,7 +81,7 @@ class BrightIDAuraVerification(ConstraintVerification):
 class HasNFTVerification(ConstraintVerification):
     _param_keys = [ConstraintParam.CHAIN, ConstraintParam.ADDRESS, ConstraintParam.ID]
 
-    def __init__(self, user_profile: UserProfile, response: str = None) -> None:
+    def __init__(self, user_profile, response: str = None) -> None:
         super().__init__(user_profile, response)
 
     def is_observed(self, *args, **kwargs):
@@ -98,4 +98,6 @@ def get_constraint(constraint_label: str) -> ConstraintVerification:
         constraint_class = getattr(constraints_module, constraint_name)
         return constraint_class
     except (ModuleNotFoundError, AttributeError):
-        raise ImproperlyConfigured(f"Constraint '{constraint_name}' not found in any app.")
+        raise ImproperlyConfigured(
+            f"Constraint '{constraint_name}' not found in any app."
+        )
