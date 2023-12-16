@@ -7,13 +7,10 @@ from django.utils import timezone
 from rest_framework.test import APITestCase, override_settings
 
 from authentication.models import NetworkTypes, UserProfile, Wallet
-from faucet.models import (
-    Chain,
-    ClaimReceipt,
-    GlobalSettings,
-    TransactionBatch,
-    WalletAccount,
-)
+from core.models import Chain, WalletAccount
+from faucet.models import Chain as FaucetChain
+from faucet.models import ClaimReceipt, GlobalSettings, TransactionBatch
+from faucet.models import WalletAccount as FaucetWalletAccount
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
@@ -35,12 +32,9 @@ class TokenDistributionTestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.permission = Constraint.objects.create(
@@ -59,6 +53,7 @@ class TokenDistributionTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             # permissions=[self.permission],
         )
@@ -67,7 +62,9 @@ class TokenDistributionTestCase(APITestCase):
         self.assertEqual(TokenDistribution.objects.count(), 1)
         self.assertEqual(TokenDistribution.objects.first(), td)
         self.assertEqual(TokenDistribution.objects.first().permissions.count(), 1)
-        self.assertEqual(TokenDistribution.objects.first().permissions.first(), self.permission)
+        self.assertEqual(
+            TokenDistribution.objects.first().permissions.first(), self.permission
+        )
 
     def test_token_distribution_expiration(self):
         td1 = TokenDistribution.objects.create(
@@ -81,6 +78,7 @@ class TokenDistributionTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
         )
         self.assertFalse(td1.is_expired)
@@ -96,6 +94,7 @@ class TokenDistributionTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() - timezone.timedelta(days=7),
         )
         self.assertTrue(td2.is_expired)
@@ -117,12 +116,9 @@ class TokenDistributionClaimTestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.td = TokenDistribution.objects.create(
@@ -136,6 +132,7 @@ class TokenDistributionClaimTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
         )
 
@@ -164,18 +161,30 @@ class TokenDistributionAPITestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             explorer_url="https://blockscout.com/poa/xdai/",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.btc_chain = Chain.objects.create(
             chain_name="Bitcoin",
             wallet=WalletAccount.objects.create(
+                name="Bitcoin Wallet",
+                private_key=test_wallet_key,
+                network_type=NetworkTypes.LIGHTNING,
+            ),
+            rpc_url_private=test_rpc_url_private,
+            native_currency_name="bitcoin",
+            explorer_url="https://blockstream.info/testnet/",
+            symbol="BTC",
+            chain_id="1010",
+            chain_type=NetworkTypes.LIGHTNING,
+        )
+
+        self.faucet_btc_chain = FaucetChain.objects.create(
+            chain_name="Bitcoin",
+            wallet=FaucetWalletAccount.objects.create(
                 name="Bitcoin Wallet",
                 private_key=test_wallet_key,
                 network_type=NetworkTypes.LIGHTNING,
@@ -204,6 +213,7 @@ class TokenDistributionAPITestCase(APITestCase):
             token_address="0x83ff60e2f93f8edd0637ef669c69d5fb4f64ca8e",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=100,
             notes="Test Notes",
@@ -215,10 +225,14 @@ class TokenDistributionAPITestCase(APITestCase):
             name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
         )
         self.permission4 = Constraint.objects.create(
-            name="tokenTap.OncePerMonthVerification", title="Once per Month", type="TIME"
+            name="tokenTap.OncePerMonthVerification",
+            title="Once per Month",
+            type="TIME",
         )
         self.permission5 = Constraint.objects.create(
-            name="tokenTap.OnceInALifeTimeVerification", title="Once per Lifetime", type="TIME"
+            name="tokenTap.OnceInALifeTimeVerification",
+            title="Once per Lifetime",
+            type="TIME",
         )
 
         self.td.permissions.set([self.permission1, self.permission2, self.permission4])
@@ -245,8 +259,12 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]["name"], "Test Distribution")
-        self.assertEqual(response.data[0]["permissions"][0]["name"], "core.BrightIDMeetVerification")
-        self.assertEqual(response.data[0]["permissions"][1]["name"], "core.BrightIDAuraVerification")
+        self.assertEqual(
+            response.data[0]["permissions"][0]["name"], "core.BrightIDMeetVerification"
+        )
+        self.assertEqual(
+            response.data[0]["permissions"][1]["name"], "core.BrightIDAuraVerification"
+        )
 
     def test_token_distribution_not_claimable_max_reached(self):
         ltd = TokenDistribution.objects.create(
@@ -260,6 +278,7 @@ class TokenDistributionAPITestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=0,
             notes="Test Notes",
@@ -285,6 +304,7 @@ class TokenDistributionAPITestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() - timezone.timedelta(days=7),
             max_number_of_claims=10,
             notes="Test Notes",
@@ -339,7 +359,8 @@ class TokenDistributionAPITestCase(APITestCase):
 
     #     self.assertEqual(response.status_code, 403)
     #     # self.assertEqual(
-    #     #     response.data["detail"], "You have already claimed this token this month"
+    #     #     response.data["detail"],
+    #     #     "You have already claimed this token this month"
     #     # )
 
     @patch(
@@ -348,7 +369,9 @@ class TokenDistributionAPITestCase(APITestCase):
     )
     def test_token_distribution_not_claimable_false_permissions(self):
         self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(reverse("token-distribution-claim", kwargs={"pk": self.td.pk}))
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+        )
 
         self.assertEqual(response.status_code, 403)
 
@@ -372,7 +395,9 @@ class TokenDistributionAPITestCase(APITestCase):
     )
     def test_token_distribution_not_claimable_no_wallet(self):
         self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(reverse("token-distribution-claim", kwargs={"pk": self.td.pk}))
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+        )
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
@@ -391,7 +416,9 @@ class TokenDistributionAPITestCase(APITestCase):
             address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
         )
         self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(reverse("token-distribution-claim", kwargs={"pk": self.td.pk}))
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+        )
 
         self.assertEqual(response.status_code, 200)
 
@@ -414,7 +441,9 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
-        self.assertEqual(ClaimReceipt.objects.first().chain, self.btc_td.chain)
+        self.assertEqual(
+            ClaimReceipt.objects.first().chain.chain_id, self.btc_td.chain.chain_id
+        )
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
@@ -436,11 +465,13 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
         gas_tap_claim = ClaimReceipt.objects.first()
-        self.assertEqual(gas_tap_claim.chain, self.btc_td.chain)
+        self.assertEqual(gas_tap_claim.chain.chain_id, self.btc_td.chain.chain_id)
         self.assertEqual(gas_tap_claim._status, ClaimReceipt.PENDING)
 
         tb = TransactionBatch.objects.create(
-            chain=self.btc_td.chain, tx_hash="test hash", _status=ClaimReceipt.VERIFIED
+            chain=self.faucet_btc_chain,
+            tx_hash="test hash",
+            _status=ClaimReceipt.VERIFIED,
         )
 
         gas_tap_claim.batch = tb
@@ -454,7 +485,9 @@ class TokenDistributionAPITestCase(APITestCase):
         gas_tap_claim.refresh_from_db()
         self.assertEqual(gas_tap_claim._status, ClaimReceipt.PROCESSED_FOR_TOKENTAP)
         self.assertEqual(gas_tap_claim.tx_hash, "test hash")
-        self.assertEqual(TokenDistributionClaim.objects.first().status, ClaimReceipt.VERIFIED)
+        self.assertEqual(
+            TokenDistributionClaim.objects.first().status, ClaimReceipt.VERIFIED
+        )
         self.assertEqual(TokenDistributionClaim.objects.first().tx_hash, "test hash")
 
 
@@ -499,13 +532,10 @@ class TokenDistributionClaimAPITestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             explorer_url="https://blockscout.com/poa/xdai/",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.user_profile = UserProfile.objects.get_or_create("mamad")
@@ -521,6 +551,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
             token_address="0x83ff60e2f93f8edd0637ef669c69d5fb4f64ca8e",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=100,
             notes="Test Notes",
@@ -551,14 +582,18 @@ class TokenDistributionClaimAPITestCase(APITestCase):
     def test_token_distribution_claim_retrieve(self):
         self.client.force_authenticate(user=self.user_profile.user)
 
-        response = self.client.get(reverse("claim-retrieve", kwargs={"pk": self.tdc.pk}))
+        response = self.client.get(
+            reverse("claim-retrieve", kwargs={"pk": self.tdc.pk})
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["token_distribution"]["id"], self.td.pk)
 
     # Tests that the token distribution claim status is successfully updated
     def test_successful_update(self):
         claim = TokenDistributionClaim.objects.create(
-            token_distribution=TokenDistribution.objects.create(token_address="0x123", amount=100, chain=self.chain),
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
             user_profile=self.user_profile,
             status=ClaimReceipt.PENDING,
         )
@@ -574,7 +609,9 @@ class TokenDistributionClaimAPITestCase(APITestCase):
     # Tests that an error is raised when tx_hash is missing from request data
     def test_missing_tx_hash(self):
         claim = TokenDistributionClaim.objects.create(
-            token_distribution=TokenDistribution.objects.create(token_address="0x123", amount=100, chain=self.chain),
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
             user_profile=self.user_profile,
             status=ClaimReceipt.PENDING,
         )
@@ -585,11 +622,14 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
         assert "tx_hash is a required field" in str(response.content)
 
-    # Tests that an error is raised when the token distribution claim does not belong to the user profile
+    # Tests that an error is raised when the token distribution claim
+    # does not belong to the user profile
     def test_claim_not_belonging_to_user_profile(self):
         other_user_profile = UserProfile.objects.get_or_create("other")
         claim = TokenDistributionClaim.objects.create(
-            token_distribution=TokenDistribution.objects.create(token_address="0x123", amount=100, chain=self.chain),
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
             user_profile=other_user_profile,
             status=ClaimReceipt.PENDING,
         )
@@ -599,10 +639,13 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         response = self.client.post(url, data=data)
         assert response.status_code == 403
 
-    # Tests that an error is raised when the token distribution claim status is already verified
+    # Tests that an error is raised when the token distribution claim
+    # status is already verified
     def test_already_verified_claim(self):
         claim = TokenDistributionClaim.objects.create(
-            token_distribution=TokenDistribution.objects.create(token_address="0x123", amount=100, chain=self.chain),
+            token_distribution=TokenDistribution.objects.create(
+                token_address="0x123", amount=100, chain=self.chain
+            ),
             user_profile=self.user_profile,
             status=ClaimReceipt.VERIFIED,
         )
