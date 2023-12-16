@@ -62,7 +62,7 @@ class RoundCreditStrategy(SimpleCreditStrategy):
             chain=self.chain,
             user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
-            datetime__gte=self._get_first_day_of_the_month(),
+            datetime__gte=self.get_start_of_the_round(),
         )
 
     @staticmethod
