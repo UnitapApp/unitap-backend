@@ -1,23 +1,22 @@
-import time
 from django.db import IntegrityError
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
-from authentication.models import UserProfile, Wallet
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from drf_yasg.utils import swagger_auto_schema
+
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
-    verify_signature_eth_scheme,
     is_username_valid_and_available,
+    verify_signature_eth_scheme,
 )
-from drf_yasg import openapi
+from authentication.models import UserProfile, Wallet
 from authentication.serializers import (
-    UsernameRequestSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
+    UsernameRequestSerializer,
     WalletSerializer,
 )
 
@@ -25,6 +24,19 @@ from authentication.serializers import (
 class UserProfileCountView(ListAPIView):
     def get(self, request, *args, **kwargs):
         return Response({"count": UserProfile.user_count()}, status=200)
+
+
+class CheckUserExistsView(APIView):
+    def post(self, request, *args, **kwargs):
+        wallet_address = request.data.get("wallet_address", None)
+        if not wallet_address:
+            return Response({"message": "Invalid request"}, status=403)
+
+        user_exists = Wallet.objects.filter(
+            address=wallet_address, user_profile__isnull=False
+        ).exists()
+
+        return Response({"exists": user_exists}, status=200)
 
 
 class SponsorView(CreateAPIView):
@@ -75,14 +87,16 @@ class LoginView(APIView):
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
                 return Response(
                     {
-                        "message": "We are in the process of sponsoring you. Please try again in five minutes."
+                        "message": "We are in the process of sponsoring you.\
+                              Please try again in five minutes."
                     },
                     status=403,
                 )
             else:
                 return Response(
                     {
-                        "message": "We have requested to sponsor you on BrightID. Please try again in five minutes."
+                        "message": "We have requested to sponsor you on BrightID.\
+                              Please try again in five minutes."
                     },
                     status=409,
                 )
@@ -102,18 +116,21 @@ class LoginView(APIView):
 
         context_ids = []
 
-        if is_meet_verified == False and is_aura_verified == False:
+        if is_meet_verified == False and is_aura_verified == False:  # noqa: E712
             if meet_context_ids == 3:  # is not verified
                 context_ids = address
             elif aura_context_ids == 4:  # is not linked
                 return Response(
                     {
-                        "message": "Something went wrong with the linking process. please link BrightID with Unitap.\nIf the problem persists, clear your browser cache and try again."
+                        "message": "Something went wrong with the linking process. \
+                            please link BrightID with Unitap.\nIf the \
+                                problem persists, clear your browser cache\
+                                      and try again."
                     },
                     status=403,
                 )
 
-        elif is_meet_verified == True or is_aura_verified == True:
+        elif is_meet_verified == True or is_aura_verified == True:  # noqa: E712
             if meet_context_ids is not None:
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:
@@ -204,7 +221,8 @@ class CheckUsernameView(CreateAPIView):
                 schema=MessageResponseSerializer(),
             ),
             403: openapi.Response(
-                description="Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
+                description="Username must be more than 2 characters, contain at \
+                    least one letter, and only contain letters, digits and @/./+/-/_.",
                 schema=MessageResponseSerializer(),
             ),
         },
@@ -277,7 +295,8 @@ class SetWalletAddressView(CreateAPIView):
             except IntegrityError:
                 return Response(
                     {
-                        "message": f"{wallet_type} wallet address is not unique. use another address"
+                        "message": f"{wallet_type} wallet address is not unique. \
+                            use another address"
                     },
                     status=403,
                 )
