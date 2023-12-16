@@ -307,25 +307,33 @@ class CheckUsernameView(CreateAPIView):
 
 
 class WalletListCreateView(ListCreateAPIView):
-    queryset = Wallet.objects.all()
+    # queryset = Wallet.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = WalletSerializer
     filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
     filterset_fields = ["wallet_type"]
 
-    def perform_create(self, serializer):
-        address = serializer.validated_data.get("address")
-        wallet_type = serializer.validated_data.get("wallet_type")
-        message = self.request.data.get("message")
-        signature = self.request.data.get("signature")
+    def post(self, request, *args, **kwargs):
+        address = request.data.get("address")
+        wallet_type = request.data.get("wallet_type")
+        message = request.data.get("message")
+        signature = request.data.get("signature")
 
         if not address or not wallet_type or not message or not signature:
-            return Response({"message": "Invalid request"}, status=403)
+            return Response({"message": "Invalid request"}, status=400)
 
         if not verify_signature_eth_scheme(address, message, signature):
             return Response({"message": "Invalid signature"}, status=403)
 
-        serializer.save(user_profile=self.request.user.profile)
+        wallet = Wallet.objects.create(
+            user_profile=request.user.profile,
+            address=address,
+            wallet_type=wallet_type,
+        )
+        return Response(WalletSerializer(wallet).data, status=201)
+
+    def get_queryset(self):
+        return self.request.user.profile.wallets.all()
 
 
 class GetProfileView(RetrieveAPIView):
