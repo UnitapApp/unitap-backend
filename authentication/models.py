@@ -75,6 +75,9 @@ class UserProfile(models.Model):
             self.username = f"User{self.pk}"
             super().save(*args, **kwargs)
 
+    def __str__(self) -> str:
+        return self.username if self.username else f"User{self.pk}"
+
     @staticmethod
     def user_count():
         cached_user_count = cache.get("user_profile_count")
