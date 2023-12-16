@@ -104,9 +104,9 @@ class ListOneTimeClaims(ListAPIView):
                 ClaimReceipt.PENDING,
                 ClaimReceipt.REJECTED,
             ],
-            # Monday 12 December 2023
-            datetime__lt=datetime.datetime(
-                2023, 12, 12, 0, 0, 0, 0, pytz.timezone("UTC")
+            # 1 December 2023
+            datetime__gte=datetime.datetime(
+                2023, 12, 1, 0, 0, 0, 0, pytz.timezone("UTC")
             ),  # also change in credit_strategy.py
         ).order_by("-pk")
 
