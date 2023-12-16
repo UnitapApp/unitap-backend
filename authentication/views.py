@@ -27,6 +27,33 @@ class UserProfileCountView(ListAPIView):
 
 
 class CheckUserExistsView(APIView):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "wallet_address": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The wallet address of the user to check.",
+                )
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="User exists or not",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"exists": openapi.Schema(type=openapi.TYPE_BOOLEAN)},
+                ),
+            ),
+            403: openapi.Response(
+                description="Invalid request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         wallet_address = request.data.get("wallet_address", None)
         if not wallet_address:
