@@ -136,9 +136,9 @@ class OneTimeCreditStrategy(SimpleCreditStrategy):
             chain=self.chain,
             user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
-            # Monday 4 December 2023
+            # Monday 18 December 2023
             datetime__gte=datetime.datetime(
-                2023, 12, 4, 0, 0, 0, 0, pytz.timezone("UTC")
+                2023, 12, 18, 0, 0, 0, 0, pytz.timezone("UTC")
             ),  # also change in views.py
         )
 
