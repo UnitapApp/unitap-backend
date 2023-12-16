@@ -18,13 +18,14 @@ class ProfileManager(models.Manager):
             _profile.save()
             return _profile
 
+    def get_by_wallet_address(self, wallet_address):
+        try:
+            return super().get_queryset().get(wallets__address=wallet_address)
+        except UserProfile.DoesNotExist:
+            return None
 
-# class WalletManager(models.Manager):
-#     def get_primary_wallet(self):
-#         try:
-#             self.get(primary=True, wallet_type="EVM")
-#         except Wallet.DoesNotExist:
-#             return None
+    def create_with_wallet_address(self, wallet_address):
+        pass
 
 
 class UserProfile(models.Model):
@@ -67,14 +68,15 @@ class UserProfile(models.Model):
 
     @property
     def is_aura_verified(self):
-        (
-            is_verified,
-            context_ids,
-        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
-            self.initial_context_id, "Aura"
-        )
+        # (
+        #     is_verified,
+        #     context_ids,
+        # ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
+        #     self.initial_context_id, "Aura"
+        # )
 
-        return is_verified
+        # return is_verified
+        return False
 
     def owns_wallet(self, wallet_address):
         return self.wallets.filter(address=wallet_address).exists()

@@ -81,6 +81,15 @@ class LoginRegisterView(CreateAPIView):
         if not wallet_address or not signature or not message:
             return Response({"message": "Invalid request"}, status=403)
 
+        if not verify_signature_eth_scheme(wallet_address, message, signature):
+            return Response({"message": "Invalid signature"}, status=403)
+
+        try:
+            user_profile = UserProfile.objects.get_by_wallet_address(wallet_address)
+            return Response(ProfileSerializer(user_profile).data, status=200)
+        except UserProfile.DoesNotExist:
+            pass
+
 
 class SponsorView(CreateAPIView):
     def post(self, request, *args, **kwargs):
