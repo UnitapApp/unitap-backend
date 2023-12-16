@@ -220,7 +220,8 @@ class RaffleAPITestCase(RaffleTestCase):
     def test_raffle_enrollment_validation(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk})
+            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
         self.assertEqual(response.status_code, 403)
 
@@ -529,7 +530,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
     def test_raffle_enrollment(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk})
+            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.raffle.entries.count(), 1)
@@ -547,7 +549,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         is_claimable_mock.return_value = False
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk})
+            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
         self.assertEqual(response.status_code, 403)
 
@@ -679,7 +682,8 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
     def test_get_raffle_entry(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk})
+            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
         first_entry = self.raffle.entries.first()
         response = self.client.get(

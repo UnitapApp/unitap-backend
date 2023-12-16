@@ -113,7 +113,7 @@ def get_raffle_winners(self):
                 winner_addresses = raffle_client.get_raffle_winners()
                 for addr in winner_addresses:
                     if addr and addr != "0x0000000000000000000000000000000000000000":
-                        winner_entry = raffle.entries.filter(user_profile__wallets__address__iexact=addr).get()
+                        winner_entry = raffle.entries.filter(user_wallet_address__iexact=addr).get()
                         winner_entry.is_winner = True
                         winner_entry.save()
                         raffle.status = Raffle.Status.CLOSED

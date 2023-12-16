@@ -13,8 +13,8 @@ from django.db.models import F, Func
 from django.utils import timezone
 from sentry_sdk import capture_exception
 
-from authentication.models import Wallet
-from core.models import NetworkTypes, TokenPrice
+from authentication.models import NetworkTypes
+from core.models import TokenPrice
 from core.utils import Web3Utils
 from tokenTap.models import TokenDistributionClaim
 
@@ -85,12 +85,7 @@ def process_batch(self, batch_pk):
 
                 data = [
                     {
-                        "to": receipt.passive_address
-                        if receipt.passive_address is not None
-                        else Wallet.objects.get(
-                            user_profile=receipt.user_profile,
-                            wallet_type=batch.chain.chain_type,
-                        ).address,
+                        "to": receipt.to_address,
                         "amount": int(receipt.amount),
                     }
                     for receipt in batch.claims.all()

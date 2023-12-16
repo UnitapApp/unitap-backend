@@ -158,7 +158,7 @@ class ClaimReceipt(models.Model):
 
     _status = models.CharField(max_length=30, choices=states, default=PENDING)
 
-    passive_address = models.CharField(max_length=512, null=True, blank=True)
+    to_address = models.CharField(max_length=512, null=True, blank=True)
 
     amount = BigNumField()
     datetime = models.DateTimeField()

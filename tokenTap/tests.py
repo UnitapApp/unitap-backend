@@ -287,6 +287,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": ltd.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
@@ -313,6 +314,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": ltd.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
@@ -331,37 +333,10 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
-        # self.assertEqual(
-        #     response.data["detail"], "You have already claimed this token this week"
-        # )
-
-    # @patch(
-    #     "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-    #     lambda a, b, c: (True, None),
-    # )
-    # def test_token_distribution_not_claimable_already_claimed_month(self):
-    #     tdc = TokenDistributionClaim.objects.create(
-    #         user_profile=self.user_profile,
-    #         token_distribution=self.td,
-    #         # Claimed 2 weeks ago
-    #         created_at=WeeklyCreditStrategy.get_first_day_of_the_month(),
-    #     )
-    #     tdc.created_at = WeeklyCreditStrategy.get_first_day_of_the_month()
-    #     tdc.save()
-
-    #     self.client.force_authenticate(user=self.user_profile.user)
-    #     response = self.client.post(
-    #         reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
-    #     )
-
-    #     self.assertEqual(response.status_code, 403)
-    #     # self.assertEqual(
-    #     #     response.data["detail"],
-    #     #     "You have already claimed this token this month"
-    #     # )
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
@@ -370,7 +345,8 @@ class TokenDistributionAPITestCase(APITestCase):
     def test_token_distribution_not_claimable_false_permissions(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
@@ -382,12 +358,10 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
-        # self.assertEqual(
-        #     response.data["detail"], "You have reached your weekly claim limit"
-        # )
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
@@ -396,13 +370,14 @@ class TokenDistributionAPITestCase(APITestCase):
     def test_token_distribution_not_claimable_no_wallet(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
             response.data["detail"],
-            "You have not connected an EVM wallet to your account",
+            "This wallet is not registered for this user",
         )
 
     @patch(
@@ -417,7 +392,8 @@ class TokenDistributionAPITestCase(APITestCase):
         )
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -435,7 +411,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
-            data={"lightning_invoice": "test"},
+            data={"user_wallet_address": "test"},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -458,7 +434,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
-            data={"lightning_invoice": "test"},
+            data={"user_wallet_address": "test"},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -509,7 +485,7 @@ class HelpersTestCase(APITestCase):
         )
 
         hash = hash_message(
-            user="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+            address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
             token="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
             amount=100000000000000000,
             nonce=create_uint32_random_nonce(),
@@ -622,8 +598,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
         assert "tx_hash is a required field" in str(response.content)
 
-    # Tests that an error is raised when the token distribution claim
-    # does not belong to the user profile
+    # Tests that an error is raised when the td claim does not belong to the user
     def test_claim_not_belonging_to_user_profile(self):
         other_user_profile = UserProfile.objects.get_or_create("other")
         claim = TokenDistributionClaim.objects.create(
@@ -639,8 +614,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         response = self.client.post(url, data=data)
         assert response.status_code == 403
 
-    # Tests that an error is raised when the token distribution claim
-    # status is already verified
+    # Tests that an error is raised when the tdclaim status is already verified
     def test_already_verified_claim(self):
         claim = TokenDistributionClaim.objects.create(
             token_distribution=TokenDistribution.objects.create(

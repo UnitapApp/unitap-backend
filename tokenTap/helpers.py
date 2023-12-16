@@ -20,11 +20,11 @@ def create_uint32_random_nonce():
     return nonce
 
 
-def hash_message(user, token, amount, nonce):
+def hash_message(address, token, amount, nonce):
     message_hash = Web3().solidity_keccak(
         ["address", "address", "uint256", "uint32"],
         [
-            Web3.to_checksum_address(user),
+            Web3.to_checksum_address(address),
             Web3.to_checksum_address(token),
             amount,
             nonce,
@@ -44,7 +44,7 @@ def sign_hashed_message(hashed_message):
     return signed_message.signature.hex()
 
 
-def has_weekly_credit_left(user_profile):
+def has_credit_left(user_profile):
     return (
         TokenDistributionClaim.objects.filter(
             user_profile=user_profile,

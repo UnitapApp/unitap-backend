@@ -1,8 +1,14 @@
 from django.db import IntegrityError
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.generics import (
+    CreateAPIView,
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveAPIView,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +25,7 @@ from authentication.serializers import (
     UsernameRequestSerializer,
     WalletSerializer,
 )
+from core.filters import IsOwnerFilterBackend
 
 
 class UserProfileCountView(ListAPIView):
@@ -123,21 +130,21 @@ class LoginView(APIView):
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
                 return Response(
                     {
-                        "message": "We are in the process of sponsoring you.\
-                              Please try again in five minutes."
+                        "message": "We are in the process of sponsoring you. \
+                            Please try again in five minutes."
                     },
                     status=403,
                 )
             else:
                 return Response(
                     {
-                        "message": "We have requested to sponsor you on BrightID.\
-                              Please try again in five minutes."
+                        "message": "We have requested to sponsor you on BrightID\
+                            . Please try again in five minutes."
                     },
                     status=409,
                 )
 
-        verified_signature = verify_signature_eth_scheme(address, signature)
+        verified_signature = verify_signature_eth_scheme(address, address, signature)
         if not verified_signature:
             return Response({"message": "Invalid signature"}, status=403)
 
@@ -159,9 +166,9 @@ class LoginView(APIView):
                 return Response(
                     {
                         "message": "Something went wrong with the linking process. \
-                            please link BrightID with Unitap.\nIf the \
-                                problem persists, clear your browser cache\
-                                      and try again."
+                            please link BrightID with Unitap.\n"
+                        "If the problem persists, clear your browser cache \
+                            and try again."
                     },
                     status=403,
                 )
@@ -257,8 +264,8 @@ class CheckUsernameView(CreateAPIView):
                 schema=MessageResponseSerializer(),
             ),
             403: openapi.Response(
-                description="Username must be more than 2 characters, contain at \
-                    least one letter, and only contain letters, digits and @/./+/-/_.",
+                description="Username must be more than 2 characters, contain at least"
+                " one letter, and only contain letters, digits and @/./+/-/_.",
                 schema=MessageResponseSerializer(),
             ),
         },
@@ -299,120 +306,31 @@ class CheckUsernameView(CreateAPIView):
             return Response(request_serializer.errors, status=400)
 
 
-class SetWalletAddressView(CreateAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        address = request.data.get("address", None)
-        wallet_type = request.data.get("wallet_type", None)
-        if not address or not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        user_profile = request.user.profile
-
-        try:
-            w = Wallet.objects.get(user_profile=user_profile, wallet_type=wallet_type)
-            w.address = address
-            w.save()
-
-            return Response(
-                {"message": f"{wallet_type} wallet address updated"}, status=200
-            )
-
-        except Wallet.DoesNotExist:
-            try:
-                Wallet.objects.create(
-                    user_profile=user_profile, wallet_type=wallet_type, address=address
-                )
-                return Response(
-                    {"message": f"{wallet_type} wallet address set"}, status=200
-                )
-            # catch unique constraint error
-            except IntegrityError:
-                return Response(
-                    {
-                        "message": f"{wallet_type} wallet address is not unique. \
-                            use another address"
-                    },
-                    status=403,
-                )
-
-
-class GetWalletAddressView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type", None)
-        if not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        # get user profile
-        user_profile = request.user.profile
-
-        try:
-            # check if wallet already exists
-            wallet = Wallet.objects.get(
-                user_profile=user_profile, wallet_type=wallet_type
-            )
-            return Response({"address": wallet.address}, status=200)
-
-        except Wallet.DoesNotExist:
-            return Response(
-                {"message": f"{wallet_type} wallet address not set"}, status=403
-            )
-
-
-class DeleteWalletAddressView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type", None)
-        if not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        # get user profile
-        user_profile = request.user.profile
-
-        try:
-            # check if wallet already exists
-            wallet = Wallet.objects.get(
-                user_profile=user_profile, wallet_type=wallet_type
-            )
-            wallet.delete()
-            return Response(
-                {"message": f"{wallet_type} wallet address deleted"}, status=200
-            )
-
-        except Wallet.DoesNotExist:
-            return Response(
-                {"message": f"{wallet_type} wallet address not set"}, status=403
-            )
-
-
-class GetWalletsView(ListAPIView):
+class WalletListCreateView(ListCreateAPIView):
+    queryset = Wallet.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = WalletSerializer
+    filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
+    filterset_fields = ["wallet_type"]
 
-    def get_queryset(self):
-        return Wallet.objects.filter(user_profile=self.request.user.profile)
+    def perform_create(self, serializer):
+        address = serializer.validated_data.get("address")
+        wallet_type = serializer.validated_data.get("wallet_type")
+        message = self.request.data.get("message")
+        signature = self.request.data.get("signature")
+
+        if not address or not wallet_type or not message or not signature:
+            return Response({"message": "Invalid request"}, status=403)
+
+        if not verify_signature_eth_scheme(address, message, signature):
+            return Response({"message": "Invalid signature"}, status=403)
+
+        serializer.save(user_profile=self.request.user.profile)
 
 
 class GetProfileView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
-
-    # def get(self, request, *args, **kwargs):
-    #     user = request.user
-
-    #     token, bol = Token.objects.get_or_create(user=user)
-    #     print("token", token)
-
-    #     # return Response({"token": token.key}, status=200)
-    #     # return token and profile using profile serializer for profile
-    #     return Response(
-    #         {"token": token.key, "profile": ProfileSerializer(user.profile).data},
-    #         status=200,
-    #     )
 
     def get_object(self):
         return self.request.user.profile
