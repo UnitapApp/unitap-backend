@@ -1,9 +1,11 @@
-from django.db import models
 from django.contrib.auth.models import User
-from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
-from django.utils import timezone
-from django.core.validators import RegexValidator
 from django.core.cache import cache
+from django.core.validators import RegexValidator
+from django.db import models
+from django.utils import timezone
+
+from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
+from core.models import NetworkTypes
 
 
 class ProfileManager(models.Manager):
@@ -73,6 +75,9 @@ class UserProfile(models.Model):
             self.username = f"User{self.pk}"
             super().save(*args, **kwargs)
 
+    def __str__(self) -> str:
+        return self.username if self.username else f"User{self.pk}"
+
     @staticmethod
     def user_count():
         cached_user_count = cache.get("user_profile_count")
@@ -81,22 +86,6 @@ class UserProfile(models.Model):
         count = UserProfile.objects.count()
         cache.set("user_profile_count", count, 300)
         return count
-
-
-class NetworkTypes:
-    EVM = "EVM"
-    SOLANA = "Solana"
-    LIGHTNING = "Lightning"
-    NONEVM = "NONEVM"
-    NONEVMXDC = "NONEVMXDC"
-
-    networks = (
-        (EVM, "EVM"),
-        (SOLANA, "Solana"),
-        (LIGHTNING, "Lightning"),
-        (NONEVM, "NONEVM"),
-        (NONEVMXDC, "NONEVMXDC"),
-    )
 
 
 class Wallet(models.Model):
@@ -110,4 +99,7 @@ class Wallet(models.Model):
         unique_together = (("wallet_type", "user_profile"),)
 
     def __str__(self):
-        return f"{self.wallet_type} Wallet for profile with contextId {self.user_profile.initial_context_id}"
+        return (
+            f"{self.wallet_type} Wallet for profile with contextId "
+            f"{self.user_profile.initial_context_id}"
+        )

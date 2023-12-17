@@ -3,8 +3,7 @@ import random
 from eth_account.messages import encode_defunct
 from web3 import Account, Web3
 
-from authentication.models import NetworkTypes
-from core.models import WalletAccount
+from core.models import NetworkTypes, WalletAccount
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
 from faucet.models import GlobalSettings
 

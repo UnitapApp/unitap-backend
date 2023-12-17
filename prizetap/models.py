@@ -3,8 +3,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from authentication.models import NetworkTypes, UserProfile
-from core.models import BigNumField, Chain, UserConstraint
+from authentication.models import UserProfile
+from core.models import BigNumField, Chain, NetworkTypes, UserConstraint
 from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
 
 from .constraints import HaveUnitapPass, NotHaveUnitapPass

@@ -58,7 +58,11 @@ class LastClaimView(RetrieveAPIView):
     def get_object(self):
         user_profile = self.request.user.profile
         try:
-            return ClaimReceipt.objects.filter(user_profile=user_profile).order_by("pk").last()
+            return (
+                ClaimReceipt.objects.filter(user_profile=user_profile)
+                .order_by("pk")
+                .last()
+            )
         except ClaimReceipt.DoesNotExist:
             raise Http404("Claim Receipt for this user does not exist")
 
@@ -100,9 +104,9 @@ class ListOneTimeClaims(ListAPIView):
                 ClaimReceipt.PENDING,
                 ClaimReceipt.REJECTED,
             ],
-            # 1 December 2023
-            datetime__lt=datetime.datetime(
-                2023, 12, 1, 0, 0, 0, 0, pytz.timezone("UTC")
+            # 18 December 2023
+            datetime__gte=datetime.datetime(
+                2023, 12, 18, 0, 0, 0, 0, pytz.timezone("UTC")
             ),  # also change in credit_strategy.py
         ).order_by("-pk")
 
@@ -118,7 +122,11 @@ class GetTotalRoundClaimsRemainingView(RetrieveAPIView):
         user_profile = request.user.profile
         gs = GlobalSettings.objects.first()
         if gs is not None:
-            result = max(gs.gastap_round_claim_limit - LimitedChainClaimManager.get_total_round_claims(user_profile), 0)
+            result = max(
+                gs.gastap_round_claim_limit
+                - LimitedChainClaimManager.get_total_round_claims(user_profile),
+                0,
+            )
             return Response({"total_round_claims_remaining": result}, status=200)
         else:
             raise Http404("Global Settings Not Found")
@@ -136,7 +144,9 @@ class ChainListView(ListAPIView):
     def get_queryset(self):
         queryset = Chain.objects.filter(is_active=True, show_in_gastap=True)
 
-        sorted_queryset = sorted(queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True)
+        sorted_queryset = sorted(
+            queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
+        )
         return sorted_queryset
 
 
@@ -184,7 +194,9 @@ class ClaimMaxView(APIView):
         chain = self.get_chain()
 
         try:
-            Wallet.objects.get(user_profile=self.get_user(), wallet_type=chain.chain_type)
+            Wallet.objects.get(
+                user_profile=self.get_user(), wallet_type=chain.chain_type
+            )
             return True, None
         except Exception as e:
             logging.error("wallet address not set", e)
@@ -269,7 +281,10 @@ class UserLeaderboardView(RetrieveAPIView):
             .annotate(sum_total_price=Sum("total_price_float"))
         )
         user_obj = get_object_or_404(queryset, user_profile=self.get_user().pk)
-        user_rank = queryset.filter(sum_total_price__gt=user_obj.get("sum_total_price")).count() + 1
+        user_rank = (
+            queryset.filter(sum_total_price__gt=user_obj.get("sum_total_price")).count()
+            + 1
+        )
         user_obj["rank"] = user_rank
         user_obj["username"] = self.get_user().username
         user_obj["wallet"] = self.get_user().wallets.all()[0].address
@@ -305,10 +320,18 @@ class LeaderboardView(ListAPIView):
             .values_list("chain", flat=True)
             .distinct()
         )
-        queryset = donation_receipt.annotate(interacted_chains=ArraySubquery(subquery_interacted_chains))
-        subquery_username = UserProfile.objects.filter(pk=OuterRef("user_profile")).values("username")
-        subquery_wallet = Wallet.objects.filter(user_profile=OuterRef("user_profile")).values("address")
-        queryset = queryset.annotate(username=Subquery(subquery_username), wallet=Subquery(subquery_wallet))
+        queryset = donation_receipt.annotate(
+            interacted_chains=ArraySubquery(subquery_interacted_chains)
+        )
+        subquery_username = UserProfile.objects.filter(
+            pk=OuterRef("user_profile")
+        ).values("username")
+        subquery_wallet = Wallet.objects.filter(
+            user_profile=OuterRef("user_profile")
+        ).values("address")
+        queryset = queryset.annotate(
+            username=Subquery(subquery_username), wallet=Subquery(subquery_wallet)
+        )
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -329,7 +352,8 @@ def artwork_view(request, token_id):
 
     response = {
         "name": "Unitap Pass",
-        "description": "Unitap is an onboarding tool for networks and communities and a gateway for users to web3."
+        "description": "Unitap is an onboarding tool for networks \
+            and communities and a gateway for users to web3."
         " https://unitap.app . Unitap Pass is a VIP pass for Unitap. Holders"
         " will enjoy various benefits as Unitap grows.",
         "image": artwork_video_url,
