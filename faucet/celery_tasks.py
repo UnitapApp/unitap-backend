@@ -226,7 +226,7 @@ class CeleryTasks:
                 try:
                     request_res.raise_for_status()
                     json_data = request_res.json()
-                    token.usd_price = json_data["data"]["rates"]["USD"]
+                    token.usd_price = str(json_data.json()[0].get("current_price"))
                     token.save()
                 except requests.HTTPError as e:
                     logging.exception(
