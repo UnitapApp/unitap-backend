@@ -18,7 +18,7 @@ from authentication.serializers import (
     UsernameRequestSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
-    WalletSerializer,
+    WalletSerializer, UserHistoryCountSerializer,
 )
 
 
@@ -340,6 +340,21 @@ class GetWalletsView(ListAPIView):
 
     def get_queryset(self):
         return Wallet.objects.filter(user_profile=self.request.user.profile)
+
+
+class UserHistoryCountView(RetrieveAPIView):
+    permissions = [IsAuthenticated]
+    serializer_class = UserHistoryCountSerializer
+
+    def get_object(self):
+        from faucet.models import ClaimReceipt
+        user_profile = self.request.user.profile
+        data = {
+            'gas_claim': user_profile.claims.filter(_status=ClaimReceipt.VERIFIED).count(),
+            'token_claim': user_profile.tokentap_claims.filter(status=ClaimReceipt.VERIFIED).count(),
+            'raffle_win': user_profile.raffle_entries.count()
+        }
+        return data
 
 
 class GetProfileView(RetrieveAPIView):
