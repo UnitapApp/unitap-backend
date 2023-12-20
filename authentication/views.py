@@ -75,6 +75,42 @@ class CheckUserExistsView(APIView):
 
 
 class LoginRegisterView(CreateAPIView):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "wallet_address": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The wallet address of the user to login/register.",
+                ),
+                "signature": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The signature of the wallet address.",
+                ),
+                "message": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The message signed by the wallet address.",
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="User profile exists and is returned",
+                schema=ProfileSerializer(),
+            ),
+            201: openapi.Response(
+                description="User profile created and returned",
+                schema=ProfileSerializer(),
+            ),
+            403: openapi.Response(
+                description="Invalid request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         wallet_address = request.data.get("wallet_address", None)
         signature = request.data.get("signature", None)
@@ -89,7 +125,10 @@ class LoginRegisterView(CreateAPIView):
             user_profile = UserProfile.objects.get_by_wallet_address(wallet_address)
             return Response(ProfileSerializer(user_profile).data, status=200)
         except UserProfile.DoesNotExist:
-            pass
+            user_profile = UserProfile.objects.create_with_wallet_address(
+                wallet_address
+            )
+            return Response(ProfileSerializer(user_profile).data, status=201)
 
 
 class SponsorView(CreateAPIView):

@@ -16,6 +16,7 @@ app_name = "AUTHENTICATION"
 
 urlpatterns = [
     path("user/login/", LoginView.as_view(), name="login-user"),
+    path("user/wallet-login/", LoginView.as_view(), name="wallet-login"),
     path("user/count/", UserProfileCountView.as_view(), name="user-count"),
     path(
         "user/set-username/",

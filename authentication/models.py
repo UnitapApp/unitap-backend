@@ -25,12 +25,23 @@ class ProfileManager(models.Manager):
             return None
 
     def create_with_wallet_address(self, wallet_address):
-        pass
+        _user = User.objects.create_user(username="UNT" + wallet_address)
+        _profile = UserProfile(user=_user)
+        _profile.save()
+        _wallet = Wallet(
+            wallet_type=NetworkTypes.EVM,
+            user_profile=_profile,
+            address=wallet_address,
+        )
+        _wallet.save()
+        return _profile
 
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="profile")
-    initial_context_id = models.CharField(max_length=512, unique=True)
+    initial_context_id = models.CharField(
+        max_length=512, unique=True, null=True, blank=True
+    )
 
     username = models.CharField(
         max_length=150,
@@ -115,3 +126,17 @@ class Wallet(models.Model):
     def __str__(self):
         return f"{self.wallet_type} Wallet for profile with contextId \
         {self.user_profile.initial_context_id}"
+
+
+class BaseThirdPartyConnection(models.Model):
+    user_profile = models.ForeignKey(
+        UserProfile, on_delete=models.PROTECT, related_name="%(class)s"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class BrightIDConnection(BaseThirdPartyConnection):
+    context_id = models.CharField(max_length=512, unique=True)

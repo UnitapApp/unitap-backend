@@ -1,7 +1,9 @@
+import logging
 from unittest.mock import patch
 
 from django.urls import reverse
 from django.utils import timezone
+from eth_account.messages import encode_defunct
 from rest_framework.authtoken.models import Token
 from rest_framework.status import (
     HTTP_200_OK,
@@ -10,6 +12,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from rest_framework.test import APITestCase
+from web3 import Account, Web3
 
 from authentication.models import UserProfile, Wallet
 from faucet.models import ClaimReceipt
@@ -344,3 +347,41 @@ class TestCheckUserExistsView(APITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["exists"], False)
+
+
+class TestLoginRegistrationView(APITestCase):
+    def setUp(self) -> None:
+        self.user_profile = create_new_user()
+        self.endpoint = reverse("AUTHENTICATION:wallet-login")
+        Wallet.objects.create(
+            user_profile=self.user_profile, wallet_type="EVM", address=address
+        )
+        self.private_key_test = (
+            "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
+        )
+        self.public_key_test = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
+
+    def test_login_with_valid_address(self):
+        message_hash = Web3().solidity_keccak(
+            ["uint256"],
+            [5678],
+        )
+
+        hashed_message = encode_defunct(hexstr=message_hash.hex())
+        account = Account.from_key(self.private_key_test)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "wallet_address": self.public_key_test,
+                "message": 5678,
+                "signature": signature,
+            },
+        )
+
+        logging.error(response.data)
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["exists"], True)
