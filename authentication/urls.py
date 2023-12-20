@@ -7,6 +7,7 @@ from authentication.views import (
     LoginView,
     SetUsernameView,
     SponsorView,
+    UserHistoryCountView,
     UserProfileCountView,
     WalletListCreateView,
 )
@@ -38,4 +39,7 @@ urlpatterns = [
     ),
     path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
     path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
+    path(
+        "user/history-count/", UserHistoryCountView.as_view(), name="user-history-count"
+    ),
 ]

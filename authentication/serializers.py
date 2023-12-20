@@ -64,3 +64,9 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
         if not user_profile.username:
             return f"User{user_profile.pk}"
         return user_profile.username
+
+
+class UserHistoryCountSerializer(serializers.Serializer):
+    gas_claim = serializers.IntegerField()
+    token_claim = serializers.IntegerField()
+    raffle_win = serializers.IntegerField()
