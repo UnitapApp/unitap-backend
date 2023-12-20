@@ -30,7 +30,7 @@ from .validators import (
 
 
 class RaffleListView(ListAPIView):
-    valid_time = timezone.now() - timezone.timedelta(days=30)
+    valid_time = timezone.now() - timezone.timedelta(days=360)
     queryset = (
         Raffle.objects.filter(is_active=True)
         .filter(deadline__gte=valid_time)
