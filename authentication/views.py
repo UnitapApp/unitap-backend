@@ -67,9 +67,9 @@ class CheckUserExistsView(APIView):
         if not wallet_address:
             return Response({"message": "Invalid request"}, status=403)
 
-        user_exists = Wallet.objects.filter(
-            address=wallet_address, user_profile__isnull=False
-        ).exists()
+        user_exists = (
+            UserProfile.objects.get_by_wallet_address(wallet_address) is not None
+        )
 
         return Response({"exists": user_exists}, status=200)
 
