@@ -95,15 +95,18 @@ class LoginRegisterView(CreateAPIView):
         ),
         responses={
             200: openapi.Response(
-                description="User profile exists and is returned",
+                description="User profile is returned",
                 schema=ProfileSerializer(),
             ),
-            201: openapi.Response(
-                description="User profile created and returned",
-                schema=ProfileSerializer(),
+            400: openapi.Response(
+                description="Invalid request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
             ),
             403: openapi.Response(
-                description="Invalid request",
+                description="Invalid signature",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
@@ -116,19 +119,16 @@ class LoginRegisterView(CreateAPIView):
         signature = request.data.get("signature", None)
         message = request.data.get("message", None)
         if not wallet_address or not signature or not message:
-            return Response({"message": "Invalid request"}, status=403)
+            return Response({"message": "Invalid request"}, status=400)
 
         if not verify_signature_eth_scheme(wallet_address, message, signature):
             return Response({"message": "Invalid signature"}, status=403)
 
-        try:
-            user_profile = UserProfile.objects.get_by_wallet_address(wallet_address)
-            return Response(ProfileSerializer(user_profile).data, status=200)
-        except UserProfile.DoesNotExist:
-            user_profile = UserProfile.objects.create_with_wallet_address(
-                wallet_address
-            )
-            return Response(ProfileSerializer(user_profile).data, status=201)
+        user_profile = UserProfile.objects.get_or_create_with_wallet_address(
+            wallet_address
+        )
+
+        return Response(ProfileSerializer(user_profile).data, status=200)
 
 
 class SponsorView(CreateAPIView):

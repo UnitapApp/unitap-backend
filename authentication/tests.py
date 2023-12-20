@@ -1,4 +1,3 @@
-import logging
 from unittest.mock import patch
 
 from django.urls import reverse
@@ -12,7 +11,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from rest_framework.test import APITestCase
-from web3 import Account, Web3
+from web3 import Account
 
 from authentication.models import UserProfile, Wallet
 from faucet.models import ClaimReceipt
@@ -38,7 +37,7 @@ test_rpc_url = "http://127.0.0.1:7545"
     lambda a, b: True,
 )
 def create_new_user(
-    _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
+    _address="0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef888",
 ) -> UserProfile:
     # (u, created) = User.objects.get_or_create(username=_address, password="test")
     p = UserProfile.objects.get_or_create(_address)
@@ -353,35 +352,74 @@ class TestLoginRegistrationView(APITestCase):
     def setUp(self) -> None:
         self.user_profile = create_new_user()
         self.endpoint = reverse("AUTHENTICATION:wallet-login")
-        Wallet.objects.create(
-            user_profile=self.user_profile, wallet_type="EVM", address=address
-        )
-        self.private_key_test = (
+        self.private_key_test1 = (
             "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
         )
-        self.public_key_test = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
+        self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
+        self.private_key_test2 = (
+            "9a620554c90a69e634779ce1d741a2e21c72e5349087a8fb3b0fb01d09a1fd96"
+        )
+        self.public_key_test2 = "0x4258c2581c688C5f111ECb4338101345cC401265"
 
     def test_login_with_valid_address(self):
-        message_hash = Web3().solidity_keccak(
-            ["uint256"],
-            [5678],
+        Wallet.objects.create(
+            user_profile=self.user_profile,
+            wallet_type="EVM",
+            address=self.public_key_test1,
         )
 
-        hashed_message = encode_defunct(hexstr=message_hash.hex())
-        account = Account.from_key(self.private_key_test)
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test1)
         signed_message = account.sign_message(hashed_message)
         signature = signed_message.signature.hex()
 
         response = self.client.post(
             self.endpoint,
             data={
-                "wallet_address": self.public_key_test,
-                "message": 5678,
+                "wallet_address": self.public_key_test1,
+                "message": message,
                 "signature": signature,
             },
         )
 
-        logging.error(response.data)
+        token, bol = Token.objects.get_or_create(user=self.user_profile.user)
+        token = token.key
+
+        token_incoming = response.data.get("token")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["exists"], True)
+        self.assertEqual(token, token_incoming)
+
+    def test_login_with_invalid_address(self):
+        # Wallet.objects.create(
+        #     user_profile=self.user_profile,
+        #     wallet_type="EVM",
+        #     address=address,
+        # )
+
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test2)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "wallet_address": self.public_key_test2,
+                "message": message,
+                "signature": signature,
+            },
+        )
+
+        token, bol = Token.objects.get_or_create(user=self.user_profile.user)
+        token = token.key
+
+        token_incoming = response.data.get("token")
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertNotEqual(token, token_incoming)
+        self.assertIsNotNone(token_incoming)

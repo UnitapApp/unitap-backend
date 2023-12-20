@@ -26,15 +26,21 @@ class ProfileManager(models.Manager):
 
     def create_with_wallet_address(self, wallet_address):
         _user = User.objects.create_user(username="UNT" + wallet_address)
-        _profile = UserProfile(user=_user)
-        _profile.save()
-        _wallet = Wallet(
+        _profile = UserProfile.objects.create(user=_user)
+        Wallet.objects.create(
             wallet_type=NetworkTypes.EVM,
             user_profile=_profile,
             address=wallet_address,
         )
-        _wallet.save()
+        _profile.username = f"User{_profile.pk}"
+        _profile.save()
         return _profile
+
+    def get_or_create_with_wallet_address(self, wallet_address):
+        try:
+            return super().get_queryset().get(wallets__address=wallet_address)
+        except UserProfile.DoesNotExist:
+            return self.create_with_wallet_address(wallet_address)
 
 
 class UserProfile(models.Model):
@@ -91,13 +97,6 @@ class UserProfile(models.Model):
 
     def owns_wallet(self, wallet_address):
         return self.wallets.filter(address=wallet_address).exists()
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        if not self.username:
-            self.username = f"User{self.pk}"
-            super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.username if self.username else f"User{self.pk}"
