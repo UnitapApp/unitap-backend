@@ -14,7 +14,7 @@ from solders.pubkey import Pubkey
 
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-from core.models import BigNumField, NetworkTypes
+from core.models import BigNumField, Chain, NetworkTypes
 from faucet.faucet_manager.lnpay_client import LNPayClient
 
 
@@ -138,7 +138,9 @@ class ClaimReceipt(models.Model):
         (PROCESSED_FOR_TOKENTAP_REJECT, "Processed_Rejected"),
     )
 
-    chain = models.ForeignKey("Chain", related_name="claims", on_delete=models.PROTECT)
+    faucet = models.ForeignKey(
+        "Faucet", related_name="claims", on_delete=models.PROTECT
+    )
     user_profile = models.ForeignKey(
         UserProfile,
         related_name="claims",
@@ -196,43 +198,16 @@ class ClaimReceipt(models.Model):
         return count
 
 
-class Chain(models.Model):
-    chain_name = models.CharField(max_length=255)
-    chain_id = models.CharField(max_length=255, unique=True)
-
-    native_currency_name = models.CharField(max_length=255)
-    symbol = models.CharField(max_length=255)
-    decimals = models.IntegerField(default=18)
-
-    explorer_url = models.URLField(max_length=255, blank=True, null=True)
-    explorer_api_url = models.URLField(max_length=255, blank=True, null=True)
-    explorer_api_key = models.CharField(max_length=255, blank=True, null=True)
-    rpc_url = models.URLField(max_length=255, blank=True, null=True)
-    logo_url = models.URLField(max_length=255, blank=True, null=True)
-    modal_url = models.URLField(max_length=255, blank=True, null=True)
+class Faucet(models.Model):
+    chain = models.ForeignKey(Chain, related_name="faucets", on_delete=models.PROTECT)
     gas_image_url = models.URLField(max_length=255, blank=True, null=True)
-    rpc_url_private = models.URLField(max_length=255)
 
     max_claim_amount = BigNumField()
-
-    poa = models.BooleanField(default=False)
 
     fund_manager_address = models.CharField(max_length=255)
     tokentap_contract_address = models.CharField(max_length=255, null=True, blank=True)
 
-    wallet = models.ForeignKey(
-        WalletAccount, related_name="chains", on_delete=models.PROTECT
-    )
-
-    max_gas_price = models.BigIntegerField(default=250000000000)
-    gas_multiplier = models.FloatField(default=1)
-    enough_fee_multiplier = models.BigIntegerField(default=200000)
-
     needs_funding = models.BooleanField(default=False)
-    is_testnet = models.BooleanField(default=False)
-    chain_type = models.CharField(
-        max_length=10, choices=NetworkTypes.networks, default=NetworkTypes.EVM
-    )
     order = models.IntegerField(default=0)
 
     is_one_time_claim = models.BooleanField(default=False)
@@ -241,24 +216,30 @@ class Chain(models.Model):
     show_in_gastap = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.chain_name} - {self.pk} - {self.symbol}:{self.chain_id}"
+        return (
+            f"{self.chain.chain_name} - {self.pk} - "
+            f"{self.chain.symbol}:{self.chain.chain_id}"
+        )
 
     @property
     def has_enough_funds(self):
         if self.get_manager_balance() > self.max_claim_amount * 8:  # TODO check here
             return True
-        logging.warning(f"Chain {self.chain_name} has insufficient funds in contract")
+        logging.warning(
+            f"Faucet {self.pk}-{self.chain.chain_name} "
+            "has insufficient funds in contract"
+        )
         return False
 
     @property
     def block_scan_address(self):
         address = ""
-        if not self.explorer_url:
+        if not self.chain.explorer_url:
             return None
-        if self.explorer_url[-1] == "/":
-            address = self.explorer_url + f"address/{self.fund_manager_address}"
+        if self.chain.explorer_url[-1] == "/":
+            address = self.chain.explorer_url + f"address/{self.fund_manager_address}"
         else:
-            address = self.explorer_url + f"/address/{self.fund_manager_address}"
+            address = self.chain.explorer_url + f"/address/{self.fund_manager_address}"
         return address
 
     @property
@@ -266,7 +247,7 @@ class Chain(models.Model):
         return self.get_manager_balance()
 
     def get_manager_balance(self):
-        if not self.rpc_url_private:
+        if not self.chain.rpc_url_private:
             return 0
 
         try:
@@ -275,20 +256,23 @@ class Chain(models.Model):
                 SolanaFundManager,
             )
 
-            if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
+            if (
+                self.chain.chain_type == NetworkTypes.EVM
+                or int(self.chain.chain_id) == 500
+            ):
                 # if self.chain_id == 500:
                 #     logging.debug("chain XDC NONEVM is checking its balances")
                 funds = EVMFundManager(self).get_balance(self.fund_manager_address)
                 return funds
 
-            elif self.chain_type == NetworkTypes.SOLANA:
+            elif self.chain.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
                 return v
-            elif self.chain_type == NetworkTypes.LIGHTNING:
+            elif self.chain.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
-                    self.rpc_url_private,
-                    self.wallet.main_key,
+                    self.chain.rpc_url_private,
+                    self.chain.wallet.main_key,
                     self.fund_manager_address,
                 )
                 return lnpay_client.get_balance()
@@ -296,7 +280,8 @@ class Chain(models.Model):
             raise Exception("Invalid chain type")
         except Exception as e:
             logging.exception(
-                f"Error getting manager balance for {self.chain_name} error is {e}"
+                f"Error getting manager balance for "
+                f"{self.chain.chain_name} error is {e}"
             )
             return 0
 
@@ -305,7 +290,7 @@ class Chain(models.Model):
         return self.get_wallet_balance()
 
     def get_wallet_balance(self):
-        if not self.rpc_url_private:
+        if not self.chain.rpc_url_private:
             return 0
 
         try:
@@ -314,51 +299,59 @@ class Chain(models.Model):
                 SolanaFundManager,
             )
 
-            if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                return EVMFundManager(self).get_balance(self.wallet.address)
-            elif self.chain_type == NetworkTypes.SOLANA:
+            if (
+                self.chain.chain_type == NetworkTypes.EVM
+                or int(self.chain.chain_id) == 500
+            ):
+                return EVMFundManager(self).get_balance(self.chain.wallet.address)
+            elif self.chain.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(
-                    Pubkey.from_string(self.wallet.address)
+                    Pubkey.from_string(self.chain.wallet.address)
                 ).value
                 return v
-            elif self.chain_type == NetworkTypes.LIGHTNING:
+            elif self.chain.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
-                    self.rpc_url_private,
-                    self.wallet.main_key,
+                    self.chain.rpc_url_private,
+                    self.chain.wallet.main_key,
                     self.fund_manager_address,
                 )
                 return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
         except Exception as e:
             logging.exception(
-                f"Error getting wallet balance for {self.chain_name} error is {e}"
+                f"Error getting wallet balance for {self.chain.chain_name} error is {e}"
             )
             return 0
 
     @property
     def has_enough_fees(self):
-        if self.get_wallet_balance() > self.gas_price * self.enough_fee_multiplier:
+        if (
+            self.get_wallet_balance()
+            > self.gas_price * self.chain.enough_fee_multiplier
+        ):
             return True
-        logging.warning(f"Chain {self.chain_name} has insufficient fees in wallet")
+        logging.warning(
+            f"Faucet {self.pk}-{self.chain.chain_name} has insufficient fees in wallet"
+        )
         return False
 
     @property
     def gas_price(self):
-        if not self.rpc_url_private:
-            return self.max_gas_price + 1
+        if not self.chain.rpc_url_private:
+            return self.chain.max_gas_price + 1
 
         try:
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
             return EVMFundManager(self).get_gas_price()
         except:  # noqa: E722
-            logging.exception(f"Error getting gas price for {self.chain_name}")
-            return self.max_gas_price + 1
+            logging.exception(f"Error getting gas price for {self.chain.chain_name}")
+            return self.chain.max_gas_price + 1
 
     @property
     def is_gas_price_too_high(self):
-        if not self.rpc_url_private:
+        if not self.chain.rpc_url_private:
             return True
 
         try:
@@ -366,7 +359,7 @@ class Chain(models.Model):
 
             return EVMFundManager(self).is_gas_price_too_high
         except Exception:  # noqa: E722
-            logging.exception(f"Error getting gas price for {self.chain_name}")
+            logging.exception(f"Error getting gas price for {self.chain.chain_name}")
             return True
 
     @property
@@ -375,7 +368,7 @@ class Chain(models.Model):
         if cached_total_claims:
             return cached_total_claims
         total_claims = ClaimReceipt.objects.filter(
-            chain=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
+            faucet=self, _status__in=[ClaimReceipt.VERIFIED, BrightUser.VERIFIED]
         ).count()
         cache.set(
             f"gas_tap_chain_total_claims_{self.pk}",
@@ -394,7 +387,7 @@ class Chain(models.Model):
         from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
         total_claims_this_round = ClaimReceipt.objects.filter(
-            chain=self,
+            faucet=self,
             datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
             _status__in=[ClaimReceipt.VERIFIED],
         ).count()
@@ -415,7 +408,7 @@ class Chain(models.Model):
         from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
         total_claims_since_last_round = ClaimReceipt.objects.filter(
-            chain=self,
+            faucet=self,
             datetime__gte=RoundCreditStrategy.get_start_of_previous_round(),
             _status__in=[ClaimReceipt.VERIFIED],
         ).count()
@@ -435,8 +428,8 @@ class GlobalSettings(models.Model):
 
 
 class TransactionBatch(models.Model):
-    chain = models.ForeignKey(
-        Chain, related_name="batches", on_delete=models.PROTECT, db_index=True
+    faucet = models.ForeignKey(
+        Faucet, related_name="batches", on_delete=models.PROTECT, db_index=True
     )
     datetime = models.DateTimeField(auto_now_add=True)
     tx_hash = models.CharField(max_length=255, blank=True, null=True, db_index=True)
@@ -510,8 +503,8 @@ class DonationReceipt(models.Model):
         blank=False,
     )
     tx_hash = models.CharField(max_length=255, blank=False, null=False)
-    chain = models.ForeignKey(
-        Chain,
+    faucet = models.ForeignKey(
+        Faucet,
         related_name="donation",
         on_delete=models.PROTECT,
         null=False,
@@ -527,4 +520,4 @@ class DonationReceipt(models.Model):
     )
 
     class Meta:
-        unique_together = ("chain", "tx_hash")
+        unique_together = ("faucet", "tx_hash")

@@ -29,7 +29,11 @@ from faucet.faucet_manager.claim_manager import (
     LimitedChainClaimManager,
 )
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
+
+# TODO: fixme
 from faucet.models import Chain, ClaimReceipt, DonationReceipt, GlobalSettings
+
+# TODO: fixme
 from faucet.serializers import (
     ChainBalanceSerializer,
     ChainSerializer,
@@ -67,6 +71,7 @@ class LastClaimView(RetrieveAPIView):
             raise Http404("Claim Receipt for this user does not exist")
 
 
+# TODO: fixme
 class ListClaims(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ReceiptSerializer
@@ -90,6 +95,7 @@ class ListClaims(ListAPIView):
         ).order_by("-pk")
 
 
+# TODO: fixme
 class ListOneTimeClaims(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ReceiptSerializer
@@ -132,6 +138,7 @@ class GetTotalRoundClaimsRemainingView(RetrieveAPIView):
             raise Http404("Global Settings Not Found")
 
 
+# TODO: fixme
 class ChainListView(ListAPIView):
     """
     list of supported chains
@@ -150,6 +157,7 @@ class ChainListView(ListAPIView):
         return sorted_queryset
 
 
+# TODO: fixme
 class SmallChainListView(ListAPIView):
     """
     list of supported chains with minimum details
@@ -167,6 +175,7 @@ class GlobalSettingsView(RetrieveAPIView):
         return GlobalSettings.objects.first()
 
 
+# TODO: fixme
 class ClaimMaxView(APIView):
     """
     Claims maximum possible fee for the given user and chain
@@ -235,6 +244,7 @@ class ClaimMaxView(APIView):
         return Response(ReceiptSerializer(instance=receipt).data)
 
 
+# TODO: fixme
 class ChainBalanceView(RetrieveAPIView):
     serializer_class = ChainBalanceSerializer
 
@@ -245,6 +255,7 @@ class ChainBalanceView(RetrieveAPIView):
         return Chain.objects.get(pk=chain_pk)
 
 
+# TODO: fixme
 class DonationReceiptView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DonationReceiptSerializer
@@ -263,6 +274,7 @@ class DonationReceiptView(ListCreateAPIView):
         return self.request.user.profile
 
 
+# TODO: fixme
 class UserLeaderboardView(RetrieveAPIView):
     filter_backends = [ChainFilterBackend]
     permission_classes = [IsAuthenticated]
@@ -299,6 +311,7 @@ class UserLeaderboardView(RetrieveAPIView):
         return user_obj
 
 
+# TODO: fixme
 class LeaderboardView(ListAPIView):
     serializer_class = LeaderboardSerializer
     pagination_class = StandardResultsSetPagination

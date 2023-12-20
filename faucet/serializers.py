@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
-from faucet.models import Chain, ClaimReceipt, DonationReceipt, GlobalSettings
+from core.models import Chain
+from core.serializers import ChainSerializer
+from faucet.models import ClaimReceipt, DonationReceipt, Faucet, GlobalSettings
 
 # class UserSerializer(serializers.ModelSerializer):
 #     total_weekly_claims_remaining = serializers.SerializerMethodField()
@@ -42,13 +44,13 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
         ]
 
 
-class ChainBalanceSerializer(serializers.ModelSerializer):
+class FaucetBalanceSerializer(serializers.ModelSerializer):
     wallet = serializers.SerializerMethodField()
     contract_balance = serializers.SerializerMethodField()
     wallet_balance = serializers.SerializerMethodField()
 
     class Meta:
-        model = Chain
+        model = Faucet
         fields = [
             "pk",
             "chain_name",
@@ -66,19 +68,19 @@ class ChainBalanceSerializer(serializers.ModelSerializer):
             "wallet",
         ]
 
-    def get_wallet(self, chain):
-        return chain.wallet.address
+    def get_wallet(self, faucet):
+        return faucet.wallet.address
 
-    def get_contract_balance(self, chain):
-        return chain.manager_balance
+    def get_contract_balance(self, faucet):
+        return faucet.manager_balance
 
-    def get_wallet_balance(self, chain):
-        return chain.wallet_balance
+    def get_wallet_balance(self, faucet):
+        return faucet.wallet_balance
 
 
-class SmallChainSerializer(serializers.ModelSerializer):
+class SmallFaucetSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Chain
+        model = Faucet
         fields = [
             "pk",
             "chain_name",
@@ -101,12 +103,12 @@ class SmallChainSerializer(serializers.ModelSerializer):
         ]
 
 
-class ChainSerializer(serializers.ModelSerializer):
+class FaucetSerializer(serializers.ModelSerializer):
     # claimed = serializers.SerializerMethodField()
     # unclaimed = serializers.SerializerMethodField()
 
     class Meta:
-        model = Chain
+        model = Faucet
         fields = [
             "pk",
             "chain_name",
@@ -147,18 +149,19 @@ class ChainSerializer(serializers.ModelSerializer):
     #     if not user.is_authenticated:
     #         return "N/A"
     #     user_profile = user.profile
-    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
+    #     return CreditStrategyFactory(chain, user_profile)
+    #     .get_strategy().get_unclaimed()
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
-    chain = SmallChainSerializer()
+    faucet = SmallFaucetSerializer()
 
     class Meta:
         model = ClaimReceipt
         fields = [
             "pk",
             "tx_hash",
-            "chain",
+            "faucet",
             "datetime",
             "amount",
             "status",
@@ -168,7 +171,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 class DonationReceiptSerializer(serializers.ModelSerializer):
     chain_pk = serializers.CharField(max_length=20, write_only=True)
-    chain = SmallChainSerializer(read_only=True)
+    chain = ChainSerializer(read_only=True)
 
     def validate(self, attrs):
         chain = self._validate_chain(attrs.pop("chain_pk"))
@@ -180,19 +183,39 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
         try:
             chain: Chain = Chain.objects.get(pk=pk, chain_type="EVM")
         except Chain.DoesNotExist:
-            raise serializers.ValidationError({"chain": "chain is not EVM or does not exist."})
+            raise serializers.ValidationError(
+                {"chain": "chain is not EVM or does not exist."}
+            )
         return chain
 
     class Meta:
         model = DonationReceipt
         depth = 1
-        fields = ["tx_hash", "chain", "datetime", "total_price", "value", "chain_pk", "status", "user_profile"]
-        read_only_fields = ["value", "datetime", "total_price", "chain", "status", "user_profile"]
+        fields = [
+            "tx_hash",
+            "chain",
+            "datetime",
+            "total_price",
+            "value",
+            "chain_pk",
+            "status",
+            "user_profile",
+        ]
+        read_only_fields = [
+            "value",
+            "datetime",
+            "total_price",
+            "chain",
+            "status",
+            "user_profile",
+        ]
 
 
 class LeaderboardSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, read_only=True)
     sum_total_price = serializers.CharField(max_length=150, read_only=True)
-    interacted_chains = serializers.ListField(child=serializers.IntegerField(), read_only=True)
+    interacted_chains = serializers.ListField(
+        child=serializers.IntegerField(), read_only=True
+    )
     wallet = serializers.CharField(max_length=512, read_only=True)
     rank = serializers.IntegerField(read_only=True, required=False)
