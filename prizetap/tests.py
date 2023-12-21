@@ -205,7 +205,7 @@ class RaffleAPITestCase(RaffleTestCase):
         )
         self.assertEqual(raffle["number_of_entries"], 0)
         self.assertEqual(raffle["user_entry"], None)
-        self.assertEqual(raffle["winner_entry"], None)
+        self.assertEqual(raffle["winner_entries"], [])
 
     def test_raffle_enrollment_authentication(self):
         response = self.client.post(
