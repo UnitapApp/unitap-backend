@@ -164,7 +164,7 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
 
 class RaffleSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
-    winner_entry = WinnerEntrySerializer()
+    winner_entries = WinnerEntrySerializer(many=True, read_only=True)
     user_entry = serializers.SerializerMethodField()
     constraints = ConstraintSerializer(many=True, read_only=True)
     creator_profile = SimpleProfilerSerializer()
@@ -207,7 +207,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "rejection_reason",
             "tx_hash",
             "is_active",
-            "winner_entry",
+            "winner_entries",
             "is_expired",
             "is_claimable",
             "user_entry",
