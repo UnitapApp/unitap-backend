@@ -162,8 +162,8 @@ class Web3Utils:
     def current_block(self):
         return self.w3.eth.block_number
 
-    def get_transaction_by_hash(self, hash):
-        return self.w3.eth.get_transaction(hash)
+    def get_transaction_by_hash(self, tx_hash):
+        return self.w3.eth.get_transaction(tx_hash)
 
     def get_gas_price(self):
         return self.w3.eth.gas_price
@@ -175,8 +175,8 @@ class Web3Utils:
     def to_checksum_address(address: str):
         return Web3.to_checksum_address(address.lower())
 
-    def get_transaction_receipt(self, hash):
-        return self.w3.eth.get_transaction_receipt(hash)
+    def get_transaction_receipt(self, tx_hash):
+        return self.w3.eth.get_transaction_receipt(tx_hash)
 
     def get_balance(self, address):
         return self.w3.eth.get_balance(address)
