@@ -10,7 +10,6 @@ from django.db import models
 from django.utils import timezone
 from encrypted_model_fields.fields import EncryptedCharField
 from solders.keypair import Keypair
-from solders.pubkey import Pubkey
 
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
@@ -284,57 +283,6 @@ class Faucet(models.Model):
                 f"{self.chain.chain_name} error is {e}"
             )
             return 0
-
-    @property
-    def wallet_balance(self):
-        return self.get_wallet_balance()
-
-    def get_wallet_balance(self):
-        if not self.chain.rpc_url_private:
-            return 0
-
-        try:
-            from faucet.faucet_manager.fund_manager import (
-                EVMFundManager,
-                SolanaFundManager,
-            )
-
-            if (
-                self.chain.chain_type == NetworkTypes.EVM
-                or int(self.chain.chain_id) == 500
-            ):
-                return EVMFundManager(self).get_balance(self.chain.wallet.address)
-            elif self.chain.chain_type == NetworkTypes.SOLANA:
-                fund_manager = SolanaFundManager(self)
-                v = fund_manager.w3.get_balance(
-                    Pubkey.from_string(self.chain.wallet.address)
-                ).value
-                return v
-            elif self.chain.chain_type == NetworkTypes.LIGHTNING:
-                lnpay_client = LNPayClient(
-                    self.chain.rpc_url_private,
-                    self.chain.wallet.main_key,
-                    self.fund_manager_address,
-                )
-                return lnpay_client.get_balance()
-            raise Exception("Invalid chain type")
-        except Exception as e:
-            logging.exception(
-                f"Error getting wallet balance for {self.chain.chain_name} error is {e}"
-            )
-            return 0
-
-    @property
-    def has_enough_fees(self):
-        if (
-            self.get_wallet_balance()
-            > self.gas_price * self.chain.enough_fee_multiplier
-        ):
-            return True
-        logging.warning(
-            f"Faucet {self.pk}-{self.chain.chain_name} has insufficient fees in wallet"
-        )
-        return False
 
     @property
     def gas_price(self):

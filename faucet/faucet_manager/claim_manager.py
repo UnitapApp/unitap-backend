@@ -33,7 +33,7 @@ class SimpleClaimManager(ClaimManager):
 
     @property
     def fund_manager(self):
-        return EVMFundManager(self.credit_strategy.chain)
+        return EVMFundManager(self.credit_strategy.faucet)
 
     def claim(self, amount, passive_address=None):
         with transaction.atomic():
@@ -49,14 +49,14 @@ class SimpleClaimManager(ClaimManager):
         assert amount <= self.credit_strategy.get_unclaimed()
         assert self.user_is_meet_verified() is True
         assert not ClaimReceipt.objects.filter(
-            chain=self.credit_strategy.chain,
+            faucet__chain=self.credit_strategy.faucet.chain,
             user_profile=user_profile,
             _status=ClaimReceipt.PENDING,
         ).exists()
 
     def create_pending_claim_receipt(self, amount, passive_address):
         return ClaimReceipt.objects.create(
-            chain=self.credit_strategy.chain,
+            faucet=self.credit_strategy.faucet,
             user_profile=self.credit_strategy.user_profile,
             datetime=timezone.now(),
             amount=amount,
@@ -100,9 +100,9 @@ class LightningClaimManger(LimitedChainClaimManager):
     def claim(self, amount, passive_address):
         try:
             lnpay_client = LNPayClient(
-                self.credit_strategy.chain.rpc_url_private,
-                self.credit_strategy.chain.wallet.main_key,
-                self.credit_strategy.chain.fund_manager_address,
+                self.credit_strategy.faucet.chain.rpc_url_private,
+                self.credit_strategy.faucet.chain.wallet.main_key,
+                self.credit_strategy.faucet.fund_manager_address,
             )
             decoded_invoice = lnpay_client.decode_invoice(passive_address)
         except Exception as e:
@@ -113,17 +113,17 @@ class LightningClaimManger(LimitedChainClaimManager):
 
 
 class ClaimManagerFactory:
-    def __init__(self, chain, user_profile):
-        self.chain = chain
+    def __init__(self, faucet, user_profile):
+        self.faucet = faucet
         self.user_profile = user_profile
 
     def get_manager_class(self):
-        if self.chain.chain_type == NetworkTypes.LIGHTNING:
+        if self.faucet.chain.chain_type == NetworkTypes.LIGHTNING:
             return LightningClaimManger
         return LimitedChainClaimManager
 
     def get_manager(self) -> ClaimManager:
         _Manager = self.get_manager_class()
-        assert _Manager is not None, f"Manager for chain {self.chain.pk} not found"
-        _strategy = CreditStrategyFactory(self.chain, self.user_profile).get_strategy()
+        assert _Manager is not None, f"Manager for chain {self.faucet.pk} not found"
+        _strategy = CreditStrategyFactory(self.faucet, self.user_profile).get_strategy()
         return _Manager(_strategy)

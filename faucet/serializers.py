@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from core.models import Chain
 from core.serializers import ChainSerializer
 from faucet.models import ClaimReceipt, DonationReceipt, Faucet, GlobalSettings
 
@@ -45,7 +44,6 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
 
 
 class FaucetBalanceSerializer(serializers.ModelSerializer):
-    wallet = serializers.SerializerMethodField()
     contract_balance = serializers.SerializerMethodField()
     wallet_balance = serializers.SerializerMethodField()
 
@@ -53,29 +51,19 @@ class FaucetBalanceSerializer(serializers.ModelSerializer):
         model = Faucet
         fields = [
             "pk",
-            "chain_name",
-            "chain_id",
-            "symbol",
-            "decimals",
+            "chain",
             "needs_funding",
-            "has_enough_fees",
             "has_enough_funds",
             "contract_balance",
             "wallet_balance",
-            "is_testnet",
-            "chain_type",
             "block_scan_address",
-            "wallet",
         ]
-
-    def get_wallet(self, faucet):
-        return faucet.wallet.address
 
     def get_contract_balance(self, faucet):
         return faucet.manager_balance
 
     def get_wallet_balance(self, faucet):
-        return faucet.wallet_balance
+        return faucet.chain.wallet_balance
 
 
 class SmallFaucetSerializer(serializers.ModelSerializer):
@@ -83,19 +71,10 @@ class SmallFaucetSerializer(serializers.ModelSerializer):
         model = Faucet
         fields = [
             "pk",
-            "chain_name",
-            "chain_id",
+            "chain",
             "fund_manager_address",
-            "native_currency_name",
-            "symbol",
-            "decimals",
-            "explorer_url",
-            "rpc_url",
-            "logo_url",
-            "modal_url",
             "gas_image_url",
             "max_claim_amount",
-            "is_testnet",
             "tokentap_contract_address",
             "chain_type",
             "block_scan_address",
@@ -106,21 +85,14 @@ class SmallFaucetSerializer(serializers.ModelSerializer):
 class FaucetSerializer(serializers.ModelSerializer):
     # claimed = serializers.SerializerMethodField()
     # unclaimed = serializers.SerializerMethodField()
+    chain = ChainSerializer()
 
     class Meta:
         model = Faucet
         fields = [
             "pk",
-            "chain_name",
-            "chain_id",
+            "chain",
             "fund_manager_address",
-            "native_currency_name",
-            "symbol",
-            "decimals",
-            "explorer_url",
-            "rpc_url",
-            "logo_url",
-            "modal_url",
             "gas_image_url",
             "max_claim_amount",
             # "claimed",
@@ -129,8 +101,6 @@ class FaucetSerializer(serializers.ModelSerializer):
             "total_claims_this_round",
             "tokentap_contract_address",
             "needs_funding",
-            "is_testnet",
-            "chain_type",
             "block_scan_address",
             "is_one_time_claim",
         ]
@@ -170,34 +140,34 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 
 class DonationReceiptSerializer(serializers.ModelSerializer):
-    chain_pk = serializers.CharField(max_length=20, write_only=True)
-    chain = ChainSerializer(read_only=True)
+    faucet_pk = serializers.CharField(max_length=20, write_only=True)
+    faucet = FaucetSerializer(read_only=True)
 
     def validate(self, attrs):
-        chain = self._validate_chain(attrs.pop("chain_pk"))
+        faucet = self._validate_faucet(attrs.pop("faucet_pk"))
         attrs["user_profile"] = self.context.get("user")
-        attrs["chain"] = chain
+        attrs["faucet"] = faucet
         return attrs
 
-    def _validate_chain(self, pk: str):
+    def _validate_faucet(self, pk: str):
         try:
-            chain: Chain = Chain.objects.get(pk=pk, chain_type="EVM")
-        except Chain.DoesNotExist:
+            faucet: Faucet = Faucet.objects.get(pk=pk, chain__chain_type="EVM")
+        except Faucet.DoesNotExist:
             raise serializers.ValidationError(
-                {"chain": "chain is not EVM or does not exist."}
+                {"faucet": "faucet is not EVM or does not exist."}
             )
-        return chain
+        return faucet
 
     class Meta:
         model = DonationReceipt
         depth = 1
         fields = [
             "tx_hash",
-            "chain",
+            "faucet",
             "datetime",
             "total_price",
             "value",
-            "chain_pk",
+            "faucet_pk",
             "status",
             "user_profile",
         ]
@@ -205,7 +175,7 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             "value",
             "datetime",
             "total_price",
-            "chain",
+            "faucet",
             "status",
             "user_profile",
         ]
