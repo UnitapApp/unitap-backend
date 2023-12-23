@@ -1,5 +1,14 @@
 from django.urls import path
-from tokenTap.views import *
+
+from tokenTap.views import (
+    GetTokenDistributionConstraintsView,
+    TokenDistributionClaimListView,
+    TokenDistributionClaimRetrieveView,
+    TokenDistributionClaimStatusUpdateView,
+    TokenDistributionClaimView,
+    TokenDistributionListView,
+    ValidChainsView,
+)
 
 urlpatterns = [
     path(
@@ -27,5 +36,10 @@ urlpatterns = [
         "get-token-constraints/<int:td_id>/",
         GetTokenDistributionConstraintsView.as_view(),
         name="get-token-distribution-constraints",
+    ),
+    path(
+        "get-valid-chains/",
+        ValidChainsView.as_view(),
+        name="get-valid-chains",
     ),
 ]
