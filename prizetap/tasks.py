@@ -180,7 +180,7 @@ def set_raffle_ids(self):
                     receipt = contract_client.web3_utils.get_transaction_receipt(
                         raffle.tx_hash
                     )
-                    log = contract_client.process_raffle_receipt(receipt)
+                    log = contract_client.get_raffle_created_log(receipt)
 
                     raffle.raffleId = log["args"]["raffleId"]
                     onchain_raffle = contract_client.get_raffle()
