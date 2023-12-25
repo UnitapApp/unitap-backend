@@ -86,7 +86,7 @@ class PrizetapContractClient:
             result[item["name"]] = output[index]
         return result
 
-    def process_raffle_receipt(self, receipt):
+    def get_raffle_created_log(self, receipt):
         raffle_created_log = receipt["logs"][1]
         return self.web3_utils.contract.events.RaffleCreated().process_log(
             raffle_created_log
