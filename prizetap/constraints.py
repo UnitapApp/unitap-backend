@@ -14,7 +14,7 @@ class HaveUnitapPass(ConstraintVerification):
         self.unitappass_client = UnitapPassClient(chain)
 
         user_addresses = [
-            self.unitappass_client.w3.to_checksum_address(wallet.address.lower())
+            self.unitappass_client.to_checksum_address(wallet.address.lower())
             for wallet in self.user_profile.wallets.filter(wallet_type=chain.chain_type)
         ]
 
