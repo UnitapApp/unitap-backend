@@ -18,8 +18,8 @@ def create_uint32_random_nonce():
     return nonce
 
 
-def hash_message(user, token, amount, nonce):
-    hashed_message = Web3Utils.hash_message(user, token, amount, nonce)
+def hash_message(address, token, amount, nonce):
+    hashed_message = Web3Utils.hash_message(address, token, amount, nonce)
     return hashed_message
 
 
