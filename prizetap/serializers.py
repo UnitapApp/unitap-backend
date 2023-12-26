@@ -139,6 +139,13 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
             and data["winners_count"] > data["max_number_of_entries"]
         ):
             raise serializers.ValidationError({"winners_count": "Invalid value"})
+        if "is_prize_nft" in data and data["is_prize_nft"] and "nft_ids" not in data:
+            raise serializers.ValidationError({"nft_ids": "This field is required"})
+        if "nft_ids" in data:
+            winners_count = data["winners_count"] if "winners_count" in data else 1
+            nft_ids = data["nft_ids"].split(",")
+            if winners_count != len(nft_ids):
+                raise serializers.ValidationError({"nft_ids": "Invalid value"})
         valid_chains = list(CONTRACT_ADDRESSES.keys())
         chain_id = data["chain"].chain_id
         if chain_id not in valid_chains:
@@ -152,7 +159,7 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
 
 class RaffleSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
-    winner_entry = WinnerEntrySerializer()
+    winner_entries = WinnerEntrySerializer(many=True, read_only=True)
     user_entry = serializers.SerializerMethodField()
     constraints = ConstraintSerializer(many=True, read_only=True)
     creator_profile = SimpleProfilerSerializer()
@@ -195,7 +202,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "rejection_reason",
             "tx_hash",
             "is_active",
-            "winner_entry",
+            "winner_entries",
             "is_expired",
             "is_claimable",
             "user_entry",

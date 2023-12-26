@@ -3,6 +3,8 @@ import time
 from contextlib import contextmanager
 
 import pytz
+from eth_account.messages import encode_defunct
+from web3 import Account, Web3
 from django.core.cache import cache
 from web3 import Web3
 from web3.contract.contract import Contract, ContractFunction
@@ -162,8 +164,8 @@ class Web3Utils:
     def current_block(self):
         return self.w3.eth.block_number
 
-    def get_transaction_by_hash(self, hash):
-        return self.w3.eth.get_transaction(hash)
+    def get_transaction_by_hash(self, tx_hash):
+        return self.w3.eth.get_transaction(tx_hash)
 
     def get_gas_price(self):
         return self.w3.eth.gas_price
@@ -175,8 +177,29 @@ class Web3Utils:
     def to_checksum_address(address: str):
         return Web3.to_checksum_address(address.lower())
 
-    def get_transaction_receipt(self, hash):
-        return self.w3.eth.get_transaction_receipt(hash)
+    @staticmethod
+    def hash_message(user, token, amount, nonce):
+        message_hash = Web3().solidity_keccak(
+            ["address", "address", "uint256", "uint32"],
+            [
+                Web3.to_checksum_address(user),
+                Web3.to_checksum_address(token),
+                amount,
+                nonce,
+            ],
+        )
+        hashed_message = encode_defunct(hexstr=message_hash.hex())
+
+        return hashed_message
+
+    @staticmethod
+    def sign_hashed_message(private_key, hashed_message):
+        account = Account.from_key(private_key)
+        signed_message = account.sign_message(hashed_message)
+        return signed_message.signature.hex()
+
+    def get_transaction_receipt(self, tx_hash):
+        return self.w3.eth.get_transaction_receipt(tx_hash)
 
     def get_balance(self, address):
         return self.w3.eth.get_balance(address)

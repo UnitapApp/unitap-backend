@@ -1,9 +1,7 @@
 import random
 
-from eth_account.messages import encode_defunct
-from web3 import Account, Web3
-
 from core.models import NetworkTypes, WalletAccount
+from core.utils import Web3Utils
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
 from faucet.models import GlobalSettings
 
@@ -20,28 +18,14 @@ def create_uint32_random_nonce():
     return nonce
 
 
-def hash_message(address, token, amount, nonce):
-    message_hash = Web3().solidity_keccak(
-        ["address", "address", "uint256", "uint32"],
-        [
-            Web3.to_checksum_address(address),
-            Web3.to_checksum_address(token),
-            amount,
-            nonce,
-        ],
-    )
-    hashed_message = encode_defunct(hexstr=message_hash.hex())
-
+def hash_message(user, token, amount, nonce):
+    hashed_message = Web3Utils.hash_message(user, token, amount, nonce)
     return hashed_message
 
 
 def sign_hashed_message(hashed_message):
     private_key = WalletAccount.objects.get(network_type=NetworkTypes.EVM).private_key
-    account = Account.from_key(private_key)
-
-    signed_message = account.sign_message(hashed_message)
-
-    return signed_message.signature.hex()
+    return Web3Utils.sign_hashed_message(private_key, hashed_message)
 
 
 def has_credit_left(user_profile):
