@@ -1,6 +1,6 @@
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification
-from faucet.models import Chain
+from core.models import Chain
 
 from .utils import UnitapPassClient
 

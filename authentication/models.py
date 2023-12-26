@@ -5,6 +5,7 @@ from django.db import models
 from django.utils import timezone
 
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
+from core.models import NetworkTypes
 
 
 class ProfileManager(models.Manager):
@@ -85,6 +86,9 @@ class UserProfile(models.Model):
             self.username = f"User{self.pk}"
             super().save(*args, **kwargs)
 
+    def __str__(self) -> str:
+        return self.username if self.username else f"User{self.pk}"
+
     @staticmethod
     def user_count():
         cached_user_count = cache.get("user_profile_count")
@@ -93,22 +97,6 @@ class UserProfile(models.Model):
         count = UserProfile.objects.count()
         cache.set("user_profile_count", count, 300)
         return count
-
-
-class NetworkTypes:
-    EVM = "EVM"
-    SOLANA = "Solana"
-    LIGHTNING = "Lightning"
-    NONEVM = "NONEVM"
-    NONEVMXDC = "NONEVMXDC"
-
-    networks = (
-        (EVM, "EVM"),
-        (SOLANA, "Solana"),
-        (LIGHTNING, "Lightning"),
-        (NONEVM, "NONEVM"),
-        (NONEVMXDC, "NONEVMXDC"),
-    )
 
 
 class Wallet(models.Model):

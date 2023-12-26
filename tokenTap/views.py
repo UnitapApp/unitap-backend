@@ -12,8 +12,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from authentication.models import NetworkTypes
 from core.constraints import ConstraintVerification, get_constraint
+from core.models import Chain, NetworkTypes
+from core.serializers import ChainSerializer
+from faucet.models import Chain as FaucetChain
 from faucet.models import ClaimReceipt
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
@@ -24,6 +26,7 @@ from tokenTap.serializers import (
     TokenDistributionSerializer,
 )
 
+from .constants import CONTRACT_ADDRESSES
 from .helpers import (
     create_uint32_random_nonce,
     has_credit_left,
@@ -160,7 +163,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 token_distribution=token_distribution,
             )
             ClaimReceipt.objects.create(
-                chain=token_distribution.chain,
+                chain=FaucetChain.objects.get(chain_type=NetworkTypes.LIGHTNING),
                 user_profile=user_profile,
                 datetime=timezone.now(),
                 amount=token_distribution.amount,
@@ -260,3 +263,23 @@ class TokenDistributionClaimRetrieveView(RetrieveAPIView):
         return TokenDistributionClaim.objects.get(
             pk=self.kwargs["pk"], user_profile=user_profile
         )
+
+
+class ValidChainsView(ListAPIView):
+    queryset = Chain.objects.filter(
+        chain_id__in=list(CONTRACT_ADDRESSES.keys())
+    ).order_by("pk")
+    serializer_class = ChainSerializer
+
+    def get(self, request):
+        queryset = self.get_queryset()
+        serializer = ChainSerializer(queryset, many=True)
+        response = []
+        for chain in serializer.data:
+            response.append(
+                {
+                    **chain,
+                    "tokentap_contract_address": CONTRACT_ADDRESSES[chain["chain_id"]],
+                }
+            )
+        return Response({"success": True, "data": response})

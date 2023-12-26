@@ -27,3 +27,6 @@ whitenoise==6.1.0
 solana==0.29.1
 solders==0.14.3
 coverage~=7.3.2
+pytz~=2023.3.post1
+requests~=2.31.0
+celery~=5.3.4

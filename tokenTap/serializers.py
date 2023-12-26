@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
 from core.constraints import ConstraintVerification, get_constraint
-from core.serializers import UserConstraintBaseSerializer
-from faucet.serializers import SmallChainSerializer
+from core.serializers import ChainSerializer, UserConstraintBaseSerializer
 from tokenTap.models import (
     Constraint,
     TokenDistribution,
@@ -32,7 +31,7 @@ class DetailResponseSerializer(serializers.Serializer):
 
 
 class TokenDistributionSerializer(serializers.ModelSerializer):
-    chain = SmallChainSerializer()
+    chain = ChainSerializer()
     permissions = ConstraintSerializer(many=True)
 
     class Meta:
@@ -50,6 +49,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "token_address",
             "amount",
             "chain",
+            "contract",
             "permissions",
             "created_at",
             "deadline",
@@ -64,7 +64,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
 
 
 class SmallTokenDistributionSerializer(serializers.ModelSerializer):
-    chain = SmallChainSerializer()
+    chain = ChainSerializer()
     permissions = ConstraintSerializer(many=True)
 
     class Meta:
@@ -81,6 +81,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "token_address",
             "amount",
             "chain",
+            "contract",
             "permissions",
             "created_at",
             "deadline",

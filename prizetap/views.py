@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constraints import ConstraintVerification, get_constraint
-from faucet.models import Chain
-from faucet.serializers import SmallChainSerializer
+from core.models import Chain
+from core.serializers import ChainSerializer
 
 from .constants import CONTRACT_ADDRESSES
 from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry
@@ -31,8 +31,12 @@ from .validators import (
 
 
 class RaffleListView(ListAPIView):
-    valid_time = timezone.now() - timezone.timedelta(days=30)
-    queryset = Raffle.objects.filter(is_active=True).filter(deadline__gte=valid_time).order_by("-pk")
+    valid_time = timezone.now() - timezone.timedelta(days=360)
+    queryset = (
+        Raffle.objects.filter(is_active=True)
+        .filter(deadline__gte=valid_time)
+        .order_by("-pk")
+    )
     serializer_class = RaffleSerializer
 
     def get(self, request):
@@ -40,7 +44,9 @@ class RaffleListView(ListAPIView):
         serializer = RaffleSerializer(
             queryset,
             many=True,
-            context={"user": request.user.profile if request.user.is_authenticated else None},
+            context={
+                "user": request.user.profile if request.user.is_authenticated else None
+            },
         )
         return Response(serializer.data)
 
@@ -53,7 +59,9 @@ class RaffleEnrollmentView(CreateAPIView):
         raffle = get_object_or_404(Raffle, pk=pk)
         user_wallet_address = request.data.get("user_wallet_address", None)
         if not user_wallet_address:
-            raise rest_framework.exceptions.ParseError("user_wallet_address is required")
+            raise rest_framework.exceptions.ParseError(
+                "user_wallet_address is required"
+            )
 
         validator = RaffleEnrollmentValidator(user_profile=user_profile, raffle=raffle)
 
@@ -85,7 +93,9 @@ class SetEnrollmentTxView(APIView):
         user_profile = request.user.profile
         raffle_entry = get_object_or_404(RaffleEntry, pk=pk)
 
-        validator = SetRaffleEntryTxValidator(user_profile=user_profile, raffle_entry=raffle_entry)
+        validator = SetRaffleEntryTxValidator(
+            user_profile=user_profile, raffle_entry=raffle_entry
+        )
 
         validator.is_valid(self.request.data)
 
@@ -109,9 +119,13 @@ class SetClaimingPrizeTxView(APIView):
     def post(self, request, pk):
         user_profile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
-        raffle_entry = get_object_or_404(RaffleEntry, raffle=raffle, user_profile=user_profile)
+        raffle_entry = get_object_or_404(
+            RaffleEntry, raffle=raffle, user_profile=user_profile
+        )
 
-        validator = SetClaimingPrizeTxValidator(user_profile=user_profile, raffle_entry=raffle_entry)
+        validator = SetClaimingPrizeTxValidator(
+            user_profile=user_profile, raffle_entry=raffle_entry
+        )
 
         validator.is_valid(self.request.data)
 
@@ -150,7 +164,11 @@ class GetRaffleConstraintsView(APIView):
         except Exception:
             param_values = {}
 
-        reversed_constraints = raffle.reversed_constraints.split(",") if raffle.reversed_constraints else []
+        reversed_constraints = (
+            raffle.reversed_constraints.split(",")
+            if raffle.reversed_constraints
+            else []
+        )
         response_constraints = []
 
         for c in raffle.constraints.all():
@@ -167,9 +185,13 @@ class GetRaffleConstraintsView(APIView):
             else:
                 if constraint.is_observed():
                     is_verified = True
-            response_constraints.append({**ConstraintSerializer(c).data, "is_verified": is_verified})
+            response_constraints.append(
+                {**ConstraintSerializer(c).data, "is_verified": is_verified}
+            )
 
-        return Response({"success": True, "constraints": response_constraints}, status=200)
+        return Response(
+            {"success": True, "constraints": response_constraints}, status=200
+        )
 
 
 class CreateRaffleView(CreateAPIView):
@@ -204,19 +226,23 @@ class SetRaffleTXView(APIView):
             {
                 "detail": "Raffle updated successfully",
                 "success": True,
-                "raffle": RaffleSerializer(raffle, context={"user": request.user.profile}).data,
+                "raffle": RaffleSerializer(
+                    raffle, context={"user": request.user.profile}
+                ).data,
             },
             status=200,
         )
 
 
 class ValidChainsView(ListAPIView):
-    queryset = Chain.objects.filter(chain_id__in=list(CONTRACT_ADDRESSES.keys())).order_by("pk")
-    serializer_class = SmallChainSerializer
+    queryset = Chain.objects.filter(
+        chain_id__in=list(CONTRACT_ADDRESSES.keys())
+    ).order_by("pk")
+    serializer_class = ChainSerializer
 
     def get(self, request):
         queryset = self.get_queryset()
-        serializer = SmallChainSerializer(queryset, many=True)
+        serializer = ChainSerializer(queryset, many=True)
         response = []
         for chain in serializer.data:
             response.append({**chain, **CONTRACT_ADDRESSES[chain["chain_id"]]})
@@ -227,8 +253,12 @@ class UserRafflesListView(ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        queryset = Raffle.objects.filter(creator_profile=request.user.profile).order_by("pk")
-        serializer = RaffleSerializer(queryset, many=True, context={"user": request.user.profile})
+        queryset = Raffle.objects.filter(creator_profile=request.user.profile).order_by(
+            "pk"
+        )
+        serializer = RaffleSerializer(
+            queryset, many=True, context={"user": request.user.profile}
+        )
         return Response(serializer.data)
 
 
@@ -251,4 +281,6 @@ class SetLineaTxHashView(CreateAPIView):
         raffle_entry = get_object_or_404(LineaRaffleEntries, pk=pk)
         raffle_entry.claim_tx = tx_hash
         raffle_entry.save()
-        return Response({"success": True, "data": LineaRaffleEntrySerializer(raffle_entry).data})
+        return Response(
+            {"success": True, "data": LineaRaffleEntrySerializer(raffle_entry).data}
+        )

@@ -6,14 +6,11 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase, override_settings
 
-from authentication.models import NetworkTypes, UserProfile, Wallet
-from faucet.models import (
-    Chain,
-    ClaimReceipt,
-    GlobalSettings,
-    TransactionBatch,
-    WalletAccount,
-)
+from authentication.models import UserProfile, Wallet
+from core.models import Chain, NetworkTypes, WalletAccount
+from faucet.models import Chain as FaucetChain
+from faucet.models import ClaimReceipt, GlobalSettings, TransactionBatch
+from faucet.models import WalletAccount as FaucetWalletAccount
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
@@ -35,12 +32,9 @@ class TokenDistributionTestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.permission = Constraint.objects.create(
@@ -59,6 +53,7 @@ class TokenDistributionTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             # permissions=[self.permission],
         )
@@ -83,6 +78,7 @@ class TokenDistributionTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
         )
         self.assertFalse(td1.is_expired)
@@ -98,6 +94,7 @@ class TokenDistributionTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() - timezone.timedelta(days=7),
         )
         self.assertTrue(td2.is_expired)
@@ -119,12 +116,9 @@ class TokenDistributionClaimTestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.td = TokenDistribution.objects.create(
@@ -138,6 +132,7 @@ class TokenDistributionClaimTestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
         )
 
@@ -166,18 +161,30 @@ class TokenDistributionAPITestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             explorer_url="https://blockscout.com/poa/xdai/",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.btc_chain = Chain.objects.create(
             chain_name="Bitcoin",
             wallet=WalletAccount.objects.create(
+                name="Bitcoin Wallet",
+                private_key=test_wallet_key,
+                network_type=NetworkTypes.LIGHTNING,
+            ),
+            rpc_url_private=test_rpc_url_private,
+            native_currency_name="bitcoin",
+            explorer_url="https://blockstream.info/testnet/",
+            symbol="BTC",
+            chain_id="1010",
+            chain_type=NetworkTypes.LIGHTNING,
+        )
+
+        self.faucet_btc_chain = FaucetChain.objects.create(
+            chain_name="Bitcoin",
+            wallet=FaucetWalletAccount.objects.create(
                 name="Bitcoin Wallet",
                 private_key=test_wallet_key,
                 network_type=NetworkTypes.LIGHTNING,
@@ -206,6 +213,7 @@ class TokenDistributionAPITestCase(APITestCase):
             token_address="0x83ff60e2f93f8edd0637ef669c69d5fb4f64ca8e",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=100,
             notes="Test Notes",
@@ -270,6 +278,7 @@ class TokenDistributionAPITestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=0,
             notes="Test Notes",
@@ -296,6 +305,7 @@ class TokenDistributionAPITestCase(APITestCase):
             token_address="0x123456789abcdef",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() - timezone.timedelta(days=7),
             max_number_of_claims=10,
             notes="Test Notes",
@@ -407,7 +417,9 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
-        self.assertEqual(ClaimReceipt.objects.first().chain, self.btc_td.chain)
+        self.assertEqual(
+            ClaimReceipt.objects.first().chain.chain_id, self.btc_td.chain.chain_id
+        )
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
@@ -429,11 +441,13 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
         gas_tap_claim = ClaimReceipt.objects.first()
-        self.assertEqual(gas_tap_claim.chain, self.btc_td.chain)
+        self.assertEqual(gas_tap_claim.chain.chain_id, self.btc_td.chain.chain_id)
         self.assertEqual(gas_tap_claim._status, ClaimReceipt.PENDING)
 
         tb = TransactionBatch.objects.create(
-            chain=self.btc_td.chain, tx_hash="test hash", _status=ClaimReceipt.VERIFIED
+            chain=self.faucet_btc_chain,
+            tx_hash="test hash",
+            _status=ClaimReceipt.VERIFIED,
         )
 
         gas_tap_claim.batch = tb
@@ -494,13 +508,10 @@ class TokenDistributionClaimAPITestCase(APITestCase):
                 network_type=NetworkTypes.EVM,
             ),
             rpc_url_private=test_rpc_url_private,
-            fund_manager_address=fund_manager,
             native_currency_name="xdai",
             explorer_url="https://blockscout.com/poa/xdai/",
             symbol="XDAI",
             chain_id="100",
-            max_claim_amount=x_dai_max_claim,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
         self.user_profile = UserProfile.objects.get_or_create("mamad")
@@ -516,6 +527,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
             token_address="0x83ff60e2f93f8edd0637ef669c69d5fb4f64ca8e",
             amount=1000,
             chain=self.chain,
+            contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=100,
             notes="Test Notes",

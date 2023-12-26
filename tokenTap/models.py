@@ -3,9 +3,9 @@ from django.db import models
 from django.utils import timezone
 
 from authentication.models import UserProfile
-from core.models import UserConstraint
+from core.models import Chain, UserConstraint
 from faucet.constraints import OptimismHasClaimedGasInThisRound
-from faucet.models import Chain, ClaimReceipt
+from faucet.models import ClaimReceipt
 
 from .constraints import (
     OnceInALifeTimeVerification,
@@ -39,6 +39,7 @@ class TokenDistribution(models.Model):
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
     )
+    contract = models.CharField(max_length=255, null=True, blank=True)
 
     permissions = models.ManyToManyField(Constraint, blank=True)
 

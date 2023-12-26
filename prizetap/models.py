@@ -4,9 +4,8 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import BigNumField, UserConstraint
+from core.models import BigNumField, Chain, UserConstraint
 from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
-from faucet.models import Chain
 
 from .constraints import HaveUnitapPass, NotHaveUnitapPass
 
@@ -118,17 +117,14 @@ class Raffle(models.Model):
         return self.entries.filter(tx_hash__isnull=False).count()
 
     @property
-    def winner(self):
-        winner_entry = self.winner_entry
-        if winner_entry:
-            return winner_entry.user_profile
+    def winners(self):
+        winner_entries = self.winner_entries
+        if winner_entries:
+            return [e.user_profile for e in winner_entries]
 
     @property
-    def winner_entry(self):
-        try:
-            return self.entries.get(is_winner=True)
-        except RaffleEntry.DoesNotExist:
-            return None
+    def winner_entries(self):
+        return self.entries.filter(is_winner=True)
 
     def __str__(self):
         return f"{self.name}"

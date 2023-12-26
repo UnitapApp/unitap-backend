@@ -47,7 +47,8 @@ def set_random_words(raffle: Raffle):
     muon_response = requests.get(
         (
             f"https://shield.unitap.app/v1/?app={app}&method=random-words&"
-            f"params[chainId]={raffle.chain.chain_id}&params[prizetapRaffle]={raffle.contract}&"
+            f"params[chainId]={raffle.chain.chain_id}"
+            f"&params[prizetapRaffle]={raffle.contract}&"
             f"params[raffleId]={raffle.raffleId}"
         )
     )
@@ -105,7 +106,9 @@ def get_raffle_winners(self):
             print(f"Could not acquire process lock at {self.name}")
             return
 
-        raffles_queryset = Raffle.objects.filter(deadline__lt=timezone.now()).filter(status=Raffle.Status.WINNERS_SET)
+        raffles_queryset = Raffle.objects.filter(deadline__lt=timezone.now()).filter(
+            status=Raffle.Status.WINNERS_SET
+        )
         if raffles_queryset.count() > 0:
             for raffle in raffles_queryset:
                 print(f"Getting the winner of raffle {raffle.name}")
@@ -113,7 +116,9 @@ def get_raffle_winners(self):
                 winner_addresses = raffle_client.get_raffle_winners()
                 for addr in winner_addresses:
                     if addr and addr != "0x0000000000000000000000000000000000000000":
-                        winner_entry = raffle.entries.filter(user_wallet_address__iexact=addr).get()
+                        winner_entry = raffle.entries.filter(
+                            user_profile__wallets__address__iexact=addr
+                        ).get()
                         winner_entry.is_winner = True
                         winner_entry.save()
                         raffle.status = Raffle.Status.CLOSED
@@ -172,10 +177,10 @@ def set_raffle_ids(self):
                     print(f"Setting the raffle {raffle.name} raffleId")
                     contract_client = PrizetapContractClient(raffle)
 
-                    receipt = contract_client.get_transaction_receipt(raffle.tx_hash)
-                    log = contract_client.contract.events.RaffleCreated().process_receipt(
-                        receipt, errors=contract_client.LOG_DISCARD
-                    )[0]
+                    receipt = contract_client.web3_utils.get_transaction_receipt(
+                        raffle.tx_hash
+                    )
+                    log = contract_client.get_raffle_created_log(receipt)
 
                     raffle.raffleId = log["args"]["raffleId"]
                     onchain_raffle = contract_client.get_raffle()
@@ -185,7 +190,9 @@ def set_raffle_ids(self):
                         logging.error(f"Mismatch raffle {raffle.pk} status")
                     if onchain_raffle["lastParticipantIndex"] != 0:
                         is_valid = False
-                        logging.error(f"Mismatch raffle {raffle.pk} lastParticipantIndex")
+                        logging.error(
+                            f"Mismatch raffle {raffle.pk} lastParticipantIndex"
+                        )
                     if onchain_raffle["lastWinnerIndex"] != 0:
                         is_valid = False
                         logging.error(f"Mismatch raffle {raffle.pk} lastWinnerIndex")
@@ -195,7 +202,10 @@ def set_raffle_ids(self):
                     if raffle.creator_address != onchain_raffle["initiator"]:
                         is_valid = False
                         logging.error(f"Mismatch raffle {raffle.pk} initiator")
-                    if raffle.max_number_of_entries != onchain_raffle["maxParticipants"]:
+                    if (
+                        raffle.max_number_of_entries
+                        != onchain_raffle["maxParticipants"]
+                    ):
                         is_valid = False
                         logging.error(f"Mismatch raffle {raffle.pk} maxParticipants")
                     if raffle.max_multiplier != onchain_raffle["maxMultiplier"]:

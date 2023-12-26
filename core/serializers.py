@@ -2,7 +2,26 @@ from rest_framework import serializers
 
 from core.constraints import ConstraintVerification, get_constraint
 
-from .models import UserConstraint
+from .models import Chain, UserConstraint
+
+
+class ChainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chain
+        fields = [
+            "pk",
+            "chain_name",
+            "chain_id",
+            "native_currency_name",
+            "symbol",
+            "decimals",
+            "explorer_url",
+            "rpc_url",
+            "logo_url",
+            "modal_url",
+            "is_testnet",
+            "chain_type",
+        ]
 
 
 class UserConstraintBaseSerializer(serializers.Serializer):
@@ -17,7 +36,17 @@ class UserConstraintBaseSerializer(serializers.Serializer):
     params = serializers.SerializerMethodField()
 
     class Meta:
-        fields = ["pk", "name", "title", "type", "description", "explanation", "response", "icon_url", "params"]
+        fields = [
+            "pk",
+            "name",
+            "title",
+            "type",
+            "description",
+            "explanation",
+            "response",
+            "icon_url",
+            "params",
+        ]
         read_only_fields = [
             "pk",
             "name",

@@ -1,11 +1,34 @@
 import datetime
+import time
+from contextlib import contextmanager
 
 import pytz
+from eth_account.messages import encode_defunct
+from web3 import Account, Web3
+from django.core.cache import cache
 from web3 import Web3
 from web3.contract.contract import Contract, ContractFunction
 from web3.logs import DISCARD, IGNORE, STRICT, WARN
 from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
+
+
+@contextmanager
+def memcache_lock(lock_id, oid, lock_expire=60):
+    timeout_at = time.monotonic() + lock_expire
+    # cache.add fails if the key already exists
+    status = cache.add(lock_id, oid, lock_expire)
+    try:
+        yield status
+    finally:
+        # memcache delete is very slow, but we have to use it to take
+        # advantage of using add() for atomic locking
+        if time.monotonic() < timeout_at and status:
+            # don't release the lock if we exceeded the timeout
+            # to lessen the chance of releasing an expired lock
+            # owned by someone else
+            # also don't release the lock if we didn't acquire it
+            cache.delete(lock_id)
 
 
 class TimeUtils:
@@ -54,7 +77,9 @@ class TimeUtils:
         now = datetime.datetime.now(pytz.timezone("UTC"))
         first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_month = first_day - datetime.timedelta(days=1)
-        first_day_of_last_month = last_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        first_day_of_last_month = last_month.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         return first_day_of_last_month
 
 
@@ -122,7 +147,9 @@ class Web3Utils:
 
     def build_contract_txn(self, func: Type[ContractFunction], **kwargs):
         nonce = self.w3.eth.get_transaction_count(self.account.address)
-        tx_data = func.build_transaction({"from": self.account.address, "nonce": nonce, **kwargs})
+        tx_data = func.build_transaction(
+            {"from": self.account.address, "nonce": nonce, **kwargs}
+        )
         return self.sign_tx(tx_data)
 
     def sign_tx(self, tx_data: TxParams):
@@ -137,8 +164,8 @@ class Web3Utils:
     def current_block(self):
         return self.w3.eth.block_number
 
-    def get_transaction_by_hash(self, hash):
-        return self.w3.eth.get_transaction(hash)
+    def get_transaction_by_hash(self, tx_hash):
+        return self.w3.eth.get_transaction(tx_hash)
 
     def get_gas_price(self):
         return self.w3.eth.gas_price
@@ -150,8 +177,29 @@ class Web3Utils:
     def to_checksum_address(address: str):
         return Web3.to_checksum_address(address.lower())
 
-    def get_transaction_receipt(self, hash):
-        return self.w3.eth.get_transaction_receipt(hash)
+    @staticmethod
+    def hash_message(user, token, amount, nonce):
+        message_hash = Web3().solidity_keccak(
+            ["address", "address", "uint256", "uint32"],
+            [
+                Web3.to_checksum_address(user),
+                Web3.to_checksum_address(token),
+                amount,
+                nonce,
+            ],
+        )
+        hashed_message = encode_defunct(hexstr=message_hash.hex())
+
+        return hashed_message
+
+    @staticmethod
+    def sign_hashed_message(private_key, hashed_message):
+        account = Account.from_key(private_key)
+        signed_message = account.sign_message(hashed_message)
+        return signed_message.signature.hex()
+
+    def get_transaction_receipt(self, tx_hash):
+        return self.w3.eth.get_transaction_receipt(tx_hash)
 
     def get_balance(self, address):
-        self.w3.eth.get_balance(address)
+        return self.w3.eth.get_balance(address)

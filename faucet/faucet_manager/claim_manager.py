@@ -6,7 +6,8 @@ import rest_framework.exceptions
 from django.db import transaction
 from django.utils import timezone
 
-from authentication.models import NetworkTypes, UserProfile
+from authentication.models import UserProfile
+from core.models import NetworkTypes
 from faucet.faucet_manager.credit_strategy import (
     CreditStrategy,
     CreditStrategyFactory,
@@ -37,7 +38,9 @@ class SimpleClaimManager(ClaimManager):
 
     def claim(self, amount, to_address=None):
         with transaction.atomic():
-            user_profile = UserProfile.objects.select_for_update().get(pk=self.credit_strategy.user_profile.pk)
+            user_profile = UserProfile.objects.select_for_update().get(
+                pk=self.credit_strategy.user_profile.pk
+            )
             self.assert_pre_claim_conditions(amount, user_profile)
             return self.create_pending_claim_receipt(
                 amount, to_address

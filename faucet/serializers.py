@@ -69,6 +69,7 @@ class SmallChainSerializer(serializers.ModelSerializer):
             "tokentap_contract_address",
             "chain_type",
             "block_scan_address",
+            "is_one_time_claim",
         ]
 
 
@@ -96,6 +97,7 @@ class ChainSerializer(serializers.ModelSerializer):
             "is_testnet",
             "chain_type",
             "block_scan_address",
+            "is_one_time_claim",
         ]
 
 
@@ -130,18 +132,38 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
         try:
             chain: Chain = Chain.objects.get(pk=pk, chain_type="EVM")
         except Chain.DoesNotExist:
-            raise serializers.ValidationError({"chain": "chain is not EVM or does not exist."})
+            raise serializers.ValidationError(
+                {"chain": "chain is not EVM or does not exist."}
+            )
         return chain
 
     class Meta:
         model = DonationReceipt
         depth = 1
-        fields = ["tx_hash", "chain", "datetime", "total_price", "value", "chain_pk", "status", "user_profile"]
-        read_only_fields = ["value", "datetime", "total_price", "chain", "status", "user_profile"]
+        fields = [
+            "tx_hash",
+            "chain",
+            "datetime",
+            "total_price",
+            "value",
+            "chain_pk",
+            "status",
+            "user_profile",
+        ]
+        read_only_fields = [
+            "value",
+            "datetime",
+            "total_price",
+            "chain",
+            "status",
+            "user_profile",
+        ]
 
 
 class LeaderboardSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, read_only=True)
     sum_total_price = serializers.CharField(max_length=150, read_only=True)
-    interacted_chains = serializers.ListField(child=serializers.IntegerField(), read_only=True)
+    interacted_chains = serializers.ListField(
+        child=serializers.IntegerField(), read_only=True
+    )
     rank = serializers.IntegerField(read_only=True, required=False)
