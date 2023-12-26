@@ -266,17 +266,6 @@ class WalletListCreateView(ListCreateAPIView):
     filterset_fields = ["wallet_type"]
 
     def perform_create(self, serializer):
-        address = serializer.validated_data.get("address")
-        wallet_type = serializer.validated_data.get("wallet_type")
-        message = self.request.data.get("message")
-        signature = self.request.data.get("signature")
-
-        if not address or not wallet_type or not message or not signature:
-            return Response({"message": "Invalid request"}, status=403)
-
-        if not verify_signature_eth_scheme(address, message, signature):
-            return Response({"message": "Invalid signature"}, status=403)
-
         serializer.save(user_profile=self.request.user.profile)
 
 

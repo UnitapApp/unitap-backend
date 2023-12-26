@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
+from authentication.helpers import verify_signature_eth_scheme
 from authentication.models import UserProfile, Wallet
 
 
@@ -23,9 +24,29 @@ class MessageResponseSerializer(serializers.Serializer):
 
 
 class WalletSerializer(serializers.ModelSerializer):
+    signature = serializers.CharField(required=True, max_length=150, write_only=True)
+    message = serializers.CharField(required=True, max_length=150, write_only=True)
+
     class Meta:
         model = Wallet
-        fields = ["pk", "wallet_type", "address"]
+        fields = ["pk", "wallet_type", "address", "signature", "message"]
+
+    def is_valid(self, raise_exception=False):
+        super_is_validated = super().is_valid(raise_exception)
+
+        address = self.validated_data.get("address")
+        message = self.validated_data.get("message")
+        signature = self.validated_data.get("signature")
+
+        signature_is_valid = verify_signature_eth_scheme(address, message, signature)
+
+        if not signature_is_valid and raise_exception:
+            raise serializers.ValidationError("Signature is not valid")
+
+        self.validated_data.pop("signature", None)
+        self.validated_data.pop("message", None)
+
+        return super_is_validated and signature_is_valid
 
 
 class ProfileSerializer(serializers.ModelSerializer):

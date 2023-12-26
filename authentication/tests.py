@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from django.urls import reverse
 from django.utils import timezone
+from eth_account.messages import encode_defunct
 from rest_framework.authtoken.models import Token
 from rest_framework.status import (
     HTTP_200_OK,
@@ -11,6 +12,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from rest_framework.test import APITestCase
+from web3 import Account
 
 from authentication.models import UserProfile, Wallet
 from faucet.models import ClaimReceipt
@@ -235,6 +237,10 @@ class TestListCreateWallet(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461G3Ef9A9"
+        self.private_key_test1 = (
+            "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
+        )
+        self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
         self.endpoint = reverse("AUTHENTICATION:wallets-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
@@ -250,26 +256,92 @@ class TestListCreateWallet(APITestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_create_wallet_address(self):
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
         response = self.client.post(
-            self.endpoint, data={"address": self._address, "wallet_type": "EVM"}
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    # def test_create_same_address_twice(self):
-    #     response = self.client.post(self.endpoint,
-    # data={"address": self._address, "wallet_type": "EVM"})
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #     response = self.client.post(self.endpoint,
-    # data={"address": self._address, "wallet_type": "EVM"})
-    #     self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+    def test_create_wallet_address_wrong_signature(self):
+        message = "test-message"
 
-    # def test_get_wallet_list(self):
-    #     response = self.client.post(self.endpoint,
-    # data={"address": self._address, "wallet_type": "EVM"})
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #     response = self.client.get(self.endpoint, {"wallet_type": "EVM"})
-    #     self.assertEqual(response.status_code, HTTP_200_OK)
-    #     self.assertGreater(len(response.data), 0)
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": message,
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_create_same_address_twice(self):
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_get_wallet_list(self):
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response2 = self.client.get(self.endpoint)
+        self.assertEqual(response2.status_code, HTTP_200_OK)
+        self.assertEqual(len(response2.data), 1)
+        self.assertEqual(response2.data[0].get("address"), self.public_key_test1)
 
 
 class TestWalletView(APITestCase):
