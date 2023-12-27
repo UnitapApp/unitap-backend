@@ -37,11 +37,11 @@ class Raffle(models.Model):
         )
 
     name = models.CharField(max_length=256)
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField()
     necessary_information = models.TextField(null=True, blank=True)
     contract = models.CharField(max_length=256)
     raffleId = models.BigIntegerField(null=True, blank=True)
-    creator_name = models.CharField(max_length=255, null=True, blank=True)
+    creator_name = models.CharField(max_length=255)
     creator_profile = models.ForeignKey(
         UserProfile, on_delete=models.DO_NOTHING, related_name="raffles"
     )
