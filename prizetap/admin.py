@@ -7,6 +7,7 @@ from prizetap.models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry
 
 class RaffleAdmin(admin.ModelAdmin):
     list_display = ["pk", "name", "creator_name", "status"]
+    readonly_fields = ["vrf_tx_hash"]
 
 
 class RaffleٍEntryAdmin(admin.ModelAdmin):
