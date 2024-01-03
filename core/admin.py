@@ -9,6 +9,7 @@ class UserConstraintBaseAdmin(admin.ModelAdmin):
         "title",
         "type",
         "description",
+        "negative_description",
         "explanation",
         "response",
         "icon_url",
