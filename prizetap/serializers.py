@@ -232,7 +232,7 @@ class RaffleSerializer(serializers.ModelSerializer):
         return [
             {
                 **ConstraintSerializer(c).data,
-                "is_reversed": True if c.pk in reversed_constraints else False,
+                "is_reversed": True if str(c.pk) in reversed_constraints else False,
             }
             for c in raffle.constraints.all()
         ]
