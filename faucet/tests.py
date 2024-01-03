@@ -5,6 +5,7 @@ import time
 from unittest import skipIf
 from unittest.mock import patch
 
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
@@ -710,3 +711,93 @@ class TestConstraints(APITestCase):
     #     self.wallet.address = "0xB9e291b68E584be657477289389B3a6DEED3E34C"
     #     self.wallet.save()
     #     self.assertFalse(constraint.is_observed())
+
+
+class TestFuelChampion(APITestCase):
+    def setUp(self) -> None:
+        self.wallet = WalletAccount.objects.create(
+            name="Test Wallet", private_key=test_wallet_key
+        )
+
+        self.test_chain = create_test_chain(self.wallet)
+
+        self.optimism = Chain.objects.create(
+            chain_name="Optimism",
+            native_currency_name="ETH",
+            symbol="ETH",
+            rpc_url_private="https://optimism.llamarpc.com",
+            wallet=self.wallet,
+            fund_manager_address="0xb3A97684Eb67182BAa7994b226e6315196D8b364",
+            chain_id=10,
+            max_claim_amount=t_chain_max,
+            explorer_url="https://optimistic.etherscan.io/",
+            explorer_api_url="https://api-optimistic.etherscan.io",
+            explorer_api_key="6PGF5HBTT7DG9CQCQZK3MWR9146JAWQKAC",
+        )
+
+        self.user_profile = create_new_user(
+            "0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F4"
+        )
+        self.wallet = Wallet.objects.create(
+            user_profile=self.user_profile,
+            wallet_type=NetworkTypes.EVM,
+            address="0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F2",
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+
+    def test_get_unverified_fuel_champion(self):
+        cache.delete("FuelChampionQuerySet")
+        endpoint = reverse("FAUCET:gas-tap-fuel-champion")
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash="0x0",
+            chain=self.test_chain,
+            value=10,
+        )
+        res = self.client.get(endpoint)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data), 0)
+
+    def test_get_verified_fuel_champion(self):
+        cache.delete("FuelChampionQuerySet")
+        endpoint = reverse("FAUCET:gas-tap-fuel-champion")
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash="0x0",
+            chain=self.test_chain,
+            value=10,
+            status=ClaimReceipt.VERIFIED,
+        )
+        res = self.client.get(endpoint)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data), 1)
+
+    def test_get_fuel_champion_when_two_person_had_donation(self):
+        cache.delete("FuelChampionQuerySet")
+        endpoint = reverse("FAUCET:gas-tap-fuel-champion")
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash="0x0",
+            chain=self.test_chain,
+            value=10,
+            status=ClaimReceipt.VERIFIED,
+        )
+        DonationReceipt.objects.create(
+            user_profile=self.user_profile,
+            tx_hash="0x1",
+            chain=self.test_chain,
+            value=100,
+            status=ClaimReceipt.VERIFIED,
+        )
+        test_user = create_new_user("0x5A73E32a77E04Fb3285608B0AdEaa000B8e248F3")
+        DonationReceipt.objects.create(
+            user_profile=test_user,
+            tx_hash="0x2",
+            chain=self.test_chain,
+            value=10,
+            status=ClaimReceipt.VERIFIED,
+        )
+        res = self.client.get(endpoint)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[-1].get("donation_amount", 0), 110)

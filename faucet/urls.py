@@ -8,6 +8,7 @@ from faucet.views import (
     ClaimCountView,
     ClaimMaxView,
     DonationReceiptView,
+    FuelChampionView,
     GetTotalRoundClaimsRemainingView,
     GlobalSettingsView,
     LastClaimView,
@@ -66,5 +67,14 @@ urlpatterns = [
     ),
     path("user/donation/", DonationReceiptView.as_view(), name="donation-receipt"),
     path("gas-tap/leaderboard/", LeaderboardView.as_view(), name="gas-tap-leaderboard"),
-    path("user/gas-tap/leaderboard/", UserLeaderboardView.as_view(), name="user-gas-tap-leaderboard"),
+    path(
+        "gas-tap/fuel-champion/",
+        FuelChampionView.as_view(),
+        name="gas-tap-fuel-champion",
+    ),
+    path(
+        "user/gas-tap/leaderboard/",
+        UserLeaderboardView.as_view(),
+        name="user-gas-tap-leaderboard",
+    ),
 ]

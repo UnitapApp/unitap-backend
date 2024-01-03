@@ -7,7 +7,8 @@ import pytz
 import rest_framework.exceptions
 from django.conf import settings
 from django.contrib.postgres.expressions import ArraySubquery
-from django.db.models import FloatField, OuterRef, Subquery, Sum
+from django.core.cache import cache
+from django.db.models import F, FloatField, OuterRef, Subquery, Sum
 from django.db.models.functions import Cast
 from django.http import FileResponse, Http404, HttpResponse
 from django.urls import reverse
@@ -34,6 +35,7 @@ from faucet.serializers import (
     ChainBalanceSerializer,
     ChainSerializer,
     DonationReceiptSerializer,
+    FuelChampionSerializer,
     GlobalSettingsSerializer,
     LeaderboardSerializer,
     ReceiptSerializer,
@@ -339,6 +341,54 @@ class LeaderboardView(ListAPIView):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class FuelChampionView(ListAPIView):
+    serializer_class = FuelChampionSerializer
+
+    def get_queryset(self):
+        queryset = cache.get("FuelChampionQuerySet")
+        if queryset is not None:
+            return queryset
+        round_datetime = RoundCreditStrategy.get_start_of_the_round()
+        subquery_user_profile = (
+            DonationReceipt.objects.filter(status=ClaimReceipt.VERIFIED)
+            .filter(datetime__gt=round_datetime)
+            .filter(chain=OuterRef("chain"))
+            .annotate(float_value=Cast("value", FloatField()))
+            .values("user_profile", "chain")
+            .annotate(value=Sum("float_value"))
+            .order_by("-value")
+            .values("user_profile")[:1]
+        )
+        subquery_donation_amount = (
+            DonationReceipt.objects.filter(status=ClaimReceipt.VERIFIED)
+            .filter(datetime__gt=round_datetime)
+            .filter(chain=OuterRef("chain"))
+            .filter(user_profile=OuterRef("user_profile"))
+            .annotate(float_value=Cast("value", FloatField()))
+            .values("user_profile", "chain")
+            .annotate(value=Sum("float_value"))
+            .order_by("-value")
+            .values("value")
+        )
+        username_subquery = UserProfile.objects.filter(
+            pk=OuterRef("user_profile")
+        ).values("username")
+        queryset = (
+            DonationReceipt.objects.values("chain", "user_profile")
+            .annotate(max_user_profile=Subquery(subquery_user_profile))
+            .filter(max_user_profile__isnull=False)
+            .filter(user_profile=F("max_user_profile"))
+            .annotate(donation_amount=subquery_donation_amount)
+            .annotate(chain_pk=F("chain"))
+            .annotate(username=username_subquery)
+            .values("donation_amount", "chain_pk", "username")
+            .distinct()
+        )
+
+        cache.set("FuelChampionQuerySet", queryset, timeout=120)
+        return queryset
 
 
 def artwork_video(request):
