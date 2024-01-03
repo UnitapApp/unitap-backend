@@ -76,6 +76,7 @@ class UserConstraint(models.Model):
         max_length=10, choices=Type.choices, default=Type.VERIFICATION
     )
     description = models.TextField(null=True, blank=True)
+    negative_description = models.TextField(null=True, blank=True)
     explanation = models.TextField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
     icon_url = models.CharField(max_length=255, null=True, blank=True)
@@ -190,6 +191,7 @@ class Chain(models.Model):
             )
 
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
+                # TODO: Get from Web3Utils
                 return EVMFundManager(self).get_balance(self.wallet.address)
             elif self.chain_type == NetworkTypes.SOLANA:
                 fund_manager = SolanaFundManager(self)
@@ -226,6 +228,7 @@ class Chain(models.Model):
         try:
             from faucet.faucet_manager.fund_manager import EVMFundManager
 
+            # TODO: Get from Web3Utils
             return EVMFundManager(self).get_gas_price()
         except:  # noqa: E722
             logging.exception(f"Error getting gas price for {self.chain_name}")
