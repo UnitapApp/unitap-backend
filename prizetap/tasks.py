@@ -25,6 +25,7 @@ def set_raffle_random_words(self):
             Raffle.objects.filter(deadline__lt=timezone.now())
             .filter(status=Raffle.Status.VERIFIED)
             .filter(vrf_tx_hash__isnull=False)
+            .exclude(vrf_tx_hash__exact="")
             .first()
         )
 
@@ -33,8 +34,9 @@ def set_raffle_random_words(self):
             vrf_client = VRFClientContractClient(raffle.chain)
             last_request = vrf_client.get_last_request()
             expiration_time = last_request[0]
+            num_words = last_request[1]
             now = int(time.time())
-            if now < expiration_time:
+            if now < expiration_time and num_words == raffle.winners_count:
                 set_random_words(raffle)
             else:
                 print("Random words have expired")
