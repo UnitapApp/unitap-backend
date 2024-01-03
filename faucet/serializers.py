@@ -133,21 +133,22 @@ class ChainSerializer(serializers.ModelSerializer):
             "is_one_time_claim",
         ]
 
-    # def get_claimed(self, chain) -> int:
-    #     user = self.context["request"].user
 
-    #     if not user.is_authenticated:
-    #         return "N/A"
-    #     user_profile = user.profile
-    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
+# def get_claimed(self, chain) -> int:
+#     user = self.context["request"].user
 
-    # def get_unclaimed(self, chain) -> int:
-    #     user = self.context["request"].user
+#     if not user.is_authenticated:
+#         return "N/A"
+#     user_profile = user.profile
+#     return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
 
-    #     if not user.is_authenticated:
-    #         return "N/A"
-    #     user_profile = user.profile
-    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
+# def get_unclaimed(self, chain) -> int:
+#     user = self.context["request"].user
+
+#     if not user.is_authenticated:
+#         return "N/A"
+#     user_profile = user.profile
+#     return CreditStrategyFactory(chain, user_profile).get_strategy().get_unclaimed()
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
@@ -180,19 +181,45 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
         try:
             chain: Chain = Chain.objects.get(pk=pk, chain_type="EVM")
         except Chain.DoesNotExist:
-            raise serializers.ValidationError({"chain": "chain is not EVM or does not exist."})
+            raise serializers.ValidationError(
+                {"chain": "chain is not EVM or does not exist."}
+            )
         return chain
 
     class Meta:
         model = DonationReceipt
         depth = 1
-        fields = ["tx_hash", "chain", "datetime", "total_price", "value", "chain_pk", "status", "user_profile"]
-        read_only_fields = ["value", "datetime", "total_price", "chain", "status", "user_profile"]
+        fields = [
+            "tx_hash",
+            "chain",
+            "datetime",
+            "total_price",
+            "value",
+            "chain_pk",
+            "status",
+            "user_profile",
+        ]
+        read_only_fields = [
+            "value",
+            "datetime",
+            "total_price",
+            "chain",
+            "status",
+            "user_profile",
+        ]
 
 
 class LeaderboardSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, read_only=True)
     sum_total_price = serializers.CharField(max_length=150, read_only=True)
-    interacted_chains = serializers.ListField(child=serializers.IntegerField(), read_only=True)
+    interacted_chains = serializers.ListField(
+        child=serializers.IntegerField(), read_only=True
+    )
     wallet = serializers.CharField(max_length=512, read_only=True)
     rank = serializers.IntegerField(read_only=True, required=False)
+
+
+class FuelChampionSerializer(serializers.Serializer):
+    chain_pk = serializers.CharField(max_length=20, read_only=True)
+    username = serializers.CharField(max_length=150, read_only=True)
+    donation_amount = serializers.FloatField(read_only=True, required=False)
