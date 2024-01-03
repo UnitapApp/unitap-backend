@@ -173,7 +173,7 @@ class RaffleSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
     winner_entries = WinnerEntrySerializer(many=True, read_only=True)
     user_entry = serializers.SerializerMethodField()
-    constraints = ConstraintSerializer(many=True, read_only=True)
+    constraints = serializers.SerializerMethodField()
     creator_profile = SimpleProfilerSerializer()
 
     class Meta:
@@ -205,7 +205,6 @@ class RaffleSerializer(serializers.ModelSerializer):
             "raffleId",
             "constraints",
             "constraint_params",
-            "reversed_constraints",
             "created_at",
             "start_at",
             "deadline",
@@ -222,6 +221,17 @@ class RaffleSerializer(serializers.ModelSerializer):
             "number_of_onchain_entries",
             "max_multiplier",
             "winners_count",
+        ]
+
+    def get_constraints(self, raffle: Raffle):
+        return [
+            {
+                **ConstraintSerializer(c).data,
+                "is_reversed": True
+                if c.pk in raffle.reversed_constraints.split(",")
+                else False,
+            }
+            for c in raffle.constraints.all()
         ]
 
     def get_user_entry(self, raffle: Raffle):
