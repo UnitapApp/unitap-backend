@@ -361,17 +361,6 @@ class FuelChampionView(ListAPIView):
             .order_by("-value")
             .values("user_profile")[:1]
         )
-        subquery_donation_amount = (
-            DonationReceipt.objects.filter(status=ClaimReceipt.VERIFIED)
-            .filter(datetime__gt=round_datetime)
-            .filter(chain=OuterRef("chain"))
-            .filter(user_profile=OuterRef("user_profile"))
-            .annotate(float_value=Cast("value", FloatField()))
-            .values("user_profile", "chain")
-            .annotate(value=Sum("float_value"))
-            .order_by("-value")
-            .values("value")
-        )
         username_subquery = UserProfile.objects.filter(
             pk=OuterRef("user_profile")
         ).values("username")
@@ -380,10 +369,9 @@ class FuelChampionView(ListAPIView):
             .annotate(max_user_profile=Subquery(subquery_user_profile))
             .filter(max_user_profile__isnull=False)
             .filter(user_profile=F("max_user_profile"))
-            .annotate(donation_amount=subquery_donation_amount)
             .annotate(chain_pk=F("chain"))
             .annotate(username=username_subquery)
-            .values("donation_amount", "chain_pk", "username")
+            .values("chain_pk", "username")
             .distinct()
         )
 
