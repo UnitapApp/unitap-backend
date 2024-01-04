@@ -224,11 +224,7 @@ class RaffleSerializer(serializers.ModelSerializer):
         ]
 
     def get_constraints(self, raffle: Raffle):
-        reversed_constraints = (
-            raffle.reversed_constraints.split(",")
-            if raffle.reversed_constraints
-            else []
-        )
+        reversed_constraints = raffle.reversed_constraints_list
         return [
             {
                 **ConstraintSerializer(c).data,

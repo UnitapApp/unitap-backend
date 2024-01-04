@@ -128,6 +128,10 @@ class Raffle(models.Model):
     def winner_entries(self):
         return self.entries.filter(is_winner=True)
 
+    @property
+    def reversed_constraints_list(self):
+        return self.reversed_constraints.split(",") if self.reversed_constraints else []
+
     def __str__(self):
         return f"{self.name}"
 
