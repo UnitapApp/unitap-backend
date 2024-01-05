@@ -1,25 +1,32 @@
-import time
 from django.db import IntegrityError
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
-from authentication.models import UserProfile, Wallet
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.generics import (
+    CreateAPIView,
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveAPIView,
+)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from drf_yasg.utils import swagger_auto_schema
+
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
-    verify_signature_eth_scheme,
     is_username_valid_and_available,
+    verify_signature_eth_scheme,
 )
-from drf_yasg import openapi
+from authentication.models import UserProfile, Wallet
 from authentication.serializers import (
-    UsernameRequestSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
-    WalletSerializer, UserHistoryCountSerializer,
+    UserHistoryCountSerializer,
+    UsernameRequestSerializer,
+    WalletSerializer,
 )
+from core.filters import IsOwnerFilterBackend
 
 
 class UserProfileCountView(ListAPIView):
@@ -75,19 +82,21 @@ class LoginView(APIView):
             if BRIGHTID_SOULDBOUND_INTERFACE.sponsor(str(address)) is not True:
                 return Response(
                     {
-                        "message": "We are in the process of sponsoring you. Please try again in five minutes."
+                        "message": "We are in the process of sponsoring you. \
+                            Please try again in five minutes."
                     },
                     status=403,
                 )
             else:
                 return Response(
                     {
-                        "message": "We have requested to sponsor you on BrightID. Please try again in five minutes."
+                        "message": "We have requested to sponsor you on BrightID\
+                            . Please try again in five minutes."
                     },
                     status=409,
                 )
 
-        verified_signature = verify_signature_eth_scheme(address, signature)
+        verified_signature = verify_signature_eth_scheme(address, address, signature)
         if not verified_signature:
             return Response({"message": "Invalid signature"}, status=403)
 
@@ -102,18 +111,21 @@ class LoginView(APIView):
 
         context_ids = []
 
-        if is_meet_verified == False and is_aura_verified == False:
+        if is_meet_verified is False and is_aura_verified is False:
             if meet_context_ids == 3:  # is not verified
                 context_ids = address
             elif aura_context_ids == 4:  # is not linked
                 return Response(
                     {
-                        "message": "Something went wrong with the linking process. please link BrightID with Unitap.\nIf the problem persists, clear your browser cache and try again."
+                        "message": "Something went wrong with the linking process. \
+                            please link BrightID with Unitap.\n"
+                        "If the problem persists, clear your browser cache \
+                            and try again."
                     },
                     status=403,
                 )
 
-        elif is_meet_verified == True or is_aura_verified == True:
+        elif is_meet_verified is True or is_aura_verified is True:
             if meet_context_ids is not None:
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:
@@ -204,7 +216,8 @@ class CheckUsernameView(CreateAPIView):
                 schema=MessageResponseSerializer(),
             ),
             403: openapi.Response(
-                description="Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
+                description="Username must be more than 2 characters, contain at least"
+                " one letter, and only contain letters, digits and @/./+/-/_.",
                 schema=MessageResponseSerializer(),
             ),
         },
@@ -245,101 +258,15 @@ class CheckUsernameView(CreateAPIView):
             return Response(request_serializer.errors, status=400)
 
 
-class SetWalletAddressView(CreateAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        address = request.data.get("address", None)
-        wallet_type = request.data.get("wallet_type", None)
-        if not address or not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        user_profile = request.user.profile
-
-        try:
-            w = Wallet.objects.get(user_profile=user_profile, wallet_type=wallet_type)
-            w.address = address
-            w.save()
-
-            return Response(
-                {"message": f"{wallet_type} wallet address updated"}, status=200
-            )
-
-        except Wallet.DoesNotExist:
-            try:
-                Wallet.objects.create(
-                    user_profile=user_profile, wallet_type=wallet_type, address=address
-                )
-                return Response(
-                    {"message": f"{wallet_type} wallet address set"}, status=200
-                )
-            # catch unique constraint error
-            except IntegrityError:
-                return Response(
-                    {
-                        "message": f"{wallet_type} wallet address is not unique. use another address"
-                    },
-                    status=403,
-                )
-
-
-class GetWalletAddressView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type", None)
-        if not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        # get user profile
-        user_profile = request.user.profile
-
-        try:
-            # check if wallet already exists
-            wallet = Wallet.objects.get(
-                user_profile=user_profile, wallet_type=wallet_type
-            )
-            return Response({"address": wallet.address}, status=200)
-
-        except Wallet.DoesNotExist:
-            return Response(
-                {"message": f"{wallet_type} wallet address not set"}, status=403
-            )
-
-
-class DeleteWalletAddressView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        wallet_type = request.data.get("wallet_type", None)
-        if not wallet_type:
-            return Response({"message": "Invalid request"}, status=403)
-
-        # get user profile
-        user_profile = request.user.profile
-
-        try:
-            # check if wallet already exists
-            wallet = Wallet.objects.get(
-                user_profile=user_profile, wallet_type=wallet_type
-            )
-            wallet.delete()
-            return Response(
-                {"message": f"{wallet_type} wallet address deleted"}, status=200
-            )
-
-        except Wallet.DoesNotExist:
-            return Response(
-                {"message": f"{wallet_type} wallet address not set"}, status=403
-            )
-
-
-class GetWalletsView(ListAPIView):
+class WalletListCreateView(ListCreateAPIView):
+    queryset = Wallet.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = WalletSerializer
+    filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
+    filterset_fields = ["wallet_type"]
 
-    def get_queryset(self):
-        return Wallet.objects.filter(user_profile=self.request.user.profile)
+    def perform_create(self, serializer):
+        serializer.save(user_profile=self.request.user.profile)
 
 
 class UserHistoryCountView(RetrieveAPIView):
@@ -348,11 +275,16 @@ class UserHistoryCountView(RetrieveAPIView):
 
     def get_object(self):
         from faucet.models import ClaimReceipt
+
         user_profile = self.request.user.profile
         data = {
-            'gas_claim': user_profile.claims.filter(_status=ClaimReceipt.VERIFIED).count(),
-            'token_claim': user_profile.tokentap_claims.filter(status=ClaimReceipt.VERIFIED).count(),
-            'raffle_win': user_profile.raffle_entries.count()
+            "gas_claim": user_profile.claims.filter(
+                _status=ClaimReceipt.VERIFIED
+            ).count(),
+            "token_claim": user_profile.tokentap_claims.filter(
+                status=ClaimReceipt.VERIFIED
+            ).count(),
+            "raffle_win": user_profile.raffle_entries.count(),
         }
         return data
 
@@ -360,19 +292,6 @@ class UserHistoryCountView(RetrieveAPIView):
 class GetProfileView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
-
-    # def get(self, request, *args, **kwargs):
-    #     user = request.user
-
-    #     token, bol = Token.objects.get_or_create(user=user)
-    #     print("token", token)
-
-    #     # return Response({"token": token.key}, status=200)
-    #     # return token and profile using profile serializer for profile
-    #     return Response(
-    #         {"token": token.key, "profile": ProfileSerializer(user.profile).data},
-    #         status=200,
-    #     )
 
     def get_object(self):
         return self.request.user.profile

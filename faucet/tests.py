@@ -48,13 +48,10 @@ LIGHTNING_WALLET = os.environ.get("LIGHTNING_WALLET")
 LIGHTNING_FUND_MANAGER = os.environ.get("LIGHTNING_FUND_MANAGER")
 
 LIGHTNING_RPC_URL = "https://api.lnpay.co/v1/"
-LIGHTNING_INVOICE = (
-    "lnbc100n1pjxtceppp5q65xc3w8tnnmzkhqgg9c7h4a8hzplm0dppr"
-    "944upwsq4q62sjeesdqu2askcmr9wssx7e3q2dshgmmnd"
-    "p5scqzzsxqyz5vqsp5hj2vzha0x4qvuyzrym6ryvxwnccn4kjwa57037dg"
-    "cshl5ls4tves9qyyssqj24t4j2dkp2r29ptgxqz2etsk0qp8ggwmt"
-    "20czfu48h5akgme43zevg6x040scjzx3qgtp8mkcg2gurv0hy8d8xm3hhf8k68uefl9sqqqscuvz"
-)
+LIGHTNING_INVOICE = "lnbc100n1pjxtceppp5q65xc3w8tnnmzkhqgg9c7h4a8hzplm0dppr9\
+44upwsq4q62sjeesdqu2askcmr9wssx7e3q2dshgmmndp5scqzzsxqyz5vqsp5hj2vzha0x4qvuyz\
+rym6ryvxwnccn4kjwa57037dgcshl5ls4tves9qyyssqj24t4j2dkp2r29ptgxqz2etsk0qp8ggwm\
+t20czfu48h5akgme43zevg6x040scjzx3qgtp8mkcg2gurv0hy8d8xm3hhf8k68uefl9sqqqscuvz"
 
 
 def create_new_user(
@@ -314,7 +311,7 @@ class TestClaim(APITestCase):
             self.x_dai, self.verified_user
         ).get_manager()
         credit_strategy_x_dai = claim_manager_x_dai.get_credit_strategy()
-        r = claim_manager_x_dai.claim(claim_amount)
+        r = claim_manager_x_dai.claim(claim_amount, "0x12345")
         r._status = ClaimReceipt.VERIFIED
         r.save()
 
@@ -333,7 +330,7 @@ class TestClaim(APITestCase):
         claim_manager_x_dai = ClaimManagerFactory(
             self.x_dai, self.verified_user
         ).get_manager()
-        claim_manager_x_dai.claim(claim_amount_1)
+        claim_manager_x_dai.claim(claim_amount_1, "0x12345")
 
         try:
             claim_manager_x_dai.claim(claim_amount_2)
@@ -350,11 +347,11 @@ class TestClaim(APITestCase):
         claim_manager_x_dai = ClaimManagerFactory(
             self.x_dai, self.verified_user
         ).get_manager()
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
         try:
-            claim_manager_x_dai.claim(claim_amount_2)
+            claim_manager_x_dai.claim(claim_amount_2, "0x12345")
         except AssertionError:
             self.assertEqual(False, True)
 
@@ -368,11 +365,11 @@ class TestClaim(APITestCase):
         claim_manager_x_dai = ClaimManagerFactory(
             self.x_dai, self.verified_user
         ).get_manager()
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.REJECTED
         claim_1.save()
         try:
-            claim_manager_x_dai.claim(claim_amount_2)
+            claim_manager_x_dai.claim(claim_amount_2, "0x12345")
         except AssertionError:
             self.assertEqual(True, False)
 
@@ -387,15 +384,15 @@ class TestClaim(APITestCase):
         claim_manager_x_dai = ClaimManagerFactory(
             self.x_dai, self.verified_user
         ).get_manager()
-        claim_1 = claim_manager_x_dai.claim(claim_amount_1)
+        claim_1 = claim_manager_x_dai.claim(claim_amount_1, "0x12345")
         claim_1._status = ClaimReceipt.VERIFIED
         claim_1.save()
-        claim_2 = claim_manager_x_dai.claim(claim_amount_2)
+        claim_2 = claim_manager_x_dai.claim(claim_amount_2, "0x12345")
         claim_2._status = ClaimReceipt.VERIFIED
         claim_2.save()
 
         try:
-            claim_manager_x_dai.claim(claim_amount_3)
+            claim_manager_x_dai.claim(claim_amount_3, "0x12345")
         except AssertionError:
             self.assertEqual(True, True)
 
@@ -408,7 +405,7 @@ class TestClaim(APITestCase):
         manager = SimpleClaimManager(
             SimpleCreditStrategy(self.test_chain, self.verified_user)
         )
-        manager.claim(100)
+        manager.claim(100, "0x12345")
 
 
 class TestClaimAPI(APITestCase):
@@ -438,55 +435,55 @@ class TestClaimAPI(APITestCase):
         self.client.force_authenticate(user=self.verified_user.user)
         self.user_profile = self.verified_user
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (False, None),
     )
     def test_claim_max_api_should_fail_if_not_verified(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"chain_pk": self.x_dai.pk},
-        )
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
 
-        response = self.client.post(endpoint)
+        response = self.client.post(endpoint, data={"address": "0x12345"})
         self.assertEqual(response.status_code, 403)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
     )
     def test_claim_max_api_should_claim_all(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"chain_pk": self.x_dai.pk},
-        )
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
 
-        response = self.client.post(endpoint)
+        response = self.client.post(
+            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+        )
         claim_receipt = json.loads(response.content)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(claim_receipt["amount"], self.x_dai.max_claim_amount)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
     )
     def test_claim_max_twice_should_fail(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"chain_pk": self.x_dai.pk},
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
+        response_1 = self.client.post(
+            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
         )
-        response_1 = self.client.post(endpoint)
         self.assertEqual(response_1.status_code, 200)
         try:
             self.client.post(endpoint)
         except CustomException:
             self.assertEqual(True, True)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_address_validator_evm(self):
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
+        response_1 = self.client.post(endpoint, data={"address": "0x132546"})
+        self.assertEqual(response_1.status_code, 400)
+
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -529,7 +526,6 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(claim_data["txHash"], last_claim.tx_hash)
         self.assertEqual(claim_data["chain"]["pk"], last_claim.chain.pk)
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -800,4 +796,4 @@ class TestFuelChampion(APITestCase):
         res = self.client.get(endpoint)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[-1].get("username", 0), "User1")
+        self.assertEqual(res.data[-1].get("username", 0), self.user_profile.username)

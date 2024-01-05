@@ -18,8 +18,8 @@ def create_uint32_random_nonce():
     return nonce
 
 
-def hash_message(user, token, amount, nonce):
-    hashed_message = Web3Utils.hash_message(user, token, amount, nonce)
+def hash_message(address, token, amount, nonce):
+    hashed_message = Web3Utils.hash_message(address, token, amount, nonce)
     return hashed_message
 
 
@@ -28,7 +28,7 @@ def sign_hashed_message(hashed_message):
     return Web3Utils.sign_hashed_message(private_key, hashed_message)
 
 
-def has_weekly_credit_left(user_profile):
+def has_credit_left(user_profile):
     return (
         TokenDistributionClaim.objects.filter(
             user_profile=user_profile,

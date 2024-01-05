@@ -1,17 +1,25 @@
 from unittest.mock import patch
+
 from django.urls import reverse
 from django.utils import timezone
-from django.urls import reverse
-from django.contrib.auth.models import User
-from rest_framework.test import APITestCase
+from eth_account.messages import encode_defunct
 from rest_framework.authtoken.models import Token
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_200_OK
-from authentication.models import UserProfile
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_409_CONFLICT,
+)
+from rest_framework.test import APITestCase
+from web3 import Account
+
+from authentication.models import UserProfile, Wallet
 from faucet.models import ClaimReceipt
 
-### get address as username and signed address as password and verify signature
+# get address as username and signed address as password and verify signature
 
-### retrieve address from brightID
+# retrieve address from brightID
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
@@ -48,6 +56,13 @@ def create_verified_user() -> UserProfile:
     user._last_verified_datetime = timezone.now()
     user.save()
     return user
+
+
+def create_new_wallet(user_profile, _address, wallet_type) -> Wallet:
+    wallet, is_create = Wallet.objects.get_or_create(
+        user_profile=user_profile, address=_address, wallet_type=wallet_type
+    )
+    return wallet
 
 
 class CheckUsernameTestCase(APITestCase):
@@ -120,7 +135,6 @@ class TestUserLogin(APITestCase):
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
         self.endpoint = reverse("AUTHENTICATION:login-user")
 
-    @patch("faucet.views.ClaimMaxView.wallet_address_is_set", lambda a: (True, None))
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
         lambda a, b, c: (True, None),
@@ -219,74 +233,142 @@ class TestSponsorCheckOrMakeSponsored(APITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestSetWalletAddress(APITestCase):
+class TestListCreateWallet(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461G3Ef9A9"
-        self.endpoint = reverse("AUTHENTICATION:set-wallet-user")
+        self.private_key_test1 = (
+            "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
+        )
+        self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
+        self.endpoint = reverse("AUTHENTICATION:wallets-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
 
     def test_invalid_arguments_provided_should_fail(self):
         response = self.client.post(self.endpoint)
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         response = self.client.post(self.endpoint, data={"address": False})
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         response = self.client.post(self.endpoint, data={"wallet_type": False})
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    def test_set_same_address_for_multiple_users_should_fail(self):
+    def test_create_wallet_address(self):
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
         response = self.client.post(
-            self.endpoint, data={"address": self._address, "wallet_type": "EVM"}
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_wallet_address_wrong_signature(self):
+        message = "test-message"
 
         response = self.client.post(
-            self.endpoint, data={"address": self._address, "wallet_type": "Solana"}
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": message,
+            },
         )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-    def test_not_existing_wallet_then_create_and_set_address_for_that_is_ok(self):
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_create_same_address_twice(self):
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
         response = self.client.post(
-            self.endpoint, data={"address": self._address, "wallet_type": "EVM"}
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_get_wallet_list(self):
+        message = "test-message"
+
+        hashed_message = encode_defunct(text=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": message,
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response2 = self.client.get(self.endpoint)
+        self.assertEqual(response2.status_code, HTTP_200_OK)
+        self.assertEqual(len(response2.data), 1)
+        self.assertEqual(response2.data[0].get("address"), self.public_key_test1)
 
 
-# class TestGetWalletAddress(APITestCase):
-#     def setUp(self) -> None:
-#         self.password = "test"
-#         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-#         self.endpoint_set = reverse('AUTHENTICATION:set-wallet-user')
-#         self.endpoint_get = reverse('AUTHENTICATION:get-wallet-user')
-#         self.user_profile = create_new_user()
-#         self.client.force_authenticate(user=self.user_profile.user)
-#
-#     def test_get_existing_wallet_is_ok(self):
-#         response = self.client.post(self.endpoint_set, data={'address': self._address, 'wallet_type': "EVM"})
-#         self.assertEqual(response.status_code, HTTP_200_OK)
-#
-#         response = self.client.post(self.endpoint_get, data={'wallet_type': "EVM"})
-#         self.assertEqual(response.status_code, HTTP_200_OK)
-#
-#     def test_not_existing_wallet_should_fail_getting_profile(self):
-#         response = self.client.post(self.endpoint_get, data={'wallet_type': "EVM"})
-#         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-
-
-class TestGetWalletsView(APITestCase):
+class TestWalletView(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
-        self.endpoint = reverse("AUTHENTICATION:get-wallets-user")
         self.user_profile = create_new_user()
+        create_new_wallet(self.user_profile, self._address, "EVM")
+        self.endpoint = reverse("AUTHENTICATION:wallets-user")
         self.client.force_authenticate(user=self.user_profile.user)
 
     def test_request_to_this_api_is_ok(self):
         response = self.client.get(self.endpoint)
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    # def test_change_primary_ture(self):
+    #     response: Response = self.client.patch(self.endpoint, data={'primary': True})
+    #     self.assertEqual(response.status_code, HTTP_200_OK)
+    #     self.assertEqual(response.data.get('primary'), True)
+
+    # def test_access_to_another_user_wallet(self):
+    #     _address = '0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A2'
+    #     other_user = create_new_user(_address)
+    #     wallet = create_new_wallet(other_user, _address, 'EVM')
+    #     _endpoint = reverse('AUTHENTICATION:wallet-user', kwargs={'pk': wallet.pk})
+    #     response = self.client.get(_endpoint)
+    #     self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
 
 class TestGetProfileView(APITestCase):

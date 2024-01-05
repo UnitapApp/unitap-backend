@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from core.admin import UserConstraintBaseAdmin
-from core.models import NetworkTypes
 from prizetap.models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry
 
 
@@ -14,13 +13,9 @@ class RaffleٍEntryAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
         "raffle",
-        "get_wallet",
+        "user_wallet_address",
         "age",
     ]
-
-    @admin.display(ordering="user_profile__wallets", description="Wallet")
-    def get_wallet(self, obj):
-        return obj.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
 
 
 class LineaRaffleEntriesAdmin(admin.ModelAdmin):

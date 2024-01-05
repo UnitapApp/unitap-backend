@@ -2,6 +2,7 @@ import abc
 import logging
 from abc import ABC
 
+import rest_framework.exceptions
 from django.db import transaction
 from django.utils import timezone
 
@@ -19,7 +20,7 @@ from faucet.models import BrightUser, ClaimReceipt, GlobalSettings
 
 class ClaimManager(ABC):
     @abc.abstractmethod
-    def claim(self, amount, passive_address=None) -> ClaimReceipt:
+    def claim(self, amount, to_address=None) -> ClaimReceipt:
         pass
 
     @abc.abstractmethod
@@ -35,14 +36,14 @@ class SimpleClaimManager(ClaimManager):
     def fund_manager(self):
         return EVMFundManager(self.credit_strategy.chain)
 
-    def claim(self, amount, passive_address=None):
+    def claim(self, amount, to_address=None):
         with transaction.atomic():
             user_profile = UserProfile.objects.select_for_update().get(
                 pk=self.credit_strategy.user_profile.pk
             )
             self.assert_pre_claim_conditions(amount, user_profile)
             return self.create_pending_claim_receipt(
-                amount, passive_address
+                amount, to_address
             )  # all pending claims will be processed periodically
 
     def assert_pre_claim_conditions(self, amount, user_profile):
@@ -54,14 +55,17 @@ class SimpleClaimManager(ClaimManager):
             _status=ClaimReceipt.PENDING,
         ).exists()
 
-    def create_pending_claim_receipt(self, amount, passive_address):
+    def create_pending_claim_receipt(self, amount, to_address):
+        if to_address is None:
+            raise rest_framework.exceptions.ParseError("wallet address is required")
+
         return ClaimReceipt.objects.create(
             chain=self.credit_strategy.chain,
             user_profile=self.credit_strategy.user_profile,
             datetime=timezone.now(),
             amount=amount,
             _status=ClaimReceipt.PENDING,
-            passive_address=passive_address,
+            to_address=to_address,
         )
 
     def get_credit_strategy(self) -> CreditStrategy:
@@ -97,19 +101,19 @@ class LimitedChainClaimManager(SimpleClaimManager):
 
 
 class LightningClaimManger(LimitedChainClaimManager):
-    def claim(self, amount, passive_address):
+    def claim(self, amount, to_address):
         try:
             lnpay_client = LNPayClient(
                 self.credit_strategy.chain.rpc_url_private,
                 self.credit_strategy.chain.wallet.main_key,
                 self.credit_strategy.chain.fund_manager_address,
             )
-            decoded_invoice = lnpay_client.decode_invoice(passive_address)
+            decoded_invoice = lnpay_client.decode_invoice(to_address)
         except Exception as e:
             logging.error(e)
             raise AssertionError("Could not decode the invoice")
         assert int(decoded_invoice["num_satoshis"]) == amount, "Invalid amount"
-        return super().claim(amount, passive_address)
+        return super().claim(amount, to_address)
 
 
 class ClaimManagerFactory:
