@@ -1,14 +1,17 @@
 import base64
+import datetime
 import json
 import time
 
 import ed25519
+import pytz
 import requests
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from eth_account import Account
 from eth_account.messages import encode_defunct
+from web3 import Web3
 
 
 def verify_signature_eth_scheme(address, message, signature):
@@ -21,6 +24,38 @@ def verify_signature_eth_scheme(address, message, signature):
             return False
     except Exception as e:
         print("error in verify_signature_eth_scheme: ", e)
+        return False
+
+
+def verify_login_signature(address, message, signature):
+    if message["message"] != "Unitap Sign In" or message["URI"] != "https://unitap.app":
+        return False
+
+    timestamp = datetime.datetime.fromisoformat(
+        message["IssuedAt"].replace("Z", "+00:00")
+    )
+    current_time = datetime.datetime.now(pytz.utc)
+    if current_time - timestamp > datetime.timedelta(minutes=5):
+        return False
+
+    message_hash = Web3().solidity_keccak(
+        ["string", "string", "string"],
+        [
+            message["message"],
+            message["URI"],
+            message["IssuedAt"],
+        ],
+    )
+    hashed_message = encode_defunct(hexstr=message_hash.hex())
+
+    try:
+        signer = Account.recover_message(hashed_message, signature=signature)
+        if signer == address:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print("error in verify_login_signature: ", e)
         return False
 
 

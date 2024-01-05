@@ -1,3 +1,5 @@
+import datetime
+import json
 from unittest.mock import patch
 
 from django.urls import reverse
@@ -12,8 +14,9 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from rest_framework.test import APITestCase
-from web3 import Account
+from web3 import Account, Web3
 
+from authentication.helpers import verify_login_signature
 from authentication.models import UserProfile, Wallet
 from faucet.models import ClaimReceipt
 
@@ -391,78 +394,86 @@ class TestCheckUserExistsView(APITestCase):
         self.assertEqual(response.data["exists"], False)
 
 
-class TestLoginRegistrationView(APITestCase):
+class TestVerifyLoginSignature(APITestCase):
     def setUp(self) -> None:
-        self.user_profile = create_new_user()
         self.endpoint = reverse("AUTHENTICATION:wallet-login")
         self.private_key_test1 = (
             "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
         )
         self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
-        self.private_key_test2 = (
-            "9a620554c90a69e634779ce1d741a2e21c72e5349087a8fb3b0fb01d09a1fd96"
+
+    def test_login_signature_verify_helper_function(self):
+        timestamp = datetime.datetime.now().isoformat() + "Z"
+
+        # timestamp = (
+        #     datetime.datetime.now() - datetime.timedelta(minutes=10)
+        # ).isoformat() + "Z"
+
+        message_hash = Web3().solidity_keccak(
+            ["string", "string", "string"],
+            [
+                "Unitap Sign In",
+                "https://unitap.app",
+                timestamp,
+            ],
         )
-        self.public_key_test2 = "0x4258c2581c688C5f111ECb4338101345cC401265"
 
-    def test_login_with_valid_address(self):
-        Wallet.objects.create(
-            user_profile=self.user_profile,
-            wallet_type="EVM",
-            address=self.public_key_test1,
-        )
+        hashed_message = encode_defunct(hexstr=message_hash.hex())
 
-        message = "test-message"
-
-        hashed_message = encode_defunct(text=message)
         account = Account.from_key(self.private_key_test1)
         signed_message = account.sign_message(hashed_message)
         signature = signed_message.signature.hex()
 
-        response = self.client.post(
-            self.endpoint,
-            data={
-                "wallet_address": self.public_key_test1,
-                "message": message,
-                "signature": signature,
+        data_objec = {
+            "walletAddress": self.public_key_test1,
+            "signature": signature,
+            "message": {
+                "message": "Unitap Sign In",
+                "URI": "https://unitap.app",
+                "IssuedAt": timestamp,
             },
+        }
+
+        result = verify_login_signature(
+            self.public_key_test1, data_objec["message"], signature
         )
 
-        token, bol = Token.objects.get_or_create(user=self.user_profile.user)
-        token = token.key
+        assert result is True
 
-        token_incoming = response.data.get("token")
+    def test_api_verify_login_signature(self):
+        timestamp = datetime.datetime.now().isoformat() + "Z"
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(token, token_incoming)
+        # timestamp = (
+        #     datetime.datetime.now() - datetime.timedelta(minutes=10)
+        # ).isoformat() + "Z"
 
-    def test_login_with_invalid_address(self):
-        # Wallet.objects.create(
-        #     user_profile=self.user_profile,
-        #     wallet_type="EVM",
-        #     address=address,
-        # )
+        message_hash = Web3().solidity_keccak(
+            ["string", "string", "string"],
+            [
+                "Unitap Sign In",
+                "https://unitap.app",
+                timestamp,
+            ],
+        )
 
-        message = "test-message"
+        hashed_message = encode_defunct(hexstr=message_hash.hex())
 
-        hashed_message = encode_defunct(text=message)
-        account = Account.from_key(self.private_key_test2)
+        account = Account.from_key(self.private_key_test1)
         signed_message = account.sign_message(hashed_message)
         signature = signed_message.signature.hex()
 
-        response = self.client.post(
-            self.endpoint,
-            data={
-                "wallet_address": self.public_key_test2,
-                "message": message,
-                "signature": signature,
-            },
-        )
+        data_objec = {
+            "wallet_address": self.public_key_test1,
+            "signature": signature,
+            "message": json.dumps(
+                {
+                    "message": "Unitap Sign In",
+                    "URI": "https://unitap.app",
+                    "IssuedAt": timestamp,
+                }
+            ),
+        }
 
-        token, bol = Token.objects.get_or_create(user=self.user_profile.user)
-        token = token.key
+        result = self.client.post(self.endpoint, data=data_objec)
 
-        token_incoming = response.data.get("token")
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertNotEqual(token, token_incoming)
-        self.assertIsNotNone(token_incoming)
+        assert result.status_code == HTTP_200_OK

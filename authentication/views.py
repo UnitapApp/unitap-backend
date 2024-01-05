@@ -1,3 +1,5 @@
+import json
+
 from django.db import IntegrityError
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
@@ -16,6 +18,7 @@ from rest_framework.views import APIView
 from authentication.helpers import (
     BRIGHTID_SOULDBOUND_INTERFACE,
     is_username_valid_and_available,
+    verify_login_signature,
     verify_signature_eth_scheme,
 )
 from authentication.models import BrightIDConnection, UserProfile, Wallet
@@ -121,7 +124,7 @@ class LoginRegisterView(CreateAPIView):
         if not wallet_address or not signature or not message:
             return Response({"message": "Invalid request"}, status=400)
 
-        if not verify_signature_eth_scheme(wallet_address, message, signature):
+        if not verify_login_signature(wallet_address, json.loads(message), signature):
             return Response({"message": "Invalid signature"}, status=403)
 
         user_profile = UserProfile.objects.get_or_create_with_wallet_address(
