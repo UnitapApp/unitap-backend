@@ -24,6 +24,7 @@ from rest_framework.views import APIView
 from authentication.models import UserProfile
 from core.filters import ChainFilterBackend, IsOwnerFilterBackend
 from core.paginations import StandardResultsSetPagination
+from core.validators import address_validator
 from faucet.faucet_manager.claim_manager import (
     ClaimManagerFactory,
     LimitedChainClaimManager,
@@ -203,6 +204,11 @@ class ClaimMaxView(APIView):
     def get_claim_manager(self):
         return ClaimManagerFactory(self.get_chain(), self.get_user()).get_manager()
 
+    def check_to_address_is_validate(self):
+        chain = self.get_chain()
+        to_address = self.request.data.get("address", None)
+        address_validator(to_address, chain)
+
     def claim_max(self, to_address) -> ClaimReceipt:
         manager = self.get_claim_manager()
         max_credit = manager.get_credit_strategy().get_unclaimed()
@@ -218,6 +224,7 @@ class ClaimMaxView(APIView):
     def post(self, request, *args, **kwargs):
         self.check_user_is_verified()
         self.to_address_is_provided()
+        self.check_to_address_is_validate()
 
         receipt = self.claim_max(to_address=request.data.get("address"))
         return Response(ReceiptSerializer(instance=receipt).data)

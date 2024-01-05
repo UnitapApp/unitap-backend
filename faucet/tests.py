@@ -451,7 +451,9 @@ class TestClaimAPI(APITestCase):
     def test_claim_max_api_should_claim_all(self):
         endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
 
-        response = self.client.post(endpoint, data={"address": "0x12345"})
+        response = self.client.post(
+            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+        )
         claim_receipt = json.loads(response.content)
 
         self.assertEqual(response.status_code, 200)
@@ -463,12 +465,23 @@ class TestClaimAPI(APITestCase):
     )
     def test_claim_max_twice_should_fail(self):
         endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
-        response_1 = self.client.post(endpoint, data={"address": "0x12345"})
+        response_1 = self.client.post(
+            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+        )
         self.assertEqual(response_1.status_code, 200)
         try:
             self.client.post(endpoint)
         except CustomException:
             self.assertEqual(True, True)
+
+    @patch(
+        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
+        lambda a, b, c: (True, None),
+    )
+    def test_address_validator_evm(self):
+        endpoint = reverse("FAUCET:claim-max", kwargs={"chain_pk": self.x_dai.pk})
+        response_1 = self.client.post(endpoint, data={"address": "0x132546"})
+        self.assertEqual(response_1.status_code, 400)
 
     @patch(
         "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
