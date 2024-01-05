@@ -8,7 +8,6 @@ from .models import (
     GlobalSettings,
     LightningConfig,
     TransactionBatch,
-    WalletAccount,
 )
 
 
@@ -87,10 +86,6 @@ class ClaimReceiptAdmin(admin.ModelAdmin):
             return obj.batch.tx_hash
 
 
-class WalletAccountAdmin(admin.ModelAdmin):
-    list_display = ["pk", "name", "address"]
-
-
 class GlobalSettingsAdmin(admin.ModelAdmin):
     list_display = ["pk", "gastap_round_claim_limit", "tokentap_round_claim_limit"]
     list_editable = ["gastap_round_claim_limit", "tokentap_round_claim_limit"]
@@ -130,7 +125,6 @@ class DonationReceiptAdmin(admin.ModelAdmin):
     list_filter = ["faucet", "user_profile"]
 
 
-admin.site.register(WalletAccount, WalletAccountAdmin)
 admin.site.register(Faucet, FaucetAdmin)
 admin.site.register(BrightUser, BrightUserAdmin)
 admin.site.register(ClaimReceipt, ClaimReceiptAdmin)

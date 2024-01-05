@@ -17,7 +17,7 @@ class DonationConstraint(ConstraintVerification):
     def is_observed(self, *args, **kwargs):
         chain_pk = self._param_values[ConstraintParam.CHAIN]
         return (
-            DonationReceipt.objects.filter(chain__pk=chain_pk)
+            DonationReceipt.objects.filter(faucet__chain__pk=chain_pk)
             .filter(user_profile=self.user_profile)
             .filter(status=ClaimReceipt.VERIFIED)
             .exists()

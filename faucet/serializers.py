@@ -46,6 +46,7 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
 class FaucetBalanceSerializer(serializers.ModelSerializer):
     contract_balance = serializers.SerializerMethodField()
     wallet_balance = serializers.SerializerMethodField()
+    chain = ChainSerializer()
 
     class Meta:
         model = Faucet
@@ -67,24 +68,6 @@ class FaucetBalanceSerializer(serializers.ModelSerializer):
 
 
 class SmallFaucetSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Faucet
-        fields = [
-            "pk",
-            "chain",
-            "fund_manager_address",
-            "gas_image_url",
-            "max_claim_amount",
-            "tokentap_contract_address",
-            "chain_type",
-            "block_scan_address",
-            "is_one_time_claim",
-        ]
-
-
-class FaucetSerializer(serializers.ModelSerializer):
-    # claimed = serializers.SerializerMethodField()
-    # unclaimed = serializers.SerializerMethodField()
     chain = ChainSerializer()
 
     class Meta:
@@ -95,8 +78,23 @@ class FaucetSerializer(serializers.ModelSerializer):
             "fund_manager_address",
             "gas_image_url",
             "max_claim_amount",
-            # "claimed",
-            # "unclaimed",
+            "tokentap_contract_address",
+            "block_scan_address",
+            "is_one_time_claim",
+        ]
+
+
+class FaucetSerializer(serializers.ModelSerializer):
+    chain = ChainSerializer()
+
+    class Meta:
+        model = Faucet
+        fields = [
+            "pk",
+            "chain",
+            "fund_manager_address",
+            "gas_image_url",
+            "max_claim_amount",
             "total_claims",
             "total_claims_this_round",
             "tokentap_contract_address",
@@ -104,23 +102,6 @@ class FaucetSerializer(serializers.ModelSerializer):
             "block_scan_address",
             "is_one_time_claim",
         ]
-
-    # def get_claimed(self, chain) -> int:
-    #     user = self.context["request"].user
-
-    #     if not user.is_authenticated:
-    #         return "N/A"
-    #     user_profile = user.profile
-    #     return CreditStrategyFactory(chain, user_profile).get_strategy().get_claimed()
-
-    # def get_unclaimed(self, chain) -> int:
-    #     user = self.context["request"].user
-
-    #     if not user.is_authenticated:
-    #         return "N/A"
-    #     user_profile = user.profile
-    #     return CreditStrategyFactory(chain, user_profile)
-    #     .get_strategy().get_unclaimed()
 
 
 class ReceiptSerializer(serializers.ModelSerializer):

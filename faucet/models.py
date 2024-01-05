@@ -1,15 +1,11 @@
-import binascii
 import logging
 import uuid
 from datetime import datetime, timedelta
 
-from bip_utils import Bip44, Bip44Coins
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
 from django.utils import timezone
-from encrypted_model_fields.fields import EncryptedCharField
-from solders.keypair import Keypair
 
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
@@ -19,37 +15,6 @@ from faucet.faucet_manager.lnpay_client import LNPayClient
 
 def get_cache_time(id):
     return int((float(int(id) % 25) / 25.0) * 180.0) + 180
-
-
-class WalletAccount(models.Model):
-    name = models.CharField(max_length=255, blank=True, null=True)
-    private_key = EncryptedCharField(max_length=100)
-    network_type = models.CharField(
-        choices=NetworkTypes.networks, max_length=10, default=NetworkTypes.EVM
-    )
-
-    @property
-    def address(self):
-        try:
-            node = Bip44.FromPrivateKey(
-                binascii.unhexlify(self.private_key), Bip44Coins.ETHEREUM
-            )
-            return node.PublicKey().ToAddress()
-        except:  # noqa: E722   #dont change this, somehow it creates a bug
-            # if changed to Exception
-            try:
-                keypair = Keypair.from_base58_string(self.private_key)
-                return str(keypair.pubkey())
-            except:  # noqa: E722   #dont change this, somehow it creates a
-                # bug if changed to Exception
-                pass
-
-    def __str__(self) -> str:
-        return "%s - %s" % (self.name, self.address)
-
-    @property
-    def main_key(self):
-        return self.private_key
 
 
 class BrightUserManager(models.Manager):
