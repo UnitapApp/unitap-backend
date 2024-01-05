@@ -8,9 +8,7 @@ from rest_framework.test import APITestCase, override_settings
 
 from authentication.models import UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
-from faucet.models import Chain as FaucetChain
-from faucet.models import ClaimReceipt, GlobalSettings, TransactionBatch
-from faucet.models import WalletAccount as FaucetWalletAccount
+from faucet.models import ClaimReceipt, Faucet, GlobalSettings, TransactionBatch
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
@@ -182,21 +180,10 @@ class TokenDistributionAPITestCase(APITestCase):
             chain_type=NetworkTypes.LIGHTNING,
         )
 
-        self.faucet_btc_chain = FaucetChain.objects.create(
-            chain_name="Bitcoin",
-            wallet=FaucetWalletAccount.objects.create(
-                name="Bitcoin Wallet",
-                private_key=test_wallet_key,
-                network_type=NetworkTypes.LIGHTNING,
-            ),
-            rpc_url_private=test_rpc_url_private,
+        self.faucet_btc = Faucet.objects.create(
+            chain=self.btc_chain,
             fund_manager_address=fund_manager,
-            native_currency_name="bitcoin",
-            explorer_url="https://blockstream.info/testnet/",
-            symbol="BTC",
-            chain_id="1010",
             max_claim_amount=100,
-            chain_type=NetworkTypes.LIGHTNING,
             tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
@@ -415,7 +402,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
         self.assertEqual(
-            ClaimReceipt.objects.first().chain.chain_id, self.btc_td.chain.chain_id
+            ClaimReceipt.objects.first().faucet.chain.chain_id,
+            self.btc_td.chain.chain_id,
         )
 
     @patch(
@@ -438,11 +426,13 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
         gas_tap_claim = ClaimReceipt.objects.first()
-        self.assertEqual(gas_tap_claim.chain.chain_id, self.btc_td.chain.chain_id)
+        self.assertEqual(
+            gas_tap_claim.faucet.chain.chain_id, self.btc_td.chain.chain_id
+        )
         self.assertEqual(gas_tap_claim._status, ClaimReceipt.PENDING)
 
         tb = TransactionBatch.objects.create(
-            chain=self.faucet_btc_chain,
+            faucet=self.faucet_btc,
             tx_hash="test hash",
             _status=ClaimReceipt.VERIFIED,
         )

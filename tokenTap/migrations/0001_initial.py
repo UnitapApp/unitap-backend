@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('amount', models.BigIntegerField()),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('deadline', models.DateTimeField(blank=True, null=True)),
-                ('chain', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='token_distribution', to='faucet.chain')),
+                ('chain', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='token_distribution', to='core.chain')),
             ],
         ),
         migrations.CreateModel(

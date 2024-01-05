@@ -23,7 +23,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from authentication.models import UserProfile
-from core.filters import ChainFilterBackend, IsOwnerFilterBackend
+from core.filters import IsOwnerFilterBackend
 from core.paginations import StandardResultsSetPagination
 from core.validators import address_validator
 from faucet.faucet_manager.claim_manager import (
@@ -31,16 +31,17 @@ from faucet.faucet_manager.claim_manager import (
     LimitedChainClaimManager,
 )
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
-from faucet.models import Chain, ClaimReceipt, DonationReceipt, GlobalSettings
+from faucet.filters import FaucetFilterBackend
+from faucet.models import ClaimReceipt, DonationReceipt, Faucet, GlobalSettings
 from faucet.serializers import (
-    ChainBalanceSerializer,
-    ChainSerializer,
     DonationReceiptSerializer,
+    FaucetBalanceSerializer,
+    FaucetSerializer,
     FuelChampionSerializer,
     GlobalSettingsSerializer,
     LeaderboardSerializer,
     ReceiptSerializer,
-    SmallChainSerializer,
+    SmallFaucetSerializer,
 )
 
 
@@ -74,12 +75,6 @@ class ListClaims(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ReceiptSerializer
 
-    filterset_fields = {
-        "chain": {"exact"},
-        "_status": {"exact"},
-        "datetime": {"exact", "gte", "lte"},
-    }
-
     def get_queryset(self):
         user_profile = self.request.user.profile
         return ClaimReceipt.objects.filter(
@@ -101,7 +96,7 @@ class ListOneTimeClaims(ListAPIView):
         user_profile = self.request.user.profile
         return ClaimReceipt.objects.filter(
             user_profile=user_profile,
-            chain__in=Chain.objects.filter(is_one_time_claim=True),
+            faucet__in=Faucet.objects.filter(is_one_time_claim=True),
             _status__in=[
                 ClaimReceipt.VERIFIED,
                 ClaimReceipt.PENDING,
@@ -135,17 +130,17 @@ class GetTotalRoundClaimsRemainingView(RetrieveAPIView):
             raise Http404("Global Settings Not Found")
 
 
-class ChainListView(ListAPIView):
+class FaucetListView(ListAPIView):
     """
-    list of supported chains
+    list of faucets
 
     this endpoint returns detailed user specific info if supplied with an address
     """
 
-    serializer_class = ChainSerializer
+    serializer_class = FaucetSerializer
 
     def get_queryset(self):
-        queryset = Chain.objects.filter(is_active=True, show_in_gastap=True)
+        queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
 
         sorted_queryset = sorted(
             queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
@@ -153,14 +148,13 @@ class ChainListView(ListAPIView):
         return sorted_queryset
 
 
-class SmallChainListView(ListAPIView):
+class SmallFaucetListView(ListAPIView):
     """
-    list of supported chains with minimum details
-
+    list of faucet with minimum details
     """
 
-    serializer_class = SmallChainSerializer
-    queryset = Chain.objects.filter(is_active=True)
+    serializer_class = SmallFaucetSerializer
+    queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
 
 
 class GlobalSettingsView(RetrieveAPIView):
@@ -170,9 +164,10 @@ class GlobalSettingsView(RetrieveAPIView):
         return GlobalSettings.objects.first()
 
 
+# TODO: fixme
 class ClaimMaxView(APIView):
     """
-    Claims maximum possible fee for the given user and chain
+    Claims maximum possible fee for the given user and faucet
 
     **user must be verified**
     """
@@ -196,18 +191,18 @@ class ClaimMaxView(APIView):
         if not to_address:
             raise rest_framework.exceptions.ParseError("wallet address not set")
 
-    def get_chain(self) -> Chain:
-        chain_pk = self.kwargs.get("chain_pk", None)
+    def get_faucet(self) -> Faucet:
+        faucet_pk = self.kwargs.get("faucet_pk", None)
         try:
-            return Chain.objects.get(pk=chain_pk)
-        except Chain.DoesNotExist:
-            raise Http404(f"Chain with id {chain_pk} Does not Exist")
+            return Faucet.objects.get(pk=faucet_pk)
+        except Faucet.DoesNotExist:
+            raise Http404(f"Faucet with id {faucet_pk} Does not Exist")
 
     def get_claim_manager(self):
-        return ClaimManagerFactory(self.get_chain(), self.get_user()).get_manager()
+        return ClaimManagerFactory(self.get_faucet(), self.get_user()).get_manager()
 
     def check_to_address_is_validate(self):
-        chain = self.get_chain()
+        chain = self.get_faucet().chain
         to_address = self.request.data.get("address", None)
         address_validator(to_address, chain)
 
@@ -232,21 +227,21 @@ class ClaimMaxView(APIView):
         return Response(ReceiptSerializer(instance=receipt).data)
 
 
-class ChainBalanceView(RetrieveAPIView):
-    serializer_class = ChainBalanceSerializer
+class FaucetBalanceView(RetrieveAPIView):
+    serializer_class = FaucetBalanceSerializer
 
     def get_object(self):
-        chain_pk = self.kwargs.get("chain_pk", None)
-        if chain_pk is None:
-            raise Http404("Chain ID not provided")
-        return Chain.objects.get(pk=chain_pk)
+        faucet_pk = self.kwargs.get("faucet_pk", None)
+        if faucet_pk is None:
+            raise Http404("Faucet ID not provided")
+        return Faucet.objects.get(pk=faucet_pk)
 
 
 class DonationReceiptView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DonationReceiptSerializer
     pagination_class = StandardResultsSetPagination
-    filter_backends = [IsOwnerFilterBackend, ChainFilterBackend]
+    filter_backends = [IsOwnerFilterBackend, FaucetFilterBackend]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -261,7 +256,7 @@ class DonationReceiptView(ListCreateAPIView):
 
 
 class UserLeaderboardView(RetrieveAPIView):
-    filter_backends = [ChainFilterBackend]
+    filter_backends = [FaucetFilterBackend]
     permission_classes = [IsAuthenticated]
     queryset = DonationReceipt.objects.all()
     serializer_class = LeaderboardSerializer
@@ -287,7 +282,7 @@ class UserLeaderboardView(RetrieveAPIView):
         interacted_chains = list(
             DonationReceipt.objects.filter(user_profile=self.get_user())
             .filter(status=ClaimReceipt.VERIFIED)
-            .values_list("chain", flat=True)
+            .values_list("faucet__chain", flat=True)  # TODO fixme
             .distinct()
         )
         user_obj["interacted_chains"] = interacted_chains
@@ -299,7 +294,7 @@ class LeaderboardView(ListAPIView):
     serializer_class = LeaderboardSerializer
     pagination_class = StandardResultsSetPagination
     queryset = DonationReceipt.objects.all()
-    filter_backends = [ChainFilterBackend]
+    filter_backends = [FaucetFilterBackend]
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -313,7 +308,7 @@ class LeaderboardView(ListAPIView):
         subquery_interacted_chains = (
             DonationReceipt.objects.filter(user_profile=OuterRef("user_profile"))
             .filter(status=ClaimReceipt.VERIFIED)
-            .values_list("chain", flat=True)
+            .values_list("faucet__chain", flat=True)
             .distinct()
         )
         queryset = donation_receipt.annotate(
@@ -343,9 +338,9 @@ class FuelChampionView(ListAPIView):
         subquery_user_profile = (
             DonationReceipt.objects.filter(status=ClaimReceipt.VERIFIED)
             .filter(datetime__gt=round_datetime)
-            .filter(chain=OuterRef("chain"))
+            .filter(faucet=OuterRef("faucet"))
             .annotate(float_value=Cast("value", FloatField()))
-            .values("user_profile", "chain")
+            .values("user_profile", "faucet")
             .annotate(value=Sum("float_value"))
             .order_by("-value")
             .values("user_profile")[:1]
@@ -354,13 +349,13 @@ class FuelChampionView(ListAPIView):
             pk=OuterRef("user_profile")
         ).values("username")
         queryset = (
-            DonationReceipt.objects.values("chain", "user_profile")
+            DonationReceipt.objects.values("faucet", "user_profile")
             .annotate(max_user_profile=Subquery(subquery_user_profile))
             .filter(max_user_profile__isnull=False)
             .filter(user_profile=F("max_user_profile"))
-            .annotate(chain_pk=F("chain"))
+            .annotate(faucet_pk=F("faucet"))
             .annotate(username=username_subquery)
-            .values("chain_pk", "username")
+            .values("faucet_pk", "username")
             .distinct()
         )
 

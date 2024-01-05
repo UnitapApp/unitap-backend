@@ -15,8 +15,7 @@ from rest_framework.views import APIView
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
-from faucet.models import Chain as FaucetChain
-from faucet.models import ClaimReceipt
+from faucet.models import ClaimReceipt, Faucet
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
     ConstraintSerializer,
@@ -163,7 +162,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 token_distribution=token_distribution,
             )
             ClaimReceipt.objects.create(
-                chain=FaucetChain.objects.get(chain_type=NetworkTypes.LIGHTNING),
+                faucet=Faucet.objects.get(chain__chain_type=NetworkTypes.LIGHTNING),
                 user_profile=user_profile,
                 datetime=timezone.now(),
                 amount=token_distribution.amount,

@@ -17,7 +17,7 @@ from core.utils import Web3Utils
 from faucet.constants import MEMCACHE_LIGHTNING_LOCK_KEY
 from faucet.faucet_manager.fund_manager_abi import manager_abi
 from faucet.helpers import memcache_lock
-from faucet.models import BrightUser, Chain, LightningConfig
+from faucet.models import BrightUser, Faucet, LightningConfig
 
 from .anchor_client import instructions
 from .anchor_client.accounts.lock_account import LockAccount
@@ -33,24 +33,25 @@ class FundMangerException:
         pass
 
 
-def get_fund_manager(chain: Chain):
-    if chain.chain_type == NetworkTypes.SOLANA:
+def get_fund_manager(faucet: Faucet):
+    if faucet.chain.chain_type == NetworkTypes.SOLANA:
         manager_cls = SolanaFundManager
-    elif chain.chain_type == NetworkTypes.LIGHTNING:
+    elif faucet.chain.chain_type == NetworkTypes.LIGHTNING:
         manager_cls = LightningFundManager
     elif (
-        chain.chain_type == NetworkTypes.EVM
-        or chain.chain_type == NetworkTypes.NONEVMXDC
+        faucet.chain.chain_type == NetworkTypes.EVM
+        or faucet.chain.chain_type == NetworkTypes.NONEVMXDC
     ):
         manager_cls = EVMFundManager
     else:
-        raise Exception(f"Invalid chain type {chain.chain_type}")
-    return manager_cls(chain)
+        raise Exception(f"Invalid chain type {faucet.chain.chain_type}")
+    return manager_cls(faucet.chain)
 
 
 class EVMFundManager:
-    def __init__(self, chain: Chain):
-        self.chain = chain
+    def __init__(self, faucet: Faucet):
+        self.faucet = faucet
+        self.chain = faucet.chain
         self.web3_utils = Web3Utils(self.chain.rpc_url_private)
         self.web3_utils.set_account(self.chain.wallet.main_key)
         self.web3_utils.set_contract(
@@ -76,7 +77,7 @@ class EVMFundManager:
         return self.web3_utils.get_balance(address)
 
     def get_fund_manager_checksum_address(self):
-        return self.web3_utils.to_checksum_address(self.chain.fund_manager_address)
+        return self.web3_utils.to_checksum_address(self.faucet.fund_manager_address)
 
     def transfer(self, bright_user: BrightUser, amount: int):
         return self._transfer("withdrawEth", amount, bright_user.address)
@@ -126,8 +127,9 @@ class EVMFundManager:
 
 
 class SolanaFundManager:
-    def __init__(self, chain: Chain):
-        self.chain = chain
+    def __init__(self, faucet: Faucet):
+        self.faucet = faucet
+        self.chain = faucet.chain
         self.abi = manager_abi
 
     @property
@@ -149,7 +151,7 @@ class SolanaFundManager:
 
     @property
     def program_id(self) -> Pubkey:
-        return Pubkey.from_string(self.chain.fund_manager_address)
+        return Pubkey.from_string(self.faucet.fund_manager_address)
 
     @property
     def lock_account_seed(self) -> bytes:
@@ -256,8 +258,9 @@ class SolanaFundManager:
 
 
 class LightningFundManager:
-    def __init__(self, chain: Chain):
-        self.chain = chain
+    def __init__(self, faucet: Faucet):
+        self.faucet = faucet
+        self.chain = faucet.chain
 
     @property
     def config(self) -> LightningConfig:
@@ -272,7 +275,7 @@ class LightningFundManager:
     @property
     def lnpay_client(self):
         return LNPayClient(
-            self.chain.rpc_url_private, self.api_key, self.chain.fund_manager_address
+            self.chain.rpc_url_private, self.api_key, self.faucet.fund_manager_address
         )
 
     def __check_max_cap_exceeds(self, amount) -> bool:

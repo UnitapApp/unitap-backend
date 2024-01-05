@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from faucet.models import Chain, ClaimReceipt, DonationReceipt, GlobalSettings
+from core.serializers import ChainSerializer
+from faucet.models import ClaimReceipt, DonationReceipt, Faucet, GlobalSettings
 
 
 class GlobalSettingsSerializer(serializers.ModelSerializer):
@@ -14,95 +15,69 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
         ]
 
 
-class ChainBalanceSerializer(serializers.ModelSerializer):
-    wallet = serializers.SerializerMethodField()
+class FaucetBalanceSerializer(serializers.ModelSerializer):
     contract_balance = serializers.SerializerMethodField()
     wallet_balance = serializers.SerializerMethodField()
+    chain = ChainSerializer()
 
     class Meta:
-        model = Chain
+        model = Faucet
         fields = [
             "pk",
-            "chain_name",
-            "chain_id",
-            "symbol",
-            "decimals",
+            "chain",
             "needs_funding",
-            "has_enough_fees",
             "has_enough_funds",
             "contract_balance",
             "wallet_balance",
-            "is_testnet",
-            "chain_type",
             "block_scan_address",
-            "wallet",
         ]
 
-    def get_wallet(self, chain):
-        return chain.wallet.address
+    def get_contract_balance(self, faucet):
+        return faucet.manager_balance
 
-    def get_contract_balance(self, chain):
-        return chain.manager_balance
-
-    def get_wallet_balance(self, chain):
-        return chain.wallet_balance
+    def get_wallet_balance(self, faucet):
+        return faucet.chain.wallet_balance
 
 
-class SmallChainSerializer(serializers.ModelSerializer):
+class SmallFaucetSerializer(serializers.ModelSerializer):
+    chain = ChainSerializer()
+
     class Meta:
-        model = Chain
+        model = Faucet
         fields = [
             "pk",
-            "chain_name",
-            "chain_id",
+            "chain",
             "fund_manager_address",
-            "native_currency_name",
-            "symbol",
-            "decimals",
-            "explorer_url",
-            "rpc_url",
-            "logo_url",
-            "modal_url",
             "gas_image_url",
             "max_claim_amount",
-            "is_testnet",
             "tokentap_contract_address",
-            "chain_type",
             "block_scan_address",
             "is_one_time_claim",
         ]
 
 
-class ChainSerializer(serializers.ModelSerializer):
+class FaucetSerializer(serializers.ModelSerializer):
+    chain = ChainSerializer()
+
     class Meta:
-        model = Chain
+        model = Faucet
         fields = [
             "pk",
-            "chain_name",
-            "chain_id",
+            "chain",
             "fund_manager_address",
-            "native_currency_name",
-            "symbol",
-            "decimals",
-            "explorer_url",
-            "rpc_url",
-            "logo_url",
-            "modal_url",
             "gas_image_url",
             "max_claim_amount",
             "total_claims",
             "total_claims_this_round",
             "tokentap_contract_address",
             "needs_funding",
-            "is_testnet",
-            "chain_type",
             "block_scan_address",
             "is_one_time_claim",
         ]
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
-    chain = SmallChainSerializer()
+    faucet = SmallFaucetSerializer()
 
     class Meta:
         model = ClaimReceipt
@@ -110,7 +85,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
             "pk",
             "tx_hash",
             "to_address",
-            "chain",
+            "faucet",
             "datetime",
             "amount",
             "status",
@@ -119,34 +94,34 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 
 class DonationReceiptSerializer(serializers.ModelSerializer):
-    chain_pk = serializers.CharField(max_length=20, write_only=True)
-    chain = SmallChainSerializer(read_only=True)
+    faucet_pk = serializers.CharField(max_length=20, write_only=True)
+    faucet = FaucetSerializer(read_only=True)
 
     def validate(self, attrs):
-        chain = self._validate_chain(attrs.pop("chain_pk"))
+        faucet = self._validate_faucet(attrs.pop("faucet_pk"))
         attrs["user_profile"] = self.context.get("user")
-        attrs["chain"] = chain
+        attrs["faucet"] = faucet
         return attrs
 
-    def _validate_chain(self, pk: str):
+    def _validate_faucet(self, pk: str):
         try:
-            chain: Chain = Chain.objects.get(pk=pk, chain_type="EVM")
-        except Chain.DoesNotExist:
+            faucet: Faucet = Faucet.objects.get(pk=pk, chain__chain_type="EVM")
+        except Faucet.DoesNotExist:
             raise serializers.ValidationError(
-                {"chain": "chain is not EVM or does not exist."}
+                {"faucet": "faucet is not EVM or does not exist."}
             )
-        return chain
+        return faucet
 
     class Meta:
         model = DonationReceipt
         depth = 1
         fields = [
             "tx_hash",
-            "chain",
+            "faucet",
             "datetime",
             "total_price",
             "value",
-            "chain_pk",
+            "faucet_pk",
             "status",
             "user_profile",
         ]
@@ -154,7 +129,7 @@ class DonationReceiptSerializer(serializers.ModelSerializer):
             "value",
             "datetime",
             "total_price",
-            "chain",
+            "faucet",
             "status",
             "user_profile",
         ]
@@ -166,9 +141,10 @@ class LeaderboardSerializer(serializers.Serializer):
     interacted_chains = serializers.ListField(
         child=serializers.IntegerField(), read_only=True
     )
+    wallet = serializers.CharField(max_length=512, read_only=True)
     rank = serializers.IntegerField(read_only=True, required=False)
 
 
 class FuelChampionSerializer(serializers.Serializer):
-    chain_pk = serializers.CharField(max_length=20, read_only=True)
+    faucet_pk = serializers.CharField(max_length=20, read_only=True)
     username = serializers.CharField(max_length=150, read_only=True)
