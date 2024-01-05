@@ -222,4 +222,3 @@ class LeaderboardSerializer(serializers.Serializer):
 class FuelChampionSerializer(serializers.Serializer):
     chain_pk = serializers.CharField(max_length=20, read_only=True)
     username = serializers.CharField(max_length=150, read_only=True)
-    donation_amount = serializers.FloatField(read_only=True, required=False)

@@ -800,4 +800,4 @@ class TestFuelChampion(APITestCase):
         res = self.client.get(endpoint)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[-1].get("donation_amount", 0), 110)
+        self.assertEqual(res.data[-1].get("username", 0), "User1")
