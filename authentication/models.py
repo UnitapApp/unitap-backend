@@ -5,6 +5,10 @@ from django.db import models
 from django.utils import timezone
 
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
+from authentication.thirdpartydrivers import (
+    BaseThirdPartyDriver,
+    BrightIDConnectionDriver,
+)
 from core.models import NetworkTypes
 
 
@@ -95,6 +99,10 @@ class UserProfile(models.Model):
         # return is_verified
         return False
 
+    @property
+    def is_connected_to_brightid(self):
+        return BrightIDConnection.is_connected(self)
+
     def owns_wallet(self, wallet_address):
         return self.wallets.filter(address=wallet_address).exists()
 
@@ -133,9 +141,30 @@ class BaseThirdPartyConnection(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
+    driver = BaseThirdPartyDriver()
+
     class Meta:
         abstract = True
+
+    @classmethod
+    def is_connected(cls, user_profile):
+        return cls.objects.filter(user_profile=user_profile).exists()
+
+    @classmethod
+    def get_connection(cls, user_profile):
+        return cls.objects.get(user_profile=user_profile)
 
 
 class BrightIDConnection(BaseThirdPartyConnection):
     context_id = models.CharField(max_length=512, unique=True)
+
+    driver = BrightIDConnectionDriver()
+
+    @property
+    def is_meets_verified(self):
+        return self.driver.get_meets_verification_status(self.context_id)
+
+    @property
+    def is_aura_verified(self):
+        return False
+        return self.driver.get_aura_verification_status(self.context_id)
