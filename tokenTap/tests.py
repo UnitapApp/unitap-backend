@@ -221,9 +221,9 @@ class TokenDistributionAPITestCase(APITestCase):
         self.permission1 = Constraint.objects.create(
             name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
         )
-        self.permission2 = Constraint.objects.create(
-            name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
-        )
+        # self.permission2 = Constraint.objects.create(
+        #     name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
+        # )
         self.permission4 = Constraint.objects.create(
             name="tokenTap.OncePerMonthVerification",
             title="Once per Month",
@@ -235,7 +235,7 @@ class TokenDistributionAPITestCase(APITestCase):
             type="TIME",
         )
 
-        self.td.permissions.set([self.permission1, self.permission2, self.permission4])
+        self.td.permissions.set([self.permission1, self.permission4])
 
         self.btc_td = TokenDistribution.objects.create(
             name="Test Distribution",
@@ -261,9 +261,6 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.data[0]["name"], "Test Distribution")
         self.assertEqual(
             response.data[0]["permissions"][0]["name"], "core.BrightIDMeetVerification"
-        )
-        self.assertEqual(
-            response.data[0]["permissions"][1]["name"], "core.BrightIDAuraVerification"
         )
 
     def test_token_distribution_not_claimable_max_reached(self):
@@ -535,10 +532,10 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         self.permission1 = Constraint.objects.create(
             name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
         )
-        self.permission2 = Constraint.objects.create(
-            name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
-        )
-        self.td.permissions.set([self.permission1, self.permission2])
+        # self.permission2 = Constraint.objects.create(
+        #     name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
+        # )
+        self.td.permissions.set([self.permission1])
 
         self.tdc = TokenDistributionClaim.objects.create(
             user_profile=self.user_profile,

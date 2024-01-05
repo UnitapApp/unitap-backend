@@ -18,7 +18,7 @@ from authentication.helpers import (
     is_username_valid_and_available,
     verify_signature_eth_scheme,
 )
-from authentication.models import UserProfile, Wallet
+from authentication.models import BrightIDConnection, UserProfile, Wallet
 from authentication.serializers import (
     MessageResponseSerializer,
     ProfileSerializer,
@@ -32,6 +32,103 @@ from core.filters import IsOwnerFilterBackend
 class UserProfileCountView(ListAPIView):
     def get(self, request, *args, **kwargs):
         return Response({"count": UserProfile.user_count()}, status=200)
+
+
+class CheckUserExistsView(APIView):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "wallet_address": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The wallet address of the user to check.",
+                )
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="User exists or not",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"exists": openapi.Schema(type=openapi.TYPE_BOOLEAN)},
+                ),
+            ),
+            403: openapi.Response(
+                description="Invalid request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        wallet_address = request.data.get("wallet_address", None)
+        if not wallet_address:
+            return Response({"message": "Invalid request"}, status=403)
+
+        user_exists = (
+            UserProfile.objects.get_by_wallet_address(wallet_address) is not None
+        )
+
+        return Response({"exists": user_exists}, status=200)
+
+
+class LoginRegisterView(CreateAPIView):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "wallet_address": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The wallet address of the user to login/register.",
+                ),
+                "signature": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The signature of the wallet address.",
+                ),
+                "message": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The message signed by the wallet address.",
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="User profile is returned",
+                schema=ProfileSerializer(),
+            ),
+            400: openapi.Response(
+                description="Invalid request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
+            ),
+            403: openapi.Response(
+                description="Invalid signature",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        wallet_address = request.data.get("wallet_address", None)
+        signature = request.data.get("signature", None)
+        message = request.data.get("message", None)
+        if not wallet_address or not signature or not message:
+            return Response({"message": "Invalid request"}, status=400)
+
+        if not verify_signature_eth_scheme(wallet_address, message, signature):
+            return Response({"message": "Invalid signature"}, status=403)
+
+        user_profile = UserProfile.objects.get_or_create_with_wallet_address(
+            wallet_address
+        )
+
+        return Response(ProfileSerializer(user_profile).data, status=200)
 
 
 class SponsorView(CreateAPIView):
@@ -66,6 +163,124 @@ class SponsorView(CreateAPIView):
             },
             status=200,
         )
+
+
+class ConnectBrightIDView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "address": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The wallet address of the user to login/register.",
+                ),
+                "signature": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The signature of the wallet address.",
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="User profile is returned",
+                schema=ProfileSerializer(),
+            ),
+            400: openapi.Response(
+                description="Invalid request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
+            ),
+            403: openapi.Response(
+                description="Invalid signature",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={"message": openapi.Schema(type=openapi.TYPE_STRING)},
+                ),
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        address = request.data.get("address", None)
+        signature = request.data.get("signature", None)
+        if not address or not signature:
+            return Response({"message": "Invalid request"}, status=403)
+
+        profile = request.user.profile
+
+        try:
+            is_connected = BrightIDConnection.is_connected(profile)
+            if is_connected:
+                return Response(
+                    {"message": "You are already connected to BrightID"}, status=403
+                )
+        except BrightIDConnection.DoesNotExist:
+            pass
+
+        is_sponsored = BrightIDConnection.driver.check_sponsorship(address)
+        if not is_sponsored:
+            if BrightIDConnection.driver.sponsor(str(address)) is not True:
+                return Response(
+                    {
+                        "message": "We are in the process of sponsoring you. \
+                            Please try again in five minutes."
+                    },
+                    status=403,
+                )
+            else:
+                return Response(
+                    {
+                        "message": "We have requested to sponsor you on BrightID\
+                            . Please try again in five minutes."
+                    },
+                    status=409,
+                )
+
+        verified_signature = verify_signature_eth_scheme(address, address, signature)
+        if not verified_signature:
+            return Response({"message": "Invalid signature"}, status=403)
+
+        (
+            is_meet_verified,
+            meet_context_ids,
+        ) = BrightIDConnection.driver.get_meets_verification_status(address)
+        (
+            is_aura_verified,
+            aura_context_ids,
+        ) = BrightIDConnection.driver.get_aura_verification_status(address)
+
+        context_ids = []
+
+        if is_meet_verified == False and is_aura_verified == False:  # noqa: E712
+            if meet_context_ids == 3:  # is not verified
+                context_ids = address
+            elif aura_context_ids == 4:  # is not linked
+                return Response(
+                    {
+                        "message": "Something went wrong with the linking process. \
+                            please link BrightID with Unitap.\n"
+                        "If the problem persists, clear your browser cache \
+                            and try again."
+                    },
+                    status=403,
+                )
+
+        elif is_meet_verified == True or is_aura_verified == True:  # noqa: E712
+            if meet_context_ids is not None:
+                context_ids = meet_context_ids
+            elif aura_context_ids is not None:
+                context_ids = aura_context_ids
+
+        first_context_id = context_ids[-1]
+
+        BrightIDConnection.objects.create(
+            user_profile=profile, context_id=first_context_id
+        )
+
+        return Response(ProfileSerializer(profile).data, status=200)
 
 
 class LoginView(APIView):
@@ -111,7 +326,7 @@ class LoginView(APIView):
 
         context_ids = []
 
-        if is_meet_verified is False and is_aura_verified is False:
+        if is_meet_verified == False and is_aura_verified == False:  # noqa: E712
             if meet_context_ids == 3:  # is not verified
                 context_ids = address
             elif aura_context_ids == 4:  # is not linked
@@ -125,7 +340,7 @@ class LoginView(APIView):
                     status=403,
                 )
 
-        elif is_meet_verified is True or is_aura_verified is True:
+        elif is_meet_verified == True or is_aura_verified == True:  # noqa: E712
             if meet_context_ids is not None:
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:

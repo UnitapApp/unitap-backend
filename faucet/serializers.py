@@ -166,7 +166,6 @@ class LeaderboardSerializer(serializers.Serializer):
     interacted_chains = serializers.ListField(
         child=serializers.IntegerField(), read_only=True
     )
-    wallet = serializers.CharField(max_length=512, read_only=True)
     rank = serializers.IntegerField(read_only=True, required=False)
 
 
