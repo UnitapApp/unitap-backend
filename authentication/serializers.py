@@ -31,7 +31,7 @@ class WalletSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Wallet
-        fields = ["pk", "wallet_type", "wallet_address", "signature", "message"]
+        fields = ["pk", "wallet_type", "address", "signature", "message"]
 
     def is_valid(self, raise_exception=False):
         super_is_validated = super().is_valid(raise_exception)

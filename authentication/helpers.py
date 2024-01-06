@@ -10,8 +10,7 @@ from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from eth_account import Account
-from eth_account.messages import encode_defunct
-from web3 import Web3
+from eth_account.messages import encode_defunct, encode_structured_data
 
 
 def verify_signature_eth_scheme(address, message, signature):
@@ -28,24 +27,20 @@ def verify_signature_eth_scheme(address, message, signature):
 
 
 def verify_login_signature(address, message, signature):
-    if message["message"] != "Unitap Sign In" or message["URI"] != "https://unitap.app":
+    if (
+        message["message"]["message"] != "Unitap Sign In"
+        or message["message"]["URI"] != "https://unitap.app"
+    ):
         return False
 
     timestamp = datetime.datetime.fromisoformat(
-        message["IssuedAt"].replace("Z", "+00:00")
+        message["message"]["IssuedAt"].replace("Z", "+00:00")
     )
     current_time = datetime.datetime.now(pytz.utc)
     if current_time - timestamp > datetime.timedelta(minutes=5):
         return False
 
-    message_hash = Web3().solidity_keccak(
-        ["string", "string", "string"],
-        [
-            message["message"],
-            message["URI"],
-            message["IssuedAt"],
-        ],
-    )
+    message_hash = encode_structured_data(primitive=message)
     hashed_message = encode_defunct(hexstr=message_hash.hex())
 
     try:
