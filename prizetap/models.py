@@ -46,7 +46,7 @@ class Raffle(models.Model):
     creator_address = models.CharField(max_length=255)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
-    twitter_url = models.URLField(max_length=255)
+    twitter_url = models.URLField(max_length=255, null=True, blank=True)
     email_url = models.EmailField(max_length=255)
     telegram_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
