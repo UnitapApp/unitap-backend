@@ -40,8 +40,7 @@ def verify_login_signature(address, message, signature):
     if current_time - timestamp > datetime.timedelta(minutes=5):
         return False
 
-    message_hash = encode_structured_data(primitive=message)
-    hashed_message = encode_defunct(hexstr=message_hash.hex())
+    hashed_message = encode_structured_data(primitive=message)
 
     try:
         signer = Account.recover_message(hashed_message, signature=signature)
