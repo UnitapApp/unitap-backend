@@ -36,7 +36,7 @@ class WalletSerializer(serializers.ModelSerializer):
     def is_valid(self, raise_exception=False):
         super_is_validated = super().is_valid(raise_exception)
 
-        address = self.validated_data.get("wallet_address")
+        address = self.validated_data.get("address")
         message = self.validated_data.get("message")
         signature = self.validated_data.get("signature")
 
