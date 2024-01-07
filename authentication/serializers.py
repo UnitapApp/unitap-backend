@@ -26,8 +26,8 @@ class MessageResponseSerializer(serializers.Serializer):
 
 
 class WalletSerializer(serializers.ModelSerializer):
-    signature = serializers.CharField(required=True, max_length=150, write_only=True)
-    message = serializers.CharField(required=True, max_length=150, write_only=True)
+    signature = serializers.CharField(required=True, max_length=256, write_only=True)
+    message = serializers.CharField(required=True, max_length=4096, write_only=True)
 
     class Meta:
         model = Wallet
