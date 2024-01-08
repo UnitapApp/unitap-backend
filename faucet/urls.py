@@ -66,14 +66,14 @@ urlpatterns = [
         name="faucet-balance",
     ),
     path("user/donation/", DonationReceiptView.as_view(), name="donation-receipt"),
-    path("gas-tap/leaderboard/", LeaderboardView.as_view(), name="gas-tap-leaderboard"),
+    path("leaderboard/", LeaderboardView.as_view(), name="gas-tap-leaderboard"),
     path(
-        "gas-tap/fuel-champion/",
+        "fuel-champion/",
         FuelChampionView.as_view(),
         name="gas-tap-fuel-champion",
     ),
     path(
-        "user/gas-tap/leaderboard/",
+        "user/leaderboard/",
         UserLeaderboardView.as_view(),
         name="user-gas-tap-leaderboard",
     ),

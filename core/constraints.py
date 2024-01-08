@@ -89,6 +89,8 @@ class HasNFTVerification(ConstraintVerification):
         self.collection = self._param_values[ConstraintParam.ADDRESS]
         self.nft_id = self._param_values[ConstraintParam.ID]
 
+        # custom logic here
+
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:
     app_name, constraint_name = constraint_label.split(".")

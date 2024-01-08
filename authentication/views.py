@@ -10,6 +10,7 @@ from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
     RetrieveAPIView,
+    RetrieveDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -22,12 +23,14 @@ from authentication.helpers import (
     verify_signature_eth_scheme,
 )
 from authentication.models import BrightIDConnection, UserProfile, Wallet
+from authentication.permissions import IsOwner
 from authentication.serializers import (
     MessageResponseSerializer,
     ProfileSerializer,
     UserHistoryCountSerializer,
     UsernameRequestSerializer,
     WalletSerializer,
+    thirdparty_connection_serializer,
 )
 from core.filters import IsOwnerFilterBackend
 
@@ -35,6 +38,15 @@ from core.filters import IsOwnerFilterBackend
 class UserProfileCountView(ListAPIView):
     def get(self, request, *args, **kwargs):
         return Response({"count": UserProfile.user_count()}, status=200)
+
+
+class UserThirdPartyConnectionsView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        connections = self.request.user.profile.get_all_thirdparty_connections()
+
+        return Response(thirdparty_connection_serializer(connections), status=200)
 
 
 class CheckUserExistsView(APIView):
@@ -485,6 +497,13 @@ class WalletListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user_profile=self.request.user.profile)
+
+
+class WalletView(RetrieveDestroyAPIView):
+    queryset = Wallet.objects.all()
+    permission_classes = [IsAuthenticated, IsOwner]
+    serializer_class = WalletSerializer
+    filter_backends = [IsOwnerFilterBackend]
 
 
 class UserHistoryCountView(RetrieveAPIView):
