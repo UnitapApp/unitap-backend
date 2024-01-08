@@ -149,7 +149,7 @@ class CeleryTasks:
 
             faucet.needs_funding = True
 
-            if faucet.has_enough_funds and faucet.has_enough_fees:
+            if faucet.has_enough_funds and faucet.chain.has_enough_fees:
                 faucet.needs_funding = False
 
             faucet.save()

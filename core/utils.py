@@ -1,10 +1,12 @@
 import datetime
+import logging
 import time
 from contextlib import contextmanager
 
 import pytz
 from django.core.cache import cache
 from eth_account.messages import encode_defunct
+from solana.rpc.api import Client
 from web3 import Account, Web3
 from web3.contract.contract import Contract, ContractFunction
 from web3.logs import DISCARD, IGNORE, STRICT, WARN
@@ -202,3 +204,19 @@ class Web3Utils:
 
     def get_balance(self, address):
         return self.w3.eth.get_balance(address)
+
+
+class SolanaWeb3Utils:
+    def __init__(self, rpc_url) -> None:
+        self.rpc_url = rpc_url
+
+    @property
+    def w3(self) -> Client:
+        assert self.rpc_url is not None
+        try:
+            _w3 = Client(self.rpc_url)
+            if _w3.is_connected():
+                return _w3
+        except Exception as e:
+            logging.error(e)
+            raise (f"Could not connect to rpc {self.rpc_url}")
