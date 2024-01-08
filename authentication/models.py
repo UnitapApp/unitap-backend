@@ -119,6 +119,19 @@ class UserProfile(models.Model):
         cache.set("user_profile_count", count, 300)
         return count
 
+    def get_all_thirdparty_connections(self):
+        connections = []
+
+        # Loop through each related connection
+        for rel in self._meta.get_fields():
+            if rel.one_to_many and issubclass(
+                rel.related_model, BaseThirdPartyConnection
+            ):
+                related_manager = getattr(self, rel.get_accessor_name())
+                connections.extend(related_manager.all())
+
+        return connections
+
 
 class Wallet(SafeDeleteModel):
     wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)

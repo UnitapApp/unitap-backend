@@ -11,6 +11,7 @@ from authentication.views import (
     SponsorView,
     UserHistoryCountView,
     UserProfileCountView,
+    UserThirdPartyConnectionsView,
     WalletListCreateView,
     WalletView,
 )
@@ -50,6 +51,11 @@ urlpatterns = [
     path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
     path(
         "user/connect/brightid,", ConnectBrightIDView.as_view(), name="connect-brightid"
+    ),
+    path(
+        "user/all-connections/",
+        UserThirdPartyConnectionsView.as_view(),
+        name="all-connections",
     ),
     path(
         "user/history-count/", UserHistoryCountView.as_view(), name="user-history-count"

@@ -30,6 +30,7 @@ from authentication.serializers import (
     UserHistoryCountSerializer,
     UsernameRequestSerializer,
     WalletSerializer,
+    thirdparty_connection_serializer,
 )
 from core.filters import IsOwnerFilterBackend
 
@@ -37,6 +38,15 @@ from core.filters import IsOwnerFilterBackend
 class UserProfileCountView(ListAPIView):
     def get(self, request, *args, **kwargs):
         return Response({"count": UserProfile.user_count()}, status=200)
+
+
+class UserThirdPartyConnectionsView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        connections = self.request.user.profile.get_all_thirdparty_connections()
+
+        return Response(thirdparty_connection_serializer(connections), status=200)
 
 
 class CheckUserExistsView(APIView):

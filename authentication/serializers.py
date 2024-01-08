@@ -4,7 +4,12 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
 from authentication.helpers import verify_login_signature
-from authentication.models import UserProfile, Wallet
+from authentication.models import (
+    BaseThirdPartyConnection,
+    BrightIDConnection,
+    UserProfile,
+    Wallet,
+)
 
 
 class UsernameRequestSerializer(serializers.Serializer):
@@ -51,6 +56,36 @@ class WalletSerializer(serializers.ModelSerializer):
         self.validated_data.pop("message", None)
 
         return super_is_validated and signature_is_valid
+
+
+class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BaseThirdPartyConnection
+        fields = ["user_profile", "created_at"]
+
+
+# class BrightIDConnectionSerializer(BaseThirdPartyConnectionSerializer):
+#     class Meta(BaseThirdPartyConnectionSerializer.Meta):
+#         model = BrightIDConnection
+#         fields = BaseThirdPartyConnectionSerializer.Meta.fields + [
+#             "context_id",
+#         ]
+
+
+def get_third_party_connection_serializer(connection):
+    serializer_class = {
+        BrightIDConnection: BaseThirdPartyConnectionSerializer,
+        # other mappings for different third-party connection models
+    }.get(type(connection), BaseThirdPartyConnectionSerializer)
+
+    return serializer_class(connection)
+
+
+def thirdparty_connection_serializer(connection_list):
+    return [
+        get_third_party_connection_serializer(connection).data
+        for connection in connection_list
+    ]
 
 
 class ProfileSerializer(serializers.ModelSerializer):
