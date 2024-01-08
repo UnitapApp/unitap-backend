@@ -3,6 +3,7 @@ from django.urls import path
 from authentication.views import (
     CheckUserExistsView,
     CheckUsernameView,
+    ConnectBrightIDView,
     GetProfileView,
     LoginRegisterView,
     LoginView,
@@ -47,6 +48,9 @@ urlpatterns = [
     ),
     path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
     path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
+    path(
+        "user/connect/brightid,", ConnectBrightIDView.as_view(), name="connect-brightid"
+    ),
     path(
         "user/history-count/", UserHistoryCountView.as_view(), name="user-history-count"
     ),
