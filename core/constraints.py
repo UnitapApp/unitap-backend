@@ -1,9 +1,11 @@
 import copy
+import csv
 import importlib
 from abc import ABC, abstractmethod
 from enum import Enum
 
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models.functions import Lower
 
 
 class ConstraintParam(Enum):
@@ -13,6 +15,7 @@ class ConstraintParam(Enum):
     USERNAME = "username"
     FROM_DATE = "from_date"
     TO_DATE = "to_date"
+    FILE_PATH = "file_path"
 
     @classmethod
     def choices(cls):
@@ -90,6 +93,28 @@ class HasNFTVerification(ConstraintVerification):
         self.nft_id = self._param_values[ConstraintParam.ID]
 
         # custom logic here
+
+
+class AllowList(ConstraintVerification):
+    _param_keys = [ConstraintParam.FILE_PATH]
+
+    def __init__(self, user_profile, response: str = None) -> None:
+        super().__init__(user_profile, response)
+
+    def is_observed(self, *args, **kwargs):
+        file_path = self._param_values[ConstraintParam.FILE_PATH]
+        self.allow_list = []
+        with open(file_path, newline="") as f:
+            reader = csv.reader(f)
+            self.allow_list = list(reader)
+            self.allow_list = [a.lower() for a in self.allow_list]
+            user_wallets = self.user_profile.wallets.values_list(
+                Lower("address"), flat=True
+            )
+            for wallet in user_wallets:
+                if wallet in self.allow_list:
+                    return True
+            return False
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:
