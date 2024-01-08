@@ -3,6 +3,7 @@ from django.core.cache import cache
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
+from safedelete.models import SafeDeleteModel
 
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 from authentication.thirdpartydrivers import (
@@ -119,7 +120,7 @@ class UserProfile(models.Model):
         return count
 
 
-class Wallet(models.Model):
+class Wallet(SafeDeleteModel):
     wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
