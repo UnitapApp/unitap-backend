@@ -11,6 +11,7 @@ from authentication.views import (
     UserHistoryCountView,
     UserProfileCountView,
     WalletListCreateView,
+    WalletView,
 )
 
 app_name = "AUTHENTICATION"
@@ -33,6 +34,11 @@ urlpatterns = [
         "user/wallets/",
         WalletListCreateView.as_view(),
         name="wallets-user",
+    ),
+    path(
+        "user/wallets/<int:pk>/",
+        WalletView.as_view(),
+        name="wallet-user",
     ),
     path(
         "user/check-exists/",

@@ -10,6 +10,7 @@ from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
     RetrieveAPIView,
+    RetrieveDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -22,6 +23,7 @@ from authentication.helpers import (
     verify_signature_eth_scheme,
 )
 from authentication.models import BrightIDConnection, UserProfile, Wallet
+from authentication.permissions import IsOwner
 from authentication.serializers import (
     MessageResponseSerializer,
     ProfileSerializer,
@@ -485,6 +487,13 @@ class WalletListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user_profile=self.request.user.profile)
+
+
+class WalletView(RetrieveDestroyAPIView):
+    queryset = Wallet.objects.all()
+    permission_classes = [IsAuthenticated, IsOwner]
+    serializer_class = WalletSerializer
+    filter_backends = [IsOwnerFilterBackend]
 
 
 class UserHistoryCountView(RetrieveAPIView):
