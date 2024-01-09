@@ -90,7 +90,7 @@ class UserProfile(models.Model):
 
         # return is_verified
 
-        bo = BaseThirdPartyConnection.get_connection(BrightIDConnection, self)
+        bo = BrightIDConnection.get_connection(self)
         return bo.is_meets_verified()
 
     @property
