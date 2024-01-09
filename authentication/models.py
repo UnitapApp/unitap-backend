@@ -90,7 +90,8 @@ class UserProfile(models.Model):
 
         # return is_verified
 
-        return self.BrightIDConnections.first().is_meets_verified()
+        bo = BaseThirdPartyConnection.get_connection(BrightIDConnection, self)
+        return bo.is_meets_verified()
 
     @property
     def is_aura_verified(self):

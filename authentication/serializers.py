@@ -113,7 +113,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "username",
             "token",
             "is_meet_verified",
-            "is_aura_verified",
+            # "is_aura_verified",
             "wallets",
         ]
 
