@@ -5,6 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import ParseError, ValidationError
 from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
@@ -262,32 +263,34 @@ class ConnectBrightIDView(CreateAPIView):
             is_meet_verified,
             meet_context_ids,
         ) = BrightIDConnection.driver.get_meets_verification_status(address)
-        (
-            is_aura_verified,
-            aura_context_ids,
-        ) = BrightIDConnection.driver.get_aura_verification_status(address)
+        # (
+        #     is_aura_verified,
+        #     aura_context_ids,
+        # ) = BrightIDConnection.driver.get_aura_verification_status(address)
 
         context_ids = []
 
-        if is_meet_verified == False and is_aura_verified == False:  # noqa: E712
+        print("verification results", is_meet_verified, meet_context_ids)
+
+        if is_meet_verified == False:  # noqa: E712
             if meet_context_ids == 3:  # is not verified
                 context_ids = address
-            elif aura_context_ids == 4:  # is not linked
-                return Response(
-                    {
-                        "message": "Something went wrong with the linking process. \
-                            please link BrightID with Unitap.\n"
-                        "If the problem persists, clear your browser cache \
-                            and try again."
-                    },
-                    status=403,
-                )
+            # elif aura_context_ids == 4:  # is not linked
+            #     return Response(
+            #         {
+            #             "message": "Something went wrong with the linking process. \
+            #                 please link BrightID with Unitap.\n"
+            #             "If the problem persists, clear your browser cache \
+            #                            and try again."
+            #         },
+            #         status=403,
+            #     )
 
-        elif is_meet_verified == True or is_aura_verified == True:  # noqa: E712
+        elif is_meet_verified == True:  # noqa: E712
             if meet_context_ids is not None:
                 context_ids = meet_context_ids
-            elif aura_context_ids is not None:
-                context_ids = aura_context_ids
+            # elif aura_context_ids is not None:
+            #     context_ids = aura_context_ids
 
         first_context_id = context_ids[-1]
 
@@ -350,7 +353,7 @@ class LoginView(APIView):
                         "message": "Something went wrong with the linking process. \
                             please link BrightID with Unitap.\n"
                         "If the problem persists, clear your browser cache \
-                            and try again."
+                                       and try again."
                     },
                     status=403,
                 )
@@ -428,7 +431,7 @@ class SetUsernameView(CreateAPIView):
 
 
 class CheckUsernameView(CreateAPIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         request_body=UsernameRequestSerializer,
@@ -495,8 +498,14 @@ class WalletListCreateView(ListCreateAPIView):
     filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
     filterset_fields = ["wallet_type"]
 
+    def get_user_profile(self):
+        return self.request.user.profile
+
     def perform_create(self, serializer):
-        serializer.save(user_profile=self.request.user.profile)
+        try:
+            serializer.save(user_profile=self.get_user_profile())
+        except IntegrityError:
+            raise ValidationError("Wallet already exists.")
 
 
 class WalletView(RetrieveDestroyAPIView):
@@ -504,6 +513,11 @@ class WalletView(RetrieveDestroyAPIView):
     permission_classes = [IsAuthenticated, IsOwner]
     serializer_class = WalletSerializer
     filter_backends = [IsOwnerFilterBackend]
+
+    def perform_destroy(self, instance):
+        if len(instance.user_profile.wallets.all()) > 1:
+            return super().perform_destroy(instance)
+        raise ParseError("User has only one wallet!")
 
 
 class UserHistoryCountView(RetrieveAPIView):

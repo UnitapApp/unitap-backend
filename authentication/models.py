@@ -2,10 +2,12 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Q, UniqueConstraint
+from django.db.models.functions import Lower
 from django.utils import timezone
 from safedelete.models import SafeDeleteModel
 
-from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
+# from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
@@ -79,25 +81,14 @@ class UserProfile(models.Model):
 
     @property
     def is_meet_verified(self):
-        (
-            is_verified,
-            context_ids,
-        ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
-            self.initial_context_id, "Meet"
-        )
-
-        return is_verified
+        try:
+            bo = BrightIDConnection.get_connection(self)
+            return bo.is_meets_verified
+        except BrightIDConnection.DoesNotExist:
+            return False
 
     @property
     def is_aura_verified(self):
-        # (
-        #     is_verified,
-        #     context_ids,
-        # ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
-        #     self.initial_context_id, "Aura"
-        # )
-
-        # return is_verified
         return False
 
     @property
@@ -138,11 +129,24 @@ class Wallet(SafeDeleteModel):
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
     )
-    address = models.CharField(max_length=512, unique=True)
-    # primary = models.BooleanField(default=False, null=False, blank=False)
+    address = models.CharField(max_length=512)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
-    # objects = WalletManager()
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                Lower("address"),
+                "wallet_type",
+                condition=Q(deleted__isnull=True),
+                name="unique_wallet_address",
+            ),
+            UniqueConstraint(
+                Lower("address"),
+                "user_profile",
+                "wallet_type",
+                name="unique_wallet_user_profile_address",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.wallet_type} Wallet for profile with contextId \
@@ -150,6 +154,7 @@ class Wallet(SafeDeleteModel):
 
 
 class BaseThirdPartyConnection(models.Model):
+    title = "BaseThirdPartyConnection"
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="%(class)s"
     )
@@ -170,13 +175,15 @@ class BaseThirdPartyConnection(models.Model):
 
 
 class BrightIDConnection(BaseThirdPartyConnection):
+    title = "BrightID"
     context_id = models.CharField(max_length=512, unique=True)
 
     driver = BrightIDConnectionDriver()
 
     @property
     def is_meets_verified(self):
-        return self.driver.get_meets_verification_status(self.context_id)
+        is_verified, status = self.driver.get_meets_verification_status(self.context_id)
+        return is_verified
 
     @property
     def is_aura_verified(self):

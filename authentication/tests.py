@@ -303,6 +303,70 @@ class TestListCreateWallet(APITestCase):
     #         },
     #     )
     #     self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    # def test_create_same_address_for_another_user(self):
+    #     message = "test-message"
+    #     hashed_message = encode_defunct(text=message)
+    #     account = Account.from_key(self.private_key_test1)
+    #     signed_message = account.sign_message(hashed_message)
+    #     signature = signed_message.signature.hex()
+    #
+    #     response = self.client.post(
+    #         self.endpoint,
+    #         data={
+    #             "address": self.public_key_test1,
+    #             "wallet_type": "EVM",
+    #             "message": message,
+    #             "signature": signature,
+    #         },
+    #     )
+    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
+    #     user_profile_2 = create_new_user(self._address2)
+    #     self.client.force_authenticate(user=user_profile_2.user)
+    #     response = self.client.post(
+    #         self.endpoint,
+    #         data={
+    #             "address": self.public_key_test1,
+    #             "wallet_type": "EVM",
+    #             "message": message,
+    #             "signature": signature,
+    #         },
+    #     )
+    #     self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    # def test_create_same_address_after_delete(self):
+    #     message = "test-message"
+    #     hashed_message = encode_defunct(text=message)
+    #     account = Account.from_key(self.private_key_test1)
+    #     signed_message = account.sign_message(hashed_message)
+    #     signature = signed_message.signature.hex()
+    #
+    #     response = self.client.post(
+    #         self.endpoint,
+    #         data={
+    #             "address": self.public_key_test1,
+    #             "wallet_type": "EVM",
+    #             "message": message,
+    #             "signature": signature,
+    #         },
+    #     )
+    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
+    #     create_new_wallet(self.user_profile, self._address2, "EVM")
+    #     endpoint = reverse(
+    #         "AUTHENTICATION:wallet-user", kwargs={"pk": response.data.get('pk')}
+    #     )
+    #     response = self.client.delete(endpoint)
+    #     self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+    #     response = self.client.post(
+    #         self.endpoint,
+    #         data={
+    #             "address": self.public_key_test1,
+    #             "wallet_type": "EVM",
+    #             "message": message,
+    #             "signature": signature,
+    #         },
+    #     )
+    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
     #
     # def test_get_wallet_list(self):
     #     message = "test-message"
@@ -331,6 +395,8 @@ class TestWalletView(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
+        self._address2 = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A1"
+        self._address3 = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A3"
         self.user_profile = create_new_user()
         self.wallet = create_new_wallet(self.user_profile, self._address, "EVM")
         self.endpoint = reverse(
@@ -342,17 +408,40 @@ class TestWalletView(APITestCase):
         response = self.client.get(self.endpoint)
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_delete_user_wallet(self):
+    def test_delete_user_wallet_when_has_one_wallet(self):
+        response = self.client.delete(self.endpoint)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_delete_user_wallet_when_has_two_wallet(self):
+        _ = create_new_wallet(
+            user_profile=self.user_profile, _address=self._address2, wallet_type="EVM"
+        )
         response = self.client.delete(self.endpoint)
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         response = self.client.get(self.endpoint)
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_after_delete_wallet(self):
+        _ = create_new_wallet(
+            user_profile=self.user_profile, _address=self._address2, wallet_type="EVM"
+        )
         response = self.client.delete(self.endpoint)
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertRaises(
             IntegrityError, create_new_wallet, self.user_profile, self._address, "EVM"
+        )
+
+    def test_assign_deleted_wallet_to_another_user(self):
+        user_2 = create_new_user(self._address2)
+        _ = create_new_wallet(
+            user_profile=self.user_profile, _address=self._address2, wallet_type="EVM"
+        )
+        response = self.client.delete(self.endpoint)
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        create_new_wallet(user_2, self._address, "EVM")
+        user_3 = create_new_user(self._address3)
+        self.assertRaises(
+            IntegrityError, create_new_wallet, user_3, self._address, "EVM"
         )
 
 
