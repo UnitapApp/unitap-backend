@@ -263,32 +263,34 @@ class ConnectBrightIDView(CreateAPIView):
             is_meet_verified,
             meet_context_ids,
         ) = BrightIDConnection.driver.get_meets_verification_status(address)
-        (
-            is_aura_verified,
-            aura_context_ids,
-        ) = BrightIDConnection.driver.get_aura_verification_status(address)
+        # (
+        #     is_aura_verified,
+        #     aura_context_ids,
+        # ) = BrightIDConnection.driver.get_aura_verification_status(address)
 
         context_ids = []
 
-        if is_meet_verified == False and is_aura_verified == False:  # noqa: E712
+        print("verification results", is_meet_verified, meet_context_ids)
+
+        if is_meet_verified == False:  # noqa: E712
             if meet_context_ids == 3:  # is not verified
                 context_ids = address
-            elif aura_context_ids == 4:  # is not linked
-                return Response(
-                    {
-                        "message": "Something went wrong with the linking process. \
-                            please link BrightID with Unitap.\n"
-                        "If the problem persists, clear your browser cache \
-                                       and try again."
-                    },
-                    status=403,
-                )
+            # elif aura_context_ids == 4:  # is not linked
+            #     return Response(
+            #         {
+            #             "message": "Something went wrong with the linking process. \
+            #                 please link BrightID with Unitap.\n"
+            #             "If the problem persists, clear your browser cache \
+            #                            and try again."
+            #         },
+            #         status=403,
+            #     )
 
-        elif is_meet_verified == True or is_aura_verified == True:  # noqa: E712
+        elif is_meet_verified == True:  # noqa: E712
             if meet_context_ids is not None:
                 context_ids = meet_context_ids
-            elif aura_context_ids is not None:
-                context_ids = aura_context_ids
+            # elif aura_context_ids is not None:
+            #     context_ids = aura_context_ids
 
         first_context_id = context_ids[-1]
 
