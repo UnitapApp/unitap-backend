@@ -1,5 +1,6 @@
 import json
 
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
@@ -56,6 +57,19 @@ class WalletSerializer(serializers.ModelSerializer):
         self.validated_data.pop("message", None)
 
         return super_is_validated and signature_is_valid
+
+    def create(self, validated_data):
+        instance = None
+        try:
+            with transaction.atomic():
+                instance = super().create(validated_data)
+        except IntegrityError as e:
+            try:
+                instance = Wallet.objects.deleted_only().get(**validated_data)
+            except Wallet.DoesNotExist:
+                raise e
+            instance.undelete()
+        return instance
 
 
 class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
