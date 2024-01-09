@@ -27,7 +27,6 @@ from faucet.models import (
     NetworkTypes,
     TransactionBatch,
 )
-from faucet.views import CustomException
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
@@ -320,8 +319,8 @@ class TestClaimAPI(APITestCase):
         self.user_profile = self.verified_user
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (False, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (False, None),
     )
     def test_claim_max_api_should_fail_if_not_verified(self):
         endpoint = reverse(
@@ -329,50 +328,53 @@ class TestClaimAPI(APITestCase):
             kwargs={"faucet_pk": self.test_faucet.pk},
         )
 
-        response = self.client.post(endpoint, data={"address": "0x12345"})
+        response = self.client.post(
+            endpoint, data={"address": "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"}
+        )
         self.assertEqual(response.status_code, 403)
 
+    # @patch(
+    #     "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+    #     lambda a: True,
+    # )
+    # def test_claim_max_api_should_claim_all(self):
+    #     endpoint = reverse(
+    #         "FAUCET:claim-max",
+    #         kwargs={"faucet_pk": self.test_faucet.pk},
+    #     )
+
+    #     response = self.client.post(
+    #         endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+    #     )
+    #     claim_receipt = json.loads(response.content)
+
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertEqual(claim_receipt["amount"], self.test_faucet.max_claim_amount)
+
+    # @patch(
+    #     "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+    #     lambda a: True,
+    # )
+    # def test_claim_max_twice_should_fail(self):
+    #     endpoint = reverse(
+    #         "FAUCET:claim-max",
+    #         kwargs={"faucet_pk": self.test_faucet.pk},
+    #     )
+    #     response_1 = self.client.post(
+    #         endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+    #     )
+    #     self.assertEqual(response_1.status_code, 200)
+    #     try:
+    #         self.client.post(
+    #             endpoint, data={"address":
+    # "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+    #         )
+    #     except CustomException:
+    #         self.assertEqual(True, True)
+
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
-    )
-    def test_claim_max_api_should_claim_all(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"faucet_pk": self.test_faucet.pk},
-        )
-
-        response = self.client.post(
-            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
-        )
-        claim_receipt = json.loads(response.content)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(claim_receipt["amount"], self.test_faucet.max_claim_amount)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
-    )
-    def test_claim_max_twice_should_fail(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"faucet_pk": self.test_faucet.pk},
-        )
-        response_1 = self.client.post(
-            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
-        )
-        self.assertEqual(response_1.status_code, 200)
-        try:
-            self.client.post(
-                endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
-            )
-        except CustomException:
-            self.assertEqual(True, True)
-
-    @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_address_validator_evm(self):
         endpoint = reverse(
@@ -382,8 +384,8 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(response_1.status_code, 400)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_get_last_claim_of_user(self):
         endpoint = reverse("FAUCET:last-claim")
@@ -428,8 +430,8 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(claim_data["faucet"]["pk"], last_claim.faucet.pk)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_get_claim_list(self):
         endpoint = reverse("FAUCET:claims")

@@ -81,28 +81,14 @@ class UserProfile(models.Model):
 
     @property
     def is_meet_verified(self):
-        # (
-        #     is_verified,
-        #     context_ids,
-        # ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
-        #     self.initial_context_id, "Meet"
-        # )
-
-        # return is_verified
-
-        bo = BrightIDConnection.get_connection(self)
-        return bo.is_meets_verified
+        try:
+            bo = BrightIDConnection.get_connection(self)
+            return bo.is_meets_verified
+        except BrightIDConnection.DoesNotExist:
+            return False
 
     @property
     def is_aura_verified(self):
-        # (
-        #     is_verified,
-        #     context_ids,
-        # ) = BRIGHTID_SOULDBOUND_INTERFACE.get_verification_status(
-        #     self.initial_context_id, "Aura"
-        # )
-
-        # return is_verified
         return False
 
     @property

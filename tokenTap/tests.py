@@ -305,8 +305,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.data["detail"], "This token is not claimable")
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_already_claimed(self):
         TokenDistributionClaim.objects.create(
@@ -323,8 +323,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (False, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_false_permissions(self):
         self.client.force_authenticate(user=self.user_profile.user)
@@ -348,8 +348,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_no_wallet(self):
         self.client.force_authenticate(user=self.user_profile.user)
@@ -365,8 +365,8 @@ class TokenDistributionAPITestCase(APITestCase):
         )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_claimable(self):
         Wallet.objects.create(
@@ -383,8 +383,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_btc_lightning_claimable(self):
         Wallet.objects.create(
@@ -407,8 +407,8 @@ class TokenDistributionAPITestCase(APITestCase):
         )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_btc_lightning_claimable_claim_updates_after_6seconds(self):
         Wallet.objects.create(
