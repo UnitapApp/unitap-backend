@@ -194,7 +194,8 @@ class BrightIDConnection(BaseThirdPartyConnection):
 
     @property
     def is_meets_verified(self):
-        return self.driver.get_meets_verification_status(self.context_id)
+        is_verified, status = self.driver.get_meets_verification_status(self.context_id)
+        return is_verified
 
     @property
     def is_aura_verified(self):
