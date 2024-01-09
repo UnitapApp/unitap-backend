@@ -5,6 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import ParseError, ValidationError
 from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
@@ -278,7 +279,7 @@ class ConnectBrightIDView(CreateAPIView):
                         "message": "Something went wrong with the linking process. \
                             please link BrightID with Unitap.\n"
                         "If the problem persists, clear your browser cache \
-                            and try again."
+                                       and try again."
                     },
                     status=403,
                 )
@@ -350,7 +351,7 @@ class LoginView(APIView):
                         "message": "Something went wrong with the linking process. \
                             please link BrightID with Unitap.\n"
                         "If the problem persists, clear your browser cache \
-                            and try again."
+                                       and try again."
                     },
                     status=403,
                 )
@@ -495,8 +496,14 @@ class WalletListCreateView(ListCreateAPIView):
     filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
     filterset_fields = ["wallet_type"]
 
+    def get_user_profile(self):
+        return self.request.user.profile
+
     def perform_create(self, serializer):
-        serializer.save(user_profile=self.request.user.profile)
+        try:
+            serializer.save(user_profile=self.get_user_profile())
+        except IntegrityError:
+            raise ValidationError("Wallet already exists.")
 
 
 class WalletView(RetrieveDestroyAPIView):
@@ -504,6 +511,11 @@ class WalletView(RetrieveDestroyAPIView):
     permission_classes = [IsAuthenticated, IsOwner]
     serializer_class = WalletSerializer
     filter_backends = [IsOwnerFilterBackend]
+
+    def perform_destroy(self, instance):
+        if len(instance.user_profile.wallets.all()) > 1:
+            return super().perform_destroy(instance)
+        raise ParseError("User has only one wallet!")
 
 
 class UserHistoryCountView(RetrieveAPIView):
