@@ -30,8 +30,7 @@ class BrightIDConnectionDriver(BaseThirdPartyDriver):
         return self._get_verification_status(context_id, "Aura")
 
     def _get_verification_status(self, context_id, verification_type):
-        endpoint = f"https://aura-node.brightid.org/brightid/v5/veri\
-        fications/{self.app}/{context_id}?verification={verification_type}"
+        endpoint = f"https://aura-node.brightid.org/brightid/v5/verifications/{self.app}/{context_id}?verification={verification_type}"  # noqa E501
 
         bright_response = requests.get(endpoint)
         bright_response = bright_response.json()
