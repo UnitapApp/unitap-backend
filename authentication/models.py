@@ -2,7 +2,10 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Q, UniqueConstraint
+from django.db.models.functions import Lower
 from django.utils import timezone
+from safedelete.models import SafeDeleteModel
 
 from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 from authentication.thirdpartydrivers import (
@@ -118,17 +121,43 @@ class UserProfile(models.Model):
         cache.set("user_profile_count", count, 300)
         return count
 
+    def get_all_thirdparty_connections(self):
+        connections = []
 
-class Wallet(models.Model):
+        # Loop through each related connection
+        for rel in self._meta.get_fields():
+            if rel.one_to_many and issubclass(
+                rel.related_model, BaseThirdPartyConnection
+            ):
+                related_manager = getattr(self, rel.get_accessor_name())
+                connections.extend(related_manager.all())
+
+        return connections
+
+
+class Wallet(SafeDeleteModel):
     wallet_type = models.CharField(choices=NetworkTypes.networks, max_length=10)
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
     )
-    address = models.CharField(max_length=512, unique=True)
-    # primary = models.BooleanField(default=False, null=False, blank=False)
+    address = models.CharField(max_length=512)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
-    # objects = WalletManager()
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                Lower("address"),
+                "wallet_type",
+                condition=Q(deleted__isnull=True),
+                name="unique_wallet_address",
+            ),
+            UniqueConstraint(
+                Lower("address"),
+                "user_profile",
+                "wallet_type",
+                name="unique_wallet_user_profile_address",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.wallet_type} Wallet for profile with contextId \

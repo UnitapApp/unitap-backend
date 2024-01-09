@@ -5,11 +5,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import ParseError, ValidationError
 from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
     ListCreateAPIView,
     RetrieveAPIView,
+    RetrieveDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -22,12 +24,14 @@ from authentication.helpers import (
     verify_signature_eth_scheme,
 )
 from authentication.models import BrightIDConnection, UserProfile, Wallet
+from authentication.permissions import IsOwner
 from authentication.serializers import (
     MessageResponseSerializer,
     ProfileSerializer,
     UserHistoryCountSerializer,
     UsernameRequestSerializer,
     WalletSerializer,
+    thirdparty_connection_serializer,
 )
 from core.filters import IsOwnerFilterBackend
 
@@ -35,6 +39,15 @@ from core.filters import IsOwnerFilterBackend
 class UserProfileCountView(ListAPIView):
     def get(self, request, *args, **kwargs):
         return Response({"count": UserProfile.user_count()}, status=200)
+
+
+class UserThirdPartyConnectionsView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        connections = self.request.user.profile.get_all_thirdparty_connections()
+
+        return Response(thirdparty_connection_serializer(connections), status=200)
 
 
 class CheckUserExistsView(APIView):
@@ -266,7 +279,7 @@ class ConnectBrightIDView(CreateAPIView):
                         "message": "Something went wrong with the linking process. \
                             please link BrightID with Unitap.\n"
                         "If the problem persists, clear your browser cache \
-                            and try again."
+                                       and try again."
                     },
                     status=403,
                 )
@@ -338,7 +351,7 @@ class LoginView(APIView):
                         "message": "Something went wrong with the linking process. \
                             please link BrightID with Unitap.\n"
                         "If the problem persists, clear your browser cache \
-                            and try again."
+                                       and try again."
                     },
                     status=403,
                 )
@@ -483,8 +496,26 @@ class WalletListCreateView(ListCreateAPIView):
     filter_backends = [IsOwnerFilterBackend, DjangoFilterBackend]
     filterset_fields = ["wallet_type"]
 
+    def get_user_profile(self):
+        return self.request.user.profile
+
     def perform_create(self, serializer):
-        serializer.save(user_profile=self.request.user.profile)
+        try:
+            serializer.save(user_profile=self.get_user_profile())
+        except IntegrityError:
+            raise ValidationError("Wallet already exists.")
+
+
+class WalletView(RetrieveDestroyAPIView):
+    queryset = Wallet.objects.all()
+    permission_classes = [IsAuthenticated, IsOwner]
+    serializer_class = WalletSerializer
+    filter_backends = [IsOwnerFilterBackend]
+
+    def perform_destroy(self, instance):
+        if len(instance.user_profile.wallets.all()) > 1:
+            return super().perform_destroy(instance)
+        raise ParseError("User has only one wallet!")
 
 
 class UserHistoryCountView(RetrieveAPIView):
