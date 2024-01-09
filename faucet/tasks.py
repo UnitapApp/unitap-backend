@@ -8,7 +8,7 @@ from core.models import NetworkTypes, TokenPrice
 from core.utils import memcache_lock
 
 from .celery_tasks import CeleryTasks
-from .models import Chain, ClaimReceipt, DonationReceipt, TransactionBatch
+from .models import ClaimReceipt, DonationReceipt, Faucet, TransactionBatch
 
 
 def passive_address_is_not_none(address):
@@ -70,27 +70,27 @@ def update_pending_batches_with_tx_hash_status():
 
 
 @shared_task
-def process_chain_pending_claims(chain_id):  # locks chain
-    CeleryTasks.process_chain_pending_claims(chain_id)
+def process_faucet_pending_claims(faucet_id):  # locks chain
+    CeleryTasks.process_faucet_pending_claims(faucet_id)
 
 
 @shared_task
 def process_pending_claims():  # periodic task
-    chains = Chain.objects.filter(is_active=True)
-    for _chain in chains:
-        process_chain_pending_claims.delay(_chain.pk)
+    faucets = Faucet.objects.filter(is_active=True)
+    for _faucet in faucets:
+        process_faucet_pending_claims.delay(_faucet.pk)
 
 
 @shared_task
-def update_needs_funding_status_chain(chain_id):
-    CeleryTasks.update_needs_funding_status_chain(chain_id)
+def update_needs_funding_status_faucet(faucet_id):
+    CeleryTasks.update_needs_funding_status_faucet(faucet_id)
 
 
 @shared_task
 def update_needs_funding_status():  # periodic task
-    chains = Chain.objects.filter(is_active=True)
-    for _chain in chains:
-        update_needs_funding_status_chain.delay(_chain.pk)
+    faucets = Faucet.objects.filter(is_active=True)
+    for _faucet in faucets:
+        update_needs_funding_status_faucet.delay(_faucet.pk)
 
 
 @shared_task
@@ -107,7 +107,7 @@ def process_rejected_lighning_claim(gas_tap_claim_id):
 def update_tokentap_claim_for_verified_lightning_claims():
     claims = ClaimReceipt.objects.filter(
         _status__in=[ClaimReceipt.VERIFIED, ClaimReceipt.REJECTED],
-        chain__chain_type=NetworkTypes.LIGHTNING,
+        faucet__chain__chain_type=NetworkTypes.LIGHTNING,
     )
     for _claim in claims:
         if django_settings.IS_TESTING:

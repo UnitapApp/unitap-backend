@@ -1,6 +1,6 @@
-import pprint
-import requests
 import json
+
+import requests
 
 
 def get_request(location):
@@ -53,5 +53,4 @@ def post_request(location, params):
     data = json.dumps(params)
 
     r = requests.post(url=endpoint, data=data, headers=headers)
-    print("salam", r.text)
     return r.json()

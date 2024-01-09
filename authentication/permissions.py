@@ -17,3 +17,12 @@ class IsAuraVerified(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user.profile.is_aura_verified)
+
+
+class IsOwner(BasePermission):
+    """
+    Just owner has can access
+    """
+
+    def has_object_permission(self, request, view, obj):
+        return obj.user_profile == request.user.profile

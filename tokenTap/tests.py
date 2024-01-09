@@ -8,9 +8,7 @@ from rest_framework.test import APITestCase, override_settings
 
 from authentication.models import UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
-from faucet.models import Chain as FaucetChain
-from faucet.models import ClaimReceipt, GlobalSettings, TransactionBatch
-from faucet.models import WalletAccount as FaucetWalletAccount
+from faucet.models import ClaimReceipt, Faucet, GlobalSettings, TransactionBatch
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
@@ -182,21 +180,10 @@ class TokenDistributionAPITestCase(APITestCase):
             chain_type=NetworkTypes.LIGHTNING,
         )
 
-        self.faucet_btc_chain = FaucetChain.objects.create(
-            chain_name="Bitcoin",
-            wallet=FaucetWalletAccount.objects.create(
-                name="Bitcoin Wallet",
-                private_key=test_wallet_key,
-                network_type=NetworkTypes.LIGHTNING,
-            ),
-            rpc_url_private=test_rpc_url_private,
+        self.faucet_btc = Faucet.objects.create(
+            chain=self.btc_chain,
             fund_manager_address=fund_manager,
-            native_currency_name="bitcoin",
-            explorer_url="https://blockstream.info/testnet/",
-            symbol="BTC",
-            chain_id="1010",
             max_claim_amount=100,
-            chain_type=NetworkTypes.LIGHTNING,
             tokentap_contract_address=gnosis_tokentap_contract_address,
         )
 
@@ -221,9 +208,9 @@ class TokenDistributionAPITestCase(APITestCase):
         self.permission1 = Constraint.objects.create(
             name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
         )
-        self.permission2 = Constraint.objects.create(
-            name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
-        )
+        # self.permission2 = Constraint.objects.create(
+        #     name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
+        # )
         self.permission4 = Constraint.objects.create(
             name="tokenTap.OncePerMonthVerification",
             title="Once per Month",
@@ -235,7 +222,7 @@ class TokenDistributionAPITestCase(APITestCase):
             type="TIME",
         )
 
-        self.td.permissions.set([self.permission1, self.permission2, self.permission4])
+        self.td.permissions.set([self.permission1, self.permission4])
 
         self.btc_td = TokenDistribution.objects.create(
             name="Test Distribution",
@@ -262,9 +249,6 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(
             response.data[0]["permissions"][0]["name"], "core.BrightIDMeetVerification"
         )
-        self.assertEqual(
-            response.data[0]["permissions"][1]["name"], "core.BrightIDAuraVerification"
-        )
 
     def test_token_distribution_not_claimable_max_reached(self):
         ltd = TokenDistribution.objects.create(
@@ -287,6 +271,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": ltd.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
@@ -313,14 +298,15 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": ltd.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data["detail"], "This token is not claimable")
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_already_claimed(self):
         TokenDistributionClaim.objects.create(
@@ -331,46 +317,20 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
-        # self.assertEqual(
-        #     response.data["detail"], "You have already claimed this token this week"
-        # )
-
-    # @patch(
-    #     "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-    #     lambda a, b, c: (True, None),
-    # )
-    # def test_token_distribution_not_claimable_already_claimed_month(self):
-    #     tdc = TokenDistributionClaim.objects.create(
-    #         user_profile=self.user_profile,
-    #         token_distribution=self.td,
-    #         # Claimed 2 weeks ago
-    #         created_at=WeeklyCreditStrategy.get_first_day_of_the_month(),
-    #     )
-    #     tdc.created_at = WeeklyCreditStrategy.get_first_day_of_the_month()
-    #     tdc.save()
-
-    #     self.client.force_authenticate(user=self.user_profile.user)
-    #     response = self.client.post(
-    #         reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
-    #     )
-
-    #     self.assertEqual(response.status_code, 403)
-    #     # self.assertEqual(
-    #     #     response.data["detail"],
-    #     #     "You have already claimed this token this month"
-    #     # )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (False, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_false_permissions(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
@@ -382,32 +342,31 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
-        # self.assertEqual(
-        #     response.data["detail"], "You have reached your weekly claim limit"
-        # )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_no_wallet(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
             response.data["detail"],
-            "You have not connected an EVM wallet to your account",
+            "This wallet is not registered for this user",
         )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_claimable(self):
         Wallet.objects.create(
@@ -417,14 +376,15 @@ class TokenDistributionAPITestCase(APITestCase):
         )
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
 
         self.assertEqual(response.status_code, 200)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_btc_lightning_claimable(self):
         Wallet.objects.create(
@@ -435,19 +395,20 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
-            data={"lightning_invoice": "test"},
+            data={"user_wallet_address": "test"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
         self.assertEqual(
-            ClaimReceipt.objects.first().chain.chain_id, self.btc_td.chain.chain_id
+            ClaimReceipt.objects.first().faucet.chain.chain_id,
+            self.btc_td.chain.chain_id,
         )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_btc_lightning_claimable_claim_updates_after_6seconds(self):
         Wallet.objects.create(
@@ -458,18 +419,20 @@ class TokenDistributionAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
             reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
-            data={"lightning_invoice": "test"},
+            data={"user_wallet_address": "test"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["signature"]["status"], "Pending")
         self.assertEqual(ClaimReceipt.objects.count(), 1)
         gas_tap_claim = ClaimReceipt.objects.first()
-        self.assertEqual(gas_tap_claim.chain.chain_id, self.btc_td.chain.chain_id)
+        self.assertEqual(
+            gas_tap_claim.faucet.chain.chain_id, self.btc_td.chain.chain_id
+        )
         self.assertEqual(gas_tap_claim._status, ClaimReceipt.PENDING)
 
         tb = TransactionBatch.objects.create(
-            chain=self.faucet_btc_chain,
+            faucet=self.faucet_btc,
             tx_hash="test hash",
             _status=ClaimReceipt.VERIFIED,
         )
@@ -509,7 +472,7 @@ class HelpersTestCase(APITestCase):
         )
 
         hash = hash_message(
-            user="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+            address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
             token="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
             amount=100000000000000000,
             nonce=create_uint32_random_nonce(),
@@ -559,10 +522,10 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         self.permission1 = Constraint.objects.create(
             name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
         )
-        self.permission2 = Constraint.objects.create(
-            name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
-        )
-        self.td.permissions.set([self.permission1, self.permission2])
+        # self.permission2 = Constraint.objects.create(
+        #     name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
+        # )
+        self.td.permissions.set([self.permission1])
 
         self.tdc = TokenDistributionClaim.objects.create(
             user_profile=self.user_profile,
@@ -622,8 +585,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
         assert "tx_hash is a required field" in str(response.content)
 
-    # Tests that an error is raised when the token distribution claim
-    # does not belong to the user profile
+    # Tests that an error is raised when the td claim does not belong to the user
     def test_claim_not_belonging_to_user_profile(self):
         other_user_profile = UserProfile.objects.get_or_create("other")
         claim = TokenDistributionClaim.objects.create(
@@ -639,8 +601,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         response = self.client.post(url, data=data)
         assert response.status_code == 403
 
-    # Tests that an error is raised when the token distribution claim
-    # status is already verified
+    # Tests that an error is raised when the tdclaim status is already verified
     def test_already_verified_claim(self):
         claim = TokenDistributionClaim.objects.create(
             token_distribution=TokenDistribution.objects.create(

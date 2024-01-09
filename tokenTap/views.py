@@ -15,8 +15,7 @@ from rest_framework.views import APIView
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
-from faucet.models import Chain as FaucetChain
-from faucet.models import ClaimReceipt
+from faucet.models import ClaimReceipt, Faucet
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
     ConstraintSerializer,
@@ -29,7 +28,7 @@ from tokenTap.serializers import (
 from .constants import CONTRACT_ADDRESSES
 from .helpers import (
     create_uint32_random_nonce,
-    has_weekly_credit_left,
+    has_credit_left,
     hash_message,
     sign_hashed_message,
 )
@@ -65,17 +64,19 @@ class TokenDistributionClaimView(CreateAPIView):
             if not constraint.is_observed(token_distribution=token_distribution):
                 raise PermissionDenied(constraint.response)
 
-    def check_user_weekly_credit(self, user_profile):
-        if not has_weekly_credit_left(user_profile):
+    def check_user_credit(self, user_profile):
+        if not has_credit_left(user_profile):
             raise rest_framework.exceptions.PermissionDenied(
                 "You have reached your weekly claim limit"
             )
 
-    def check_user_has_wallet(self, user_profile):
-        if not user_profile.wallets.filter(wallet_type=NetworkTypes.EVM).exists():
-            raise rest_framework.exceptions.PermissionDenied(
-                "You have not connected an EVM wallet to your account"
-            )
+    def wallet_is_vaild(self, user_profile, user_wallet_address, token_distribution):
+        if token_distribution.chain.chain_type == NetworkTypes.LIGHTNING:
+            return  # TODO - check if user_wallet_address is a valid lightning invoice
+
+        elif token_distribution.chain.chain_type == NetworkTypes.EVM:
+            if not user_profile.owns_wallet(user_wallet_address):
+                raise PermissionDenied("This wallet is not registered for this user")
 
     @swagger_auto_schema(
         responses={
@@ -102,11 +103,15 @@ class TokenDistributionClaimView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         user_profile = request.user.profile
         token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
-        lightning_invoice = request.data.get("lightning_invoice", None)
+        user_wallet_address = request.data.get("user_wallet_address", None)
+        if user_wallet_address is None:
+            raise rest_framework.exceptions.ParseError(
+                "user_wallet_address is a required field"
+            )
 
         self.check_token_distribution_is_claimable(token_distribution)
 
-        self.check_user_has_wallet(user_profile)
+        self.wallet_is_vaild(user_profile, user_wallet_address, token_distribution)
 
         self.check_user_permissions(token_distribution, user_profile)
 
@@ -127,12 +132,12 @@ class TokenDistributionClaimView(CreateAPIView):
         except TokenDistributionClaim.DoesNotExist:
             pass
 
-        self.check_user_weekly_credit(user_profile)
+        self.check_user_credit(user_profile)
 
         nonce = create_uint32_random_nonce()
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
             hashed_message = hash_message(
-                user=user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address,
+                address=user_wallet_address,
                 token=token_distribution.token_address,
                 amount=token_distribution.amount,
                 nonce=nonce,
@@ -145,22 +150,24 @@ class TokenDistributionClaimView(CreateAPIView):
                 nonce=nonce,
                 signature=signature,
                 token_distribution=token_distribution,
+                user_wallet_address=user_wallet_address,
             )
 
         elif token_distribution.chain.chain_type == NetworkTypes.LIGHTNING:
             tdc = TokenDistributionClaim.objects.create(
                 user_profile=user_profile,
                 nonce=nonce,
-                signature=lightning_invoice,
+                signature=user_wallet_address,
+                user_wallet_address=user_wallet_address,
                 token_distribution=token_distribution,
             )
             ClaimReceipt.objects.create(
-                chain=FaucetChain.objects.get(chain_type=NetworkTypes.LIGHTNING),
+                faucet=Faucet.objects.get(chain__chain_type=NetworkTypes.LIGHTNING),
                 user_profile=user_profile,
                 datetime=timezone.now(),
                 amount=token_distribution.amount,
                 _status=ClaimReceipt.PENDING,
-                passive_address=lightning_invoice,
+                to_address=user_wallet_address,
             )
 
         return Response(

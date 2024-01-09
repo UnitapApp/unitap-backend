@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                 ('max_number_of_entries', models.IntegerField(blank=True, null=True)),
                 ('is_active', models.BooleanField(default=True)),
                 ('winner', models.CharField(blank=True, max_length=1024, null=True)),
-                ('chain', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='raffles', to='faucet.chain')),
+                ('chain', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='raffles', to='core.chain')),
             ],
         ),
         migrations.CreateModel(

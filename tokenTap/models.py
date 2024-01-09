@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 
 from authentication.models import UserProfile
-from core.models import Chain, NetworkTypes, UserConstraint
+from core.models import Chain, UserConstraint
 from faucet.constraints import OptimismHasClaimedGasInThisRound
 from faucet.models import ClaimReceipt
 
@@ -105,6 +105,8 @@ class TokenDistributionClaim(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
+    user_wallet_address = models.CharField(max_length=255, null=True, blank=True)
+
     notes = models.TextField(null=True, blank=True)
 
     signature = models.CharField(max_length=1024, blank=True, null=True)
@@ -118,10 +120,6 @@ class TokenDistributionClaim(models.Model):
 
     def __str__(self):
         return f"{self.token_distribution} - {self.user_profile}"
-
-    @property
-    def user(self):
-        return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
 
     @property
     def token(self):

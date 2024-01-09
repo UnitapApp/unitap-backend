@@ -14,12 +14,12 @@ from core.utils import Web3Utils
 from tokenTap.models import TokenDistributionClaim
 
 from .faucet_manager.fund_manager import FundMangerException, get_fund_manager
-from .models import Chain, ClaimReceipt, DonationReceipt, TransactionBatch
+from .models import ClaimReceipt, DonationReceipt, Faucet, TransactionBatch
 
 
-def has_pending_batch(chain):
+def has_pending_batch(faucet):
     return TransactionBatch.objects.filter(
-        chain=chain, _status=ClaimReceipt.PENDING
+        faucet=faucet, _status=ClaimReceipt.PENDING
     ).exists()
 
 
@@ -49,7 +49,7 @@ class CeleryTasks:
                     if receipt.passive_address is not None
                     else Wallet.objects.get(
                         user_profile=receipt.user_profile,
-                        wallet_type=batch.chain.chain_type,
+                        wallet_type=batch.faucet.chain.chain_type,
                     ).address,
                     "amount": int(receipt.amount),
                 }
@@ -59,7 +59,7 @@ class CeleryTasks:
             logging.info(data)
 
             try:
-                manager = get_fund_manager(batch.chain)
+                manager = get_fund_manager(batch.faucet)
                 tx_hash = manager.multi_transfer(data)
                 batch.tx_hash = tx_hash
                 batch.save()
@@ -84,7 +84,7 @@ class CeleryTasks:
         try:
             if not batch.status_should_be_updated:
                 return
-            manager = get_fund_manager(batch.chain)
+            manager = get_fund_manager(batch.faucet)
 
             if manager.is_tx_verified(batch.tx_hash):
                 batch._status = ClaimReceipt.VERIFIED
@@ -109,32 +109,32 @@ class CeleryTasks:
         ).update(_status=ClaimReceipt.REJECTED)
 
     @staticmethod
-    def process_chain_pending_claims(chain_id):
+    def process_faucet_pending_claims(faucet_id):
         with transaction.atomic():
-            chain = Chain.objects.select_for_update().get(
-                pk=chain_id
+            faucet = Faucet.objects.select_for_update().get(
+                pk=faucet_id
             )  # lock based on chain
 
             # all pending batches must be resolved before new transactions can be made
-            if has_pending_batch(chain):
+            if has_pending_batch(faucet):
                 return
 
             # get all pending receipts for this chain
             # pending receipts are receipts that have not been batched yet
             receipts = ClaimReceipt.objects.filter(
-                chain=chain, _status=ClaimReceipt.PENDING, batch=None
+                faucet=faucet, _status=ClaimReceipt.PENDING, batch=None
             )
 
             if receipts.count() == 0:
                 return
 
-            if chain.chain_type == NetworkTypes.LIGHTNING:
+            if faucet.chain.chain_type == NetworkTypes.LIGHTNING:
                 receipts = receipts.order_by("pk")[:1]
             else:
                 receipts = receipts.order_by("pk")[:32]
 
             # if there are no pending batches, create a new batch
-            batch = TransactionBatch.objects.create(chain=chain)
+            batch = TransactionBatch.objects.create(faucet=faucet)
 
             # assign the batch to the receipts
             for receipt in receipts:
@@ -142,17 +142,17 @@ class CeleryTasks:
                 receipt.save()
 
     @staticmethod
-    def update_needs_funding_status_chain(chain_id):
+    def update_needs_funding_status_faucet(faucet_id):
         try:
-            chain = Chain.objects.get(pk=chain_id)
+            faucet = Faucet.objects.get(pk=faucet_id)
             # if has enough funds and enough fees, needs_funding is False
 
-            chain.needs_funding = True
+            faucet.needs_funding = True
 
-            if chain.has_enough_funds and chain.has_enough_fees:
-                chain.needs_funding = False
+            if faucet.has_enough_funds and faucet.chain.has_enough_fees:
+                faucet.needs_funding = False
 
-            chain.save()
+            faucet.save()
         except Exception as e:
             logging.exception(str(e))
             capture_exception()
@@ -252,7 +252,7 @@ class CeleryTasks:
     @staticmethod
     def process_donation_receipt(donation_receipt_pk):
         donation_receipt = DonationReceipt.objects.get(pk=donation_receipt_pk)
-        evm_fund_manager = get_fund_manager(donation_receipt.chain)
+        evm_fund_manager = get_fund_manager(donation_receipt.faucet)
         try:
             if not evm_fund_manager.is_tx_verified(donation_receipt.tx_hash):
                 donation_receipt.delete()
@@ -271,10 +271,10 @@ class CeleryTasks:
                 donation_receipt.delete()
                 return
             donation_receipt.value = str(evm_fund_manager.from_wei(tx.get("value")))
-            if not donation_receipt.chain.is_testnet:
+            if not donation_receipt.faucet.chain.is_testnet:
                 try:
                     token_price = TokenPrice.objects.get(
-                        symbol=donation_receipt.chain.symbol
+                        symbol=donation_receipt.faucet.chain.symbol
                     )
                     donation_receipt.total_price = str(
                         decimal.Decimal(donation_receipt.value)
@@ -282,7 +282,8 @@ class CeleryTasks:
                     )
                 except TokenPrice.DoesNotExist:
                     logging.error(
-                        f"TokenPrice for Chain: {donation_receipt.chain.chain_name}"
+                        f"TokenPrice for Chain: "
+                        f"{donation_receipt.faucet.chain.chain_name}"
                         f" did not defined"
                     )
                     donation_receipt.status = ClaimReceipt.REJECTED

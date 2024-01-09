@@ -4,12 +4,10 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import BigNumField, Chain, NetworkTypes, UserConstraint
+from core.models import BigNumField, Chain, UserConstraint
 from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
 
 from .constraints import HaveUnitapPass, NotHaveUnitapPass
-
-# Create your models here.
 
 
 class Constraint(UserConstraint):
@@ -147,10 +145,12 @@ class RaffleEntry(models.Model):
         unique_together = (("raffle", "user_profile"),)
         verbose_name_plural = "raffle entries"
 
-    raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="entries")
+    raffle = models.ForeignKey(Raffle, on_delete=models.PROTECT, related_name="entries")
     user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.CASCADE, related_name="raffle_entries"
+        UserProfile, on_delete=models.PROTECT, related_name="raffle_entries"
     )
+
+    user_wallet_address = models.CharField(max_length=255)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
@@ -161,10 +161,6 @@ class RaffleEntry(models.Model):
 
     def __str__(self):
         return f"{self.raffle} - {self.user_profile}"
-
-    @property
-    def user(self):
-        return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
 
     @property
     def age(self):

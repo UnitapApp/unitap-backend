@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='raffle',
             name='signer',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.DO_NOTHING, to='faucet.walletaccount'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.DO_NOTHING, to='core.walletaccount'),
             preserve_default=False,
         ),
     ]

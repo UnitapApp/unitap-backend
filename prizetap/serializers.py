@@ -42,7 +42,6 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
     raffle = SimpleRaffleSerializer()
     user_profile = SimpleProfilerSerializer()
     chain = serializers.SerializerMethodField()
-    wallet = serializers.SerializerMethodField()
 
     class Meta:
         model = RaffleEntry
@@ -51,7 +50,7 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "chain",
             "raffle",
             "user_profile",
-            "wallet",
+            "user_wallet_address",
             "created_at",
             "multiplier",
             "tx_hash",
@@ -62,7 +61,7 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
             "chain",
             "raffle",
             "user_profile",
-            "wallet",
+            "user_wallet_address",
             "created_at",
             "multiplier",
         ]
@@ -70,22 +69,16 @@ class RaffleEntrySerializer(serializers.ModelSerializer):
     def get_chain(self, entry: RaffleEntry):
         return entry.raffle.chain.chain_id
 
-    def get_wallet(self, entry: RaffleEntry):
-        return entry.user_profile.wallets.get(
-            wallet_type=entry.raffle.chain.chain_type
-        ).address
-
 
 class WinnerEntrySerializer(serializers.ModelSerializer):
     user_profile = SimpleProfilerSerializer()
-    wallet = serializers.SerializerMethodField()
 
     class Meta:
         model = RaffleEntry
         fields = [
             "pk",
             "user_profile",
-            "wallet",
+            "user_wallet_address",
             "created_at",
             "multiplier",
             "tx_hash",
@@ -94,15 +87,10 @@ class WinnerEntrySerializer(serializers.ModelSerializer):
         read_only_fields = [
             "pk",
             "user_profile",
-            "wallet",
+            "user_wallet_address",
             "created_at",
             "multiplier",
         ]
-
-    def get_wallet(self, entry: RaffleEntry):
-        return entry.user_profile.wallets.get(
-            wallet_type=entry.raffle.chain.chain_type
-        ).address
 
 
 class CreateRaffleSerializer(serializers.ModelSerializer):

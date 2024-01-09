@@ -1,12 +1,13 @@
 import datetime
+import logging
 import time
 from contextlib import contextmanager
 
 import pytz
-from eth_account.messages import encode_defunct
-from web3 import Account, Web3
 from django.core.cache import cache
-from web3 import Web3
+from eth_account.messages import encode_defunct
+from solana.rpc.api import Client
+from web3 import Account, Web3
 from web3.contract.contract import Contract, ContractFunction
 from web3.logs import DISCARD, IGNORE, STRICT, WARN
 from web3.middleware import geth_poa_middleware
@@ -178,11 +179,11 @@ class Web3Utils:
         return Web3.to_checksum_address(address.lower())
 
     @staticmethod
-    def hash_message(user, token, amount, nonce):
+    def hash_message(address, token, amount, nonce):
         message_hash = Web3().solidity_keccak(
             ["address", "address", "uint256", "uint32"],
             [
-                Web3.to_checksum_address(user),
+                Web3.to_checksum_address(address),
                 Web3.to_checksum_address(token),
                 amount,
                 nonce,
@@ -203,3 +204,19 @@ class Web3Utils:
 
     def get_balance(self, address):
         return self.w3.eth.get_balance(address)
+
+
+class SolanaWeb3Utils:
+    def __init__(self, rpc_url) -> None:
+        self.rpc_url = rpc_url
+
+    @property
+    def w3(self) -> Client:
+        assert self.rpc_url is not None
+        try:
+            _w3 = Client(self.rpc_url)
+            if _w3.is_connected():
+                return _w3
+        except Exception as e:
+            logging.error(e)
+            raise (f"Could not connect to rpc {self.rpc_url}")

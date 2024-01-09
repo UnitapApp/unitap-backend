@@ -2,17 +2,16 @@ from django.contrib import admin
 
 from .models import (
     BrightUser,
-    Chain,
     ClaimReceipt,
     DonationReceipt,
+    Faucet,
     GlobalSettings,
     LightningConfig,
     TransactionBatch,
-    WalletAccount,
 )
 
 
-class ChainAdmin(admin.ModelAdmin):
+class FaucetAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
         "chain_name",
@@ -23,6 +22,22 @@ class ChainAdmin(admin.ModelAdmin):
         "order",
     ]
     list_editable = ["order"]
+
+    @admin.display(ordering="chain__chain_name")
+    def chain_name(self, obj):
+        return obj.chain.chain_name
+
+    @admin.display(ordering="chain__chain_id")
+    def chain_id(self, obj):
+        return obj.chain.chain_id
+
+    @admin.display(ordering="chain__symbol")
+    def symbol(self, obj):
+        return obj.chain.symbol
+
+    @admin.display(ordering="chain__chain_type")
+    def chain_type(self, obj):
+        return obj.chain.chain_type
 
 
 class BrightUserAdmin(admin.ModelAdmin):
@@ -58,21 +73,17 @@ class ClaimReceiptAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
         "batch__tx_hash",
-        "chain",
+        "faucet",
         "user_profile",
         "_status",
         "age",
         last_updated_with_seconds,
     ]
-    list_filter = ["chain", "_status", TXHashFilter]
+    list_filter = ["faucet", "_status", TXHashFilter]
 
     def batch__tx_hash(self, obj):
         if obj.batch:
             return obj.batch.tx_hash
-
-
-class WalletAccountAdmin(admin.ModelAdmin):
-    list_display = ["pk", "name", "address"]
 
 
 class GlobalSettingsAdmin(admin.ModelAdmin):
@@ -86,14 +97,14 @@ class TransactionBatchAdmin(admin.ModelAdmin):
         "_status",
         "tx_hash",
         "updating",
-        "chain",
+        "faucet",
         "age",
         "is_expired",
         "claims_count",
         # "claims_amount",
     ]
     search_fields = ["tx_hash"]
-    list_filter = ["chain", "_status", "updating"]
+    list_filter = ["faucet", "_status", "updating"]
 
 
 class LightningConfigAdmin(admin.ModelAdmin):
@@ -102,13 +113,19 @@ class LightningConfigAdmin(admin.ModelAdmin):
 
 
 class DonationReceiptAdmin(admin.ModelAdmin):
-    list_display = ["tx_hash", "user_profile", "chain", "value", "total_price", "datetime"]
+    list_display = [
+        "tx_hash",
+        "user_profile",
+        "faucet",
+        "value",
+        "total_price",
+        "datetime",
+    ]
     search_fields = ["tx_hash"]
-    list_filter = ["chain", "user_profile"]
+    list_filter = ["faucet", "user_profile"]
 
 
-admin.site.register(WalletAccount, WalletAccountAdmin)
-admin.site.register(Chain, ChainAdmin)
+admin.site.register(Faucet, FaucetAdmin)
 admin.site.register(BrightUser, BrightUserAdmin)
 admin.site.register(ClaimReceipt, ClaimReceiptAdmin)
 admin.site.register(GlobalSettings, GlobalSettingsAdmin)
