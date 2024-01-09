@@ -168,6 +168,7 @@ class Wallet(SafeDeleteModel):
 
 
 class BaseThirdPartyConnection(models.Model):
+    title = "BaseThirdPartyConnection"
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="%(class)s"
     )
@@ -188,6 +189,7 @@ class BaseThirdPartyConnection(models.Model):
 
 
 class BrightIDConnection(BaseThirdPartyConnection):
+    title = "BrightID"
     context_id = models.CharField(max_length=512, unique=True)
 
     driver = BrightIDConnectionDriver()

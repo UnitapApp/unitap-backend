@@ -96,7 +96,7 @@ def get_third_party_connection_serializer(connection):
 
 def thirdparty_connection_serializer(connection_list):
     return [
-        get_third_party_connection_serializer(connection).data
+        {connection.title: get_third_party_connection_serializer(connection).data}
         for connection in connection_list
     ]
 
