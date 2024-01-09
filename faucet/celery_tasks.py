@@ -51,7 +51,7 @@ class CeleryTasks:
                 for receipt in batch.claims.all()
             ]
             #####
-            logging.info(data)
+            print(data)
 
             try:
                 manager = get_fund_manager(batch.faucet)
