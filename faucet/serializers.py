@@ -19,8 +19,8 @@ class FaucetBalanceSerializer(serializers.ModelSerializer):
     contract_balance = serializers.SerializerMethodField()
     wallet_balance = serializers.SerializerMethodField()
     chain = ChainSerializer()
-    get_has_enough_fees = serializers.SerializerMethodField()
-    get_wallet_address = serializers.SerializerMethodField()
+    has_enough_fees = serializers.SerializerMethodField()
+    wallet_address = serializers.SerializerMethodField()
 
     class Meta:
         model = Faucet
@@ -29,11 +29,11 @@ class FaucetBalanceSerializer(serializers.ModelSerializer):
             "chain",
             "needs_funding",
             "has_enough_funds",
-            "get_has_enough_fees",
+            "has_enough_fees",
             "contract_balance",
             "wallet_balance",
             "fund_manager_address",
-            "get_wallet_address",
+            "wallet_address",
             "block_scan_address",
         ]
 
