@@ -383,10 +383,6 @@ class TestClaimAPI(APITestCase):
         response_1 = self.client.post(endpoint, data={"address": "0x132546"})
         self.assertEqual(response_1.status_code, 400)
 
-    @patch(
-        "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
-    )
     def test_get_last_claim_of_user(self):
         endpoint = reverse("FAUCET:last-claim")
 
@@ -429,10 +425,6 @@ class TestClaimAPI(APITestCase):
         self.assertEqual(claim_data["txHash"], last_claim.tx_hash)
         self.assertEqual(claim_data["faucet"]["pk"], last_claim.faucet.pk)
 
-    @patch(
-        "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
-    )
     def test_get_claim_list(self):
         endpoint = reverse("FAUCET:claims")
 
