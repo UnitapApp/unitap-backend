@@ -45,7 +45,7 @@ def get_fund_manager(faucet: Faucet):
         manager_cls = EVMFundManager
     else:
         raise Exception(f"Invalid chain type {faucet.chain.chain_type}")
-    return manager_cls(faucet.chain)
+    return manager_cls(faucet)
 
 
 class EVMFundManager:
