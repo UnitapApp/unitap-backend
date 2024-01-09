@@ -15,11 +15,16 @@ class ConstraintParam(Enum):
     USERNAME = "username"
     FROM_DATE = "from_date"
     TO_DATE = "to_date"
-    FILE_PATH = "file_path"
+    WALLETS_CSV_FILE = "wallets_csv_file"
 
     @classmethod
     def choices(cls):
         return [(key.value, key.name) for key in cls]
+
+    @classmethod
+    def is_valid_wallets_csv_file(cls):
+        # TODO: fixme
+        pass
 
 
 class ConstraintVerification(ABC):
@@ -96,13 +101,13 @@ class HasNFTVerification(ConstraintVerification):
 
 
 class AllowList(ConstraintVerification):
-    _param_keys = [ConstraintParam.FILE_PATH]
+    _param_keys = [ConstraintParam.WALLETS_CSV_FILE]
 
     def __init__(self, user_profile, response: str = None) -> None:
         super().__init__(user_profile, response)
 
     def is_observed(self, *args, **kwargs):
-        file_path = self._param_values[ConstraintParam.FILE_PATH]
+        file_path = self._param_values[ConstraintParam.WALLETS_CSV_FILE]
         self.allow_list = []
         with open(file_path, newline="") as f:
             reader = csv.reader(f)
