@@ -5,8 +5,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
 from authentication.helpers import verify_login_signature
-from authentication.models import (
-    BaseThirdPartyConnection,
+from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
     UserProfile,
     Wallet,
@@ -74,7 +73,7 @@ class WalletSerializer(serializers.ModelSerializer):
 
 class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = BaseThirdPartyConnection
+        model = BrightIDConnection
         fields = ["user_profile", "created_at"]
 
 
