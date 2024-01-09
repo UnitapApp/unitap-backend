@@ -416,7 +416,7 @@ class SetUsernameView(CreateAPIView):
 
 
 class CheckUsernameView(CreateAPIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         request_body=UsernameRequestSerializer,
