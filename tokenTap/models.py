@@ -1,6 +1,7 @@
 from django.core.cache import cache
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
 from core.models import Chain, UserConstraint
@@ -24,12 +25,23 @@ class Constraint(UserConstraint):
 
 
 class TokenDistribution(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", _("Pending")
+        REJECTED = "REJECTED", _("Rejected")
+        VERIFIED = "VERIFIED", _("Verified")
+
     name = models.CharField(max_length=100)
 
     distributor = models.CharField(max_length=100, null=True, blank=True)
+    distributor_profile = models.ForeignKey(
+        UserProfile, on_delete=models.DO_NOTHING, related_name="token_distributions"
+    )
+    distributor_address = models.CharField(max_length=255)
     distributor_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
+    email_url = models.EmailField(max_length=255)
+    telegram_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
     token_image_url = models.URLField(max_length=255, null=True, blank=True)
 
@@ -41,14 +53,21 @@ class TokenDistribution(models.Model):
     )
     contract = models.CharField(max_length=255, null=True, blank=True)
 
-    permissions = models.ManyToManyField(Constraint, blank=True)
+    constraints = models.ManyToManyField(Constraint, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    deadline = models.DateTimeField(null=True, blank=True)
+    start_at = models.DateTimeField(default=timezone.now)
+    deadline = models.DateTimeField()
 
     max_number_of_claims = models.IntegerField(null=True, blank=True)
 
     notes = models.TextField(null=True, blank=True)
+    necessary_information = models.TextField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    rejection_reason = models.TextField(null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
 
