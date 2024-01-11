@@ -1,6 +1,5 @@
 import datetime
 import json
-import logging
 import os
 
 import pytz
@@ -212,9 +211,8 @@ class ClaimMaxView(APIView):
         try:
             assert max_credit > 0
             return manager.claim(max_credit, to_address=to_address)
-        except AssertionError as e:
-            logging.error("no credit left for user", e)
-            raise rest_framework.exceptions.PermissionDenied("no credit left")
+        except AssertionError:
+            raise rest_framework.exceptions.PermissionDenied("Something Went Wrong")
         except ValueError as e:
             raise rest_framework.exceptions.APIException(e)
 

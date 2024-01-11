@@ -333,49 +333,43 @@ class TestClaimAPI(APITestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    # @patch(
-    #     "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
-    #     lambda a: True,
-    # )
-    # def test_claim_max_api_should_claim_all(self):
-    #     endpoint = reverse(
-    #         "FAUCET:claim-max",
-    #         kwargs={"faucet_pk": self.test_faucet.pk},
-    #     )
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        True,
+    )
+    def test_claim_max_api_should_claim_all(self):
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"faucet_pk": self.test_faucet.pk},
+        )
 
-    #     response = self.client.post(
-    #         endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
-    #     )
-    #     claim_receipt = json.loads(response.content)
+        response = self.client.post(
+            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+        )
+        claim_receipt = json.loads(response.content)
 
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(claim_receipt["amount"], self.test_faucet.max_claim_amount)
-
-    # @patch(
-    #     "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
-    #     lambda a: True,
-    # )
-    # def test_claim_max_twice_should_fail(self):
-    #     endpoint = reverse(
-    #         "FAUCET:claim-max",
-    #         kwargs={"faucet_pk": self.test_faucet.pk},
-    #     )
-    #     response_1 = self.client.post(
-    #         endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
-    #     )
-    #     self.assertEqual(response_1.status_code, 200)
-    #     try:
-    #         self.client.post(
-    #             endpoint, data={"address":
-    # "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
-    #         )
-    #     except CustomException:
-    #         self.assertEqual(True, True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(claim_receipt["amount"], self.test_faucet.max_claim_amount)
 
     @patch(
         "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
+        True,
     )
+    def test_claim_max_twice_should_fail(self):
+        endpoint = reverse(
+            "FAUCET:claim-max",
+            kwargs={"faucet_pk": self.test_faucet.pk},
+        )
+        response_1 = self.client.post(
+            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+        )
+        self.assertEqual(response_1.status_code, 200)
+        response_2 = self.client.post(
+            endpoint, data={"address": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"}
+        )
+        self.assertEqual(response_2.status_code, 403)
+
+    @patch("authentication.models.UserProfile.is_meet_verified", True)
     def test_address_validator_evm(self):
         endpoint = reverse(
             "FAUCET:claim-max", kwargs={"faucet_pk": self.test_faucet.pk}
