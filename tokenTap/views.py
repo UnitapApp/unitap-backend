@@ -9,6 +9,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -19,6 +20,7 @@ from faucet.models import ClaimReceipt, Faucet
 from tokenTap.models import TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
     ConstraintSerializer,
+    CreateTokenDistributionSerializer,
     DetailResponseSerializer,
     TokenDistributionClaimResponseSerializer,
     TokenDistributionClaimSerializer,
@@ -58,7 +60,7 @@ class TokenDistributionClaimView(CreateAPIView):
             )
 
     def check_user_permissions(self, token_distribution, user_profile):
-        for c in token_distribution.permissions.all():
+        for c in token_distribution.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
             constraint.response = c.response
             if not constraint.is_observed(token_distribution=token_distribution):
@@ -193,7 +195,7 @@ class GetTokenDistributionConstraintsView(APIView):
 
         response_constraints = []
 
-        for c in td.permissions.all():
+        for c in td.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
             constraint.response = c.response
             try:
@@ -282,3 +284,16 @@ class ValidChainsView(ListAPIView):
                 }
             )
         return Response({"success": True, "data": response})
+
+
+class CreateTokenDistribution(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CreateTokenDistributionSerializer
+
+    def post(self, request: Request):
+        serializer: CreateTokenDistributionSerializer = self.get_serializer(
+            data=request.data, context={"user_profile": request.user.profile}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"success": True, "data": serializer.data})
