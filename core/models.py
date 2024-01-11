@@ -12,6 +12,7 @@ from solders.pubkey import Pubkey
 from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from .constraints import BrightIDAuraVerification, BrightIDMeetVerification
+from .utils import SolanaWeb3Utils, Web3Utils
 
 
 class NetworkTypes:
@@ -185,20 +186,16 @@ class Chain(models.Model):
             return 0
 
         try:
-            from faucet.faucet_manager.fund_manager import (
-                EVMFundManager,
-                SolanaFundManager,
-            )
-
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                # TODO: Get from Web3Utils
-                return EVMFundManager(self).get_balance(self.wallet.address)
+                return Web3Utils(self.rpc_url, self.poa).get_balance(
+                    self.wallet.address
+                )
             elif self.chain_type == NetworkTypes.SOLANA:
-                fund_manager = SolanaFundManager(self)
-                v = fund_manager.w3.get_balance(
-                    Pubkey.from_string(self.wallet.address)
-                ).value
-                return v
+                return (
+                    SolanaWeb3Utils(self.rpc_url)
+                    .w3.get_balance(Pubkey.from_string(self.wallet.address))
+                    .value
+                )
             elif self.chain_type == NetworkTypes.LIGHTNING:
                 lnpay_client = LNPayClient(
                     self.rpc_url_private,
@@ -226,23 +223,7 @@ class Chain(models.Model):
             return self.max_gas_price + 1
 
         try:
-            from faucet.faucet_manager.fund_manager import EVMFundManager
-
-            # TODO: Get from Web3Utils
-            return EVMFundManager(self).get_gas_price()
+            return Web3Utils(self.rpc_url, self.poa).get_gas_price()
         except:  # noqa: E722
             logging.exception(f"Error getting gas price for {self.chain_name}")
             return self.max_gas_price + 1
-
-    @property
-    def is_gas_price_too_high(self):
-        if not self.rpc_url_private:
-            return True
-
-        try:
-            from faucet.faucet_manager.fund_manager import EVMFundManager
-
-            return EVMFundManager(self).is_gas_price_too_high
-        except Exception:  # noqa: E722
-            logging.exception(f"Error getting gas price for {self.chain_name}")
-            return True

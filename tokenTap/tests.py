@@ -22,6 +22,12 @@ gnosis_tokentap_contract_address = "0xB67ec856346b22e4BDA2ab2B53d70D61a2014358"
 
 class TokenDistributionTestCase(APITestCase):
     def setUp(self):
+        self.user_profile = UserProfile.objects.create(
+            user=User.objects.create_user(username="test", password="1234"),
+            initial_context_id="test",
+            username="test",
+        )
+
         self.chain = Chain.objects.create(
             chain_name="Gnosis Chain",
             wallet=WalletAccount.objects.create(
@@ -43,6 +49,7 @@ class TokenDistributionTestCase(APITestCase):
         td = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -55,19 +62,20 @@ class TokenDistributionTestCase(APITestCase):
             deadline=timezone.now() + timezone.timedelta(days=7),
             # permissions=[self.permission],
         )
-        td.permissions.set([self.permission])
+        td.constraints.set([self.permission])
 
         self.assertEqual(TokenDistribution.objects.count(), 1)
         self.assertEqual(TokenDistribution.objects.first(), td)
-        self.assertEqual(TokenDistribution.objects.first().permissions.count(), 1)
+        self.assertEqual(TokenDistribution.objects.first().constraints.count(), 1)
         self.assertEqual(
-            TokenDistribution.objects.first().permissions.first(), self.permission
+            TokenDistribution.objects.first().constraints.first(), self.permission
         )
 
     def test_token_distribution_expiration(self):
         td1 = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -84,6 +92,7 @@ class TokenDistributionTestCase(APITestCase):
         td2 = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -122,6 +131,7 @@ class TokenDistributionClaimTestCase(APITestCase):
         self.td = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.userprofile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -192,6 +202,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.td = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -222,11 +233,12 @@ class TokenDistributionAPITestCase(APITestCase):
             type="TIME",
         )
 
-        self.td.permissions.set([self.permission1, self.permission4])
+        self.td.constraints.set([self.permission1, self.permission4])
 
         self.btc_td = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -239,7 +251,7 @@ class TokenDistributionAPITestCase(APITestCase):
             max_number_of_claims=10,
             notes="Test Notes",
         )
-        self.btc_td.permissions.set([self.permission1, self.permission5])
+        self.btc_td.constraints.set([self.permission1, self.permission5])
 
     def test_token_distribution_list(self):
         response = self.client.get(reverse("token-distribution-list"))
@@ -247,13 +259,14 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]["name"], "Test Distribution")
         self.assertEqual(
-            response.data[0]["permissions"][0]["name"], "core.BrightIDMeetVerification"
+            response.data[0]["constraints"][0]["name"], "core.BrightIDMeetVerification"
         )
 
     def test_token_distribution_not_claimable_max_reached(self):
         ltd = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -281,6 +294,7 @@ class TokenDistributionAPITestCase(APITestCase):
         ltd = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -305,8 +319,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.data["detail"], "This token is not claimable")
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_already_claimed(self):
         TokenDistributionClaim.objects.create(
@@ -323,8 +337,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (False, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_false_permissions(self):
         self.client.force_authenticate(user=self.user_profile.user)
@@ -348,8 +362,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_not_claimable_no_wallet(self):
         self.client.force_authenticate(user=self.user_profile.user)
@@ -365,8 +379,8 @@ class TokenDistributionAPITestCase(APITestCase):
         )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_token_distribution_claimable(self):
         Wallet.objects.create(
@@ -383,8 +397,8 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_btc_lightning_claimable(self):
         Wallet.objects.create(
@@ -407,8 +421,8 @@ class TokenDistributionAPITestCase(APITestCase):
         )
 
     @patch(
-        "authentication.helpers.BrightIDSoulboundAPIInterface.get_verification_status",
-        lambda a, b, c: (True, None),
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
     )
     def test_btc_lightning_claimable_claim_updates_after_6seconds(self):
         Wallet.objects.create(
@@ -506,6 +520,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         self.td = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
+            distributor_profile=self.user_profile,
             distributor_url="https://example.com/distributor",
             discord_url="https://discord.com/example",
             twitter_url="https://twitter.com/example",
@@ -525,7 +540,7 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         # self.permission2 = Constraint.objects.create(
         #     name="core.BrightIDAuraVerification", title="BrightID Aura", type="VER"
         # )
-        self.td.permissions.set([self.permission1])
+        self.td.constraints.set([self.permission1])
 
         self.tdc = TokenDistributionClaim.objects.create(
             user_profile=self.user_profile,
@@ -555,7 +570,11 @@ class TokenDistributionClaimAPITestCase(APITestCase):
     def test_successful_update(self):
         claim = TokenDistributionClaim.objects.create(
             token_distribution=TokenDistribution.objects.create(
-                token_address="0x123", amount=100, chain=self.chain
+                distributor_profile=self.user_profile,
+                token_address="0x123",
+                amount=100,
+                chain=self.chain,
+                deadline=timezone.now() + timezone.timedelta(days=7),
             ),
             user_profile=self.user_profile,
             status=ClaimReceipt.PENDING,
@@ -573,7 +592,11 @@ class TokenDistributionClaimAPITestCase(APITestCase):
     def test_missing_tx_hash(self):
         claim = TokenDistributionClaim.objects.create(
             token_distribution=TokenDistribution.objects.create(
-                token_address="0x123", amount=100, chain=self.chain
+                distributor_profile=self.user_profile,
+                token_address="0x123",
+                amount=100,
+                chain=self.chain,
+                deadline=timezone.now() + timezone.timedelta(days=7),
             ),
             user_profile=self.user_profile,
             status=ClaimReceipt.PENDING,
@@ -590,7 +613,11 @@ class TokenDistributionClaimAPITestCase(APITestCase):
         other_user_profile = UserProfile.objects.get_or_create("other")
         claim = TokenDistributionClaim.objects.create(
             token_distribution=TokenDistribution.objects.create(
-                token_address="0x123", amount=100, chain=self.chain
+                distributor_profile=self.user_profile,
+                token_address="0x123",
+                amount=100,
+                chain=self.chain,
+                deadline=timezone.now() + timezone.timedelta(days=7),
             ),
             user_profile=other_user_profile,
             status=ClaimReceipt.PENDING,
@@ -605,7 +632,11 @@ class TokenDistributionClaimAPITestCase(APITestCase):
     def test_already_verified_claim(self):
         claim = TokenDistributionClaim.objects.create(
             token_distribution=TokenDistribution.objects.create(
-                token_address="0x123", amount=100, chain=self.chain
+                distributor_profile=self.user_profile,
+                token_address="0x123",
+                amount=100,
+                chain=self.chain,
+                deadline=timezone.now() + timezone.timedelta(days=7),
             ),
             user_profile=self.user_profile,
             status=ClaimReceipt.VERIFIED,

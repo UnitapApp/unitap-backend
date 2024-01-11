@@ -1,11 +1,11 @@
 import json
 
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
 from authentication.helpers import verify_login_signature
-from authentication.models import (
-    BaseThirdPartyConnection,
+from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
     UserProfile,
     Wallet,
@@ -57,10 +57,23 @@ class WalletSerializer(serializers.ModelSerializer):
 
         return super_is_validated and signature_is_valid
 
+    def create(self, validated_data):
+        instance = None
+        try:
+            with transaction.atomic():
+                instance = super().create(validated_data)
+        except IntegrityError as e:
+            try:
+                instance = Wallet.objects.deleted_only().get(**validated_data)
+            except Wallet.DoesNotExist:
+                raise e
+            instance.undelete()
+        return instance
+
 
 class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = BaseThirdPartyConnection
+        model = BrightIDConnection
         fields = ["user_profile", "created_at"]
 
 
@@ -83,7 +96,7 @@ def get_third_party_connection_serializer(connection):
 
 def thirdparty_connection_serializer(connection_list):
     return [
-        get_third_party_connection_serializer(connection).data
+        {connection.title: get_third_party_connection_serializer(connection).data}
         for connection in connection_list
     ]
 
@@ -99,7 +112,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "username",
             "token",
             "is_meet_verified",
-            "is_aura_verified",
+            # "is_aura_verified",
             "wallets",
         ]
 

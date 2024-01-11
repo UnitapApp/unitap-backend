@@ -250,19 +250,6 @@ class Faucet(models.Model):
             return 0
 
     @property
-    def gas_price(self):
-        if not self.chain.rpc_url_private:
-            return self.chain.max_gas_price + 1
-
-        try:
-            from faucet.faucet_manager.fund_manager import EVMFundManager
-
-            return EVMFundManager(self).get_gas_price()
-        except:  # noqa: E722
-            logging.exception(f"Error getting gas price for {self.chain.chain_name}")
-            return self.chain.max_gas_price + 1
-
-    @property
     def is_gas_price_too_high(self):
         if not self.chain.rpc_url_private:
             return True

@@ -50,7 +50,7 @@ urlpatterns = [
     path("user/info/", GetProfileView.as_view(), name="get-profile-user"),
     path("user/sponsor/", SponsorView.as_view(), name="sponsor-user"),
     path(
-        "user/connect/brightid,", ConnectBrightIDView.as_view(), name="connect-brightid"
+        "user/connect/brightid/", ConnectBrightIDView.as_view(), name="connect-brightid"
     ),
     path(
         "user/all-connections/",
