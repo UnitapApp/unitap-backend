@@ -16,6 +16,9 @@ class ConstraintParam(Enum):
     FROM_DATE = "from_date"
     TO_DATE = "to_date"
     WALLETS_CSV_FILE = "wallets_csv_file"
+    COLLECTION_ADDRESS = "collection_address"
+    MINUMUM = "minimum"
+    MAXIMUM = "maximum"
 
     @classmethod
     def choices(cls):
@@ -87,15 +90,23 @@ class BrightIDAuraVerification(ConstraintVerification):
 
 
 class HasNFTVerification(ConstraintVerification):
-    _param_keys = [ConstraintParam.CHAIN, ConstraintParam.ADDRESS, ConstraintParam.ID]
+    _param_keys = [
+        ConstraintParam.CHAIN,
+        ConstraintParam.ADDRESS,
+        ConstraintParam.COLLECTION_ADDRESS,
+        ConstraintParam.MINUMUM,
+        ConstraintParam.MAXIMUM,
+    ]
 
     def __init__(self, user_profile, response: str = None) -> None:
         super().__init__(user_profile, response)
 
     def is_observed(self, *args, **kwargs):
         self.chain_id = self._param_values[ConstraintParam.CHAIN]
-        self.collection = self._param_values[ConstraintParam.ADDRESS]
+        self.collection = self._param_values[ConstraintParam.COLLECTION_ADDRESS]
         self.nft_id = self._param_values[ConstraintParam.ID]
+        self.minimum = self._param_values[ConstraintParam.MINUMUM]
+        self.maximum = self._param_values[ConstraintParam.MAXIMUM]
 
         # custom logic here
 

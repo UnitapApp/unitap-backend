@@ -139,3 +139,18 @@ class UnitapPassClient:
 
     def to_checksum_address(self, address: str):
         return self.web3_utils.w3.to_checksum_address(address)
+
+
+class NFTClient:
+    def __init__(
+        self,
+        chain: Chain,
+        contract: str,
+        abi: list,
+    ) -> None:
+        self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
+        self.web3_utils.set_contract(contract, abi)
+
+    def get_number_of_tokens(self, address: str):
+        func = self.web3_utils.contract.functions.balanceOf(address)
+        return self.web3_utils.contract_call(func)
