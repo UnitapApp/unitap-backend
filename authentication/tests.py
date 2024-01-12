@@ -1,11 +1,16 @@
+import datetime
+import json
 from unittest.mock import patch
 
 from django.db import IntegrityError
 from django.urls import reverse
 from django.utils import timezone
+from eth_account import Account
+from eth_account.messages import encode_structured_data
 from rest_framework.authtoken.models import Token
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
@@ -237,6 +242,7 @@ class TestListCreateWallet(APITestCase):
     def setUp(self) -> None:
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461G3Ef9A9"
+        self._address2 = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461G3Ef9A91"
         self.private_key_test1 = (
             "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
         )
@@ -244,6 +250,45 @@ class TestListCreateWallet(APITestCase):
         self.endpoint = reverse("AUTHENTICATION:wallets-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
+
+    def create_and_sign_message(self):
+        timestamp = datetime.datetime.now().isoformat() + "Z"
+
+        message = {
+            "message": {
+                "message": "Unitap Sign In",
+                "URI": "https://unitap.app",
+                "IssuedAt": str(timestamp),
+            },
+            "primaryType": "Unitap",
+            "account": "0xFd7716d8B0786349C6515C3aDBadD12a093E6573",
+            "domain": {
+                "name": "Unitap Connect",
+                "version": "1",
+                "chainId": 10,
+                "verifyingContract": "0x0000000000000000000000000000000000000000",
+            },
+            "types": {
+                "EIP712Domain": [
+                    {"name": "name", "type": "string"},
+                    {"name": "version", "type": "string"},
+                    {"name": "chainId", "type": "uint256"},
+                    {"name": "verifyingContract", "type": "address"},
+                ],
+                "Unitap": [
+                    {"name": "message", "type": "string"},
+                    {"name": "URI", "type": "string"},
+                    {"name": "IssuedAt", "type": "string"},
+                ],
+            },
+        }
+
+        hashed_message = encode_structured_data(primitive=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
+
+        return message, signature
 
     def test_invalid_arguments_provided_should_fail(self):
         response = self.client.post(self.endpoint)
@@ -255,140 +300,156 @@ class TestListCreateWallet(APITestCase):
         response = self.client.post(self.endpoint, data={"wallet_type": False})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    # def test_create_wallet_address(self):
-    #     message = "test-message"
-    #
-    #     hashed_message = encode_defunct(text=message)
-    #     account = Account.from_key(self.private_key_test1)
-    #     signed_message = account.sign_message(hashed_message)
-    #     signature = signed_message.signature.hex()
-    #
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #
-    # def test_create_same_address_twice(self):
-    #     message = "test-message"
-    #
-    #     hashed_message = encode_defunct(text=message)
-    #     account = Account.from_key(self.private_key_test1)
-    #     signed_message = account.sign_message(hashed_message)
-    #     signature = signed_message.signature.hex()
-    #
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+    def test_create_wallet_address(self):
+        message, signature = self.create_and_sign_message()
 
-    # def test_create_same_address_for_another_user(self):
-    #     message = "test-message"
-    #     hashed_message = encode_defunct(text=message)
-    #     account = Account.from_key(self.private_key_test1)
-    #     signed_message = account.sign_message(hashed_message)
-    #     signature = signed_message.signature.hex()
-    #
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #     user_profile_2 = create_new_user(self._address2)
-    #     self.client.force_authenticate(user=user_profile_2.user)
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    # def test_create_same_address_after_delete(self):
-    #     message = "test-message"
-    #     hashed_message = encode_defunct(text=message)
-    #     account = Account.from_key(self.private_key_test1)
-    #     signed_message = account.sign_message(hashed_message)
-    #     signature = signed_message.signature.hex()
-    #
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #     create_new_wallet(self.user_profile, self._address2, "EVM")
-    #     endpoint = reverse(
-    #         "AUTHENTICATION:wallet-user", kwargs={"pk": response.data.get('pk')}
-    #     )
-    #     response = self.client.delete(endpoint)
-    #     self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #
-    # def test_get_wallet_list(self):
-    #     message = "test-message"
-    #
-    #     hashed_message = encode_defunct(text=message)
-    #     account = Account.from_key(self.private_key_test1)
-    #     signed_message = account.sign_message(hashed_message)
-    #     signature = signed_message.signature.hex()
-    #
-    #     response = self.client.post(
-    #         self.endpoint,
-    #         data={
-    #             "address": self.public_key_test1,
-    #             "wallet_type": "EVM",
-    #             "message": message,
-    #             "signature": signature,
-    #         },
-    #     )
-    #     self.assertEqual(response.status_code, HTTP_201_CREATED)
-    #     response = self.client.get(self.endpoint, {"wallet_type": "EVM"})
-    #     self.assertEqual(response.status_code, HTTP_200_OK)
-    #     self.assertGreater(len(response.data), 0)
+    def test_create_same_address_twice(self):
+        message, signature = self.create_and_sign_message()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_create_same_address_for_another_user(self):
+        message, signature = self.create_and_sign_message()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        user_profile_2 = create_new_user(self._address2)
+        self.client.force_authenticate(user=user_profile_2.user)
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_create_same_address_after_delete(self):
+        message, signature = self.create_and_sign_message()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        create_new_wallet(self.user_profile, self._address2, "EVM")
+
+        endpoint = reverse(
+            "AUTHENTICATION:wallet-user", kwargs={"pk": response.data.get("pk")}
+        )
+        response = self.client.delete(endpoint)
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_same_address_after_delete_for_another_user(self):
+        message, signature = self.create_and_sign_message()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        create_new_wallet(self.user_profile, self._address2, "EVM")
+
+        endpoint = reverse(
+            "AUTHENTICATION:wallet-user", kwargs={"pk": response.data.get("pk")}
+        )
+        response = self.client.delete(endpoint)
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        user_profile_2 = create_new_user(self._address2)
+        self.client.force_authenticate(user=user_profile_2.user)
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_get_wallet_list(self):
+        message, signature = self.create_and_sign_message()
+
+        response = self.client.post(
+            self.endpoint,
+            data={
+                "address": self.public_key_test1,
+                "wallet_type": "EVM",
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        response = self.client.get(self.endpoint, {"wallet_type": "EVM"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)
 
 
 class TestWalletView(APITestCase):
@@ -438,10 +499,8 @@ class TestWalletView(APITestCase):
         )
         response = self.client.delete(self.endpoint)
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        create_new_wallet(user_2, self._address, "EVM")
-        user_3 = create_new_user(self._address3)
         self.assertRaises(
-            IntegrityError, create_new_wallet, user_3, self._address, "EVM"
+            IntegrityError, create_new_wallet, user_2, self._address, "EVM"
         )
 
 
@@ -482,129 +541,90 @@ class TestCheckUserExistsView(APITestCase):
         self.assertEqual(response.data["exists"], False)
 
 
-# class TestVerifyLoginSignature(APITestCase):
-#     def setUp(self) -> None:
-#         self.endpoint = reverse("AUTHENTICATION:wallet-login")
-#         self.private_key_test1 = (
-#             "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
-#         )
-#         self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
+class TestVerifyLoginSignature(APITestCase):
+    def setUp(self) -> None:
+        self.endpoint = reverse("AUTHENTICATION:wallet-login")
+        self.private_key_test1 = (
+            "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
+        )
+        self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
 
-#     def test_login_signature_verify_helper_function(self):
-#         timestamp = datetime.datetime.now().isoformat() + "Z"
+    def create_and_sign_message(self):
+        timestamp = datetime.datetime.now().isoformat() + "Z"
 
-#         # timestamp = (
-#         #     datetime.datetime.now() - datetime.timedelta(minutes=10)
-#         # ).isoformat() + "Z"
+        message = {
+            "message": {
+                "message": "Unitap Sign In",
+                "URI": "https://unitap.app",
+                "IssuedAt": str(timestamp),
+            },
+            "primaryType": "Unitap",
+            "account": "0xFd7716d8B0786349C6515C3aDBadD12a093E6573",
+            "domain": {
+                "name": "Unitap Connect",
+                "version": "1",
+                "chainId": 10,
+                "verifyingContract": "0x0000000000000000000000000000000000000000",
+            },
+            "types": {
+                "EIP712Domain": [
+                    {"name": "name", "type": "string"},
+                    {"name": "version", "type": "string"},
+                    {"name": "chainId", "type": "uint256"},
+                    {"name": "verifyingContract", "type": "address"},
+                ],
+                "Unitap": [
+                    {"name": "message", "type": "string"},
+                    {"name": "URI", "type": "string"},
+                    {"name": "IssuedAt", "type": "string"},
+                ],
+            },
+        }
 
-#         message_hash = encode_structured_data(
-#             primitive={
-#                 "domain": {
-#                     "name": "Unitap Connect",
-#                     "version": "1",
-#                     "chainId": 1,
-#                     "verifyingContract": "0x0000000000000000000000000000000000000000",
-#                 },
-#                 "types": {
-#                     "EIP712Domain": [
-#                         {"name": "name", "type": "string"},
-#                         {"name": "version", "type": "string"},
-#                         {"name": "chainId", "type": "uint256"},
-#                         {"name": "verifyingContract", "type": "address"},
-#                     ],
-#                     "Unitap": [
-#                         {"name": "message", "type": "string"},
-#                         {"name": "URI", "type": "string"},
-#                         {"name": "IssuedAt", "type": "string"},
-#                     ],
-#                 },
-#                 "message": {
-#                     "message": "Unitap Sign In",
-#                     "URI": "https://unitap.app",
-#                     "IssuedAt": timestamp,
-#                 },
-#                 "primaryType": "Unitap",
-#             }
-#         )
+        hashed_message = encode_structured_data(primitive=message)
+        account = Account.from_key(self.private_key_test1)
+        signed_message = account.sign_message(hashed_message)
+        signature = signed_message.signature.hex()
 
-#         hashed_message = encode_defunct(hexstr=message_hash.hex())
+        return message, signature
 
-#         account = Account.from_key(self.private_key_test1)
-#         signed_message = account.sign_message(hashed_message)
-#         signature = signed_message.signature.hex()
+    def test_api_verify_login_signature(self):
+        message, signature = self.create_and_sign_message()
 
-#         data_objec = {
-#             "walletAddress": self.public_key_test1,
-#             "signature": signature,
-#             "message": {
-#                 "domain": {
-#                     "name": "Unitap Connect",
-#                     "version": "1",
-#                     "chainId": 1,
-#                     "verifyingContract": "0x0000000000000000000000000000000000000000",
-#                 },
-#                 "types": {
-#                     "EIP712Domain": [
-#                         {"name": "name", "type": "string"},
-#                         {"name": "version", "type": "string"},
-#                         {"name": "chainId", "type": "uint256"},
-#                         {"name": "verifyingContract", "type": "address"},
-#                     ],
-#                     "Unitap": [
-#                         {"name": "message", "type": "string"},
-#                         {"name": "URI", "type": "string"},
-#                         {"name": "IssuedAt", "type": "string"},
-#                     ],
-#                 },
-#                 "message": {
-#                     "message": "Unitap Sign In",
-#                     "URI": "https://unitap.app",
-#                     "IssuedAt": timestamp,
-#                 },
-#                 "primaryType": "Unitap",
-#             },
-#         }
+        result = self.client.post(
+            self.endpoint,
+            data={
+                "wallet_address": self.public_key_test1,
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
 
-#         result = verify_login_signature(
-#             self.public_key_test1, data_objec["message"], signature
-#         )
+        self.assertEqual(result.status_code, HTTP_200_OK)
 
-#         assert result is True
+    def test_api_verify_login_signature_with_deleted_wallet(self):
+        message, signature = self.create_and_sign_message()
 
-#     def test_api_verify_login_signature(self):
-#         timestamp = datetime.datetime.now().isoformat() + "Z"
+        result = self.client.post(
+            self.endpoint,
+            data={
+                "wallet_address": self.public_key_test1,
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
+        self.assertEqual(result.status_code, HTTP_200_OK)
 
-#         # timestamp = (
-#         #     datetime.datetime.now() - datetime.timedelta(minutes=10)
-#         # ).isoformat() + "Z"
+        wallet = Wallet.objects.get(address=self.public_key_test1)
+        wallet.delete()
 
-#         message_hash = Web3().solidity_keccak(
-#             ["string", "string", "string"],
-#             [
-#                 "Unitap Sign In",
-#                 "https://unitap.app",
-#                 timestamp,
-#             ],
-#         )
+        result = self.client.post(
+            self.endpoint,
+            data={
+                "wallet_address": self.public_key_test1,
+                "message": json.dumps(message),
+                "signature": signature,
+            },
+        )
 
-#         hashed_message = encode_defunct(hexstr=message_hash.hex())
-
-#         account = Account.from_key(self.private_key_test1)
-#         signed_message = account.sign_message(hashed_message)
-#         signature = signed_message.signature.hex()
-
-#         data_objec = {
-#             "wallet_address": self.public_key_test1,
-#             "signature": signature,
-#             "message": json.dumps(
-#                 {
-#                     "message": "Unitap Sign In",
-#                     "URI": "https://unitap.app",
-#                     "IssuedAt": timestamp,
-#                 }
-#             ),
-#         }
-
-#         result = self.client.post(self.endpoint, data=data_objec)
-
-#         assert result.status_code == HTTP_200_OK
+        self.assertEqual(result.status_code, HTTP_400_BAD_REQUEST)

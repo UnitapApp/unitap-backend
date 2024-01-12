@@ -11,7 +11,11 @@ from solders.pubkey import Pubkey
 
 from faucet.faucet_manager.lnpay_client import LNPayClient
 
-from .constraints import BrightIDAuraVerification, BrightIDMeetVerification
+from .constraints import (
+    BrightIDAuraVerification,
+    BrightIDMeetVerification,
+    HasNFTVerification,
+)
 from .utils import SolanaWeb3Utils, Web3Utils
 
 
@@ -62,7 +66,11 @@ class UserConstraint(models.Model):
         VERIFICATION = "VER", _("Verification")
         TIME = "TIME", _("Time")
 
-    constraints = [BrightIDMeetVerification, BrightIDAuraVerification]
+    constraints = [
+        BrightIDMeetVerification,
+        BrightIDAuraVerification,
+        HasNFTVerification,
+    ]
 
     name = models.CharField(
         max_length=255,

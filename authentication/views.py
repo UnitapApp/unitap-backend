@@ -140,9 +140,14 @@ class LoginRegisterView(CreateAPIView):
         if not verify_login_signature(wallet_address, json.loads(message), signature):
             return Response({"message": "Invalid signature"}, status=403)
 
-        user_profile = UserProfile.objects.get_or_create_with_wallet_address(
-            wallet_address
-        )
+        try:
+            user_profile = UserProfile.objects.get_or_create_with_wallet_address(
+                wallet_address
+            )
+        except IntegrityError:
+            return Response(
+                {"message": "This wallet address is already registered."}, status=400
+            )
 
         return Response(ProfileSerializer(user_profile).data, status=200)
 
@@ -270,8 +275,6 @@ class ConnectBrightIDView(CreateAPIView):
 
         context_ids = []
 
-        print("verification results", is_meet_verified, meet_context_ids)
-
         if is_meet_verified == False:  # noqa: E712
             if meet_context_ids == 3:  # is not verified
                 context_ids = address
@@ -293,10 +296,18 @@ class ConnectBrightIDView(CreateAPIView):
             #     context_ids = aura_context_ids
 
         first_context_id = context_ids[-1]
-
-        BrightIDConnection.objects.create(
-            user_profile=profile, context_id=first_context_id
-        )
+        try:
+            BrightIDConnection.objects.create(
+                user_profile=profile, context_id=first_context_id
+            )
+        except IntegrityError:
+            return Response(
+                {
+                    "message": "This BrightID account is already connected \
+                    to another Unitap account."
+                },
+                status=400,
+            )
 
         return Response(ProfileSerializer(profile).data, status=200)
 

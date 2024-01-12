@@ -1,8 +1,10 @@
+import uuid
+
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import Q, UniqueConstraint
+from django.db.models import UniqueConstraint
 from django.db.models.functions import Lower
 from django.utils import timezone
 from safedelete.models import SafeDeleteModel
@@ -27,15 +29,15 @@ class ProfileManager(models.Manager):
 
     def get_by_wallet_address(self, wallet_address):
         try:
-            return super().get_queryset().get(wallets__address=wallet_address)
-        except UserProfile.DoesNotExist:
+            return Wallet.objects.get(address=wallet_address).user_profile
+        except Wallet.DoesNotExist:
             return None
 
     def create_with_wallet_address(self, wallet_address):
-        _user = User.objects.create_user(username="UNT" + wallet_address)
+        _user = User.objects.create_user(username="UNT" + str(uuid.uuid4())[:16])
         _profile = UserProfile.objects.create(user=_user)
         Wallet.objects.create(
-            wallet_type=NetworkTypes.EVM,
+            wallet_type=NetworkTypes.EVM,  # TODO support register with non evms
             user_profile=_profile,
             address=wallet_address,
         )
@@ -45,8 +47,8 @@ class ProfileManager(models.Manager):
 
     def get_or_create_with_wallet_address(self, wallet_address):
         try:
-            return super().get_queryset().get(wallets__address=wallet_address)
-        except UserProfile.DoesNotExist:
+            return Wallet.objects.get(address=wallet_address).user_profile
+        except Wallet.DoesNotExist:
             return self.create_with_wallet_address(wallet_address)
 
 
@@ -137,20 +139,12 @@ class Wallet(SafeDeleteModel):
             UniqueConstraint(
                 Lower("address"),
                 "wallet_type",
-                condition=Q(deleted__isnull=True),
                 name="unique_wallet_address",
-            ),
-            UniqueConstraint(
-                Lower("address"),
-                "user_profile",
-                "wallet_type",
-                name="unique_wallet_user_profile_address",
             ),
         ]
 
     def __str__(self):
-        return f"{self.wallet_type} Wallet for profile with contextId \
-        {self.user_profile.initial_context_id}"
+        return f"{self.wallet_type} Wallet for {self.user_profile.username}"
 
 
 class BaseThirdPartyConnection(models.Model):
