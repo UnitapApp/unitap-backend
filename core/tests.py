@@ -71,7 +71,7 @@ class TestNFTConstraint(BaseTestCase):
             "0x23826Fd930916718a98A21FF170088FBb4C30804",
             NetworkTypes.EVM,
         )
-        self.collection_address = "0xa9a6A3626993D487d2Dbda3173cf58cA1a9D9e9f"
+        self.collection_address = "0x23826Fd930916718a98A21FF170088FBb4C30803"
         self.minimum = 1
         self.wallet = WalletAccount.objects.create(
             name="Sepolia Chain Wallet",

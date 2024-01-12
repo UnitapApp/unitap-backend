@@ -4,6 +4,7 @@ import time
 from contextlib import contextmanager
 
 import pytz
+import web3.exceptions
 from django.core.cache import cache
 from eth_account.messages import encode_defunct
 from solana.rpc.api import Client
@@ -224,6 +225,10 @@ class SolanaWeb3Utils:
             raise (f"Could not connect to rpc {self.rpc_url}")
 
 
+class InvalidAddressException(Exception):
+    pass
+
+
 class NFTClient:
     def __init__(
         self,
@@ -236,7 +241,13 @@ class NFTClient:
 
     def get_number_of_tokens(self, address: str):
         func = self.web3_utils.contract.functions.balanceOf(address)
-        return self.web3_utils.contract_call(func)
+        try:
+            return self.web3_utils.contract_call(func)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
 
     def to_checksum_address(self, address: str):
         return self.web3_utils.w3.to_checksum_address(address)
