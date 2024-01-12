@@ -1,13 +1,11 @@
 import time
 
 from brightIDfaucet.settings import DEPLOYMENT_ENV
-from core.models import Chain
 from core.utils import Web3Utils
 
 from .constants import (
     PRIZETAP_ERC20_ABI,
     PRIZETAP_ERC721_ABI,
-    UNITAP_PASS_ABI,
     VRF_CLIENT_ABI,
     VRF_CLIENT_MUMBAI_ADDRESS,
     VRF_CLIENT_POLYGON_ADDRESS,
@@ -123,34 +121,3 @@ class VRFClientContractClient:
         if expiration_time < now:
             func = self.web3_utils.contract.functions.requestRandomWords(num_words)
             return self.web3_utils.contract_txn(func)
-
-
-class UnitapPassClient:
-    def __init__(self, chain: Chain) -> None:
-        self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
-        self.web3_utils.set_contract(
-            "0x23826Fd930916718a98A21FF170088FBb4C30803", UNITAP_PASS_ABI
-        )
-
-    def is_holder(self, address: str):
-        func = self.web3_utils.contract.functions.balanceOf(address)
-        balance = self.web3_utils.contract_call(func)
-        return balance != 0
-
-    def to_checksum_address(self, address: str):
-        return self.web3_utils.w3.to_checksum_address(address)
-
-
-class NFTClient:
-    def __init__(
-        self,
-        chain: Chain,
-        contract: str,
-        abi: list,
-    ) -> None:
-        self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
-        self.web3_utils.set_contract(contract, abi)
-
-    def get_number_of_tokens(self, address: str):
-        func = self.web3_utils.contract.functions.balanceOf(address)
-        return self.web3_utils.contract_call(func)

@@ -7,6 +7,8 @@ from enum import Enum
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.functions import Lower
 
+from core.utils import NFTClient
+
 
 class ConstraintParam(Enum):
     CHAIN = "chain"
@@ -17,8 +19,7 @@ class ConstraintParam(Enum):
     TO_DATE = "to_date"
     WALLETS_CSV_FILE = "wallets_csv_file"
     COLLECTION_ADDRESS = "collection_address"
-    MINUMUM = "minimum"
-    MAXIMUM = "maximum"
+    MINIMUM = "minimum"
 
     @classmethod
     def choices(cls):
@@ -92,23 +93,32 @@ class BrightIDAuraVerification(ConstraintVerification):
 class HasNFTVerification(ConstraintVerification):
     _param_keys = [
         ConstraintParam.CHAIN,
-        ConstraintParam.ADDRESS,
         ConstraintParam.COLLECTION_ADDRESS,
-        ConstraintParam.MINUMUM,
-        ConstraintParam.MAXIMUM,
+        ConstraintParam.MINIMUM,
     ]
 
-    def __init__(self, user_profile, response: str = None) -> None:
-        super().__init__(user_profile, response)
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs):
-        self.chain_id = self._param_values[ConstraintParam.CHAIN]
-        self.collection = self._param_values[ConstraintParam.COLLECTION_ADDRESS]
-        self.nft_id = self._param_values[ConstraintParam.ID]
-        self.minimum = self._param_values[ConstraintParam.MINUMUM]
-        self.maximum = self._param_values[ConstraintParam.MAXIMUM]
+        from core.models import Chain
 
-        # custom logic here
+        chain_id = self._param_values[ConstraintParam.CHAIN.name]
+        collection_address = self._param_values[ConstraintParam.COLLECTION_ADDRESS.name]
+        minimum = self._param_values[ConstraintParam.MINIMUM.name]
+
+        chain = Chain.objects.get(chain_id=chain_id)
+        nft_client = NFTClient(chain=chain, contract=collection_address)
+
+        user_wallets = self.user_profile.wallets.filter(wallet_type=chain.chain_type)
+
+        token_count = 0
+        for wallet in user_wallets:
+            token_count += nft_client.get_number_of_tokens(
+                nft_client.to_checksum_address(wallet.address)
+            )
+
+        return token_count >= int(minimum)
 
 
 class AllowList(ConstraintVerification):

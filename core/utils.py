@@ -13,6 +13,8 @@ from web3.logs import DISCARD, IGNORE, STRICT, WARN
 from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
 
+from core.constants import ERC721_READ_METHODS
+
 
 @contextmanager
 def memcache_lock(lock_id, oid, lock_expire=60):
@@ -220,3 +222,21 @@ class SolanaWeb3Utils:
         except Exception as e:
             logging.error(e)
             raise (f"Could not connect to rpc {self.rpc_url}")
+
+
+class NFTClient:
+    def __init__(
+        self,
+        chain,
+        contract: str,
+        abi=ERC721_READ_METHODS,
+    ) -> None:
+        self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
+        self.web3_utils.set_contract(contract, abi)
+
+    def get_number_of_tokens(self, address: str):
+        func = self.web3_utils.contract.functions.balanceOf(address)
+        return self.web3_utils.contract_call(func)
+
+    def to_checksum_address(self, address: str):
+        return self.web3_utils.w3.to_checksum_address(address)
