@@ -1,6 +1,7 @@
 from django.urls import path
 
 from tokenTap.views import (
+    CreateTokenDistribution,
     GetTokenDistributionConstraintsView,
     TokenDistributionClaimListView,
     TokenDistributionClaimRetrieveView,
@@ -41,5 +42,10 @@ urlpatterns = [
         "get-valid-chains/",
         ValidChainsView.as_view(),
         name="get-valid-chains",
+    ),
+    path(
+        "create-token-distribution/",
+        CreateTokenDistribution.as_view(),
+        name="create-token-distribution",
     ),
 ]
