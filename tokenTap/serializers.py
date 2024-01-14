@@ -179,8 +179,6 @@ class CreateTokenDistributionSerializer(serializers.ModelSerializer):
         chain_id = data["chain"].chain_id
         if chain_id not in valid_chains:
             raise serializers.ValidationError({"chain": "Invalid value"})
-        valid_contracts = list(CONTRACT_ADDRESSES[chain_id].values())
-        if data["contract"] not in valid_contracts:
-            raise serializers.ValidationError({"contract": "Invalid value"})
+        data["contract"] = CONTRACT_ADDRESSES[chain_id]
         data["distributor_profile"] = self.context["user_profile"]
         return data

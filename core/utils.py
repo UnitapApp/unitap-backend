@@ -182,16 +182,8 @@ class Web3Utils:
         return Web3.to_checksum_address(address.lower())
 
     @staticmethod
-    def hash_message(address, token, amount, nonce):
-        message_hash = Web3().solidity_keccak(
-            ["address", "address", "uint256", "uint32"],
-            [
-                Web3.to_checksum_address(address),
-                Web3.to_checksum_address(token),
-                amount,
-                nonce,
-            ],
-        )
+    def hash_message(abi_types, values):
+        message_hash = Web3.solidity_keccak(abi_types, values)
         hashed_message = encode_defunct(hexstr=message_hash.hex())
 
         return hashed_message

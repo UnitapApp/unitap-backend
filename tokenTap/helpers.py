@@ -19,7 +19,15 @@ def create_uint32_random_nonce():
 
 
 def hash_message(address, token, amount, nonce):
-    hashed_message = Web3Utils.hash_message(address, token, amount, nonce)
+    hashed_message = Web3Utils.hash_message(
+        ["address", "address", "uint256", "uint32"],
+        [
+            Web3Utils.to_checksum_address(address),
+            Web3Utils.to_checksum_address(token),
+            int(amount),
+            nonce,
+        ],
+    )
     return hashed_message
 
 

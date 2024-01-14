@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -30,9 +31,9 @@ class TokenDistribution(models.Model):
         REJECTED = "REJECTED", _("Rejected")
         VERIFIED = "VERIFIED", _("Verified")
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=255)
 
-    distributor = models.CharField(max_length=100, null=True, blank=True)
+    distributor = models.CharField(max_length=255, null=True)
     distributor_profile = models.ForeignKey(
         UserProfile, on_delete=models.DO_NOTHING, related_name="token_distributions"
     )
@@ -47,21 +48,27 @@ class TokenDistribution(models.Model):
 
     token = models.CharField(max_length=100)
     token_address = models.CharField(max_length=255)
-    amount = models.BigIntegerField()
+    amount = models.CharField(max_length=100)
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
     )
     contract = models.CharField(max_length=255, null=True, blank=True)
 
-    constraints = models.ManyToManyField(Constraint, blank=True)
+    constraints = models.ManyToManyField(
+        Constraint, blank=True, related_name="token_distributions"
+    )
+    constraint_params = models.TextField(null=True, blank=True)
+    reversed_constraints = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     start_at = models.DateTimeField(default=timezone.now)
     deadline = models.DateTimeField()
 
-    max_number_of_claims = models.IntegerField(null=True, blank=True)
+    max_number_of_claims = models.PositiveIntegerField(
+        null=True, validators=[MinValueValidator(1)]
+    )
 
-    notes = models.TextField(null=True, blank=True)
+    notes = models.TextField()
     necessary_information = models.TextField(null=True, blank=True)
 
     status = models.CharField(
