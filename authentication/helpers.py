@@ -1,20 +1,21 @@
-import requests
+import base64
+import datetime
 import json
 import time
-import requests
-import base64
+
 import ed25519
-from eth_account.messages import encode_defunct
-from web3 import Web3
-from eth_account import Account
+import pytz
+import requests
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.apps import apps
+from eth_account import Account
+from eth_account.messages import encode_defunct, encode_structured_data
 
 
-def verify_signature_eth_scheme(address, signature):
+def verify_signature_eth_scheme(address, message, signature):
     try:
-        digest = encode_defunct(text=address)
+        digest = encode_defunct(text=message)
         signer = Account.recover_message(digest, signature=signature)
         if signer == address:
             return True
@@ -25,15 +26,44 @@ def verify_signature_eth_scheme(address, signature):
         return False
 
 
+def verify_login_signature(address, message, signature):
+    if (
+        message["message"]["message"] != "Unitap Sign In"
+        or message["message"]["URI"] != "https://unitap.app"
+    ):
+        return False
+
+    timestamp = datetime.datetime.fromisoformat(
+        message["message"]["IssuedAt"].replace("Z", "+00:00")
+    )
+    current_time = datetime.datetime.now(pytz.utc)
+    if current_time - timestamp > datetime.timedelta(minutes=5):
+        return False
+
+    hashed_message = encode_structured_data(primitive=message)
+
+    try:
+        signer = Account.recover_message(hashed_message, signature=signature)
+        if signer == address:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print("error in verify_login_signature: ", e)
+        return False
+
+
 class BrightIDSoulboundAPIInterface:
     def __init__(self, app) -> None:
         self.app = app
 
     def create_verification_link(self, contextId):
-        return f"https://app.brightid.org/link-verification/http:%2F%2Fnode.brightid.org/{self.app}/{str(contextId).lower()}"
+        return f"https://app.brightid.org/link-verification/http:%2F\
+        %2Fnode.brightid.org/{self.app}/{str(contextId).lower()}"
 
     def create_qr_content(self, contextId):
-        return f"brightid://link-verification/http:%2f%2fnode.brightid.org/{self.app}/{str(contextId).lower()}"  # TODO
+        return f"brightid://link-verification/http:%2f%2fnode.bright\
+        id.org/{self.app}/{str(contextId).lower()}"  # TODO
 
     def get_verification_status(self, context_id, verification):
         if verification == "BrightID" or verification == "Meet":
@@ -44,7 +74,8 @@ class BrightIDSoulboundAPIInterface:
             raise ValueError("Invalid verification type")
 
         # get list of context ids from brightId
-        endpoint = f"https://aura-node.brightid.org/brightid/v5/verifications/{self.app}/{context_id}?verification={verification_type}"
+        endpoint = f"https://aura-node.brightid.org/brightid/v5/veri\
+        fications/{self.app}/{context_id}?verification={verification_type}"
         # print("endpoint: ", endpoint)
         bright_response = requests.get(endpoint)
         # decode response
@@ -109,7 +140,8 @@ def is_username_valid_and_available(username):
     # Check if the string matches the required format
     validator = RegexValidator(
         regex=r"^(?=.*[a-zA-Z])([\w.@+-]{3,150})$",
-        message="Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
+        message="Username must be more than 2 characters, contain at \
+            least one letter, and only contain letters, digits and @/./+/-/_.",
     )
 
     try:
@@ -117,7 +149,8 @@ def is_username_valid_and_available(username):
     except ValidationError:
         return (
             False,
-            "Username must be more than 2 characters, contain at least one letter, and only contain letters, digits and @/./+/-/_.",
+            "Username must be more than 2 characters, contain at least one \
+                letter, and only contain letters, digits and @/./+/-/_.",
             "validation_error",
         )
 

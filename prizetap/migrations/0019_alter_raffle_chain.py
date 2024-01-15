@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='raffle',
             name='chain',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='raffles', to='faucet.chain'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='raffles', to='core.chain'),
         ),
     ]

@@ -1,11 +1,38 @@
 import datetime
+import logging
+import time
+from contextlib import contextmanager
 
 import pytz
-from web3 import Web3
+import web3.exceptions
+from django.core.cache import cache
+from eth_account.messages import encode_defunct
+from solana.rpc.api import Client
+from web3 import Account, Web3
 from web3.contract.contract import Contract, ContractFunction
 from web3.logs import DISCARD, IGNORE, STRICT, WARN
 from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
+
+from core.constants import ERC721_READ_METHODS
+
+
+@contextmanager
+def memcache_lock(lock_id, oid, lock_expire=60):
+    timeout_at = time.monotonic() + lock_expire
+    # cache.add fails if the key already exists
+    status = cache.add(lock_id, oid, lock_expire)
+    try:
+        yield status
+    finally:
+        # memcache delete is very slow, but we have to use it to take
+        # advantage of using add() for atomic locking
+        if time.monotonic() < timeout_at and status:
+            # don't release the lock if we exceeded the timeout
+            # to lessen the chance of releasing an expired lock
+            # owned by someone else
+            # also don't release the lock if we didn't acquire it
+            cache.delete(lock_id)
 
 
 class TimeUtils:
@@ -141,8 +168,8 @@ class Web3Utils:
     def current_block(self):
         return self.w3.eth.block_number
 
-    def get_transaction_by_hash(self, hash):
-        return self.w3.eth.get_transaction(hash)
+    def get_transaction_by_hash(self, tx_hash):
+        return self.w3.eth.get_transaction(tx_hash)
 
     def get_gas_price(self):
         return self.w3.eth.gas_price
@@ -154,8 +181,65 @@ class Web3Utils:
     def to_checksum_address(address: str):
         return Web3.to_checksum_address(address.lower())
 
-    def get_transaction_receipt(self, hash):
-        return self.w3.eth.get_transaction_receipt(hash)
+    @staticmethod
+    def hash_message(abi_types, values):
+        message_hash = Web3.solidity_keccak(abi_types, values)
+        hashed_message = encode_defunct(hexstr=message_hash.hex())
+
+        return hashed_message
+
+    @staticmethod
+    def sign_hashed_message(private_key, hashed_message):
+        account = Account.from_key(private_key)
+        signed_message = account.sign_message(hashed_message)
+        return signed_message.signature.hex()
+
+    def get_transaction_receipt(self, tx_hash):
+        return self.w3.eth.get_transaction_receipt(tx_hash)
 
     def get_balance(self, address):
         return self.w3.eth.get_balance(address)
+
+
+class SolanaWeb3Utils:
+    def __init__(self, rpc_url) -> None:
+        self.rpc_url = rpc_url
+
+    @property
+    def w3(self) -> Client:
+        assert self.rpc_url is not None
+        try:
+            _w3 = Client(self.rpc_url)
+            if _w3.is_connected():
+                return _w3
+        except Exception as e:
+            logging.error(e)
+            raise (f"Could not connect to rpc {self.rpc_url}")
+
+
+class InvalidAddressException(Exception):
+    pass
+
+
+class NFTClient:
+    def __init__(
+        self,
+        chain,
+        contract: str,
+        abi=ERC721_READ_METHODS,
+    ) -> None:
+        self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
+        self.web3_utils.set_contract(contract, abi)
+
+    def get_number_of_tokens(self, address: str):
+        func = self.web3_utils.contract.functions.balanceOf(address)
+        try:
+            return self.web3_utils.contract_call(func)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
+
+    def to_checksum_address(self, address: str):
+        return self.web3_utils.w3.to_checksum_address(address)

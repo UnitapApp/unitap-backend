@@ -12,11 +12,12 @@ from solders.pubkey import Pubkey
 from solders.signature import Signature
 from solders.transaction_status import TransactionConfirmationStatus
 
+from authentication.models import NetworkTypes
 from core.utils import Web3Utils
 from faucet.constants import MEMCACHE_LIGHTNING_LOCK_KEY
 from faucet.faucet_manager.fund_manager_abi import manager_abi
 from faucet.helpers import memcache_lock
-from faucet.models import BrightUser, Chain, LightningConfig
+from faucet.models import BrightUser, Faucet, LightningConfig
 
 from .anchor_client import instructions
 from .anchor_client.accounts.lock_account import LockAccount
@@ -32,12 +33,30 @@ class FundMangerException:
         pass
 
 
+def get_fund_manager(faucet: Faucet):
+    if faucet.chain.chain_type == NetworkTypes.SOLANA:
+        manager_cls = SolanaFundManager
+    elif faucet.chain.chain_type == NetworkTypes.LIGHTNING:
+        manager_cls = LightningFundManager
+    elif (
+        faucet.chain.chain_type == NetworkTypes.EVM
+        or faucet.chain.chain_type == NetworkTypes.NONEVMXDC
+    ):
+        manager_cls = EVMFundManager
+    else:
+        raise Exception(f"Invalid chain type {faucet.chain.chain_type}")
+    return manager_cls(faucet)
+
+
 class EVMFundManager:
-    def __init__(self, chain: Chain):
-        self.chain = chain
+    def __init__(self, faucet: Faucet):
+        self.faucet = faucet
+        self.chain = faucet.chain
         self.web3_utils = Web3Utils(self.chain.rpc_url_private)
         self.web3_utils.set_account(self.chain.wallet.main_key)
-        self.web3_utils.set_contract(self.get_fund_manager_checksum_address(), abi=manager_abi)
+        self.web3_utils.set_contract(
+            self.get_fund_manager_checksum_address(), abi=manager_abi
+        )
 
     def get_gas_price(self):
         return self.web3_utils.get_gas_price()
@@ -58,7 +77,7 @@ class EVMFundManager:
         return self.web3_utils.get_balance(address)
 
     def get_fund_manager_checksum_address(self):
-        return self.web3_utils.to_checksum_address(self.chain.fund_manager_address)
+        return self.web3_utils.to_checksum_address(self.faucet.fund_manager_address)
 
     def transfer(self, bright_user: BrightUser, amount: int):
         return self._transfer("withdrawEth", amount, bright_user.address)
@@ -85,7 +104,9 @@ class EVMFundManager:
 
         tx_params = {
             "gas": gas_estimation,
-            "gasPrice": int(self.web3_utils.get_gas_price() * self.chain.gas_multiplier),
+            "gasPrice": int(
+                self.web3_utils.get_gas_price() * self.chain.gas_multiplier
+            ),
         }
 
         signed_tx = self.web3_utils.build_contract_txn(tx_function, **tx_params)
@@ -106,8 +127,9 @@ class EVMFundManager:
 
 
 class SolanaFundManager:
-    def __init__(self, chain: Chain):
-        self.chain = chain
+    def __init__(self, faucet: Faucet):
+        self.faucet = faucet
+        self.chain = faucet.chain
         self.abi = manager_abi
 
     @property
@@ -119,7 +141,9 @@ class SolanaFundManager:
                 return _w3
         except Exception as e:
             logging.error(e)
-            raise FundMangerException.RPCError(f"Could not connect to rpc {self.chain.rpc_url_private}")
+            raise FundMangerException.RPCError(
+                f"Could not connect to rpc {self.chain.rpc_url_private}"
+            )
 
     @property
     def account(self) -> Keypair:
@@ -127,7 +151,7 @@ class SolanaFundManager:
 
     @property
     def program_id(self) -> Pubkey:
-        return Pubkey.from_string(self.chain.fund_manager_address)
+        return Pubkey.from_string(self.faucet.fund_manager_address)
 
     @property
     def lock_account_seed(self) -> bytes:
@@ -135,7 +159,9 @@ class SolanaFundManager:
 
     @property
     def lock_account_address(self) -> Pubkey:
-        lock_account_address, nonce = Pubkey.find_program_address([self.lock_account_seed], self.program_id)
+        lock_account_address, nonce = Pubkey.find_program_address(
+            [self.lock_account_seed], self.program_id
+        )
         return lock_account_address
 
     @property
@@ -209,25 +235,32 @@ class SolanaFundManager:
     def is_tx_verified(self, tx_hash):
         try:
             confirmation_status = (
-                self.w3.get_signature_statuses([Signature.from_string(tx_hash)]).value[0].confirmation_status
+                self.w3.get_signature_statuses([Signature.from_string(tx_hash)])
+                .value[0]
+                .confirmation_status
             )
             return confirmation_status in [
                 TransactionConfirmationStatus.Confirmed,
                 TransactionConfirmationStatus.Finalized,
             ]
         except RPCException:
-            logging.warning("Solana raised the RPCException at get_signature_statuses()")
+            logging.warning(
+                "Solana raised the RPCException at get_signature_statuses()"
+            )
             return False
         except RPCNoResultException:
-            logging.warning("Solana raised the RPCNoResultException at get_signature_statuses()")
+            logging.warning(
+                "Solana raised the RPCNoResultException at get_signature_statuses()"
+            )
             return False
         except Exception:
             raise
 
 
 class LightningFundManager:
-    def __init__(self, chain: Chain):
-        self.chain = chain
+    def __init__(self, faucet: Faucet):
+        self.faucet = faucet
+        self.chain = faucet.chain
 
     @property
     def config(self) -> LightningConfig:
@@ -241,7 +274,9 @@ class LightningFundManager:
 
     @property
     def lnpay_client(self):
-        return LNPayClient(self.chain.rpc_url_private, self.api_key, self.chain.fund_manager_address)
+        return LNPayClient(
+            self.chain.rpc_url_private, self.api_key, self.faucet.fund_manager_address
+        )
 
     def __check_max_cap_exceeds(self, amount) -> bool:
         try:
@@ -263,7 +298,9 @@ class LightningFundManager:
             assert acquired, "Could not acquire Lightning multi-transfer lock"
 
             item = data[0]
-            assert not self.__check_max_cap_exceeds(item["amount"]), "Lightning periodic max cap exceeded"
+            assert not self.__check_max_cap_exceeds(
+                item["amount"]
+            ), "Lightning periodic max cap exceeded"
             try:
                 pay_result = client.pay_invoice(item["to"])
 

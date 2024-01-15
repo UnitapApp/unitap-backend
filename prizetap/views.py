@@ -1,8 +1,9 @@
 import json
 
+import rest_framework.exceptions
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework.generics import CreateAPIView, ListAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -30,7 +31,7 @@ from .validators import (
 
 
 class RaffleListView(ListAPIView):
-    valid_time = timezone.now() - timezone.timedelta(days=30)
+    valid_time = timezone.now() - timezone.timedelta(days=360)
     queryset = (
         Raffle.objects.filter(is_active=True)
         .filter(deadline__gte=valid_time)
@@ -56,6 +57,11 @@ class RaffleEnrollmentView(CreateAPIView):
     def post(self, request, pk):
         user_profile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
+        user_wallet_address = request.data.get("user_wallet_address", None)
+        if not user_wallet_address:
+            raise rest_framework.exceptions.ParseError(
+                "user_wallet_address is required"
+            )
 
         validator = RaffleEnrollmentValidator(user_profile=user_profile, raffle=raffle)
 
@@ -66,6 +72,7 @@ class RaffleEnrollmentView(CreateAPIView):
         except RaffleEntry.DoesNotExist:
             raffle_entry = RaffleEntry.objects.create(
                 user_profile=user_profile,
+                user_wallet_address=user_wallet_address,
                 raffle=raffle,
             )
             raffle_entry.save()
@@ -157,11 +164,7 @@ class GetRaffleConstraintsView(APIView):
         except Exception:
             param_values = {}
 
-        reversed_constraints = (
-            raffle.reversed_constraints.split(",")
-            if raffle.reversed_constraints
-            else []
-        )
+        reversed_constraints = raffle.reversed_constraints_list
         response_constraints = []
 
         for c in raffle.constraints.all():
@@ -179,7 +182,11 @@ class GetRaffleConstraintsView(APIView):
                 if constraint.is_observed():
                     is_verified = True
             response_constraints.append(
-                {**ConstraintSerializer(c).data, "is_verified": is_verified}
+                {
+                    **ConstraintSerializer(c).data,
+                    "is_verified": is_verified,
+                    "is_reversed": True if str(c.pk) in reversed_constraints else False,
+                }
             )
 
         return Response(
@@ -277,3 +284,17 @@ class SetLineaTxHashView(CreateAPIView):
         return Response(
             {"success": True, "data": LineaRaffleEntrySerializer(raffle_entry).data}
         )
+
+
+class RaffleDetailsView(RetrieveAPIView):
+    serializer_class = RaffleSerializer
+
+    def get(self, request: Request, pk):
+        queryset = Raffle.objects.get(pk=pk)
+        serializer = RaffleSerializer(
+            queryset,
+            context={
+                "user": request.user.profile if request.user.is_authenticated else None
+            },
+        )
+        return Response(serializer.data)

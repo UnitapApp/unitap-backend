@@ -8,12 +8,12 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from authentication.models import UserProfile
-from faucet.models import Chain, ClaimReceipt
+from faucet.models import ClaimReceipt, Faucet
 
 
 class CreditStrategy(ABC):
-    def __int__(self, chain: Chain, user_profile: UserProfile):
-        self.chain = chain
+    def __int__(self, faucet: Faucet, user_profile: UserProfile):
+        self.faucet = faucet
         self.user_profile = user_profile
 
     @abc.abstractmethod
@@ -30,13 +30,13 @@ class CreditStrategy(ABC):
 
 
 class SimpleCreditStrategy(CreditStrategy):
-    def __init__(self, chain, user_profile):
-        self.chain = chain
+    def __init__(self, faucet, user_profile):
+        self.faucet = faucet
         self.user_profile = user_profile
 
     def get_claim_receipts(self):
         return ClaimReceipt.objects.filter(
-            chain=self.chain,
+            faucet__chain=self.faucet.chain,
             user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
         )
@@ -49,17 +49,17 @@ class SimpleCreditStrategy(CreditStrategy):
         return _sum
 
     def get_unclaimed(self):
-        return int(self.chain.max_claim_amount) - int(self.get_claimed())
+        return int(self.faucet.max_claim_amount) - int(self.get_claimed())
 
 
 class RoundCreditStrategy(SimpleCreditStrategy):
-    def __int__(self, chain: Chain, user_profile: UserProfile):
-        self.chain = chain
+    def __int__(self, faucet: Faucet, user_profile: UserProfile):
+        self.faucet = faucet
         self.user_profile = user_profile
 
     def get_claim_receipts(self):
         return ClaimReceipt.objects.filter(
-            chain=self.chain,
+            faucet__chain=self.faucet.chain,
             user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
             datetime__gte=self.get_start_of_the_round(),
@@ -127,13 +127,13 @@ class RoundCreditStrategy(SimpleCreditStrategy):
 
 
 class OneTimeCreditStrategy(SimpleCreditStrategy):
-    def __int__(self, chain: Chain, user_profile: UserProfile):
-        self.chain = chain
+    def __int__(self, faucet: Faucet, user_profile: UserProfile):
+        self.faucet = faucet
         self.user_profile = user_profile
 
     def get_claim_receipts(self):
         return ClaimReceipt.objects.filter(
-            chain=self.chain,
+            faucet__chain=self.faucet.chain,
             user_profile=self.user_profile,
             _status=ClaimReceipt.VERIFIED,
             # Monday 18 December 2023
@@ -144,16 +144,16 @@ class OneTimeCreditStrategy(SimpleCreditStrategy):
 
 
 class CreditStrategyFactory:
-    def __init__(self, chain: Chain, user_profile):
-        self.chain = chain
+    def __init__(self, faucet: Faucet, user_profile):
+        self.faucet = faucet
         self.user_profile = user_profile
 
     def get_strategy_class(self):
-        if self.chain.is_one_time_claim:
+        if self.faucet.is_one_time_claim:
             return OneTimeCreditStrategy
         return RoundCreditStrategy
 
     def get_strategy(self) -> CreditStrategy:
         _Strategy = self.get_strategy_class()
-        assert _Strategy is not None, f"Strategy for chain {self.chain.pk} not found"
-        return _Strategy(self.chain, self.user_profile)
+        assert _Strategy is not None, f"Strategy for faucet {self.faucet.pk} not found"
+        return _Strategy(self.faucet, self.user_profile)

@@ -1,9 +1,11 @@
 from django.core.cache import cache
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import Chain, NetworkTypes, UserConstraint
+from core.models import Chain, UserConstraint
 from faucet.constraints import OptimismHasClaimedGasInThisRound
 from faucet.models import ClaimReceipt
 
@@ -24,31 +26,55 @@ class Constraint(UserConstraint):
 
 
 class TokenDistribution(models.Model):
-    name = models.CharField(max_length=100)
+    class Status(models.TextChoices):
+        PENDING = "PENDING", _("Pending")
+        REJECTED = "REJECTED", _("Rejected")
+        VERIFIED = "VERIFIED", _("Verified")
 
-    distributor = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=255)
+
+    distributor = models.CharField(max_length=255, null=True)
+    distributor_profile = models.ForeignKey(
+        UserProfile, on_delete=models.DO_NOTHING, related_name="token_distributions"
+    )
+    distributor_address = models.CharField(max_length=255)
     distributor_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
+    email_url = models.EmailField(max_length=255)
+    telegram_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
     token_image_url = models.URLField(max_length=255, null=True, blank=True)
 
     token = models.CharField(max_length=100)
     token_address = models.CharField(max_length=255)
-    amount = models.BigIntegerField()
+    amount = models.CharField(max_length=100)
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
     )
     contract = models.CharField(max_length=255, null=True, blank=True)
 
-    permissions = models.ManyToManyField(Constraint, blank=True)
+    constraints = models.ManyToManyField(
+        Constraint, blank=True, related_name="token_distributions"
+    )
+    constraint_params = models.TextField(null=True, blank=True)
+    reversed_constraints = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    deadline = models.DateTimeField(null=True, blank=True)
+    start_at = models.DateTimeField(default=timezone.now)
+    deadline = models.DateTimeField()
 
-    max_number_of_claims = models.IntegerField(null=True, blank=True)
+    max_number_of_claims = models.PositiveIntegerField(
+        null=True, validators=[MinValueValidator(1)]
+    )
 
-    notes = models.TextField(null=True, blank=True)
+    notes = models.TextField()
+    necessary_information = models.TextField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    rejection_reason = models.TextField(null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
 
@@ -105,6 +131,8 @@ class TokenDistributionClaim(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
+    user_wallet_address = models.CharField(max_length=255, null=True, blank=True)
+
     notes = models.TextField(null=True, blank=True)
 
     signature = models.CharField(max_length=1024, blank=True, null=True)
@@ -118,10 +146,6 @@ class TokenDistributionClaim(models.Model):
 
     def __str__(self):
         return f"{self.token_distribution} - {self.user_profile}"
-
-    @property
-    def user(self):
-        return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
 
     @property
     def token(self):

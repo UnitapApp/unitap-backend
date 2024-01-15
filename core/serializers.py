@@ -8,6 +8,7 @@ from .models import Chain, UserConstraint
 class ChainSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chain
+        ref_name = "core-chain"  # temporary
         fields = [
             "pk",
             "chain_name",
@@ -42,6 +43,7 @@ class UserConstraintBaseSerializer(serializers.Serializer):
             "title",
             "type",
             "description",
+            "negative_description",
             "explanation",
             "response",
             "icon_url",
@@ -53,6 +55,7 @@ class UserConstraintBaseSerializer(serializers.Serializer):
             "title",
             "type",
             "description",
+            "negative_description",
             "explanation",
             "response",
             "icon_url",

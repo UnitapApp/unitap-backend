@@ -1,3 +1,6 @@
+import base64
+import json
+
 from rest_framework import serializers
 
 from core.constraints import ConstraintVerification, get_constraint
@@ -8,6 +11,8 @@ from tokenTap.models import (
     TokenDistributionClaim,
     UserConstraint,
 )
+
+from .constants import CONTRACT_ADDRESSES
 
 
 class ConstraintSerializer(UserConstraintBaseSerializer, serializers.ModelSerializer):
@@ -32,7 +37,7 @@ class DetailResponseSerializer(serializers.Serializer):
 
 class TokenDistributionSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
-    permissions = ConstraintSerializer(many=True)
+    constraints = ConstraintSerializer(many=True)
 
     class Meta:
         model = TokenDistribution
@@ -43,6 +48,8 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "distributor_url",
             "discord_url",
             "twitter_url",
+            "email_url",
+            "telegram_url",
             "image_url",
             "token_image_url",
             "token",
@@ -50,13 +57,18 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "amount",
             "chain",
             "contract",
-            "permissions",
+            "constraints",
             "created_at",
+            "start_at",
             "deadline",
             "max_number_of_claims",
             "number_of_claims",
             "total_claims_since_last_round",
             "notes",
+            "necessary_information",
+            "status",
+            "rejection_reason",
+            "is_active",
             "is_expired",
             "is_maxed_out",
             "is_claimable",
@@ -65,7 +77,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
 
 class SmallTokenDistributionSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
-    permissions = ConstraintSerializer(many=True)
+    constraints = ConstraintSerializer(many=True)
 
     class Meta:
         model = TokenDistribution
@@ -82,7 +94,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "amount",
             "chain",
             "contract",
-            "permissions",
+            "constraints",
             "created_at",
             "deadline",
             "max_number_of_claims",
@@ -94,7 +106,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
 class PayloadSerializer(serializers.ModelSerializer):
     class Meta:
         model = TokenDistributionClaim
-        fields = ["user", "token", "amount", "nonce", "signature"]
+        fields = ["user_wallet_address", "token", "amount", "nonce", "signature"]
 
 
 class TokenDistributionClaimSerializer(serializers.ModelSerializer):
@@ -107,6 +119,7 @@ class TokenDistributionClaimSerializer(serializers.ModelSerializer):
             "id",
             "token_distribution",
             "user_profile",
+            "user_wallet_address",
             "created_at",
             "payload",
             "status",
@@ -120,3 +133,52 @@ class TokenDistributionClaimSerializer(serializers.ModelSerializer):
 class TokenDistributionClaimResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
     signature = TokenDistributionClaimSerializer()
+
+
+class CreateTokenDistributionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TokenDistribution
+        fields = "__all__"
+
+        read_only_fields = [
+            "pk",
+            "distributor_profile",
+            "created_at",
+            "status",
+            "rejection_reason",
+            "is_active",
+        ]
+
+    def validate(self, data):
+        constraints = data["constraints"]
+        constraint_params = json.loads(base64.b64decode(data["constraint_params"]))
+        data["constraint_params"] = base64.b64decode(data["constraint_params"]).decode(
+            "utf-8"
+        )
+        reversed_constraints = []
+        if "reversed_constraints" in data:
+            reversed_constraints = str(data["reversed_constraints"]).split(",")
+        if len(constraints) != 0:
+            for c in constraints:
+                constraint_class: ConstraintVerification = get_constraint(c.name)
+                try:
+                    if len(constraint_class.param_keys()) != 0:
+                        constraint_class.is_valid_param_keys(constraint_params[c.name])
+                except KeyError as e:
+                    raise serializers.ValidationError(
+                        {"constraint_params": [{f"{c.name}": str(e)}]}
+                    )
+        valid_constraints = [str(c.pk) for c in constraints]
+        if len(reversed_constraints) > 0:
+            for c in reversed_constraints:
+                if c not in valid_constraints:
+                    raise serializers.ValidationError(
+                        {"reversed_constraints": [{f"{c}": "Invalid constraint pk"}]}
+                    )
+        valid_chains = list(CONTRACT_ADDRESSES.keys())
+        chain_id = data["chain"].chain_id
+        if chain_id not in valid_chains:
+            raise serializers.ValidationError({"chain": "Invalid value"})
+        data["contract"] = CONTRACT_ADDRESSES[chain_id]
+        data["distributor_profile"] = self.context["user_profile"]
+        return data

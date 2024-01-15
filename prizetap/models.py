@@ -4,12 +4,10 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import BigNumField, Chain, NetworkTypes, UserConstraint
+from core.models import BigNumField, Chain, UserConstraint
 from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
 
 from .constraints import HaveUnitapPass, NotHaveUnitapPass
-
-# Create your models here.
 
 
 class Constraint(UserConstraint):
@@ -37,18 +35,18 @@ class Raffle(models.Model):
         )
 
     name = models.CharField(max_length=256)
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField()
     necessary_information = models.TextField(null=True, blank=True)
     contract = models.CharField(max_length=256)
     raffleId = models.BigIntegerField(null=True, blank=True)
-    creator_name = models.CharField(max_length=255, null=True, blank=True)
+    creator_name = models.CharField(max_length=255)
     creator_profile = models.ForeignKey(
         UserProfile, on_delete=models.DO_NOTHING, related_name="raffles"
     )
     creator_address = models.CharField(max_length=255)
     creator_url = models.URLField(max_length=255, null=True, blank=True)
     discord_url = models.URLField(max_length=255, null=True, blank=True)
-    twitter_url = models.URLField(max_length=255)
+    twitter_url = models.URLField(max_length=255, null=True, blank=True)
     email_url = models.EmailField(max_length=255)
     telegram_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
@@ -119,17 +117,18 @@ class Raffle(models.Model):
         return self.entries.filter(tx_hash__isnull=False).count()
 
     @property
-    def winner(self):
-        winner_entry = self.winner_entry
-        if winner_entry:
-            return winner_entry.user_profile
+    def winners(self):
+        winner_entries = self.winner_entries
+        if winner_entries:
+            return [e.user_profile for e in winner_entries]
 
     @property
-    def winner_entry(self):
-        try:
-            return self.entries.get(is_winner=True)
-        except RaffleEntry.DoesNotExist:
-            return None
+    def winner_entries(self):
+        return self.entries.filter(is_winner=True)
+
+    @property
+    def reversed_constraints_list(self):
+        return self.reversed_constraints.split(",") if self.reversed_constraints else []
 
     def __str__(self):
         return f"{self.name}"
@@ -146,10 +145,12 @@ class RaffleEntry(models.Model):
         unique_together = (("raffle", "user_profile"),)
         verbose_name_plural = "raffle entries"
 
-    raffle = models.ForeignKey(Raffle, on_delete=models.CASCADE, related_name="entries")
+    raffle = models.ForeignKey(Raffle, on_delete=models.PROTECT, related_name="entries")
     user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.CASCADE, related_name="raffle_entries"
+        UserProfile, on_delete=models.PROTECT, related_name="raffle_entries"
     )
+
+    user_wallet_address = models.CharField(max_length=255)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=True)
 
@@ -160,10 +161,6 @@ class RaffleEntry(models.Model):
 
     def __str__(self):
         return f"{self.raffle} - {self.user_profile}"
-
-    @property
-    def user(self):
-        return self.user_profile.wallets.get(wallet_type=NetworkTypes.EVM).address
 
     @property
     def age(self):

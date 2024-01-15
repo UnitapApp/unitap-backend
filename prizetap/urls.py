@@ -1,5 +1,21 @@
 from django.urls import path
-from prizetap.views import *
+
+from prizetap.views import (
+    ConstraintsListView,
+    CreateRaffleView,
+    GetRaffleConstraintsView,
+    GetRaffleEntryView,
+    LineaRaffleView,
+    RaffleDetailsView,
+    RaffleEnrollmentView,
+    RaffleListView,
+    SetClaimingPrizeTxView,
+    SetEnrollmentTxView,
+    SetLineaTxHashView,
+    SetRaffleTXView,
+    UserRafflesListView,
+    ValidChainsView,
+)
 
 urlpatterns = [
     path(
@@ -66,5 +82,8 @@ urlpatterns = [
         "set-linea-hash/<int:pk>/",
         SetLineaTxHashView.as_view(),
         name="set-linea-hash",
-    )
+    ),
+    path(
+        "raffle-details/<int:pk>/", RaffleDetailsView.as_view(), name="raffle-details"
+    ),
 ]
