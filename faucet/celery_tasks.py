@@ -262,6 +262,12 @@ class CeleryTasks:
             if (
                 Web3Utils.to_checksum_address(tx.get("to"))
                 != evm_fund_manager.get_fund_manager_checksum_address()
+                or
+                # TODO: must create donation contract model
+                Web3Utils.to_checksum_address(tx.get("to"))
+                != Web3Utils.to_checksum_address(
+                    "0xE6Bc2586fcC1Da738733867BFAf381B846AAe834".lower()
+                )
             ):
                 donation_receipt.delete()
                 return
