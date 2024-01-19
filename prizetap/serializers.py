@@ -1,11 +1,13 @@
 import base64
 import json
 
+from django.core.validators import FileExtensionValidator
 from rest_framework import serializers
 
 from authentication.serializers import SimpleProfilerSerializer
 from core.constraints import ConstraintVerification, get_constraint
 from core.serializers import ChainSerializer, UserConstraintBaseSerializer
+from core.utils import UploadFileStorage
 
 from .constants import CONTRACT_ADDRESSES
 from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry, UserConstraint
@@ -94,6 +96,13 @@ class WinnerEntrySerializer(serializers.ModelSerializer):
 
 
 class CreateRaffleSerializer(serializers.ModelSerializer):
+    constraint_files = serializers.ListField(
+        required=False,
+        child=serializers.FileField(
+            allow_empty_file=False, validators=[FileExtensionValidator(["csv"])]
+        ),
+    )
+
     class Meta:
         model = Raffle
         fields = "__all__"
@@ -124,6 +133,7 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
                     if len(constraint_class.param_keys()) != 0:
                         constraint_class.is_valid_param_keys(constraint_params[c.name])
                 except KeyError as e:
+                    # TODO: revise errors
                     raise serializers.ValidationError(
                         {"constraint_params": [{f"{c.name}": str(e)}]}
                     )
@@ -155,6 +165,22 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"contract": "Invalid value"})
         data["creator_profile"] = self.context["user_profile"]
         return data
+
+    def create(self, validated_data):
+        if "constraint_files" in validated_data:
+            constraint_files = validated_data.pop("constraint_files")
+            constraint_params = json.loads(validated_data.get("constraint_params"))
+            file_storage = UploadFileStorage()
+            for key, constraint in constraint_params.items():
+                if "CSV_FILE" not in constraint:
+                    continue
+                for file in constraint_files:
+                    if constraint["CSV_FILE"] == file.name:
+                        path = file_storage.save(file)
+                        constraint["CSV_FILE"] = path
+                        break
+            validated_data["constraint_params"] = json.dumps(constraint_params)
+        return super().create(validated_data)
 
 
 class RaffleSerializer(serializers.ModelSerializer):

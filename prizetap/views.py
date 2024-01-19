@@ -4,6 +4,7 @@ import rest_framework.exceptions
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -195,6 +196,7 @@ class GetRaffleConstraintsView(APIView):
 
 
 class CreateRaffleView(CreateAPIView):
+    parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAuthenticated]
     serializer_class = CreateRaffleSerializer
 
