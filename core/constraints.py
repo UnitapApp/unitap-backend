@@ -18,18 +18,13 @@ class ConstraintParam(Enum):
     USERNAME = "username"
     FROM_DATE = "from_date"
     TO_DATE = "to_date"
-    WALLETS_CSV_FILE = "wallets_csv_file"
+    CSV_FILE = "csv_file"
     COLLECTION_ADDRESS = "collection_address"
     MINIMUM = "minimum"
 
     @classmethod
     def choices(cls):
         return [(key.value, key.name) for key in cls]
-
-    @classmethod
-    def is_valid_wallets_csv_file(cls):
-        # TODO: fixme
-        pass
 
 
 class ConstraintVerification(ABC):
@@ -159,19 +154,19 @@ class HasNFTVerification(ConstraintVerification):
 # return token_count >= int(minimum)
 
 
-class AllowList(ConstraintVerification):
-    _param_keys = [ConstraintParam.WALLETS_CSV_FILE]
+class AllowListVerification(ConstraintVerification):
+    _param_keys = [ConstraintParam.CSV_FILE]
 
-    def __init__(self, user_profile, response: str = None) -> None:
-        super().__init__(user_profile, response)
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs):
-        file_path = self._param_values[ConstraintParam.WALLETS_CSV_FILE]
+        file_path = self._param_values[ConstraintParam.CSV_FILE.name]
         self.allow_list = []
         with open(file_path, newline="") as f:
             reader = csv.reader(f)
-            self.allow_list = list(reader)
-            self.allow_list = [a.lower() for a in self.allow_list]
+            data = list(reader)
+            self.allow_list = [a[0].lower() for a in data]
             user_wallets = self.user_profile.wallets.values_list(
                 Lower("address"), flat=True
             )
