@@ -1,11 +1,15 @@
 import datetime
 import logging
+import os
 import time
+import uuid
 from contextlib import contextmanager
 
 import pytz
 import web3.exceptions
 from django.core.cache import cache
+from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import UploadedFile
 from eth_account.messages import encode_defunct
 from solana.rpc.api import Client
 from web3 import Account, Web3
@@ -14,6 +18,7 @@ from web3.logs import DISCARD, IGNORE, STRICT, WARN
 from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
 
+from brightIDfaucet.settings import MEDIA_ROOT
 from core.constants import ERC721_READ_METHODS
 
 
@@ -243,3 +248,20 @@ class NFTClient:
 
     def to_checksum_address(self, address: str):
         return self.web3_utils.w3.to_checksum_address(address)
+
+
+class UploadFileStorage:
+    BASE_PATH = time.strftime("%Y%m%d") + "/"
+
+    def __init__(self, upload_to=None) -> None:
+        self.upload_to = upload_to or self.BASE_PATH
+
+    def save(self, file: UploadedFile):
+        _, file_extension = os.path.splitext(file.name)
+        milliseconds = round(time.time() * 1000)
+        time_str = time.strftime("%H%M%S") + "-" + str(milliseconds)
+        file_name = time_str + "-" + str(uuid.uuid4())
+        path = default_storage.save(
+            str(self.upload_to or "") + file_name + file_extension, file
+        )
+        return MEDIA_ROOT + "/" + path
