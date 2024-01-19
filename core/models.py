@@ -12,6 +12,7 @@ from solders.pubkey import Pubkey
 from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from .constraints import (
+    AllowListVerification,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     HasNFTVerification,
@@ -70,6 +71,7 @@ class UserConstraint(models.Model):
         BrightIDMeetVerification,
         BrightIDAuraVerification,
         HasNFTVerification,
+        AllowListVerification,
     ]
 
     name = models.CharField(
