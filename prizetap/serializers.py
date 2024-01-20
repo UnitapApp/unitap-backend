@@ -1,11 +1,12 @@
-import base64
-import json
-
 from rest_framework import serializers
 
 from authentication.serializers import SimpleProfilerSerializer
 from core.constraints import ConstraintVerification, get_constraint
-from core.serializers import ChainSerializer, UserConstraintBaseSerializer
+from core.serializers import (
+    ChainSerializer,
+    ConstraintProviderSerializer,
+    UserConstraintBaseSerializer,
+)
 
 from .constants import CONTRACT_ADDRESSES
 from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry, UserConstraint
@@ -93,7 +94,7 @@ class WinnerEntrySerializer(serializers.ModelSerializer):
         ]
 
 
-class CreateRaffleSerializer(serializers.ModelSerializer):
+class CreateRaffleSerializer(serializers.ModelSerializer, ConstraintProviderSerializer):
     class Meta:
         model = Raffle
         fields = "__all__"
@@ -109,31 +110,7 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        constraints = data["constraints"]
-        constraint_params = json.loads(base64.b64decode(data["constraint_params"]))
-        data["constraint_params"] = base64.b64decode(data["constraint_params"]).decode(
-            "utf-8"
-        )
-        reversed_constraints = []
-        if "reversed_constraints" in data:
-            reversed_constraints = str(data["reversed_constraints"]).split(",")
-        if len(constraints) != 0:
-            for c in constraints:
-                constraint_class: ConstraintVerification = get_constraint(c.name)
-                try:
-                    if len(constraint_class.param_keys()) != 0:
-                        constraint_class.is_valid_param_keys(constraint_params[c.name])
-                except KeyError as e:
-                    raise serializers.ValidationError(
-                        {"constraint_params": [{f"{c.name}": str(e)}]}
-                    )
-        valid_constraints = [str(c.pk) for c in constraints]
-        if len(reversed_constraints) > 0:
-            for c in reversed_constraints:
-                if c not in valid_constraints:
-                    raise serializers.ValidationError(
-                        {"reversed_constraints": [{f"{c}": "Invalid constraint pk"}]}
-                    )
+        data = super().validate(data)
         if (
             "winners_count" in data
             and data["winners_count"] > data["max_number_of_entries"]
@@ -155,6 +132,10 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"contract": "Invalid value"})
         data["creator_profile"] = self.context["user_profile"]
         return data
+
+    def create(self, validated_data):
+        validated_data = self.save_constraint_files(validated_data)
+        return super().create(validated_data)
 
 
 class RaffleSerializer(serializers.ModelSerializer):

@@ -1,11 +1,15 @@
 import datetime
 import logging
+import os
 import time
+import uuid
 from contextlib import contextmanager
 
 import pytz
 import web3.exceptions
 from django.core.cache import cache
+from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import UploadedFile
 from eth_account.messages import encode_defunct
 from solana.rpc.api import Client
 from web3 import Account, Web3
@@ -14,7 +18,8 @@ from web3.logs import DISCARD, IGNORE, STRICT, WARN
 from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
 
-from core.constants import ERC721_READ_METHODS
+from brightIDfaucet.settings import MEDIA_ROOT
+from core.constants import ERC20_READ_METHODS, ERC721_READ_METHODS
 
 
 @contextmanager
@@ -229,7 +234,7 @@ class NFTClient:
         abi=ERC721_READ_METHODS,
     ) -> None:
         self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
-        self.web3_utils.set_contract(contract, abi)
+        self.web3_utils.set_contract(self.to_checksum_address(contract), abi)
 
     def get_number_of_tokens(self, address: str):
         func = self.web3_utils.contract.functions.balanceOf(address)
@@ -243,3 +248,58 @@ class NFTClient:
 
     def to_checksum_address(self, address: str):
         return self.web3_utils.w3.to_checksum_address(address)
+
+
+class TokenClient:
+    def __init__(
+        self,
+        chain,
+        contract=None,
+        abi=ERC20_READ_METHODS,
+    ) -> None:
+        self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
+        if contract:
+            self.web3_utils.set_contract(self.to_checksum_address(contract), abi)
+
+    def get_non_native_token_balance(self, address: str):
+        if not self.web3_utils.contract:
+            raise InvalidAddressException("Invalid contract address")
+        func = self.web3_utils.contract.functions.balanceOf(address)
+        try:
+            return self.web3_utils.contract_call(func)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
+
+    def get_native_token_balance(self, address: str):
+        if self.web3_utils.contract:
+            raise InvalidAddressException("Invalid contract address")
+        try:
+            return self.web3_utils.w3.eth.get_balance(address)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
+
+    def to_checksum_address(self, address: str):
+        return self.web3_utils.w3.to_checksum_address(address)
+
+
+class UploadFileStorage:
+    BASE_PATH = time.strftime("%Y%m%d") + "/"
+
+    def __init__(self, upload_to=None) -> None:
+        self.upload_to = upload_to or self.BASE_PATH
+
+    def save(self, file: UploadedFile):
+        _, file_extension = os.path.splitext(file.name)
+        milliseconds = round(time.time() * 1000)
+        time_str = time.strftime("%H%M%S") + "-" + str(milliseconds)
+        file_name = time_str + "-" + str(uuid.uuid4())
+        path = default_storage.save(
+            str(self.upload_to or "") + file_name + file_extension, file
+        )
+        return MEDIA_ROOT + "/" + path
