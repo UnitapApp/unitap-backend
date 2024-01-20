@@ -10,6 +10,7 @@ from .constraints import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     HasNFTVerification,
+    HasTokenVerification,
 )
 
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
@@ -96,7 +97,7 @@ class TestNFTConstraint(BaseTestCase):
         constraint = HasNFTVerification(self.user_profile)
 
         constraint.param_values = {
-            "CHAIN": self.chain.chain_id,
+            "CHAIN": self.chain.pk,
             "COLLECTION_ADDRESS": self.collection_address,
             "MINIMUM": self.minimum,
         }
@@ -111,9 +112,70 @@ class TestNFTConstraint(BaseTestCase):
         constraint = HasNFTVerification(self.user_profile)
 
         constraint.param_values = {
-            "CHAIN": self.chain.chain_id,
+            "CHAIN": self.chain.pk,
             "COLLECTION_ADDRESS": self.collection_address,
             "MINIMUM": 1,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+
+class TestNonNativeTokenConstraint(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        create_new_wallet(
+            self.user_profile,
+            "0x23826Fd930916718a98A21FF170088FBb4C30803",
+            NetworkTypes.EVM,
+        )
+        create_new_wallet(
+            self.user_profile,
+            "0x23826Fd930916718a98A21FF170088FBb4C30804",
+            NetworkTypes.EVM,
+        )
+        self.address = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"
+        self.minimum = 1000000
+        self.wallet = WalletAccount.objects.create(
+            name="Sepolia Chain Wallet",
+            private_key=test_wallet_key,
+            network_type=NetworkTypes.EVM,
+        )
+        self.chain = Chain.objects.create(
+            chain_name="Polygon",
+            wallet=self.wallet,
+            rpc_url_private="https://polygon-rpc.com/",
+            explorer_url="https://etherscan.io/",
+            native_currency_name="ETH",
+            symbol="ETH",
+            chain_id="1",
+        )
+
+    @patch(
+        "core.utils.TokenClient.get_non_native_token_balance",
+        lambda a, b: 1000000,
+    )
+    def test_non_native_token_constraint_true(self):
+        constraint = HasTokenVerification(self.user_profile)
+
+        constraint.param_values = {
+            "CHAIN": self.chain.pk,
+            "ADDRESS": self.address,
+            "MINIMUM": self.minimum,
+        }
+
+        self.assertEqual(constraint.is_observed(), True)
+
+    @patch(
+        "core.utils.TokenClient.get_non_native_token_balance",
+        lambda a, b: 100000,
+    )
+    def test_non_native_token_constraint_false(self):
+        constraint = HasTokenVerification(self.user_profile)
+
+        constraint.param_values = {
+            "CHAIN": self.chain.pk,
+            "ADDRESS": self.address,
+            "MINIMUM": self.minimum,
         }
 
         self.assertEqual(constraint.is_observed(), False)
