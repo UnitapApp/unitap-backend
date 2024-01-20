@@ -1,7 +1,6 @@
 import copy
 import csv
 import importlib
-import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -137,23 +136,36 @@ class HasTokenVerification(ConstraintVerification):
         chain_pk = self._param_values[ConstraintParam.CHAIN.name]
         token_address = self._param_values[ConstraintParam.ADDRESS.name]
         minimum = self._param_values[ConstraintParam.MINIMUM.name]
+        is_native_token = False
+
+        if token_address[:4] == "0x00":
+            token_address = None
+            is_native_token = True
 
         chain = Chain.objects.get(pk=chain_pk)
 
-        token_client = TokenClient(chain=chain, contract=token_address)
-
         user_wallets = self.user_profile.wallets.filter(wallet_type=chain.chain_type)
 
-        token_count = 0
-        try:
-            for wallet in user_wallets:
-                token_count += token_client.get_non_native_token_balance(
-                    token_client.to_checksum_address(wallet.address)
-                )
-        except InvalidAddressException as e:
-            raise rest_framework.exceptions.ValidationError(e)
+        token_client = TokenClient(chain=chain, contract=token_address)
 
-        logging.error(f"token count {token_count}")
+        token_count = 0
+        if is_native_token:
+            try:
+                for wallet in user_wallets:
+                    token_count += token_client.get_native_token_balance(
+                        token_client.to_checksum_address(wallet.address)
+                    )
+            except InvalidAddressException as e:
+                raise rest_framework.exceptions.ValidationError(e)
+        else:
+            try:
+                for wallet in user_wallets:
+                    token_count += token_client.get_non_native_token_balance(
+                        token_client.to_checksum_address(wallet.address)
+                    )
+            except InvalidAddressException as e:
+                raise rest_framework.exceptions.ValidationError(e)
+
         return token_count >= int(minimum)
 
 

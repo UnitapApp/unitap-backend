@@ -179,3 +179,33 @@ class TestNonNativeTokenConstraint(BaseTestCase):
         }
 
         self.assertEqual(constraint.is_observed(), False)
+
+    @patch(
+        "core.utils.TokenClient.get_native_token_balance",
+        lambda a, b: 2 * 10**18,
+    )
+    def test_native_token_constraint_true(self):
+        constraint = HasTokenVerification(self.user_profile)
+
+        constraint.param_values = {
+            "CHAIN": self.chain.pk,
+            "ADDRESS": "0x00",
+            "MINIMUM": 3 * 10**18,
+        }
+
+        self.assertEqual(constraint.is_observed(), True)
+
+    @patch(
+        "core.utils.TokenClient.get_native_token_balance",
+        lambda a, b: 2 * 10**18,
+    )
+    def test_native_token_constraint_false(self):
+        constraint = HasTokenVerification(self.user_profile)
+
+        constraint.param_values = {
+            "CHAIN": self.chain.pk,
+            "ADDRESS": "0x0000",
+            "MINIMUM": 5 * 10**18,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)

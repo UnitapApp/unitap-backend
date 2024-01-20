@@ -273,6 +273,17 @@ class TokenClient:
         ):
             raise InvalidAddressException("Invalid contract address")
 
+    def get_native_token_balance(self, address: str):
+        if self.web3_utils.contract:
+            raise InvalidAddressException("Invalid contract address")
+        try:
+            return self.web3_utils.w3.eth.get_balance(address)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
+
     def to_checksum_address(self, address: str):
         return self.web3_utils.w3.to_checksum_address(address)
 
