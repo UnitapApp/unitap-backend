@@ -99,11 +99,11 @@ class HasNFTVerification(ConstraintVerification):
     def is_observed(self, *args, **kwargs):
         from core.models import Chain
 
-        chain_id = self._param_values[ConstraintParam.CHAIN.name]
+        chain_pk = self._param_values[ConstraintParam.CHAIN.name]
         collection_address = self._param_values[ConstraintParam.COLLECTION_ADDRESS.name]
         minimum = self._param_values[ConstraintParam.MINIMUM.name]
 
-        chain = Chain.objects.get(chain_id=chain_id)
+        chain = Chain.objects.get(pk=chain_pk)
         nft_client = NFTClient(chain=chain, contract=collection_address)
 
         user_wallets = self.user_profile.wallets.filter(wallet_type=chain.chain_type)
