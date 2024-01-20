@@ -144,6 +144,11 @@ class CreateRaffleSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {"reversed_constraints": [{f"{c}": "Invalid constraint pk"}]}
                     )
+        file_names = [file.name for file in data["constraint_files"]]
+        if len(file_names) != len(set(file_names)):
+            raise serializers.ValidationError(
+                {"constraint_files": "The name of files should be unique"}
+            )
         if (
             "winners_count" in data
             and data["winners_count"] > data["max_number_of_entries"]
