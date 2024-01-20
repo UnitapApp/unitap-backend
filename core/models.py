@@ -16,6 +16,7 @@ from .constraints import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     HasNFTVerification,
+    HasTokenVerification,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -71,6 +72,7 @@ class UserConstraint(models.Model):
         BrightIDMeetVerification,
         BrightIDAuraVerification,
         HasNFTVerification,
+        HasTokenVerification,
         AllowListVerification,
     ]
 
