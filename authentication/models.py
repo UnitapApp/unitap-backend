@@ -175,6 +175,10 @@ class BrightIDConnection(BaseThirdPartyConnection):
     driver = BrightIDConnectionDriver()
 
     @property
+    def age(self):
+        return timezone.now() - self.created_at
+
+    @property
     def is_meets_verified(self):
         is_verified, status = self.driver.get_meets_verification_status(self.context_id)
         return is_verified
