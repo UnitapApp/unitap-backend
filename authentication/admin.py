@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from authentication.models import *
+from authentication.models import BrightIDConnection, UserProfile, Wallet
 
 
 class ProfileAdmin(admin.ModelAdmin):
@@ -19,5 +19,13 @@ class WalletAdmin(admin.ModelAdmin):
     ]
 
 
+class BrightIDConnectionAdmin(admin.ModelAdmin):
+    list_display = ["pk", "user_profile", "context_id", "age"]
+    search_fields = [
+        "context_id",
+    ]
+
+
 admin.site.register(Wallet, WalletAdmin)
 admin.site.register(UserProfile, ProfileAdmin)
+admin.site.register(BrightIDConnection, BrightIDConnectionAdmin)
