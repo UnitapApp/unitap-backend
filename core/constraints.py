@@ -8,7 +8,7 @@ import rest_framework.exceptions
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.functions import Lower
 
-from core.utils import InvalidAddressException, NFTClient
+from core.utils import InvalidAddressException, NFTClient, TokenClient
 
 
 class ConstraintParam(Enum):
@@ -99,11 +99,11 @@ class HasNFTVerification(ConstraintVerification):
     def is_observed(self, *args, **kwargs):
         from core.models import Chain
 
-        chain_id = self._param_values[ConstraintParam.CHAIN.name]
+        chain_pk = self._param_values[ConstraintParam.CHAIN.name]
         collection_address = self._param_values[ConstraintParam.COLLECTION_ADDRESS.name]
         minimum = self._param_values[ConstraintParam.MINIMUM.name]
 
-        chain = Chain.objects.get(chain_id=chain_id)
+        chain = Chain.objects.get(pk=chain_pk)
         nft_client = NFTClient(chain=chain, contract=collection_address)
 
         user_wallets = self.user_profile.wallets.filter(wallet_type=chain.chain_type)
@@ -120,38 +120,53 @@ class HasNFTVerification(ConstraintVerification):
         return token_count >= int(minimum)
 
 
-# class HasTokenVerification(ConstraintVerification):
-#     _param_keys = [
-#         ConstraintParam.CHAIN,
-#         ConstraintParam.ADDRESS,
-#         ConstraintParam.MINIMUM,
-#     ]
+class HasTokenVerification(ConstraintVerification):
+    _param_keys = [
+        ConstraintParam.CHAIN,
+        ConstraintParam.ADDRESS,
+        ConstraintParam.MINIMUM,
+    ]
 
-#     def __init__(self, user_profile) -> None:
-#         super().__init__(user_profile)
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
 
-#     def is_observed(self, *args, **kwargs):
-#         from core.models import Chain
+    def is_observed(self, *args, **kwargs):
+        from core.models import Chain
 
-#         chain_id = self._param_values[ConstraintParam.CHAIN.name]
-#         token_address = self._param_values[ConstraintParam.ADDRESS.name]
-#         minimum = self._param_values[ConstraintParam.MINIMUM.name]
+        chain_pk = self._param_values[ConstraintParam.CHAIN.name]
+        token_address = self._param_values[ConstraintParam.ADDRESS.name]
+        minimum = self._param_values[ConstraintParam.MINIMUM.name]
+        is_native_token = False
 
-#         chain = Chain.objects.get(chain_id=chain_id)
-# nft_client = NFTClient(chain=chain, contract=token_address)
+        if token_address[:4] == "0x00":
+            token_address = None
+            is_native_token = True
 
-# user_wallets = self.user_profile.wallets.filter(wallet_type=chain.chain_type)
+        chain = Chain.objects.get(pk=chain_pk)
 
-# token_count = 0
-# try:
-#     for wallet in user_wallets:
-#         token_count += nft_client.get_number_of_tokens(
-#             nft_client.to_checksum_address(wallet.address)
-#         )
-# except InvalidAddressException as e:
-#     raise rest_framework.exceptions.ValidationError(e)
+        user_wallets = self.user_profile.wallets.filter(wallet_type=chain.chain_type)
 
-# return token_count >= int(minimum)
+        token_client = TokenClient(chain=chain, contract=token_address)
+
+        token_count = 0
+        if is_native_token:
+            try:
+                for wallet in user_wallets:
+                    token_count += token_client.get_native_token_balance(
+                        token_client.to_checksum_address(wallet.address)
+                    )
+            except InvalidAddressException as e:
+                raise rest_framework.exceptions.ValidationError(e)
+        else:
+            try:
+                for wallet in user_wallets:
+                    token_count += token_client.get_non_native_token_balance(
+                        token_client.to_checksum_address(wallet.address)
+                    )
+            except InvalidAddressException as e:
+                raise rest_framework.exceptions.ValidationError(e)
+
+        return token_count >= int(minimum)
 
 
 class AllowListVerification(ConstraintVerification):

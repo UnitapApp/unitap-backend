@@ -19,7 +19,7 @@ from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
 
 from brightIDfaucet.settings import MEDIA_ROOT
-from core.constants import ERC721_READ_METHODS
+from core.constants import ERC20_READ_METHODS, ERC721_READ_METHODS
 
 
 @contextmanager
@@ -234,12 +234,50 @@ class NFTClient:
         abi=ERC721_READ_METHODS,
     ) -> None:
         self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
-        self.web3_utils.set_contract(contract, abi)
+        self.web3_utils.set_contract(self.to_checksum_address(contract), abi)
 
     def get_number_of_tokens(self, address: str):
         func = self.web3_utils.contract.functions.balanceOf(address)
         try:
             return self.web3_utils.contract_call(func)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
+
+    def to_checksum_address(self, address: str):
+        return self.web3_utils.w3.to_checksum_address(address)
+
+
+class TokenClient:
+    def __init__(
+        self,
+        chain,
+        contract=None,
+        abi=ERC20_READ_METHODS,
+    ) -> None:
+        self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
+        if contract:
+            self.web3_utils.set_contract(self.to_checksum_address(contract), abi)
+
+    def get_non_native_token_balance(self, address: str):
+        if not self.web3_utils.contract:
+            raise InvalidAddressException("Invalid contract address")
+        func = self.web3_utils.contract.functions.balanceOf(address)
+        try:
+            return self.web3_utils.contract_call(func)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
+
+    def get_native_token_balance(self, address: str):
+        if self.web3_utils.contract:
+            raise InvalidAddressException("Invalid contract address")
+        try:
+            return self.web3_utils.w3.eth.get_balance(address)
         except (
             web3.exceptions.ContractLogicError,
             web3.exceptions.BadFunctionCallOutput,
