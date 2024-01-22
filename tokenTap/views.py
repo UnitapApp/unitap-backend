@@ -297,3 +297,14 @@ class CreateTokenDistribution(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"success": True, "data": serializer.data})
+
+
+class UserTokenDistributionsView(ListAPIView):
+    serializer_class = TokenDistributionSerializer
+    queryset = TokenDistribution.objects.filter(is_active=True)
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TokenDistribution.objects.filter(
+            is_active=True, distributor_profile=self.request.user.profile
+        ).order_by("-pk")
