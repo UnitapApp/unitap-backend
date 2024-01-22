@@ -250,14 +250,16 @@ class CeleryTasks:
         evm_fund_manager = get_fund_manager(donation_receipt.faucet)
         try:
             if not evm_fund_manager.is_tx_verified(donation_receipt.tx_hash):
-                donation_receipt.delete()
+                donation_receipt.status = ClaimReceipt.REJECTED
+                donation_receipt.save()
                 return
             user = donation_receipt.user_profile
             tx = evm_fund_manager.get_tx(donation_receipt.tx_hash)
             if tx.get("from").lower() not in user.wallets.annotate(
                 lower_address=Func(F("address"), function="LOWER")
             ).values_list("lower_address", flat=True):
-                donation_receipt.delete()
+                donation_receipt.status = ClaimReceipt.REJECTED
+                donation_receipt.save()
                 return
             if (
                 Web3Utils.to_checksum_address(tx.get("to"))
@@ -269,7 +271,8 @@ class CeleryTasks:
                     "0xE6Bc2586fcC1Da738733867BFAf381B846AAe834".lower()
                 )
             ):
-                donation_receipt.delete()
+                donation_receipt.status = ClaimReceipt.REJECTED
+                donation_receipt.save()
                 return
             donation_receipt.value = str(evm_fund_manager.from_wei(tx.get("value")))
             if not donation_receipt.faucet.chain.is_testnet:
@@ -295,5 +298,6 @@ class CeleryTasks:
             donation_receipt.status = ClaimReceipt.VERIFIED
             donation_receipt.save()
         except (web3.exceptions.TransactionNotFound, web3.exceptions.TimeExhausted):
-            donation_receipt.delete()
+            donation_receipt.status = ClaimReceipt.REJECTED
+            donation_receipt.save()
             return
