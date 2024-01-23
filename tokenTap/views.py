@@ -19,7 +19,7 @@ from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
 from faucet.models import ClaimReceipt, Faucet
-from tokenTap.models import TokenDistribution, TokenDistributionClaim
+from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
     ConstraintSerializer,
     CreateTokenDistributionSerializer,
@@ -312,3 +312,8 @@ class UserTokenDistributionsView(ListAPIView):
         return TokenDistribution.objects.filter(
             is_active=True, distributor_profile=self.request.user.profile
         ).order_by("-pk")
+
+
+class ConstraintsListView(ListAPIView):
+    queryset = Constraint.objects.all()
+    serializer_class = ConstraintSerializer
