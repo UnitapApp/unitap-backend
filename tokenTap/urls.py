@@ -8,6 +8,7 @@ from tokenTap.views import (
     TokenDistributionClaimStatusUpdateView,
     TokenDistributionClaimView,
     TokenDistributionListView,
+    UserTokenDistributionsView,
     ValidChainsView,
 )
 
@@ -47,5 +48,10 @@ urlpatterns = [
         "create-token-distribution/",
         CreateTokenDistribution.as_view(),
         name="create-token-distribution",
+    ),
+    path(
+        "user-token-distributions/",
+        UserTokenDistributionsView.as_view(),
+        name="user-token-distributions",
     ),
 ]

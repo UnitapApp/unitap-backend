@@ -1,10 +1,11 @@
-import base64
-import json
-
 from rest_framework import serializers
 
 from core.constraints import ConstraintVerification, get_constraint
-from core.serializers import ChainSerializer, UserConstraintBaseSerializer
+from core.serializers import (
+    ChainSerializer,
+    ConstraintProviderSerializer,
+    UserConstraintBaseSerializer,
+)
 from tokenTap.models import (
     Constraint,
     TokenDistribution,
@@ -135,7 +136,9 @@ class TokenDistributionClaimResponseSerializer(serializers.Serializer):
     signature = TokenDistributionClaimSerializer()
 
 
-class CreateTokenDistributionSerializer(serializers.ModelSerializer):
+class CreateTokenDistributionSerializer(
+    serializers.ModelSerializer, ConstraintProviderSerializer
+):
     class Meta:
         model = TokenDistribution
         fields = "__all__"
@@ -150,31 +153,7 @@ class CreateTokenDistributionSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        constraints = data["constraints"]
-        constraint_params = json.loads(base64.b64decode(data["constraint_params"]))
-        data["constraint_params"] = base64.b64decode(data["constraint_params"]).decode(
-            "utf-8"
-        )
-        reversed_constraints = []
-        if "reversed_constraints" in data:
-            reversed_constraints = str(data["reversed_constraints"]).split(",")
-        if len(constraints) != 0:
-            for c in constraints:
-                constraint_class: ConstraintVerification = get_constraint(c.name)
-                try:
-                    if len(constraint_class.param_keys()) != 0:
-                        constraint_class.is_valid_param_keys(constraint_params[c.name])
-                except KeyError as e:
-                    raise serializers.ValidationError(
-                        {"constraint_params": [{f"{c.name}": str(e)}]}
-                    )
-        valid_constraints = [str(c.pk) for c in constraints]
-        if len(reversed_constraints) > 0:
-            for c in reversed_constraints:
-                if c not in valid_constraints:
-                    raise serializers.ValidationError(
-                        {"reversed_constraints": [{f"{c}": "Invalid constraint pk"}]}
-                    )
+        data = super().validate(data)
         valid_chains = list(CONTRACT_ADDRESSES.keys())
         chain_id = data["chain"].chain_id
         if chain_id not in valid_chains:
@@ -182,3 +161,7 @@ class CreateTokenDistributionSerializer(serializers.ModelSerializer):
         data["contract"] = CONTRACT_ADDRESSES[chain_id]
         data["distributor_profile"] = self.context["user_profile"]
         return data
+
+    def create(self, validated_data):
+        validated_data = self.save_constraint_files(validated_data)
+        return super().create(validated_data)
