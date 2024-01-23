@@ -8,10 +8,11 @@ from rest_framework.test import APITestCase, override_settings
 
 from authentication.models import UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
-from faucet.models import ClaimReceipt, Faucet, GlobalSettings, TransactionBatch
+from faucet.models import ClaimReceipt, Faucet, TransactionBatch
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
+from .models import GlobalSettings
 
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
 test_rpc_url_private = "http://ganache:7545"
@@ -159,7 +160,7 @@ class TokenDistributionClaimTestCase(APITestCase):
 @override_settings(IS_TESTING=True)
 class TokenDistributionAPITestCase(APITestCase):
     def setUp(self) -> None:
-        self.global_settings = GlobalSettings.objects.create()
+        GlobalSettings.set(index="tokentap_round_claim_limit", value="3")
 
         self.chain = Chain.objects.create(
             chain_name="Gnosis Chain",
@@ -350,8 +351,7 @@ class TokenDistributionAPITestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_token_distribution_not_claimable_weekly_credit_limit_reached(self):
-        self.global_settings.tokentap_round_claim_limit = 0
-        self.global_settings.save()
+        GlobalSettings.set("tokentap_round_claim_limit", "0")
 
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
