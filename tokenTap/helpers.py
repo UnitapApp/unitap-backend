@@ -3,9 +3,8 @@ import random
 from core.models import NetworkTypes, WalletAccount
 from core.utils import Web3Utils
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
-from faucet.models import GlobalSettings
 
-from .models import TokenDistributionClaim
+from .models import GlobalSettings, TokenDistributionClaim
 
 
 def create_uint32_random_nonce():
@@ -37,10 +36,7 @@ def sign_hashed_message(hashed_message):
 
 
 def has_credit_left(user_profile):
-    return (
-        TokenDistributionClaim.objects.filter(
-            user_profile=user_profile,
-            created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
-        ).count()
-        < GlobalSettings.objects.first().tokentap_round_claim_limit
-    )
+    return TokenDistributionClaim.objects.filter(
+        user_profile=user_profile,
+        created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
+    ).count() < int(GlobalSettings.get("tokentap_round_claim_limit"))

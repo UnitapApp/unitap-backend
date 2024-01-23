@@ -158,3 +158,16 @@ class TokenDistributionClaim(models.Model):
     @property
     def age(self):
         return timezone.now() - self.created_at
+
+
+class GlobalSettings(models.Model):
+    index = models.CharField(max_length=255, unique=True)
+    value = models.TextField()
+
+    @classmethod
+    def set(cls, index: str, value: str):
+        return cls.objects.update_or_create(index=index, defaults={"value": value})
+
+    @classmethod
+    def get(cls, index: str):
+        return cls.objects.get(index=index).value
