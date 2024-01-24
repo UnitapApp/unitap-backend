@@ -19,7 +19,6 @@ class ConstraintParam(Enum):
     FROM_DATE = "from_date"
     TO_DATE = "to_date"
     CSV_FILE = "csv_file"
-    COLLECTION_ADDRESS = "collection_address"
     MINIMUM = "minimum"
 
     @classmethod
@@ -89,7 +88,7 @@ class BrightIDAuraVerification(ConstraintVerification):
 class HasNFTVerification(ConstraintVerification):
     _param_keys = [
         ConstraintParam.CHAIN,
-        ConstraintParam.COLLECTION_ADDRESS,
+        ConstraintParam.ADDRESS,
         ConstraintParam.MINIMUM,
     ]
 
@@ -100,7 +99,7 @@ class HasNFTVerification(ConstraintVerification):
         from core.models import Chain
 
         chain_pk = self._param_values[ConstraintParam.CHAIN.name]
-        collection_address = self._param_values[ConstraintParam.COLLECTION_ADDRESS.name]
+        collection_address = self._param_values[ConstraintParam.ADDRESS.name]
         minimum = self._param_values[ConstraintParam.MINIMUM.name]
 
         chain = Chain.objects.get(pk=chain_pk)
