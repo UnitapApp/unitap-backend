@@ -187,7 +187,7 @@ class Faucet(models.Model):
 
     @property
     def has_enough_funds(self):
-        if self.get_manager_balance() > self.max_claim_amount * 8:  # TODO check here
+        if self.get_manager_balance() > self.max_claim_amount:
             return True
         logging.warning(
             f"Faucet {self.pk}-{self.chain.chain_name} "
