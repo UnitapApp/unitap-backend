@@ -98,7 +98,7 @@ class TestNFTConstraint(BaseTestCase):
 
         constraint.param_values = {
             "CHAIN": self.chain.pk,
-            "COLLECTION_ADDRESS": self.collection_address,
+            "ADDRESS": self.collection_address,
             "MINIMUM": self.minimum,
         }
 
@@ -113,7 +113,7 @@ class TestNFTConstraint(BaseTestCase):
 
         constraint.param_values = {
             "CHAIN": self.chain.pk,
-            "COLLECTION_ADDRESS": self.collection_address,
+            "ADDRESS": self.collection_address,
             "MINIMUM": 1,
         }
 
