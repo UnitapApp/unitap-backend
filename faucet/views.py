@@ -247,7 +247,7 @@ class DonationReceiptView(ListCreateAPIView):
         return context
 
     def get_queryset(self):
-        return DonationReceipt.objects.all()
+        return DonationReceipt.objects.all().order_by("-datetime")
 
     def get_user(self) -> UserProfile:
         return self.request.user.profile
