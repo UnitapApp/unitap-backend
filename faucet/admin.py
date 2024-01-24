@@ -19,9 +19,9 @@ class FaucetAdmin(admin.ModelAdmin):
         "symbol",
         "chain_type",
         "needs_funding",
-        "order",
+        "is_active",
+        "is_one_time_claim",
     ]
-    list_editable = ["order"]
 
     @admin.display(ordering="chain__chain_name")
     def chain_name(self, obj):
