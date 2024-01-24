@@ -8,6 +8,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -16,8 +17,9 @@ from rest_framework.views import APIView
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
+from core.swagger import ConstraintProviderSrializerInspector
 from faucet.models import ClaimReceipt, Faucet
-from tokenTap.models import TokenDistribution, TokenDistributionClaim
+from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
     ConstraintSerializer,
     CreateTokenDistributionSerializer,
@@ -287,9 +289,11 @@ class ValidChainsView(ListAPIView):
 
 
 class CreateTokenDistribution(CreateAPIView):
+    parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAuthenticated]
     serializer_class = CreateTokenDistributionSerializer
 
+    @swagger_auto_schema(field_inspectors=[ConstraintProviderSrializerInspector])
     def post(self, request: Request):
         serializer: CreateTokenDistributionSerializer = self.get_serializer(
             data=request.data, context={"user_profile": request.user.profile}
@@ -297,3 +301,19 @@ class CreateTokenDistribution(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"success": True, "data": serializer.data})
+
+
+class UserTokenDistributionsView(ListAPIView):
+    serializer_class = TokenDistributionSerializer
+    queryset = TokenDistribution.objects.filter(is_active=True)
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TokenDistribution.objects.filter(
+            is_active=True, distributor_profile=self.request.user.profile
+        ).order_by("-pk")
+
+
+class ConstraintsListView(ListAPIView):
+    queryset = Constraint.objects.all()
+    serializer_class = ConstraintSerializer

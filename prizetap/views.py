@@ -3,6 +3,7 @@ import json
 import rest_framework.exceptions
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -13,6 +14,7 @@ from rest_framework.views import APIView
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain
 from core.serializers import ChainSerializer
+from core.swagger import ConstraintProviderSrializerInspector
 
 from .constants import CONTRACT_ADDRESSES
 from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry
@@ -200,6 +202,7 @@ class CreateRaffleView(CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CreateRaffleSerializer
 
+    @swagger_auto_schema(field_inspectors=[ConstraintProviderSrializerInspector])
     def post(self, request: Request):
         serializer: CreateRaffleSerializer = self.get_serializer(
             data=request.data, context={"user_profile": request.user.profile}

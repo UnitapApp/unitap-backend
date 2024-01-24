@@ -1,6 +1,13 @@
 from django.contrib import admin
+
 from core.admin import UserConstraintBaseAdmin
-from .models import *
+
+from .models import (
+    Constraint,
+    GlobalSettings,
+    TokenDistribution,
+    TokenDistributionClaim,
+)
 
 # Register your models here.
 
@@ -29,6 +36,12 @@ class TokenDistributionClaimAdmin(admin.ModelAdmin):
     list_filter = ["token_distribution", "status"]
 
 
+class GlobalSettingsAdmin(admin.ModelAdmin):
+    list_display = ["pk", "index", "value"]
+    list_editable = ["value"]
+
+
 admin.site.register(Constraint, UserConstraintBaseAdmin)
 admin.site.register(TokenDistribution, TokenDistributionAdmin)
 admin.site.register(TokenDistributionClaim, TokenDistributionClaimAdmin)
+admin.site.register(GlobalSettings, GlobalSettingsAdmin)
