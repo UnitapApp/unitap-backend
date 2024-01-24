@@ -39,4 +39,4 @@ def has_credit_left(user_profile):
     return TokenDistributionClaim.objects.filter(
         user_profile=user_profile,
         created_at__gte=RoundCreditStrategy.get_start_of_the_round(),
-    ).count() < int(GlobalSettings.get("tokentap_round_claim_limit"))
+    ).count() < int(GlobalSettings.get("tokentap_round_claim_limit", "3"))
