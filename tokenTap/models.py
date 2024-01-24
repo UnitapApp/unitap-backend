@@ -169,5 +169,11 @@ class GlobalSettings(models.Model):
         return cls.objects.update_or_create(index=index, defaults={"value": value})
 
     @classmethod
-    def get(cls, index: str):
-        return cls.objects.get(index=index).value
+    def get(cls, index: str, default: str = None):
+        try:
+            return cls.objects.get(index=index).value
+        except cls.DoesNotExist as e:
+            if default is not None:
+                obj, _ = cls.set(index, default)
+                return obj.value
+            raise e
