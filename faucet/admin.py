@@ -1,8 +1,10 @@
 from django.contrib import admin
+from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter, highlight_deleted
 
 from .models import (
     BrightUser,
     ClaimReceipt,
+    DonationContract,
     DonationReceipt,
     Faucet,
     GlobalSettings,
@@ -120,9 +122,23 @@ class DonationReceiptAdmin(admin.ModelAdmin):
         "value",
         "total_price",
         "datetime",
+        "status",
     ]
     search_fields = ["tx_hash"]
-    list_filter = ["faucet", "user_profile"]
+    list_filter = ["faucet"]
+
+
+class DonationContractAdmin(SafeDeleteAdmin):
+    list_display = (
+        highlight_deleted,
+        "contract_address",
+        "faucet",
+        "datetime",
+    ) + SafeDeleteAdmin.list_display
+    list_filter = (
+        "contract_address",
+        SafeDeleteAdminFilter,
+    ) + SafeDeleteAdmin.list_filter
 
 
 admin.site.register(Faucet, FaucetAdmin)
@@ -132,3 +148,4 @@ admin.site.register(GlobalSettings, GlobalSettingsAdmin)
 admin.site.register(TransactionBatch, TransactionBatchAdmin)
 admin.site.register(LightningConfig, LightningConfigAdmin)
 admin.site.register(DonationReceipt, DonationReceiptAdmin)
+admin.site.register(DonationContract, DonationContractAdmin)
