@@ -71,7 +71,7 @@ class BrightIDSoulboundAPIInterface:
         elif verification == "Aura":
             verification_type = "Aura"
         else:
-            raise ValueError("Invalid verification type")
+            raise ValueError({"verification_status": "Invalid verification type"})
 
         # get list of context ids from brightId
         endpoint = f"https://aura-node.brightid.org/brightid/v5/veri\
