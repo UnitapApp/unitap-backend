@@ -50,7 +50,7 @@ class WalletSerializer(serializers.ModelSerializer):
         )
 
         if not signature_is_valid and raise_exception:
-            raise serializers.ValidationError("Signature is not valid")
+            raise serializers.ValidationError({"signature": "Signature is not valid"})
 
         self.validated_data.pop("signature", None)
         self.validated_data.pop("message", None)
