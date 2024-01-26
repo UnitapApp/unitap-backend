@@ -12,7 +12,7 @@ from safedelete.models import SafeDeleteModel
 
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-from core.models import BigNumField, Chain, NetworkTypes
+from core.models import AbstractGlobalSettings, BigNumField, Chain, NetworkTypes
 from faucet.faucet_manager.lnpay_client import LNPayClient
 
 
@@ -323,11 +323,8 @@ class Faucet(models.Model):
         return total_claims_since_last_round
 
 
-class GlobalSettings(models.Model):
-    gastap_round_claim_limit = models.IntegerField(default=5)
-    tokentap_round_claim_limit = models.IntegerField(default=3)
-    prizetap_round_claim_limit = models.IntegerField(default=3)
-    is_gas_tap_available = models.BooleanField(default=True)
+class GlobalSettings(AbstractGlobalSettings):
+    pass
 
 
 class TransactionBatch(models.Model):

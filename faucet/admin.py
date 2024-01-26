@@ -89,8 +89,8 @@ class ClaimReceiptAdmin(admin.ModelAdmin):
 
 
 class GlobalSettingsAdmin(admin.ModelAdmin):
-    list_display = ["pk", "gastap_round_claim_limit", "tokentap_round_claim_limit"]
-    list_editable = ["gastap_round_claim_limit", "tokentap_round_claim_limit"]
+    list_display = ["pk", "index", "value"]
+    list_editable = ["value"]
 
 
 class TransactionBatchAdmin(admin.ModelAdmin):
