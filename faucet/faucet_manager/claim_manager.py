@@ -77,7 +77,7 @@ class SimpleClaimManager(ClaimManager):
 
 class LimitedChainClaimManager(SimpleClaimManager):
     def get_round_limit(self):
-        limit = GlobalSettings.objects.first().gastap_round_claim_limit
+        limit = int(GlobalSettings.get("gastap_round_claim_limit", "5"))
         return limit
 
     @staticmethod

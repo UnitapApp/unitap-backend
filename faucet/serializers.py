@@ -7,12 +7,7 @@ from faucet.models import ClaimReceipt, DonationReceipt, Faucet, GlobalSettings
 class GlobalSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GlobalSettings
-        fields = [
-            "gastap_round_claim_limit",
-            "tokentap_round_claim_limit",
-            "prizetap_round_claim_limit",
-            "is_gas_tap_available",
-        ]
+        fields = ["index", "value"]
 
 
 class FaucetBalanceSerializer(serializers.ModelSerializer):

@@ -139,7 +139,7 @@ class TestClaim(APITestCase):
             self.wallet, max_claim_amount=faucet1_max_claim
         )
         self.test_faucet2 = create_test_faucet(self.wallet, 123, faucet2_max_claim)
-        GlobalSettings.objects.create(gastap_round_claim_limit=2)
+        GlobalSettings.set("gastap_round_claim_limit", "2")
 
     def test_get_claimed_should_be_zero(self):
         credit_strategy_faucet1 = RoundCreditStrategy(self.test_faucet1, self.new_user)
@@ -308,7 +308,7 @@ class TestClaimAPI(APITestCase):
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
 
-        GlobalSettings.objects.create(gastap_round_claim_limit=2)
+        GlobalSettings.set("gastap_round_claim_limit", "2")
         LightningConfig.objects.create(
             period=86800,
             period_max_cap=100,
@@ -493,7 +493,7 @@ class TestWeeklyCreditStrategy(APITestCase):
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
 
-        GlobalSettings.objects.create(gastap_round_claim_limit=2)
+        GlobalSettings.set("gastap_round_claim_limit", "2")
         self.user_profile = create_new_user(self._address)
         self.client.force_authenticate(user=self.user_profile.user)
 
