@@ -62,11 +62,23 @@ class TokenDistributionClaimView(CreateAPIView):
             )
 
     def check_user_permissions(self, token_distribution, user_profile):
+        try:
+            param_values = json.loads(token_distribution.constraint_params)
+        except Exception:
+            param_values = {}
         for c in token_distribution.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
             constraint.response = c.response
-            if not constraint.is_observed(token_distribution=token_distribution):
-                raise PermissionDenied(constraint.response)
+            try:
+                constraint.param_values = param_values[c.name]
+            except KeyError:
+                pass
+            if str(c.pk) in token_distribution.reversed_constraints_list:
+                if constraint.is_observed(token_distribution=token_distribution):
+                    raise PermissionDenied(constraint.response)
+            else:
+                if not constraint.is_observed(token_distribution=token_distribution):
+                    raise PermissionDenied(constraint.response)
 
     def check_user_credit(self, user_profile):
         if not has_credit_left(user_profile):
@@ -195,6 +207,7 @@ class GetTokenDistributionConstraintsView(APIView):
             logging.error("Error parsing constraint params", e)
             param_values = {}
 
+        reversed_constraints = td.reversed_constraints_list
         response_constraints = []
 
         for c in td.constraints.all():
@@ -205,10 +218,18 @@ class GetTokenDistributionConstraintsView(APIView):
             except KeyError:
                 pass
             is_verified = False
-            if constraint.is_observed(token_distribution=td):
-                is_verified = True
+            if str(c.pk) in reversed_constraints:
+                if not constraint.is_observed(token_distribution=td):
+                    is_verified = True
+            else:
+                if constraint.is_observed(token_distribution=td):
+                    is_verified = True
             response_constraints.append(
-                {**ConstraintSerializer(c).data, "is_verified": is_verified}
+                {
+                    **ConstraintSerializer(c).data,
+                    "is_verified": is_verified,
+                    "is_reversed": True if str(c.pk) in reversed_constraints else False,
+                }
             )
 
         return Response(

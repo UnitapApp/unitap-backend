@@ -79,6 +79,10 @@ class TokenDistribution(models.Model):
     is_active = models.BooleanField(default=True)
 
     @property
+    def reversed_constraints_list(self):
+        return self.reversed_constraints.split(",") if self.reversed_constraints else []
+
+    @property
     def is_expired(self):
         if self.deadline is None:
             return False
