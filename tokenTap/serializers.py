@@ -38,7 +38,7 @@ class DetailResponseSerializer(serializers.Serializer):
 
 class TokenDistributionSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
-    constraints = ConstraintSerializer(many=True)
+    constraints = serializers.SerializerMethodField()
 
     class Meta:
         model = TokenDistribution
@@ -73,6 +73,16 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "is_expired",
             "is_maxed_out",
             "is_claimable",
+        ]
+
+    def get_constraints(self, distribution: TokenDistribution):
+        reversed_constraints = distribution.reversed_constraints_list
+        return [
+            {
+                **ConstraintSerializer(c).data,
+                "is_reversed": True if str(c.pk) in reversed_constraints else False,
+            }
+            for c in distribution.constraints.all()
         ]
 
 
