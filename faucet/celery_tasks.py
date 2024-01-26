@@ -14,7 +14,13 @@ from core.utils import Web3Utils
 from tokenTap.models import TokenDistributionClaim
 
 from .faucet_manager.fund_manager import FundMangerException, get_fund_manager
-from .models import ClaimReceipt, DonationReceipt, Faucet, TransactionBatch
+from .models import (
+    ClaimReceipt,
+    DonationContract,
+    DonationReceipt,
+    Faucet,
+    TransactionBatch,
+)
 
 
 def has_pending_batch(faucet):
@@ -247,7 +253,19 @@ class CeleryTasks:
     @staticmethod
     def process_donation_receipt(donation_receipt_pk):
         donation_receipt = DonationReceipt.objects.get(pk=donation_receipt_pk)
-        evm_fund_manager = get_fund_manager(donation_receipt.faucet)
+        faucet = donation_receipt.faucet
+        evm_fund_manager = get_fund_manager(faucet)
+        try:
+            donation_contract_address = DonationContract.objects.get(
+                faucet=faucet
+            ).contract_address
+        except DonationContract.DoesNotExist:
+            donation_contract_address = (
+                evm_fund_manager.get_fund_manager_checksum_address()
+            )
+            logging.error(
+                f"donation contract for faucet {faucet.chain} does not exists"
+            )
         try:
             if not evm_fund_manager.is_tx_verified(donation_receipt.tx_hash):
                 donation_receipt.status = ClaimReceipt.REJECTED
@@ -265,21 +283,17 @@ class CeleryTasks:
                 Web3Utils.to_checksum_address(tx.get("to"))
                 != evm_fund_manager.get_fund_manager_checksum_address()
                 and
-                # TODO: must create donation contract model
+                # TODO: remove fund_manager address
                 Web3Utils.to_checksum_address(tx.get("to"))
-                != Web3Utils.to_checksum_address(
-                    "0xE6Bc2586fcC1Da738733867BFAf381B846AAe834".lower()
-                )
+                != Web3Utils.to_checksum_address(donation_contract_address)
             ):
                 donation_receipt.status = ClaimReceipt.REJECTED
                 donation_receipt.save()
                 return
             donation_receipt.value = str(evm_fund_manager.from_wei(tx.get("value")))
-            if not donation_receipt.faucet.chain.is_testnet:
+            if not faucet.chain.is_testnet:
                 try:
-                    token_price = TokenPrice.objects.get(
-                        symbol=donation_receipt.faucet.chain.symbol
-                    )
+                    token_price = TokenPrice.objects.get(symbol=faucet.chain.symbol)
                     donation_receipt.total_price = str(
                         decimal.Decimal(donation_receipt.value)
                         * decimal.Decimal(token_price.usd_price)
@@ -287,7 +301,7 @@ class CeleryTasks:
                 except TokenPrice.DoesNotExist:
                     logging.error(
                         f"TokenPrice for Chain: "
-                        f"{donation_receipt.faucet.chain.chain_name}"
+                        f"{faucet.chain.chain_name}"
                         f" did not defined"
                     )
                     donation_receipt.status = ClaimReceipt.REJECTED
