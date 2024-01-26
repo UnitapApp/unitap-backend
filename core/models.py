@@ -239,3 +239,25 @@ class Chain(models.Model):
         except:  # noqa: E722
             logging.exception(f"Error getting gas price for {self.chain_name}")
             return self.max_gas_price + 1
+
+
+class AbstractGlobalSettings(models.Model):
+    class Meta:
+        abstract = True
+
+    index = models.CharField(max_length=255, unique=True)
+    value = models.TextField()
+
+    @classmethod
+    def set(cls, index: str, value: str):
+        return cls.objects.update_or_create(index=index, defaults={"value": value})
+
+    @classmethod
+    def get(cls, index: str, default: str = None):
+        try:
+            return cls.objects.get(index=index).value
+        except cls.DoesNotExist as e:
+            if default is not None:
+                obj, _ = cls.set(index, default)
+                return obj.value
+            raise e
