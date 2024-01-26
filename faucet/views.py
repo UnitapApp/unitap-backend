@@ -152,10 +152,10 @@ class SmallFaucetListView(ListAPIView):
     queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
 
 
-class GlobalSettingsView(RetrieveAPIView):
+class GlobalSettingsView(ListAPIView):
     serializer_class = GlobalSettingsSerializer
 
-    def get_object(self):
+    def get_queryset(self):
         GlobalSettings.get("is_gas_tap_available", "True")
         return GlobalSettings.objects.all()
 
