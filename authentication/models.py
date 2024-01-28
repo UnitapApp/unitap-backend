@@ -47,7 +47,11 @@ class ProfileManager(models.Manager):
 
     def get_or_create_with_wallet_address(self, wallet_address):
         try:
-            return Wallet.objects.get(address=wallet_address).user_profile
+            profile = Wallet.objects.get(address=wallet_address).user_profile
+            if profile.username is None:
+                profile.username = f"User{profile.pk}"
+                profile.save()
+            return profile
         except Wallet.DoesNotExist:
             return self.create_with_wallet_address(wallet_address)
 
