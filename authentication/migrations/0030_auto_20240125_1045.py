@@ -8,7 +8,8 @@ def create_brightid_connection(apps, schema_editor):
     bright_id_connection_cls = apps.get_model("authentication", "BrightIDConnection")
     user_profile_cls = apps.get_model('authentication', 'UserProfile')
 
-    for user_profile in user_profile_cls.objects.exclude(initial_context_id__isnull=True, initial_context_id=''):
+    for user_profile in user_profile_cls.objects.exclude(initial_context_id__isnull=True).exclude(
+            initial_context_id=''):
         try:
             bright_id_connection_cls.objects.get(user_profile=user_profile)
         except bright_id_connection_cls.DoesNotExist:
