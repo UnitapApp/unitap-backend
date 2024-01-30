@@ -117,16 +117,12 @@ class GetTotalRoundClaimsRemainingView(RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         user_profile = request.user.profile
-        gs = GlobalSettings.objects.first()
-        if gs is not None:
-            result = max(
-                gs.gastap_round_claim_limit
-                - LimitedChainClaimManager.get_total_round_claims(user_profile),
-                0,
-            )
-            return Response({"total_round_claims_remaining": result}, status=200)
-        else:
-            raise Http404("Global Settings Not Found")
+        result = max(
+            int(GlobalSettings.get("gastap_round_claim_limit", "5"))
+            - LimitedChainClaimManager.get_total_round_claims(user_profile),
+            0,
+        )
+        return Response({"total_round_claims_remaining": result}, status=200)
 
 
 class FaucetListView(ListAPIView):
@@ -156,11 +152,12 @@ class SmallFaucetListView(ListAPIView):
     queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
 
 
-class GlobalSettingsView(RetrieveAPIView):
+class GlobalSettingsView(ListAPIView):
     serializer_class = GlobalSettingsSerializer
 
-    def get_object(self):
-        return GlobalSettings.objects.first()
+    def get_queryset(self):
+        GlobalSettings.get("is_gas_tap_available", "True")
+        return GlobalSettings.objects.all()
 
 
 # TODO: fixme

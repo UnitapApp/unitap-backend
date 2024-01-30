@@ -5,11 +5,14 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
+from django.db.models import Q, UniqueConstraint
+from django.db.models.functions import Lower
 from django.utils import timezone
+from safedelete.models import SafeDeleteModel
 
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-from core.models import BigNumField, Chain, NetworkTypes
+from core.models import AbstractGlobalSettings, BigNumField, Chain, NetworkTypes
 from faucet.faucet_manager.lnpay_client import LNPayClient
 
 
@@ -320,11 +323,8 @@ class Faucet(models.Model):
         return total_claims_since_last_round
 
 
-class GlobalSettings(models.Model):
-    gastap_round_claim_limit = models.IntegerField(default=5)
-    tokentap_round_claim_limit = models.IntegerField(default=3)
-    prizetap_round_claim_limit = models.IntegerField(default=3)
-    is_gas_tap_available = models.BooleanField(default=True)
+class GlobalSettings(AbstractGlobalSettings):
+    pass
 
 
 class TransactionBatch(models.Model):
@@ -421,3 +421,29 @@ class DonationReceipt(models.Model):
 
     class Meta:
         unique_together = ("faucet", "tx_hash")
+
+
+class DonationContract(SafeDeleteModel):
+    contract_address = models.CharField(max_length=255, blank=False, null=False)
+    faucet = models.ForeignKey(
+        Faucet,
+        related_name="donation_contracts",
+        on_delete=models.PROTECT,
+        null=False,
+        blank=False,
+    )
+    datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                "faucet",
+                name="unique_active_donation_contract",
+                condition=Q(deleted__isnull=True),
+            ),
+            UniqueConstraint(
+                Lower("contract_address"),
+                "faucet",
+                name="unique_donation_contract_address",
+            ),
+        ]

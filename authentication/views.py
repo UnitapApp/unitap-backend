@@ -364,7 +364,7 @@ class LoginView(APIView):
                         "message": "Something went wrong with the linking process. \
                             please link BrightID with Unitap.\n"
                         "If the problem persists, clear your browser cache \
-                                       and try again."
+                                                  and try again."
                     },
                     status=403,
                 )
@@ -516,7 +516,7 @@ class WalletListCreateView(ListCreateAPIView):
         try:
             serializer.save(user_profile=self.get_user_profile())
         except IntegrityError:
-            raise ValidationError("Wallet already exists.")
+            raise ValidationError({"address": "address already exists."})
 
 
 class WalletView(RetrieveDestroyAPIView):

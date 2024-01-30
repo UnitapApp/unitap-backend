@@ -1,4 +1,4 @@
-from django.core.exceptions import BadRequest
+from rest_framework.exceptions import ValidationError
 from solders.pubkey import Pubkey
 
 from core.utils import Web3Utils
@@ -24,4 +24,4 @@ def address_validator(address, chain: Chain):
             is_address_valid = False
 
     if not is_address_valid:
-        raise BadRequest(f"Address: {address} is not valid")
+        raise ValidationError({"address": f"{address} is not valid"})

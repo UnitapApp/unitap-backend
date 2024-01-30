@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import Chain, UserConstraint
+from core.models import AbstractGlobalSettings, Chain, UserConstraint
 from faucet.constraints import OptimismHasClaimedGasInThisRound
 from faucet.models import ClaimReceipt
 
@@ -77,6 +77,10 @@ class TokenDistribution(models.Model):
     rejection_reason = models.TextField(null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
+
+    @property
+    def reversed_constraints_list(self):
+        return self.reversed_constraints.split(",") if self.reversed_constraints else []
 
     @property
     def is_expired(self):
@@ -160,20 +164,5 @@ class TokenDistributionClaim(models.Model):
         return timezone.now() - self.created_at
 
 
-class GlobalSettings(models.Model):
-    index = models.CharField(max_length=255, unique=True)
-    value = models.TextField()
-
-    @classmethod
-    def set(cls, index: str, value: str):
-        return cls.objects.update_or_create(index=index, defaults={"value": value})
-
-    @classmethod
-    def get(cls, index: str, default: str = None):
-        try:
-            return cls.objects.get(index=index).value
-        except cls.DoesNotExist as e:
-            if default is not None:
-                obj, _ = cls.set(index, default)
-                return obj.value
-            raise e
+class GlobalSettings(AbstractGlobalSettings):
+    pass
