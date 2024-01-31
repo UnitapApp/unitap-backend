@@ -58,7 +58,6 @@ class WalletSerializer(serializers.ModelSerializer):
         return super_is_validated and signature_is_valid
 
     def create(self, validated_data):
-        instance = None
         try:
             with transaction.atomic():
                 instance = super().create(validated_data)
