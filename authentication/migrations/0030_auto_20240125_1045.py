@@ -14,7 +14,7 @@ def create_brightid_connection(apps, schema_editor):
             bright_id_connection_cls.objects.get(user_profile=user_profile)
         except bright_id_connection_cls.DoesNotExist:
             try:
-                with transaction.atomic:
+                with transaction.atomic():
                     bright_id_connection_cls(user_profile=user_profile,
                                              context_id=user_profile.initial_context_id).save()
             except IntegrityError as e:
