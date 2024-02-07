@@ -52,6 +52,7 @@ class TokenDistribution(models.Model):
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
     )
+    distribution_id = models.BigIntegerField(null=True, blank=True)
     contract = models.CharField(max_length=255, null=True, blank=True)
 
     constraints = models.ManyToManyField(
