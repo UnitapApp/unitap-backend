@@ -338,3 +338,13 @@ class UserTokenDistributionsView(ListAPIView):
 class ConstraintsListView(ListAPIView):
     queryset = Constraint.objects.all()
     serializer_class = ConstraintSerializer
+
+
+class ClaimDetailView(APIView):
+    def get(self, request, pk):
+        claim = get_object_or_404(TokenDistributionClaim, pk=pk)
+
+        return Response(
+            {"success": True, "data": TokenDistributionClaimSerializer(claim).data},
+            status=200,
+        )
