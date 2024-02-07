@@ -105,6 +105,7 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "token_address",
             "amount",
             "chain",
+            "distribution_id",
             "contract",
             "constraints",
             "created_at",
