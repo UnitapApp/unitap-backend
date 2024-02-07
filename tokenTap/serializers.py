@@ -57,6 +57,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "token_address",
             "amount",
             "chain",
+            "distribution_id",
             "contract",
             "constraints",
             "created_at",
@@ -156,6 +157,7 @@ class CreateTokenDistributionSerializer(
         read_only_fields = [
             "pk",
             "distributor_profile",
+            "distribution_id",
             "created_at",
             "status",
             "rejection_reason",
