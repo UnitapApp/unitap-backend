@@ -36,6 +36,7 @@ from .helpers import (
     hash_message,
     sign_hashed_message,
 )
+from .validators import SetDistributionTxValidator
 
 
 class TokenDistributionListView(ListAPIView):
@@ -346,5 +347,33 @@ class ClaimDetailView(APIView):
 
         return Response(
             {"success": True, "data": TokenDistributionClaimSerializer(claim).data},
+            status=200,
+        )
+
+
+class SetDistributionTXView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user_profile = request.user.profile
+        token_distribution = get_object_or_404(TokenDistribution, pk=pk)
+
+        validator = SetDistributionTxValidator(
+            user_profile=user_profile, token_distribution=token_distribution)
+
+        validator.is_valid(self.request.data)
+
+        tx_hash = self.request.data.get("tx_hash", None)
+        token_distribution.tx_hash = tx_hash
+        token_distribution.save()
+
+        return Response(
+            {
+                "detail": "Token distribution updated successfully",
+                "success": True,
+                "token_distribution": TokenDistributionSerializer(
+                    token_distribution, context={"user": request.user.profile}
+                ).data,
+            },
             status=200,
         )

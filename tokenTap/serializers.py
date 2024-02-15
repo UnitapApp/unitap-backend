@@ -70,6 +70,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "necessary_information",
             "status",
             "rejection_reason",
+            "tx_hash",
             "is_active",
             "is_expired",
             "is_maxed_out",
