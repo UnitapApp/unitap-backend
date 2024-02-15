@@ -76,6 +76,7 @@ class TokenDistribution(models.Model):
         max_length=10, choices=Status.choices, default=Status.PENDING
     )
     rejection_reason = models.TextField(null=True, blank=True)
+    tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
 
