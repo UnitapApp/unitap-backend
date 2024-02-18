@@ -48,6 +48,7 @@ class TokenDistribution(models.Model):
 
     token = models.CharField(max_length=100)
     token_address = models.CharField(max_length=255)
+    decimals = models.IntegerField(null=True, blank=True)
     amount = models.CharField(max_length=100)
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
