@@ -182,11 +182,18 @@ class Faucet(models.Model):
     is_active = models.BooleanField(default=True)
     show_in_gastap = models.BooleanField(default=True)
 
+    fuel_level = models.IntegerField(default=100)
+
     def __str__(self):
         return (
             f"{self.chain.chain_name} - {self.pk} - "
             f"{self.chain.symbol}:{self.chain.chain_id}"
         )
+
+    @property
+    def current_fuel_level(self):
+        current_fuel_level = cache.get(f"{self.pk}_current_fuel_level")
+        return current_fuel_level if current_fuel_level is not None else -1
 
     @property
     def has_enough_funds(self):

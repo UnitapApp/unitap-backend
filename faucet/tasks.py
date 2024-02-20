@@ -84,6 +84,7 @@ def process_pending_claims():  # periodic task
 @shared_task
 def update_needs_funding_status_faucet(faucet_id):
     CeleryTasks.update_needs_funding_status_faucet(faucet_id)
+    CeleryTasks.update_current_fuel_level_faucet(faucet_id)
 
 
 @shared_task
@@ -94,12 +95,12 @@ def update_needs_funding_status():  # periodic task
 
 
 @shared_task
-def process_verified_lighning_claim(gas_tap_claim_id):
+def process_verified_lightning_claim(gas_tap_claim_id):
     CeleryTasks.process_verified_lightning_claim(gas_tap_claim_id)
 
 
 @shared_task
-def process_rejected_lighning_claim(gas_tap_claim_id):
+def process_rejected_lightning_claim(gas_tap_claim_id):
     CeleryTasks.process_rejected_lightning_claim(gas_tap_claim_id)
 
 
@@ -112,16 +113,16 @@ def update_tokentap_claim_for_verified_lightning_claims():
     for _claim in claims:
         if django_settings.IS_TESTING:
             if _claim._status == ClaimReceipt.VERIFIED:
-                process_verified_lighning_claim.apply((_claim.pk,))
+                process_verified_lightning_claim.apply((_claim.pk,))
             elif _claim._status == ClaimReceipt.REJECTED:
-                process_rejected_lighning_claim.apply((_claim.pk,))
+                process_rejected_lightning_claim.apply((_claim.pk,))
         else:
             if _claim._status == ClaimReceipt.VERIFIED:
-                process_verified_lighning_claim.delay(
+                process_verified_lightning_claim.delay(
                     _claim.pk,
                 )
             elif _claim._status == ClaimReceipt.REJECTED:
-                process_rejected_lighning_claim.delay(
+                process_rejected_lightning_claim.delay(
                     _claim.pk,
                 )
 
