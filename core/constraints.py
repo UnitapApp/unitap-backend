@@ -8,6 +8,7 @@ import rest_framework.exceptions
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.functions import Lower
 
+from core.thirdpartyapp import ENSUtil
 from core.utils import InvalidAddressException, NFTClient, TokenClient
 
 
@@ -188,6 +189,18 @@ class AllowListVerification(ConstraintVerification):
                 if wallet in self.allow_list:
                     return True
             return False
+
+
+class HasENSVerification(ConstraintVerification):
+    _param_keys = [ConstraintParam.ADDRESS]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        address = self.param_values[ConstraintParam.ADDRESS.name]
+        ens_util = ENSUtil()
+        return ens_util.get_name(address) is not None
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:
