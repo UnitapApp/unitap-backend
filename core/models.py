@@ -15,6 +15,7 @@ from .constraints import (
     AllowListVerification,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
+    HasENSVerification,
     HasNFTVerification,
     HasTokenVerification,
 )
@@ -74,6 +75,7 @@ class UserConstraint(models.Model):
         HasNFTVerification,
         HasTokenVerification,
         AllowListVerification,
+        HasENSVerification,
     ]
 
     name = models.CharField(
