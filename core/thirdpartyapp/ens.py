@@ -19,7 +19,7 @@ class ENSUtil:
         return ENS.from_web3(self.w3)
 
     def get_address(self, name: str) -> str:
-        """return owner of ENS
+        """return address of ENS
         :param name:
         :return: address
         """
