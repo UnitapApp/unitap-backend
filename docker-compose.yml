@@ -8,6 +8,8 @@ services:
       - FIELD_KEY=${FIELD_KEY}
       - SECRET_KEY=${SECRET_KEY}
       - BRIGHT_PRIVATE_KEY=${BRIGHT_PRIVATE_KEY}
+      - GITCOIN_PASSPORT_API_KEY=${GITCOIN_PASSPORT_API_KEY}
+      - GITCOIN_PASSPORT_SCORER_ID=${GITCOIN_PASSPORT_SCORER_ID}
       - DEBUG=${DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
@@ -22,7 +24,7 @@ services:
       - redis
     volumes:
       - .:/code
-  
+
   database:
     platform: linux/amd64
     image: postgres:14.1-alpine
@@ -33,9 +35,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     expose:
       - 5432
-    volumes: 
+    volumes:
       - db:/var/lib/postgresql/data
-  
+
   redis:
     platform: linux/amd64
     image: redis:6.2-alpine
