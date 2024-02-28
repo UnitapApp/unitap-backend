@@ -8,7 +8,7 @@ import rest_framework.exceptions
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.functions import Lower
 
-from core.thirdpartyapp import ENSUtil
+from core.thirdpartyapp import ENSUtil, LensUtil
 from core.utils import InvalidAddressException, NFTClient, TokenClient
 
 
@@ -21,6 +21,8 @@ class ConstraintParam(Enum):
     TO_DATE = "to_date"
     CSV_FILE = "csv_file"
     MINIMUM = "minimum"
+    LENS_PROFILE_ID = "lens_profile_id"
+    LENS_PUBLICATION_ID = "lens_publication_id"
 
     @classmethod
     def choices(cls):
@@ -192,15 +194,153 @@ class AllowListVerification(ConstraintVerification):
 
 
 class HasENSVerification(ConstraintVerification):
-    _param_keys = [ConstraintParam.ADDRESS]
+    _param_keys = []
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        address = self.param_values[ConstraintParam.ADDRESS.name]
+        from core.models import NetworkTypes
+
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         ens_util = ENSUtil()
-        return ens_util.get_name(address) is not None
+        for wallet in user_wallets:
+            if ens_util.get_name(wallet.address) is not None:
+                return True
+        return False
+
+
+class HasLensProfile(ConstraintVerification):
+    _param_keys = []
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from core.models import NetworkTypes
+
+        lens_util = LensUtil()
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
+        for wallet in user_wallets:
+            if lens_util.get_profile_id(wallet.address):
+                return True
+        return False
+
+
+class IsFollowingLensUser(ConstraintVerification):
+    _param_keys = [ConstraintParam.LENS_PROFILE_ID]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from core.models import NetworkTypes
+
+        lens_util = LensUtil()
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
+        for wallet in user_wallets:
+            if lens_util.is_following(
+                self._param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
+            ):
+                return True
+        return False
+
+
+class BeFollowedByLensUser(ConstraintVerification):
+    _param_keys = [ConstraintParam.LENS_PROFILE_ID]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from core.models import NetworkTypes
+
+        lens_util = LensUtil()
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
+        for wallet in user_wallets:
+            if lens_util.be_followed_by(
+                self._param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
+            ):
+                return True
+        return False
+
+
+class DidMirrorOnLensPublication(ConstraintVerification):
+    _param_keys = [ConstraintParam.LENS_PUBLICATION_ID]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from core.models import NetworkTypes
+
+        lens_util = LensUtil()
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
+        for wallet in user_wallets:
+            if lens_util.did_mirror_on_publication(
+                self._param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
+                wallet.address,
+            ):
+                return True
+        return False
+
+
+class DidCollectLensPublication(ConstraintVerification):
+    _param_keys = [ConstraintParam.LENS_PUBLICATION_ID]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from core.models import NetworkTypes
+
+        lens_util = LensUtil()
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
+        for wallet in user_wallets:
+            if lens_util.did_collect_publication(
+                self._param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
+                wallet.address,
+            ):
+                return True
+        return False
+
+
+class HasMinimumLensFollower(ConstraintVerification):
+    _param_keys = [ConstraintParam.MINIMUM]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from core.models import NetworkTypes
+
+        lens_util = LensUtil()
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
+        for wallet in user_wallets:
+            if int(lens_util.get_follower_number(wallet.address)) > int(
+                self._param_values[ConstraintParam.MINIMUM.name]
+            ):
+                return True
+        return False
+
+
+class HasMinimumLensPost(ConstraintVerification):
+    _param_keys = [ConstraintParam.MINIMUM]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from core.models import NetworkTypes
+
+        lens_util = LensUtil()
+        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
+        for wallet in user_wallets:
+            if int(lens_util.get_post_number(wallet.address)) > int(
+                self._param_values[ConstraintParam.MINIMUM.name]
+            ):
+                return True
+        return False
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:
