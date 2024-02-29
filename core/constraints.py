@@ -42,7 +42,7 @@ class ConstraintParam(Enum):
 
 class ConstraintVerification(ABC):
     _param_keys = []
-    app_name = ConstraintApp.GENERAL.name
+    app_name = ConstraintApp.GENERAL.value
     __response_text = ""
 
     def __init__(self, user_profile) -> None:
@@ -91,14 +91,14 @@ class ConstraintVerification(ABC):
 
 
 class BrightIDMeetVerification(ConstraintVerification):
-    app_name = ConstraintApp.BRIGHT_ID
+    app_name = ConstraintApp.BRIGHT_ID.value
 
     def is_observed(self, *args, **kwargs):
         return self.user_profile.is_meet_verified
 
 
 class BrightIDAuraVerification(ConstraintVerification):
-    app_name = ConstraintApp.BRIGHT_ID
+    app_name = ConstraintApp.BRIGHT_ID.value
 
     def is_observed(self, *args, **kwargs):
         return self.user_profile.is_aura_verified
@@ -211,7 +211,7 @@ class AllowListVerification(ConstraintVerification):
 
 class HasENSVerification(ConstraintVerification):
     _param_keys = []
-    app_name = ConstraintApp.ENS.name
+    app_name = ConstraintApp.ENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -229,7 +229,7 @@ class HasENSVerification(ConstraintVerification):
 
 class HasLensProfile(ConstraintVerification):
     _param_keys = []
-    app_name = ConstraintApp.LENS.name
+    app_name = ConstraintApp.LENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -247,7 +247,7 @@ class HasLensProfile(ConstraintVerification):
 
 class IsFollowingLensUser(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PROFILE_ID]
-    app_name = ConstraintApp.LENS.name
+    app_name = ConstraintApp.LENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -267,7 +267,7 @@ class IsFollowingLensUser(ConstraintVerification):
 
 class BeFollowedByLensUser(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PROFILE_ID]
-    app_name = ConstraintApp.LENS.name
+    app_name = ConstraintApp.LENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -287,7 +287,7 @@ class BeFollowedByLensUser(ConstraintVerification):
 
 class DidMirrorOnLensPublication(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PUBLICATION_ID]
-    app_name = ConstraintApp.LENS.name
+    app_name = ConstraintApp.LENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -308,7 +308,7 @@ class DidMirrorOnLensPublication(ConstraintVerification):
 
 class DidCollectLensPublication(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PUBLICATION_ID]
-    app_name = ConstraintApp.LENS.name
+    app_name = ConstraintApp.LENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -329,7 +329,7 @@ class DidCollectLensPublication(ConstraintVerification):
 
 class HasMinimumLensFollower(ConstraintVerification):
     _param_keys = [ConstraintParam.MINIMUM]
-    app_name = ConstraintApp.LENS.name
+    app_name = ConstraintApp.LENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -349,7 +349,7 @@ class HasMinimumLensFollower(ConstraintVerification):
 
 class HasMinimumLensPost(ConstraintVerification):
     _param_keys = [ConstraintParam.MINIMUM]
-    app_name = ConstraintApp.LENS.name
+    app_name = ConstraintApp.LENS.value
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
