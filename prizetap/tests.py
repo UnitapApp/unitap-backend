@@ -454,8 +454,12 @@ class RaffleAPITestCase(RaffleTestCase):
     def test_get_constraints(self):
         response = self.client.get(reverse("get-constraints"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]["pk"], self.meet_constraint.pk)
-        self.assertEqual(response.data[0]["name"], self.meet_constraint.name)
+        self.assertEqual(
+            response.data.get("bright_id")[0]["pk"], self.meet_constraint.pk
+        )
+        self.assertEqual(
+            response.data.get("bright_id")[0]["name"], self.meet_constraint.name
+        )
 
     @patch(
         "core.constraints.BrightIDMeetVerification.is_observed",
