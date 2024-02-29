@@ -13,7 +13,7 @@ class AbstractConstraintsListView(ListAPIView):
         response = defaultdict(list)
         for constraint in constraints:
             constraint_obj = get_constraint(constraint.name)
-            response[constraint_obj.app_name.value].append(
+            response[constraint_obj.app_name].append(
                 self.get_serializer(constraint).data
             )
 
