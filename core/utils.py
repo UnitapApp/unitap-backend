@@ -10,6 +10,7 @@ import web3.exceptions
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
+from django.utils import timezone
 from eth_account.messages import encode_defunct
 from solana.rpc.api import Client
 from web3 import Account, Web3
@@ -90,6 +91,40 @@ class TimeUtils:
             day=1, hour=0, minute=0, second=0, microsecond=0
         )
         return first_day_of_last_month
+
+    @staticmethod
+    def get_first_day_of_the_week():
+        now = int(time.time())
+        day = 86400  # seconds in a day
+        week = 7 * day
+        weeks = now // week  # number of weeks since epoch
+        monday = 345600  # first monday midnight
+        last_monday_midnight = monday + (weeks * week)
+
+        # last monday could be off by one week
+        if last_monday_midnight > now:
+            last_monday_midnight -= week
+
+        return timezone.make_aware(
+            datetime.datetime.fromtimestamp(last_monday_midnight)
+        )
+
+    @staticmethod
+    def get_first_day_of_last_week():
+        now = int(time.time())
+        day = 86400  # seconds in a day
+        week = 7 * day
+        weeks = now // week  # number of weeks since epoch
+        monday = 345600  # first monday midnight
+        last_monday_midnight = monday + (weeks * week)
+
+        # last monday could be off by one week
+        if last_monday_midnight > now:
+            last_monday_midnight -= week
+
+        return timezone.make_aware(
+            datetime.datetime.fromtimestamp(last_monday_midnight - week)
+        )
 
 
 class Web3Utils:

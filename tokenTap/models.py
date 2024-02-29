@@ -99,7 +99,12 @@ class TokenDistribution(models.Model):
 
     @property
     def is_claimable(self):
-        return not self.is_expired and not self.is_maxed_out and self.is_active
+        return (
+            not self.is_expired
+            and not self.is_maxed_out
+            and self.is_active
+            and self.status == self.Status.VERIFIED
+        )
 
     @property
     def number_of_claims(self):
