@@ -174,6 +174,7 @@ class CeleryTasks:
                 total_claim_number * FUEL_LEVEL_STATUS_NUMBER
             ) / faucet.fuel_level
             fuel_level = math.ceil(float_fuel_level)
+            fuel_level = min(FUEL_LEVEL_STATUS_NUMBER, fuel_level)
 
             cache.set(f"{faucet_id}_current_fuel_level", fuel_level, timeout=600)
         except Exception as e:
