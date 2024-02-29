@@ -15,6 +15,7 @@ from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
+from core.views import AbstractConstraintsListView
 
 from .constants import CONTRACT_ADDRESSES
 from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry
@@ -267,7 +268,7 @@ class UserRafflesListView(ListAPIView):
         return Response(serializer.data)
 
 
-class ConstraintsListView(ListAPIView):
+class ConstraintsListView(AbstractConstraintsListView):
     queryset = Constraint.objects.all()
     serializer_class = ConstraintSerializer
 
