@@ -216,6 +216,7 @@ class TokenDistributionAPITestCase(APITestCase):
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=100,
             notes="Test Notes",
+            status=TokenDistribution.Status.VERIFIED,
         )
         self.permission1 = Constraint.objects.create(
             name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
@@ -251,6 +252,7 @@ class TokenDistributionAPITestCase(APITestCase):
             deadline=timezone.now() + timezone.timedelta(days=7),
             max_number_of_claims=10,
             notes="Test Notes",
+            status=TokenDistribution.Status.VERIFIED,
         )
         self.btc_td.constraints.set([self.permission1, self.permission5])
 
