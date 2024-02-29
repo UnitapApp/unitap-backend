@@ -18,6 +18,7 @@ from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
+from core.views import AbstractConstraintsListView
 from faucet.models import ClaimReceipt, Faucet
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
@@ -336,7 +337,7 @@ class UserTokenDistributionsView(ListAPIView):
         ).order_by("-pk")
 
 
-class ConstraintsListView(ListAPIView):
+class ConstraintsListView(AbstractConstraintsListView):
     queryset = Constraint.objects.all()
     serializer_class = ConstraintSerializer
 
@@ -359,7 +360,8 @@ class SetDistributionTXView(APIView):
         token_distribution = get_object_or_404(TokenDistribution, pk=pk)
 
         validator = SetDistributionTxValidator(
-            user_profile=user_profile, token_distribution=token_distribution)
+            user_profile=user_profile, token_distribution=token_distribution
+        )
 
         validator.is_valid(self.request.data)
 
