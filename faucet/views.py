@@ -232,6 +232,11 @@ class FaucetBalanceView(RetrieveAPIView):
         return Faucet.objects.get(pk=faucet_pk)
 
 
+class FaucetBalanceListView(ListAPIView):
+    serializer_class = FaucetBalanceSerializer
+    queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
+
+
 class DonationReceiptView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DonationReceiptSerializer
