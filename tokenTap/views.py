@@ -8,7 +8,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -82,8 +82,17 @@ class TokenDistributionClaimView(CreateAPIView):
                 if not constraint.is_observed(token_distribution=token_distribution):
                     raise PermissionDenied(constraint.response)
 
-    def check_user_credit(self, user_profile):
-        if not has_credit_left(user_profile):
+    def check_user_credit(self, distribution, user_profile):
+        if distribution.is_one_time_claim:
+            num_claims = TokenDistributionClaim.objects.filter(
+                user_profile=user_profile,
+                status=ClaimReceipt.VERIFIED,
+            ).count()
+            if num_claims > 0:
+                raise rest_framework.exceptions.PermissionDenied(
+                    "You have already claimed"
+                )
+        elif not has_credit_left(user_profile):
             raise rest_framework.exceptions.PermissionDenied(
                 "You have reached your weekly claim limit"
             )
@@ -150,7 +159,7 @@ class TokenDistributionClaimView(CreateAPIView):
         except TokenDistributionClaim.DoesNotExist:
             pass
 
-        self.check_user_credit(user_profile)
+        self.check_user_credit(token_distribution, user_profile)
 
         nonce = create_uint32_random_nonce()
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
@@ -312,7 +321,7 @@ class ValidChainsView(ListAPIView):
 
 
 class CreateTokenDistribution(CreateAPIView):
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [IsAuthenticated]
     serializer_class = CreateTokenDistributionSerializer
 
