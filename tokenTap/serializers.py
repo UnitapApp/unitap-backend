@@ -61,6 +61,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "distribution_id",
             "contract",
             "constraints",
+            "constraint_params",
             "created_at",
             "start_at",
             "deadline",
