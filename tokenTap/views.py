@@ -94,7 +94,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 )
         elif not has_credit_left(distribution, user_profile):
             raise rest_framework.exceptions.PermissionDenied(
-                "You have reached your weekly claim limit"
+                "You have reached your claim limit"
             )
 
     def wallet_is_vaild(self, user_profile, user_wallet_address, token_distribution):
