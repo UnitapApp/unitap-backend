@@ -13,17 +13,23 @@ from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from .constraints import (
     AllowListVerification,
+    BeFollowedByFarcasterUser,
     BeFollowedByLensUser,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     DidCollectLensPublication,
+    DidLikedFarcasterCast,
     DidMirrorOnLensPublication,
+    DidRecastFarcasterCast,
     HasENSVerification,
+    HasFarcasterProfile,
     HasLensProfile,
+    HasMinimumFarcasterFollower,
     HasMinimumLensFollower,
     HasMinimumLensPost,
     HasNFTVerification,
     HasTokenVerification,
+    IsFollowingFarcasterUser,
     IsFollowingLensUser,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
@@ -90,6 +96,12 @@ class UserConstraint(models.Model):
         DidCollectLensPublication,
         HasMinimumLensPost,
         HasMinimumLensFollower,
+        BeFollowedByFarcasterUser,
+        HasMinimumFarcasterFollower,
+        DidLikedFarcasterCast,
+        DidRecastFarcasterCast,
+        IsFollowingFarcasterUser,
+        HasFarcasterProfile,
     ]
 
     name = models.CharField(

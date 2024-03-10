@@ -22,7 +22,7 @@ class RequestHelper:
         self,
         path: str,
         *,
-        params: None | tuple = None,
+        params: None | tuple | dict = None,
         headers: None | dict = None,
         timeout: None | int = 5,
         session: None | requests.Session = None,
