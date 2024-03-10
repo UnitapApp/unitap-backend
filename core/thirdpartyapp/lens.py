@@ -73,7 +73,7 @@ class LensUtil:
         """
         return self._get_profile_id(address)
 
-    def get_follow_status(self, profile_id: str, follower_id: str) -> bool:
+    def _get_follow_status(self, profile_id: str, follower_id: str) -> bool:
         query = """
                 query FollowStatusBulk($request: FollowStatusBulkRequest!) {
                   followStatusBulk(request: $request) {
@@ -117,7 +117,7 @@ class LensUtil:
         address_profile_id = self._get_profile_id(address=address)
         return bool(
             address_profile_id
-            and self.get_follow_status(
+            and self._get_follow_status(
                 profile_id=profile_id, follower_id=address_profile_id
             )
         )
@@ -132,7 +132,7 @@ class LensUtil:
         address_profile_id = self._get_profile_id(address=address)
         return bool(
             address_profile_id
-            and self.get_follow_status(
+            and self._get_follow_status(
                 profile_id=address_profile_id, follower_id=profile_id
             )
         )
