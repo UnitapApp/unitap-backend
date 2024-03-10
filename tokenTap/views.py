@@ -92,7 +92,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 raise rest_framework.exceptions.PermissionDenied(
                     "You have already claimed"
                 )
-        elif not has_credit_left(user_profile):
+        elif not has_credit_left(distribution, user_profile):
             raise rest_framework.exceptions.PermissionDenied(
                 "You have reached your weekly claim limit"
             )
