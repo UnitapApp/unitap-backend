@@ -94,7 +94,7 @@ class FarcasterUtil:
 
     def did_recast_cast(self, cast_hash: str, addresses: list[str]) -> bool:
         """
-        :param cast_hash: cast must be liked
+        :param cast_hash: cast must be recast
         :param addresses: list of EVM address
         :return: True or False
         """
