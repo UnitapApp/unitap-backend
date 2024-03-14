@@ -84,11 +84,11 @@ class TokenDistributionClaimView(CreateAPIView):
 
     def check_user_credit(self, distribution, user_profile):
         if distribution.is_one_time_claim:
-            num_claims = TokenDistributionClaim.objects.filter(
+            already_claimed = distribution.claims.filter(
                 user_profile=user_profile,
                 status=ClaimReceipt.VERIFIED,
-            ).count()
-            if num_claims > 0:
+            ).exists()
+            if already_claimed:
                 raise rest_framework.exceptions.PermissionDenied(
                     "You have already claimed"
                 )
