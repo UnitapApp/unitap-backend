@@ -75,6 +75,8 @@ class UserProfile(models.Model):
         unique=True,
     )
 
+    is_verified = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     objects = ProfileManager()
