@@ -65,13 +65,12 @@ def has_credit_left(distribution, user_profile):
     strategy = ClaimStrategy(
         GlobalSettings.get("tokentap_round_claim_strategy", ClaimStrategy.WEEKLY)
     )
-    distribution_claims = TokenDistributionClaim.objects.filter(
+    already_claimed = distribution.claims.filter(
         user_profile=user_profile,
-        token_distribution=distribution,
         created_at__gte=strategy.get_start_of_the_round(),
-    ).count()
+    ).exists()
 
-    if distribution_claims > 0:
+    if already_claimed:
         return False
 
     return TokenDistributionClaim.objects.filter(
