@@ -38,7 +38,7 @@ class IsFollowingFarcasterUser(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if farcaster_util.is_following(
-                self._param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
+                self._param_values[ConstraintParam.FARCASTER_FID.name], wallet.address
             ):
                 return True
         return False
@@ -58,7 +58,7 @@ class BeFollowedByFarcasterUser(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if farcaster_util.be_followed_by(
-                self._param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
+                self._param_values[ConstraintParam.FARCASTER_FID.name], wallet.address
             ):
                 return True
         return False
@@ -79,13 +79,13 @@ class DidLikedFarcasterCast(ConstraintVerification):
             wallet_type=NetworkTypes.EVM
         ).values_list("address", flat=True)
         return farcaster_util.did_liked_cast(
-            cast_hash=self._param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
+            cast_hash=self._param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
             addresses=user_addresses,
         )
 
 
 class DidRecastFarcasterCast(ConstraintVerification):
-    _param_keys = [ConstraintParam.LENS_PUBLICATION_ID]
+    _param_keys = [ConstraintParam.FARCASTER_CAST_HASH]
     app_name = ConstraintApp.FARCASTER.value
 
     def __init__(self, user_profile) -> None:
@@ -99,7 +99,7 @@ class DidRecastFarcasterCast(ConstraintVerification):
             wallet_type=NetworkTypes.EVM
         ).values_list("address", flat=True)
         return farcaster_util.did_recast_cast(
-            cast_hash=self._param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
+            cast_hash=self._param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
             addresses=user_addresses,
         )
 
