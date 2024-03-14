@@ -109,6 +109,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = [
             "pk",
             "username",
+            "is_verified",
             "token",
             "is_meet_verified",
             # "is_aura_verified",
@@ -129,6 +130,7 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
         fields = [
             "pk",
             "username",
+            "is_verified",
             "wallets",
         ]
 
