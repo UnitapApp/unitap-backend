@@ -156,7 +156,7 @@ def update_donation_receipt_pending_status():
     update status of pending donation receipt
     """
     pending_donation_receipts = DonationReceipt.objects.filter(
-        status=ClaimReceipt.PENDING
+        status=ClaimReceipt.PENDING, faucet__chain__is_active=True
     )
     for pending_donation_receipt in pending_donation_receipts:
         process_donation_receipt.delay(pending_donation_receipt.pk)
