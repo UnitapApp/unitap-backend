@@ -13,6 +13,7 @@ class UserConstraintBaseAdmin(admin.ModelAdmin):
         "explanation",
         "response",
         "icon_url",
+        "is_active",
     ]
     list_display = ["pk", "name", "description"]
 
