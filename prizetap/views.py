@@ -269,7 +269,7 @@ class UserRafflesListView(ListAPIView):
 
 
 class ConstraintsListView(AbstractConstraintsListView):
-    queryset = Constraint.objects.all()
+    queryset = Constraint.objects.filter(is_active=True)
     serializer_class = ConstraintSerializer
 
 
