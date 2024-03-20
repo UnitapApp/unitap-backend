@@ -121,6 +121,7 @@ class UserConstraint(models.Model):
     explanation = models.TextField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
     icon_url = models.CharField(max_length=255, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return self.name

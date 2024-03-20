@@ -97,6 +97,10 @@ class ConstraintProviderSerializer(serializers.Serializer):
             reversed_constraints = str(data["reversed_constraints"]).split(",")
         if len(constraints) != 0:
             for c in constraints:
+                if not c.is_active:
+                    raise serializers.ValidationError(
+                        {"constraints": f"Constraint {c.name} is not active"}
+                    )
                 constraint_class: ConstraintVerification = get_constraint(c.name)
                 try:
                     if len(constraint_class.param_keys()) != 0:
