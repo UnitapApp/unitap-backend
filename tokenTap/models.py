@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
 from core.models import AbstractGlobalSettings, Chain, UserConstraint
-from faucet.constraints import OptimismHasClaimedGasInThisRound
+from faucet.constraints import OptimismHasClaimedGasConstraint
 from faucet.models import ClaimReceipt
 
 from .constraints import (
@@ -20,7 +20,7 @@ class Constraint(UserConstraint):
     constraints = UserConstraint.constraints + [
         OncePerMonthVerification,
         OnceInALifeTimeVerification,
-        OptimismHasClaimedGasInThisRound,
+        OptimismHasClaimedGasConstraint,
     ]
     name = UserConstraint.create_name_field(constraints)
 

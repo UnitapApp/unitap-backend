@@ -112,7 +112,20 @@ class HasClaimedGasInThisRound(ConstraintVerification):
         ).exists()
 
 
-class OptimismHasClaimedGasInThisRound(HasClaimedGasInThisRound):
+class HasClaimedGas(ConstraintVerification):
+    _param_keys = [ConstraintParam.CHAIN]
+
+    def is_observed(self, *args, **kwargs):
+        chain_pk = self._param_values[ConstraintParam.CHAIN]
+        chain = Chain.objects.get(pk=chain_pk)
+        return ClaimReceipt.objects.filter(
+            user_profile=self.user_profile,
+            faucet__chain=chain,
+            _status=ClaimReceipt.VERIFIED,
+        ).exists()
+
+
+class OptimismHasClaimedGasConstraint(HasClaimedGas):
     _param_keys = []
 
     def is_observed(self, *args, **kwargs):
