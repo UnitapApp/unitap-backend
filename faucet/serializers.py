@@ -59,6 +59,7 @@ class SmallFaucetSerializer(serializers.ModelSerializer):
             "tokentap_contract_address",
             "block_scan_address",
             "is_one_time_claim",
+            "is_deprecated",
         ]
 
 
@@ -81,6 +82,7 @@ class FaucetSerializer(serializers.ModelSerializer):
             "block_scan_address",
             "is_one_time_claim",
             "current_fuel_level",
+            "is_deprecated",
         ]
 
     def get_current_fuel_level(self, faucet):
