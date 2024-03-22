@@ -135,7 +135,9 @@ class FaucetListView(ListAPIView):
     serializer_class = FaucetSerializer
 
     def get_queryset(self):
-        queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
+        queryset = Faucet.objects.filter(
+            is_active=True, show_in_gastap=True, is_deprecated=False
+        )
 
         sorted_queryset = sorted(
             queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
@@ -149,7 +151,9 @@ class SmallFaucetListView(ListAPIView):
     """
 
     serializer_class = SmallFaucetSerializer
-    queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
+    queryset = Faucet.objects.filter(
+        is_active=True, show_in_gastap=True, is_deprecated=False
+    )
 
 
 class GlobalSettingsView(ListAPIView):
@@ -229,12 +233,16 @@ class FaucetBalanceView(RetrieveAPIView):
         faucet_pk = self.kwargs.get("faucet_pk", None)
         if faucet_pk is None:
             raise Http404("Faucet ID not provided")
-        return Faucet.objects.get(pk=faucet_pk)
+        return get_object_or_404(
+            Faucet, pk=faucet_pk, show_in_gastap=True, is_deprecated=False
+        )
 
 
 class FaucetBalanceListView(ListAPIView):
     serializer_class = FaucetBalanceSerializer
-    queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
+    queryset = Faucet.objects.filter(
+        is_active=True, show_in_gastap=True, is_deprecated=False
+    )
 
 
 class DonationReceiptView(ListCreateAPIView):

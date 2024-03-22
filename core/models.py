@@ -223,7 +223,7 @@ class Chain(models.Model):
         return self.get_wallet_balance()
 
     def get_wallet_balance(self):
-        if not self.rpc_url_private:
+        if not self.is_active or not self.rpc_url_private:
             return 0
 
         try:
@@ -260,7 +260,7 @@ class Chain(models.Model):
 
     @property
     def gas_price(self):
-        if not self.rpc_url_private:
+        if not self.is_active or not self.rpc_url_private:
             return self.max_gas_price + 1
 
         try:
