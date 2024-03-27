@@ -8,6 +8,7 @@ from core.constraints.abstract import (
     ConstraintVerification,
 )
 from core.thirdpartyapp import EASUtils
+from core.utils import Web3Utils
 
 
 class AttestingABC(ConstraintVerification):
@@ -17,6 +18,7 @@ class AttestingABC(ConstraintVerification):
         ConstraintParam.ADDRESS,
         ConstraintParam.KEY,
         ConstraintParam.VALUE,
+        ConstraintParam.EAS_SCHEMA_ID,
     ]
 
     @abstractmethod
@@ -35,8 +37,10 @@ class AttestingABC(ConstraintVerification):
         from core.models import Chain
 
         chain_pk = self.param_values.get(ConstraintParam.CHAIN.name)
-        param_address = self.param_values.get(ConstraintParam.ADDRESS.name)
-        schema_id = self.param_values.get(ConstraintParam.EAS_SCHEMA_ID)
+        param_address = Web3Utils.to_checksum_address(
+            self.param_values.get(ConstraintParam.ADDRESS.name)
+        )
+        schema_id = self.param_values.get(ConstraintParam.EAS_SCHEMA_ID.name)
         key = self.param_values.get(ConstraintParam.KEY.name)
         value = self.param_values.get(ConstraintParam.VALUE.name)
         try:
@@ -53,7 +57,12 @@ class AttestingABC(ConstraintVerification):
         user_addresses = self.user_addresses
         for address in user_addresses:
             if self.check_attest(
-                eas_utils, param_address, schema_id, address, key, value
+                eas_utils,
+                param_address,
+                schema_id,
+                Web3Utils.to_checksum_address(address),
+                key,
+                value,
             ):
                 return True
         return False
