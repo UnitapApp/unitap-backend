@@ -9,6 +9,7 @@ class ConstraintApp(Enum):
     LENS = "lens"
     FARCASTER = "farcaster"
     ENS = "ENS"
+    EAS = "EAS"
 
     @classmethod
     def choices(cls):
@@ -28,6 +29,9 @@ class ConstraintParam(Enum):
     LENS_PUBLICATION_ID = "lens_publication_id"
     FARCASTER_FID = "farcaster_fid"
     FARCASTER_CAST_HASH = "farcaster_cast_hash"
+    KEY = "key"
+    VALUE = "value"
+    EAS_SCHEMA_ID = "eas_schema_id"
 
     @classmethod
     def choices(cls):
@@ -82,3 +86,12 @@ class ConstraintVerification(ABC):
     @response.setter
     def response(self, text: str):
         self.__response_text = text
+
+    @property
+    def user_addresses(self):
+        from core.models import NetworkTypes
+
+        user_addresses = self.user_profile.wallets.filter(
+            wallet_type=NetworkTypes.EVM
+        ).values_list("address", flat=True)
+        return user_addresses

@@ -11,6 +11,7 @@ from core.constraints.bright_id import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
 )
+from core.constraints.EAS import Attest, BeAttestedBy
 from core.constraints.ens import HasENSVerification
 from core.constraints.farcaster import (
     BeFollowedByFarcasterUser,

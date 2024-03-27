@@ -14,12 +14,10 @@ class HasFarcasterProfile(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
-
         farcaster_utils = FarcasterUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if farcaster_utils.get_address_fid(wallet.address):
+        user_address = self.user_addresses
+        for address in user_address:
+            if farcaster_utils.get_address_fid(address):
                 return True
         return False
 
@@ -32,14 +30,11 @@ class IsFollowingFarcasterUser(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
-
+        farcaster_fid = self.param_values[ConstraintParam.FARCASTER_FID.name]
         farcaster_util = FarcasterUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if farcaster_util.is_following(
-                self._param_values[ConstraintParam.FARCASTER_FID.name], wallet.address
-            ):
+        user_addresses = self.user_addresses
+        for address in user_addresses:
+            if farcaster_util.is_following(farcaster_fid, address):
                 return True
         return False
 
@@ -52,14 +47,11 @@ class BeFollowedByFarcasterUser(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
-
+        farcaster_fid = self.param_values[ConstraintParam.FARCASTER_FID.name]
         farcaster_util = FarcasterUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if farcaster_util.be_followed_by(
-                self._param_values[ConstraintParam.FARCASTER_FID.name], wallet.address
-            ):
+        user_addresses = self.user_addresses
+        for address in user_addresses:
+            if farcaster_util.be_followed_by(farcaster_fid, address):
                 return True
         return False
 
@@ -72,14 +64,10 @@ class DidLikedFarcasterCast(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
-
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_profile.wallets.filter(
-            wallet_type=NetworkTypes.EVM
-        ).values_list("address", flat=True)
+        user_addresses = self.user_addresses
         return farcaster_util.did_liked_cast(
-            cast_hash=self._param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
+            cast_hash=self.param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
             addresses=user_addresses,
         )
 
@@ -92,14 +80,10 @@ class DidRecastFarcasterCast(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
-
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_profile.wallets.filter(
-            wallet_type=NetworkTypes.EVM
-        ).values_list("address", flat=True)
+        user_addresses = self.user_addresses
         return farcaster_util.did_recast_cast(
-            cast_hash=self._param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
+            cast_hash=self.param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
             addresses=user_addresses,
         )
 
@@ -112,14 +96,11 @@ class HasMinimumFarcasterFollower(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
-
         farcaster_util = FarcasterUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if int(farcaster_util.get_follower_number(wallet.address)) > int(
-                self._param_values[ConstraintParam.MINIMUM.name]
-            ):
+        user_addresses = self.user_addresses
+        minimum = self.param_values[ConstraintParam.MINIMUM.name]
+        for address in user_addresses:
+            if int(farcaster_util.get_follower_number(address)) > int(minimum):
                 return True
         return False
 

@@ -20,9 +20,9 @@ class HasNFTVerification(ConstraintVerification):
     def is_observed(self, *args, **kwargs):
         from core.models import Chain
 
-        chain_pk = self._param_values[ConstraintParam.CHAIN.name]
-        collection_address = self._param_values[ConstraintParam.ADDRESS.name]
-        minimum = self._param_values[ConstraintParam.MINIMUM.name]
+        chain_pk = self.param_values[ConstraintParam.CHAIN.name]
+        collection_address = self.param_values[ConstraintParam.ADDRESS.name]
+        minimum = self.param_values[ConstraintParam.MINIMUM.name]
 
         chain = Chain.objects.get(pk=chain_pk)
         nft_client = NFTClient(chain=chain, contract=collection_address)
@@ -54,9 +54,9 @@ class HasTokenVerification(ConstraintVerification):
     def is_observed(self, *args, **kwargs):
         from core.models import Chain
 
-        chain_pk = self._param_values[ConstraintParam.CHAIN.name]
-        token_address = self._param_values[ConstraintParam.ADDRESS.name]
-        minimum = self._param_values[ConstraintParam.MINIMUM.name]
+        chain_pk = self.param_values[ConstraintParam.CHAIN.name]
+        token_address = self.param_values[ConstraintParam.ADDRESS.name]
+        minimum = self.param_values[ConstraintParam.MINIMUM.name]
         is_native_token = False
 
         if token_address[:4] == "0x00":
@@ -97,7 +97,7 @@ class AllowListVerification(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs):
-        file_path = self._param_values[ConstraintParam.CSV_FILE.name]
+        file_path = self.param_values[ConstraintParam.CSV_FILE.name]
         self.allow_list = []
         with open(file_path, newline="") as f:
             reader = csv.reader(f)

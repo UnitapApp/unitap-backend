@@ -13,6 +13,8 @@ from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from .constraints import (
     AllowListVerification,
+    Attest,
+    BeAttestedBy,
     BeFollowedByFarcasterUser,
     BeFollowedByLensUser,
     BrightIDAuraVerification,
@@ -102,6 +104,8 @@ class UserConstraint(models.Model):
         DidRecastFarcasterCast,
         IsFollowingFarcasterUser,
         HasFarcasterProfile,
+        BeAttestedBy,
+        Attest,
     ]
 
     name = models.CharField(

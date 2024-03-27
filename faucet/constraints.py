@@ -15,7 +15,7 @@ class DonationConstraint(ConstraintVerification):
     _param_keys = [ConstraintParam.CHAIN]
 
     def is_observed(self, *args, **kwargs):
-        chain_pk = self._param_values[ConstraintParam.CHAIN]
+        chain_pk = self.param_values[ConstraintParam.CHAIN]
         return (
             DonationReceipt.objects.filter(faucet__chain__pk=chain_pk)
             .filter(user_profile=self.user_profile)
@@ -33,7 +33,7 @@ class OptimismDonationConstraint(DonationConstraint):
         except Exception as e:
             logging.error(e)
             return False
-        self._param_values[ConstraintParam.CHAIN] = chain.pk
+        self.param_values[ConstraintParam.CHAIN] = chain.pk
         return super().is_observed(*args, **kwargs)
 
 
@@ -41,7 +41,7 @@ class EvmClaimingGasConstraint(ConstraintVerification):
     _param_keys = [ConstraintParam.CHAIN]
 
     def is_observed(self, *args, **kwargs):
-        chain_pk = self._param_values[ConstraintParam.CHAIN]
+        chain_pk = self.param_values[ConstraintParam.CHAIN]
         chain = Chain.objects.get(pk=chain_pk)
         w3 = Web3Utils(chain.rpc_url_private, chain.poa)
         current_block = w3.current_block()
@@ -94,7 +94,7 @@ class OptimismClaimingGasConstraint(EvmClaimingGasConstraint):
         except Exception as e:
             logging.error(e)
             return False
-        self._param_values[ConstraintParam.CHAIN] = chain.pk
+        self.param_values[ConstraintParam.CHAIN] = chain.pk
         return super().is_observed(*args, **kwargs)
 
 
@@ -102,7 +102,7 @@ class HasClaimedGasInThisRound(ConstraintVerification):
     _param_keys = [ConstraintParam.CHAIN]
 
     def is_observed(self, *args, **kwargs):
-        chain_pk = self._param_values[ConstraintParam.CHAIN]
+        chain_pk = self.param_values[ConstraintParam.CHAIN]
         chain = Chain.objects.get(pk=chain_pk)
         return ClaimReceipt.objects.filter(
             user_profile=self.user_profile,
@@ -116,7 +116,7 @@ class HasClaimedGas(ConstraintVerification):
     _param_keys = [ConstraintParam.CHAIN]
 
     def is_observed(self, *args, **kwargs):
-        chain_pk = self._param_values[ConstraintParam.CHAIN]
+        chain_pk = self.param_values[ConstraintParam.CHAIN]
         chain = Chain.objects.get(pk=chain_pk)
         return ClaimReceipt.objects.filter(
             user_profile=self.user_profile,
@@ -134,5 +134,5 @@ class OptimismHasClaimedGasConstraint(HasClaimedGas):
         except Exception as e:
             logging.error(e)
             return False
-        self._param_values[ConstraintParam.CHAIN] = chain.pk
+        self.param_values[ConstraintParam.CHAIN] = chain.pk
         return super().is_observed(*args, **kwargs)
