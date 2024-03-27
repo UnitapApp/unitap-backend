@@ -38,7 +38,7 @@ class IsFollowingLensUser(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if lens_util.is_following(
-                self._param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
+                self.param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
             ):
                 return True
         return False
@@ -58,7 +58,7 @@ class BeFollowedByLensUser(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if lens_util.be_followed_by(
-                self._param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
+                self.param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
             ):
                 return True
         return False
@@ -78,7 +78,7 @@ class DidMirrorOnLensPublication(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if lens_util.did_mirror_on_publication(
-                self._param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
+                self.param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
                 wallet.address,
             ):
                 return True
@@ -99,7 +99,7 @@ class DidCollectLensPublication(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if lens_util.did_collect_publication(
-                self._param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
+                self.param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
                 wallet.address,
             ):
                 return True
@@ -120,7 +120,7 @@ class HasMinimumLensFollower(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if int(lens_util.get_follower_number(wallet.address)) > int(
-                self._param_values[ConstraintParam.MINIMUM.name]
+                self.param_values[ConstraintParam.MINIMUM.name]
             ):
                 return True
         return False
@@ -140,7 +140,7 @@ class HasMinimumLensPost(ConstraintVerification):
         user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
         for wallet in user_wallets:
             if int(lens_util.get_post_number(wallet.address)) > int(
-                self._param_values[ConstraintParam.MINIMUM.name]
+                self.param_values[ConstraintParam.MINIMUM.name]
             ):
                 return True
         return False
