@@ -61,8 +61,8 @@ class EASUtils:
         body = {"query": query, "variables": variables}
         try:
             res = self.requests.post(path="", json=body, headers=self.headers)
-        except RequestException:
-            logging.error("can not send request properly")
+        except RequestException as e:
+            logging.error(f"can not send request properly. {e}")
             return None
         attestations = res.get("data").get("attestations")
         return attestations
