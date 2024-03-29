@@ -135,9 +135,7 @@ class FaucetListView(ListAPIView):
     serializer_class = FaucetSerializer
 
     def get_queryset(self):
-        queryset = Faucet.objects.filter(
-            is_active=True, show_in_gastap=True, is_deprecated=False
-        )
+        queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
 
         sorted_queryset = sorted(
             queryset, key=lambda obj: obj.total_claims_since_last_round, reverse=True
@@ -151,9 +149,7 @@ class SmallFaucetListView(ListAPIView):
     """
 
     serializer_class = SmallFaucetSerializer
-    queryset = Faucet.objects.filter(
-        is_active=True, show_in_gastap=True, is_deprecated=False
-    )
+    queryset = Faucet.objects.filter(is_active=True, show_in_gastap=True)
 
 
 class GlobalSettingsView(ListAPIView):
