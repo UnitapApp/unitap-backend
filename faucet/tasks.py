@@ -84,6 +84,7 @@ def process_pending_claims():  # periodic task
 @shared_task
 def update_needs_funding_status_faucet(faucet_id):
     CeleryTasks.update_needs_funding_status_faucet(faucet_id)
+    CeleryTasks.update_remaining_claim_number(faucet_id)
     CeleryTasks.update_current_fuel_level_faucet(faucet_id)
 
 

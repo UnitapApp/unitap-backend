@@ -197,6 +197,11 @@ class Faucet(models.Model):
         return current_fuel_level if current_fuel_level is not None else -1
 
     @property
+    def remaining_claim_number(self):
+        remaining_claim_number = cache.get(f"{self.pk}_remaining_claim_number")
+        return remaining_claim_number
+
+    @property
     def has_enough_funds(self):
         if self.get_manager_balance() > self.max_claim_amount:
             return True
