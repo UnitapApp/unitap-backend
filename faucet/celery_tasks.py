@@ -162,16 +162,32 @@ class CeleryTasks:
             capture_exception()
 
     @staticmethod
-    def update_current_fuel_level_faucet(faucet_id):
+    def update_remaining_claim_number(faucet_id):
         try:
-            # TODO: must check chain wallet balance and gasprice
             faucet = Faucet.objects.get(pk=faucet_id)
             fund_manager_balance = decimal.Decimal(faucet.manager_balance)
             max_claim = decimal.Decimal(faucet.max_claim_amount)
-            total_claim_number = fund_manager_balance // max_claim
+            remaining_claim_number = fund_manager_balance // max_claim
+            cache.set(
+                f"{faucet_id}_remaining_claim_number",
+                remaining_claim_number,
+                timeout=600,
+            )
+        except Exception as e:
+            logging.error(str(e))
+            capture_exception()
+
+    @staticmethod
+    def update_current_fuel_level_faucet(faucet_id):
+        try:
+            # TODO: must check chain wallet balance and gasprice
+            remaining_claim_number = cache.get(f"{faucet_id}_remaining_claim_number")
+            if remaining_claim_number is None:
+                return
+            faucet = Faucet.objects.get(pk=faucet_id)
 
             float_fuel_level = (
-                total_claim_number * FUEL_LEVEL_STATUS_NUMBER
+                remaining_claim_number * FUEL_LEVEL_STATUS_NUMBER
             ) / faucet.fuel_level
             fuel_level = math.ceil(float_fuel_level)
             fuel_level = min(FUEL_LEVEL_STATUS_NUMBER, fuel_level)

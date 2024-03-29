@@ -66,6 +66,7 @@ class SmallFaucetSerializer(serializers.ModelSerializer):
 class FaucetSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
     current_fuel_level = serializers.SerializerMethodField()
+    remaining_claim_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Faucet
@@ -83,10 +84,14 @@ class FaucetSerializer(serializers.ModelSerializer):
             "is_one_time_claim",
             "current_fuel_level",
             "is_deprecated",
+            "remaining_claim_number",
         ]
 
     def get_current_fuel_level(self, faucet):
         return int(faucet.current_fuel_level)
+
+    def get_remaining_claim_number(self, faucet):
+        return int(faucet.remaining_claim_number)
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
