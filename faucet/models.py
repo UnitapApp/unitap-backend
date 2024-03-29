@@ -199,7 +199,7 @@ class Faucet(models.Model):
     @property
     def remaining_claim_number(self):
         remaining_claim_number = cache.get(f"{self.pk}_remaining_claim_number")
-        return remaining_claim_number
+        return remaining_claim_number if remaining_claim_number is not None else -1
 
     @property
     def has_enough_funds(self):
