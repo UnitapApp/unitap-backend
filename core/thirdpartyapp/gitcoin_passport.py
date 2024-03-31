@@ -1,3 +1,5 @@
+import logging
+
 from core.request_helper import RequestException, RequestHelper
 from core.thirdpartyapp import config
 
@@ -20,7 +22,7 @@ class GitcoinPassport:
     def headers(self):
         return {
             "Content-Type": "application/json",
-            "X-API-KEY": config.GITCOIN_PASSPORT_API_KEY,
+            "X-API-Key": config.GITCOIN_PASSPORT_API_KEY,
         }
 
     def submit_passport(self, address: str) -> None | str:
@@ -35,13 +37,15 @@ class GitcoinPassport:
             "scorer_id": self.scorer_id,
         }
         try:
-            res = self.requests.post(path=path, data=data)
+            res = self.requests.post(path=path, json=data, headers=self.headers)
         except RequestException as e:
-            raise GitcoinPassportRequestError(e)
+            logging.error(f"error in gitcoin-passport occurred: {e}")
+            return None
+
         score = res.get("score")
         return score
 
-    def get_score(self, address: str) -> tuple:
+    def get_score(self, address: str) -> None | tuple:
         """get address gitcoin passport total score and stamp scores
         :param address: address that already register in gitcoin passport account
         :return: tuple first elem is total_score second is dict {stamp_name: score}
@@ -50,5 +54,6 @@ class GitcoinPassport:
         try:
             res = self.requests.get(path=path, headers=self.headers)
         except RequestException as e:
-            raise GitcoinPassportRequestError(e)
+            logging.error(f"error in gitcoin-passport occurred: {e}")
+            return None
         return res.get("score"), res.get("stamp_scores")
