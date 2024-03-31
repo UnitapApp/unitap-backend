@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from authentication.helpers import verify_login_signature
 from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
+    GitcoinPassportConnection,
     UserProfile,
     Wallet,
 )
@@ -87,6 +88,7 @@ class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
 def get_third_party_connection_serializer(connection):
     serializer_class = {
         BrightIDConnection: BaseThirdPartyConnectionSerializer,
+        GitcoinPassportConnection: GitcoinPassportConnectionSerializer
         # other mappings for different third-party connection models
     }.get(type(connection), BaseThirdPartyConnectionSerializer)
 
@@ -144,3 +146,27 @@ class UserHistoryCountSerializer(serializers.Serializer):
     gas_claim = serializers.IntegerField()
     token_claim = serializers.IntegerField()
     raffle_win = serializers.IntegerField()
+
+
+class GitcoinPassportConnectionSerializer(BaseThirdPartyConnectionSerializer):
+    class Meta:
+        model = GitcoinPassportConnection
+        fields = "__all__"
+        read_only_fields = [
+            "created_on",
+            "pk",
+            "user_profile",
+            "title",
+        ]
+
+    def is_valid(self, raise_exception=False):
+        super_is_validated = super().is_valid(raise_exception)
+        user_profile = self.context.get("request").user.profile
+        address = self.validated_data.get("user_wallet_address")
+        is_address_valid = user_profile.owns_wallet(address)
+        if not is_address_valid and raise_exception:
+            raise serializers.ValidationError(
+                {"user_wallet_address": "user_wallet_address is not owned by user"}
+            )
+
+        return is_address_valid and super_is_validated

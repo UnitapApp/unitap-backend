@@ -19,7 +19,7 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
-from authentication.models import UserProfile, Wallet
+from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
 from faucet.models import ClaimReceipt
 
 # get address as username and signed address as password and verify signature
@@ -628,3 +628,50 @@ class TestVerifyLoginSignature(APITestCase):
         )
 
         self.assertEqual(result.status_code, HTTP_400_BAD_REQUEST)
+
+
+class TestGitcoinPassportThirdPartyConnection(APITestCase):
+    def setUp(self) -> None:
+        self.address = "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF6"
+        self.user_profile = create_new_user()
+        create_new_wallet(
+            user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
+        )
+
+    def test_gitcoin_passport_connection_successful(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("AUTHENTICATION:connect-gitcoin-passport"),
+            data={"user_wallet_address": self.address},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(
+            GitcoinPassportConnection.objects.filter(
+                user_profile=self.user_profile, user_wallet_address=self.address
+            ).count(),
+            1,
+        )
+
+    def test_gitcoin_passport_not_exists(self):
+        address_does_not_have_gitcoin_passport = (
+            "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF5"
+        )
+        create_new_wallet(
+            user_profile=self.user_profile,
+            _address=address_does_not_have_gitcoin_passport,
+            wallet_type="EVM",
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("AUTHENTICATION:connect-gitcoin-passport"),
+            data={"user_wallet_address": address_does_not_have_gitcoin_passport},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_address_not_owned_by_user(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("AUTHENTICATION:connect-gitcoin-passport"),
+            data={"user_wallet_address": address},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
