@@ -16,7 +16,7 @@ class RequestHelper:
     def _get_url(self, path: None | str) -> str:
         if not path:
             return self.base_url
-        return f"{self.base_url}/{path}" if not self.base_url else path
+        return f"{self.base_url}/{path}" if self.base_url else path
 
     def get(
         self,

@@ -5,6 +5,7 @@ from authentication.views import (
     CheckUsernameView,
     ConnectBrightIDView,
     GetProfileView,
+    GitcoinPassportConnectionView,
     LoginRegisterView,
     LoginView,
     SetUsernameView,
@@ -59,5 +60,10 @@ urlpatterns = [
     ),
     path(
         "user/history-count/", UserHistoryCountView.as_view(), name="user-history-count"
+    ),
+    path(
+        "user/connect/gitcoin-passport/",
+        GitcoinPassportConnectionView.as_view(),
+        name="connect-gitcoin-passport",
     ),
 ]

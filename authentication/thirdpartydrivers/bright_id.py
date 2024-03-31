@@ -1,14 +1,11 @@
 import base64
 import json
 import time
-from abc import ABC
 
 import ed25519
 import requests
 
-
-class BaseThirdPartyDriver(ABC):
-    pass
+from authentication.thirdpartydrivers.abstract import BaseThirdPartyDriver
 
 
 class BrightIDConnectionDriver(BaseThirdPartyDriver):
