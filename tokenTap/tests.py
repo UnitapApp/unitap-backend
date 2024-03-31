@@ -4,6 +4,8 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+
+# from rest_framework.exceptions import ErrorDetail
 from rest_framework.test import APITestCase, override_settings
 
 from authentication.models import UserProfile, Wallet
@@ -116,6 +118,12 @@ class TokenDistributionClaimTestCase(APITestCase):
             username="testuser",
         )
 
+        Wallet.objects.create(
+            user_profile=self.userprofile,
+            wallet_type=NetworkTypes.EVM,
+            address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+        )
+
         self.chain = Chain.objects.create(
             chain_name="Gnosis Chain",
             wallet=WalletAccount.objects.create(
@@ -129,6 +137,10 @@ class TokenDistributionClaimTestCase(APITestCase):
             chain_id="100",
         )
 
+        self.meet_constraint = Constraint.objects.create(
+            name="core.BrightIDMeetVerification", title="BrightID Meet", type="VER"
+        )
+
         self.td = TokenDistribution.objects.create(
             name="Test Distribution",
             distributor="Test distributor",
@@ -138,12 +150,101 @@ class TokenDistributionClaimTestCase(APITestCase):
             twitter_url="https://twitter.com/example",
             image_url="https://example.com/image.png",
             token="TEST",
-            token_address="0x123456789abcdef",
+            token_address="0xd78Bc9369ef4617F5E3965d47838a0FCc4B9145F",
             amount=1000,
             chain=self.chain,
             contract=gnosis_tokentap_contract_address,
             deadline=timezone.now() + timezone.timedelta(days=7),
+            status=TokenDistribution.Status.VERIFIED,
         )
+
+        self.td.constraints.set([self.meet_constraint.pk])
+
+    def test_claim_constraints(self):
+        self.client.force_authenticate(user=self.userprofile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_token_claim_authentication(self):
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk})
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_reversed_constraints(self):
+        self.td.reversed_constraints = str(self.meet_constraint.pk)
+        self.td.save()
+        self.client.force_authenticate(user=self.userprofile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
+    )
+    def test_reversed_constraints_violation(self):
+        self.td.reversed_constraints = str(self.meet_constraint.pk)
+        self.td.save()
+        self.client.force_authenticate(user=self.userprofile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
+    )
+    def test_duplicate_claim(self):
+        TokenDistributionClaim.objects.create(
+            user_profile=self.userprofile,
+            token_distribution=self.td,
+            created_at=timezone.now(),
+            status=ClaimReceipt.VERIFIED,
+        )
+        self.td.is_one_time_claim = True
+        self.td.save()
+        self.client.force_authenticate(user=self.userprofile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
+        )
+        self.assertEqual(response.data["detail"], "You have already claimed")
+        self.assertEqual(response.status_code, 403)
+        self.td.is_one_time_claim = False
+        self.td.save()
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
+        )
+        self.assertEqual(response.data["detail"], "You have reached your claim limit")
+        self.assertEqual(response.status_code, 403)
+
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
+    )
+    def test_has_pending_claim(self):
+        TokenDistributionClaim.objects.create(
+            user_profile=self.userprofile,
+            token_distribution=self.td,
+            created_at=timezone.now(),
+            status=ClaimReceipt.PENDING,
+        )
+        self.client.force_authenticate(user=self.userprofile.user)
+        response = self.client.post(
+            reverse("token-distribution-claim", kwargs={"pk": self.td.pk}),
+            data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
+        )
+        self.assertEqual(response.data["detail"], "Signature Was Already Created")
+        self.assertEqual(response.status_code, 200)
 
     def test_token_distribution_claim_creation(self):
         tdc = TokenDistributionClaim.objects.create(
