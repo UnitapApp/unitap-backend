@@ -2,8 +2,6 @@ from django.contrib import admin
 
 from quiztap.models import Choice, Competition, Question
 
-# Create your views here.
-
 
 class CompetitionAdmin(admin.ModelAdmin):
     list_display = (
