@@ -32,7 +32,7 @@ class ChoiceSerializer(serializers.ModelSerializer):
 
 class QuestionSerializer(serializers.ModelSerializer):
     competition = CompetitionSerializer()
-    choices = ChoiceSerializer()
+    choices = ChoiceSerializer(many=True)
 
     class Meta:
         model = Question
