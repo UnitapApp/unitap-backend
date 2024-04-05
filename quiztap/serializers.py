@@ -23,7 +23,6 @@ class CompetitionSerializer(serializers.ModelSerializer):
         exclude = (
             "user_profile",
             "participants",
-            "participated_competitions",
         )
 
     def get_username(self, comp: Competition):
