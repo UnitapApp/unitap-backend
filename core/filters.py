@@ -23,3 +23,15 @@ class ChainFilterBackend(filters.BaseFilterBackend):
         if chain_pk is None:
             return queryset
         return queryset.filter(chain=get_object_or_404(Chain, pk=chain_pk))
+
+
+class StatusFilterBackend(filters.BaseFilterBackend):
+    """
+    Filter that filter nested faucet
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        status = request.query_params.get("status")
+        if status is None:
+            return queryset
+        return queryset.filter(status=status)

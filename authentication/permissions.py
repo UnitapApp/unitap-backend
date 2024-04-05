@@ -21,7 +21,7 @@ class IsAuraVerified(BasePermission):
 
 class IsOwner(BasePermission):
     """
-    Just owner has can access
+    Just owner can access
     """
 
     def has_object_permission(self, request, view, obj):
