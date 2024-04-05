@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
 from core.models import BigNumField, Chain
@@ -8,11 +9,10 @@ from core.models import BigNumField, Chain
 
 
 class Competition(models.Model):
-    STATUS_CHOICES = [
-        ("not_started", "NOT_STARTED"),
-        ("in_progress", "IN_PROGRESS"),
-        ("finished", "FINISHED"),
-    ]
+    class Status(models.TextChoices):
+        NOT_STARTED = "NOT_STARTED", _("Not started")
+        IN_PROGRESS = "IN_PROGRESS", _("In progress")
+        FINISHED = "FINISHED", _("Finished")
 
     sponsor = models.CharField(max_length=127, blank=True, null=True)
     user_profile = models.ForeignKey(
@@ -22,7 +22,7 @@ class Competition(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     start_at = models.DateTimeField(null=False, blank=False)
     status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default="not_started"
+        max_length=20, choices=Status.choices, default=Status.NOT_STARTED
     )
     prize_amount = BigNumField(null=False, blank=False)
     chain = models.ForeignKey(
