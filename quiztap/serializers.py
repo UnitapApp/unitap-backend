@@ -41,4 +41,4 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        exclude = ("user_answers",)
+        fields = "__all__"
