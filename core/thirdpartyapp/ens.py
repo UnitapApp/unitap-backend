@@ -7,7 +7,7 @@ class ENSUtil:
     def __init__(self):
         from core.models import Chain
 
-        self.eth_rpc = Chain.objects.get(chain_id="1")
+        self.eth_rpc = Chain.objects.get(chain_id="1").rpc_url_private
         self.w3_utils = Web3Utils(rpc_url=self.eth_rpc)
 
     @property
