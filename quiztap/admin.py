@@ -51,6 +51,6 @@ class ChoiceAdmin(admin.ModelAdmin):
     search_fields = ("question", "pk")
 
 
-admin.register(Competition, CompetitionAdmin)
-admin.register(Question, QuestionAdmin)
-admin.register(Choice, ChoiceAdmin)
+admin.site.register(Competition, CompetitionAdmin)
+admin.site.register(Question, QuestionAdmin)
+admin.site.register(Choice, ChoiceAdmin)
