@@ -15,7 +15,7 @@ class SmallQuestionSerializer(serializers.ModelSerializer):
 
 
 class CompetitionSerializer(serializers.ModelSerializer):
-    username = serializers.ModelSerializer()
+    username = serializers.ModelSerializer(read_only=True)
     questions = SmallQuestionSerializer(many=True, read_only=True)
 
     class Meta:
