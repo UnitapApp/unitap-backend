@@ -23,7 +23,7 @@ class CompetitionAdmin(admin.ModelAdmin):
 
     @admin.display(ordering="user_profile__username")
     def username(self, obj):
-        return obj.user_profile.uesrname
+        return obj.user_profile.username
 
 
 class QuestionAdmin(admin.ModelAdmin):
