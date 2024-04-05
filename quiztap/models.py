@@ -9,9 +9,9 @@ from core.models import BigNumField, Chain
 
 class Competition(models.Model):
     STATUS_CHOICES = [
-        ("not_started", "Not Started"),
-        ("holding", "Holding"),
-        ("finished", "Finished"),
+        ("not_started", "NOT_STARTED"),
+        ("in_progress", "IN_PROGRESS"),
+        ("finished", "FINISHED"),
     ]
 
     sponsor = models.CharField(max_length=127, blank=True, null=True)
@@ -39,9 +39,6 @@ class Competition(models.Model):
     email_url = models.EmailField(max_length=255)
     telegram_url = models.URLField(max_length=255, null=True, blank=True)
     image_url = models.URLField(max_length=255, null=True, blank=True)
-    rest_time_seconds = models.IntegerField(
-        default=5, validators=[MinValueValidator(5)]
-    )
     token_image_url = models.URLField(max_length=255, null=True, blank=True)
 
     participants = models.ManyToManyField(
@@ -67,9 +64,6 @@ class Question(models.Model):
     )
     number = models.IntegerField(
         null=False, blank=False, validators=[MinValueValidator(1)]
-    )
-    answer_time_limit_seconds = models.IntegerField(
-        default=10, validators=[MinValueValidator(5)]
     )
     text = models.TextField()
 
@@ -101,3 +95,6 @@ class UserAnswer(models.Model):
     selected_choice = models.ForeignKey(
         Choice, on_delete=models.CASCADE, related_name="user_answers"
     )
+
+    class Meta:
+        unique_together = ("user_profile", "question")
