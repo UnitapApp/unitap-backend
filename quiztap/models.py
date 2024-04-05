@@ -87,13 +87,13 @@ class Choice(models.Model):
 
 class UserAnswer(models.Model):
     user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.CASCADE, related_name="user_answers"
+        UserProfile, on_delete=models.CASCADE, related_name="users_answer"
     )
     question = models.ForeignKey(
-        Question, on_delete=models.CASCADE, related_name="user_answers"
+        Question, on_delete=models.CASCADE, related_name="users_answer"
     )
     selected_choice = models.ForeignKey(
-        Choice, on_delete=models.CASCADE, related_name="user_answers"
+        Choice, on_delete=models.CASCADE, related_name="users_answer"
     )
 
     class Meta:
