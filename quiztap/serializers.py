@@ -6,12 +6,7 @@ from quiztap.models import Choice, Competition, Question
 class SmallQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        exclude = (
-            "user_answers",
-            "text",
-            "choices",
-            "competition",
-        )
+        fields = ("pk", "number")
 
 
 class CompetitionSerializer(serializers.ModelSerializer):
@@ -32,7 +27,7 @@ class CompetitionSerializer(serializers.ModelSerializer):
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
-        exclude = ("is_correct", "user_answers")
+        exclude = ("is_correct",)
 
 
 class QuestionSerializer(serializers.ModelSerializer):
