@@ -6,7 +6,7 @@ from quiztap.models import Choice, Competition, Question
 class CompetitionAdmin(admin.ModelAdmin):
     list_display = (
         "pk",
-        "title",
+        "details",
         "details",
         "status",
         "username",
@@ -14,8 +14,8 @@ class CompetitionAdmin(admin.ModelAdmin):
         "token",
     )
 
-    search_fields = ("chain_name", "status", "user_profile", "pk")
-    list_filter = ("status", "chain_name")
+    search_fields = ("status", "user_profile", "pk")
+    list_filter = ("status",)
 
     @admin.display(ordering="chain__chain_name")
     def chain_name(self, obj):
@@ -31,7 +31,6 @@ class QuestionAdmin(admin.ModelAdmin):
         "pk",
         "number",
         "competition",
-        "answer_time_limit_seconds",
     )
 
     list_filter = ("competition", "text")
