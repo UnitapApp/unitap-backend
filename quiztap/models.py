@@ -57,6 +57,9 @@ class UserCompetition(models.Model):
     is_winner = models.BooleanField(default=False)
     amount_won = BigNumField(null=True, blank=True)
 
+    class Meta:
+        unique_together = ("user_profile", "competition")
+
 
 class Question(models.Model):
     competition = models.ForeignKey(
@@ -65,6 +68,8 @@ class Question(models.Model):
     number = models.IntegerField(
         null=False, blank=False, validators=[MinValueValidator(1)]
     )
+    can_be_shown = models.BooleanField(default=False, null=False, blank=False)
+    answer_can_be_shown = models.BooleanField(default=False, null=False, blank=False)
     text = models.TextField()
 
     def __str__(self):
@@ -86,15 +91,27 @@ class Choice(models.Model):
 
 
 class UserAnswer(models.Model):
-    user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.CASCADE, related_name="users_answer"
+    user_competition = models.ForeignKey(
+        UserCompetition,
+        on_delete=models.CASCADE,
+        related_name="users_answer",
+        null=False,
+        blank=False,
     )
     question = models.ForeignKey(
-        Question, on_delete=models.CASCADE, related_name="users_answer"
+        Question,
+        on_delete=models.CASCADE,
+        related_name="users_answer",
+        null=False,
+        blank=False,
     )
     selected_choice = models.ForeignKey(
-        Choice, on_delete=models.CASCADE, related_name="users_answer"
+        Choice,
+        on_delete=models.CASCADE,
+        related_name="users_answer",
+        null=False,
+        blank=False,
     )
 
     class Meta:
-        unique_together = ("user_profile", "question")
+        unique_together = ("user_competition", "question")
