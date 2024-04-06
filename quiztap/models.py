@@ -14,6 +14,7 @@ class Competition(models.Model):
         IN_PROGRESS = "IN_PROGRESS", _("In progress")
         FINISHED = "FINISHED", _("Finished")
 
+    title = models.CharField(max_length=255)
     sponsor = models.CharField(max_length=127, blank=True, null=True)
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="held_competitions"
