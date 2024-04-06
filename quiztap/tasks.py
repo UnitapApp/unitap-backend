@@ -90,10 +90,14 @@ def process_competition_answers(competition_pk, ques_pk):
         .first()
     )
     if next_question is None:
-        amount_won = Decimal(competition.prize_amount / len(users_answered_correct))
-        UserCompetition.objects.filter(pk__in=users_answered_correct).update(
-            is_winner=True, amount_won=amount_won
-        )
+        try:
+            amount_won = Decimal(competition.prize_amount / len(users_answered_correct))
+        except ZeroDivisionError:
+            logging.warning("no correct answer be found")
+        else:
+            UserCompetition.objects.filter(pk__in=users_answered_correct).update(
+                is_winner=True, amount_won=amount_won
+            )
         competition.status = competition.Status.FINISHED
         competition.save(update_fields=("status",))
         return
