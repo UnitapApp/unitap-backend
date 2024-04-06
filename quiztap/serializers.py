@@ -30,6 +30,7 @@ class ChoiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Choice
+        fields = "__all__"
 
     def get_is_correct(self, choice: Choice):
         if choice.question.answer_can_be_shown:
@@ -80,3 +81,4 @@ class UserAnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserAnswer
+        fields = "__all__"
