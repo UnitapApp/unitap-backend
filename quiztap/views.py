@@ -40,7 +40,7 @@ class EnrollInCompetitionView(ListCreateAPIView):
     serializer_class = UserCompetitionSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user_profile=self.request.user.user_profile)
+        serializer.save(user_profile=self.request.user.profile)
 
 
 class UserAnswerView(CreateAPIView):
@@ -48,7 +48,7 @@ class UserAnswerView(CreateAPIView):
     serializer_class = UserAnswerSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user_profile=self.request.user.user_profile)
+        serializer.save(user_profile=self.request.user.profile)
 
 
 class ParticipantsNumberView(RetrieveAPIView):
