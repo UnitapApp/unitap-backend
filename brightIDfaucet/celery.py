@@ -67,6 +67,10 @@ app.conf.beat_schedule = {
         "task": "tokenTap.tasks.set_distribution_id",
         "schedule": 300,
     },
+    "register-competition-to-start": {
+        "task": "quiztap.tasks.register_competition_to_start",
+        "schedule": 10,
+    },
 }
 
 # Load task modules from all registered Django apps.
