@@ -32,7 +32,7 @@ def setup_competition_to_start(competition_pk):
     question.save(update_fields=("can_be_shown",))
     process_competition_answers.apply_async(
         (competition_pk, question.pk),
-        competition.start_at + timedelta(seconds=ANSWER_TIME_SECOND),
+        eta=competition.start_at + timedelta(seconds=ANSWER_TIME_SECOND),
     )
 
 
@@ -53,7 +53,7 @@ def process_competition_questions(competition_pk, ques_pk):
     question.save(update_fields=("can_be_shown",))
     process_competition_answers.apply_async(
         (competition_pk, ques_pk),
-        competition.start_at
+        eta=competition.start_at
         + timedelta(
             seconds=(
                 (question.number * ANSWER_TIME_SECOND)
@@ -104,7 +104,7 @@ def process_competition_answers(competition_pk, ques_pk):
     cache.set(f"comp_{competition_pk}_eligible_users", set(users_answered_correct))
     process_competition_questions.apply_async(
         (competition_pk, next_question.pk),
-        competition.start_at
+        eta=competition.start_at
         + timedelta(
             seconds=(
                 ((next_question.number - 1) * ANSWER_TIME_SECOND)
@@ -133,5 +133,6 @@ def register_competition_to_start(self):
 
         for competition in competitions:
             setup_competition_to_start.apply_async(
-                (competition.pk,), competition.start_at - timedelta(milliseconds=0.5)
+                (competition.pk,),
+                eta=competition.start_at - timedelta(milliseconds=0.5),
             )
