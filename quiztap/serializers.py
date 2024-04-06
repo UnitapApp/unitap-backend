@@ -77,7 +77,7 @@ class UserCompetitionSerializer(serializers.ModelSerializer):
 
 class UserAnswerSerializer(serializers.ModelSerializer):
     competition = CompetitionField(queryset=Competition.objects.filter(is_active=True))
-    choice = ChoiceField(queryset=Competition.objects.all())
+    selected_choice = ChoiceField(queryset=Competition.objects.all())
 
     class Meta:
         model = UserAnswer

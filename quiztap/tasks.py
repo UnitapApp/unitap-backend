@@ -81,7 +81,7 @@ def process_competition_answers(competition_pk, ques_pk):
     current_question.answer_can_be_shown = True
     current_question.save(update_fields=("answer_can_be_shown",))
     users_answered_correct = current_question.users_answer.filter(
-        choice__is_correct=True
+        selected_choice__is_correct=True
     ).values_list("user_competition__pk", flat=True)
 
     next_question = (
