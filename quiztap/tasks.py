@@ -100,6 +100,8 @@ def process_competition_answers(competition_pk, ques_pk):
             )
         competition.status = competition.Status.FINISHED
         competition.save(update_fields=("status",))
+        cache.delete(f"comp_{competition_pk}_eligible_users_count")
+        cache.delete(f"comp_{competition_pk}_eligible_users")
         return
 
     cache.set(
