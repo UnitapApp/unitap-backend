@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from authentication.serializers import SimpleProfilerSerializer
 from quiztap.models import Choice, Competition, Question, UserAnswer, UserCompetition
+from quiztap.utils import is_user_eligible_to_participate
 
 
 class SmallQuestionSerializer(serializers.ModelSerializer):
@@ -40,10 +41,19 @@ class ChoiceSerializer(serializers.ModelSerializer):
 class QuestionSerializer(serializers.ModelSerializer):
     competition = CompetitionSerializer()
     choices = ChoiceSerializer(many=True)
+    is_eligible = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Question
         fields = "__all__"
+
+    def get_is_eligible(self, ques: Question):
+        try:
+            user_profile = self.context.get("request").user.profile
+        except AttributeError:
+            return False
+        else:
+            return is_user_eligible_to_participate(user_profile, ques.competition)
 
 
 class CompetitionField(serializers.PrimaryKeyRelatedField):
@@ -91,10 +101,24 @@ class UserCompetitionSerializer(serializers.ModelSerializer):
         ]
 
 
+class UserCompetitionField(serializers.PrimaryKeyRelatedField):
+    def to_representation(self, value):
+        pk = super(UserCompetitionField, self).to_representation(value)
+        if self.pk_field is not None:
+            return self.pk_field.to_representation(pk)
+        try:
+            item = UserCompetition.objects.get(pk=pk)
+            serializer = UserCompetitionSerializer(item)
+            return serializer.data
+        except UserCompetition.DoesNotExist:
+            return None
+
+
 class UserAnswerSerializer(serializers.ModelSerializer):
-    competition = CompetitionField(
-        queryset=Competition.objects.filter(
-            is_active=True, status=Competition.Status.IN_PROGRESS
+    user_competition = UserCompetitionField(
+        queryset=UserCompetition.objects.filter(
+            competition__is_active=True,
+            competition__status=Competition.Status.IN_PROGRESS,
         )
     )
     selected_choice = ChoiceField(queryset=Choice.objects.all())
