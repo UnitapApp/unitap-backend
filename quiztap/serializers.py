@@ -49,7 +49,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 class CompetitionField(serializers.PrimaryKeyRelatedField):
     def to_representation(self, value):
         if self.pk_field is not None:
-            return self.pk_field.to_representation(value.pk)
+            return self.pk_field.to_representation(value)
         return CompetitionSerializer(instance=value).data
 
 
@@ -85,7 +85,7 @@ class UserAnswerSerializer(serializers.ModelSerializer):
             is_active=True, status=Competition.Status.IN_PROGRESS
         )
     )
-    selected_choice = ChoiceField(queryset=Competition.objects.all())
+    selected_choice = ChoiceField(queryset=Choice.objects.all())
 
     class Meta:
         model = UserAnswer
