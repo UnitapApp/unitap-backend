@@ -5,7 +5,12 @@ from rest_framework.permissions import BasePermission
 from quiztap.models import Competition, UserCompetition
 
 
-class IsParticipatedInCompetition(BasePermission):
+class IsEligibleToAnswer(BasePermission):
+    """
+    Permission to allow access if the
+    user is eligible to answer questions in the competition.
+    """
+
     def has_permission(self, request, view):
         competition_pk = request.data.get("competition")
         if competition_pk is None:
