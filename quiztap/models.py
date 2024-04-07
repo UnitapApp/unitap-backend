@@ -49,7 +49,7 @@ class Competition(models.Model):
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.details
+        return f"{self.user_profile.username} - {self.title}"
 
 
 class UserCompetition(models.Model):
@@ -60,6 +60,9 @@ class UserCompetition(models.Model):
 
     class Meta:
         unique_together = ("user_profile", "competition")
+
+    def __str__(self):
+        return f"{self.user_profile.username} - {self.competition.title}"
 
 
 class Question(models.Model):
@@ -74,7 +77,7 @@ class Question(models.Model):
     text = models.TextField()
 
     def __str__(self):
-        return self.text
+        return f"{self.competition.title} - {self.number} - {self.text}"
 
     class Meta:
         unique_together = ("competition", "number")
@@ -116,3 +119,9 @@ class UserAnswer(models.Model):
 
     class Meta:
         unique_together = ("user_competition", "question")
+
+    def __str__(self):
+        return (
+            f"{self.user_competition.user_profile.username} "
+            f"- {self.user_competition.competition.title}  - {self.question.number}"
+        )
