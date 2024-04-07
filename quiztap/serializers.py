@@ -61,7 +61,11 @@ class ChoiceField(serializers.PrimaryKeyRelatedField):
 
 
 class UserCompetitionSerializer(serializers.ModelSerializer):
-    competition = CompetitionField(queryset=Competition.objects.filter(is_active=True))
+    competition = CompetitionField(
+        queryset=Competition.objects.filter(
+            is_active=True, status=Competition.Status.NOT_STARTED
+        )
+    )
     user_profile = SimpleProfilerSerializer(read_only=True)
 
     class Meta:
@@ -76,7 +80,11 @@ class UserCompetitionSerializer(serializers.ModelSerializer):
 
 
 class UserAnswerSerializer(serializers.ModelSerializer):
-    competition = CompetitionField(queryset=Competition.objects.filter(is_active=True))
+    competition = CompetitionField(
+        queryset=Competition.objects.filter(
+            is_active=True, status=Competition.Status.IN_PROGRESS
+        )
+    )
     selected_choice = ChoiceField(queryset=Competition.objects.all())
 
     class Meta:
