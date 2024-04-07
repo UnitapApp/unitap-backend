@@ -48,16 +48,28 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class CompetitionField(serializers.PrimaryKeyRelatedField):
     def to_representation(self, value):
+        pk = super(CompetitionField, self).to_representation(value)
         if self.pk_field is not None:
-            return self.pk_field.to_representation(value)
-        return CompetitionSerializer(instance=value).data
+            return self.pk_field.to_representation(pk)
+        try:
+            item = Competition.objects.get(pk=pk)
+            serializer = CompetitionSerializer(item)
+            return serializer.data
+        except Competition.DoesNotExist:
+            return None
 
 
 class ChoiceField(serializers.PrimaryKeyRelatedField):
     def to_representation(self, value):
+        pk = super(ChoiceField, self).to_representation(value)
         if self.pk_field is not None:
-            return self.pk_field.to_representation(value.pk)
-        return CompetitionSerializer(instance=value).data
+            return self.pk_field.to_representation(pk)
+        try:
+            item = Choice.objects.get(pk=pk)
+            serializer = ChoiceSerializer(item)
+            return serializer.data
+        except Choice.DoesNotExist:
+            return None
 
 
 class UserCompetitionSerializer(serializers.ModelSerializer):
