@@ -56,7 +56,7 @@ class UserCompetition(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     competition = models.ForeignKey(Competition, on_delete=models.CASCADE)
     is_winner = models.BooleanField(default=False)
-    amount_won = BigNumField(null=True, blank=True)
+    amount_won = BigNumField(default=0)
 
     class Meta:
         unique_together = ("user_profile", "competition")
