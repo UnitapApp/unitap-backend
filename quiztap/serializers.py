@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from authentication.serializers import SimpleProfilerSerializer
 from quiztap.models import Choice, Competition, Question, UserAnswer, UserCompetition
+from quiztap.utils import is_user_eligible_to_participate
 
 
 class SmallQuestionSerializer(serializers.ModelSerializer):
@@ -40,10 +41,19 @@ class ChoiceSerializer(serializers.ModelSerializer):
 class QuestionSerializer(serializers.ModelSerializer):
     competition = CompetitionSerializer()
     choices = ChoiceSerializer(many=True)
+    is_eligible = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Question
         fields = "__all__"
+
+    def get_is_eligible(self, ques: Question):
+        try:
+            user_profile = self.context.get("request").user.profile
+        except AttributeError:
+            return False
+        else:
+            return is_user_eligible_to_participate(user_profile, ques.competition)
 
 
 class CompetitionField(serializers.PrimaryKeyRelatedField):

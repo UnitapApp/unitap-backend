@@ -1,15 +1,11 @@
-from rest_framework.generics import (
-    CreateAPIView,
-    ListAPIView,
-    ListCreateAPIView,
-    RetrieveAPIView,
-)
+from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 
 from authentication.permissions import IsMeetVerified
 from core.filters import ChainFilterBackend, IsOwnerFilterBackend, StatusFilterBackend
 from core.paginations import StandardResultsSetPagination
-from quiztap.models import Competition, Question, UserCompetition
+from quiztap.filters import CompetitionFilter, NestedCompetitionFilter
+from quiztap.models import Competition, Question, UserAnswer, UserCompetition
 from quiztap.permissions import IsEligibleToAnswer
 from quiztap.serializers import (
     CompetitionSerializer,
@@ -34,7 +30,7 @@ class QuestionView(RetrieveAPIView):
 
 class EnrollInCompetitionView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsMeetVerified]
-    filter_backends = [IsOwnerFilterBackend]
+    filter_backends = [IsOwnerFilterBackend, CompetitionFilter]
     pagination_class = StandardResultsSetPagination
     queryset = UserCompetition.objects.all()
     serializer_class = UserCompetitionSerializer
@@ -43,9 +39,11 @@ class EnrollInCompetitionView(ListCreateAPIView):
         serializer.save(user_profile=self.request.user.profile)
 
 
-class UserAnswerView(CreateAPIView):
+class UserAnswerView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsMeetVerified, IsEligibleToAnswer]
     serializer_class = UserAnswerSerializer
+    filter_backends = [IsOwnerFilterBackend, NestedCompetitionFilter]
+    queryset = UserAnswer.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(user_profile=self.request.user.profile)
