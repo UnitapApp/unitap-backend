@@ -46,7 +46,7 @@ class UserAnswerView(ListCreateAPIView):
     queryset = UserAnswer.objects.all()
 
     def perform_create(self, serializer):
-        serializer.save(user_profile=self.request.user.profile)
+        serializer.save()
 
 
 class ParticipantsNumberView(RetrieveAPIView):

@@ -16,7 +16,8 @@ def is_user_eligible_to_participate(
         return False
     eligible_users = cache.get(f"comp_{competition.pk}_eligible_users")
     return (
-        competition.status == competition.Status.IN_PROGRESS
+        competition.is_active
+        and competition.status == competition.Status.IN_PROGRESS
         and competition.start_at <= timezone.now()
         and ((eligible_users is None or user_competition_pk in eligible_users))
     )

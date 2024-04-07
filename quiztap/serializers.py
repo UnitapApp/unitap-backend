@@ -101,10 +101,24 @@ class UserCompetitionSerializer(serializers.ModelSerializer):
         ]
 
 
+class UserCompetitionField(serializers.PrimaryKeyRelatedField):
+    def to_representation(self, value):
+        pk = super(UserCompetitionField, self).to_representation(value)
+        if self.pk_field is not None:
+            return self.pk_field.to_representation(pk)
+        try:
+            item = UserCompetition.objects.get(pk=pk)
+            serializer = UserCompetitionSerializer(item)
+            return serializer.data
+        except UserCompetition.DoesNotExist:
+            return None
+
+
 class UserAnswerSerializer(serializers.ModelSerializer):
-    competition = CompetitionField(
-        queryset=Competition.objects.filter(
-            is_active=True, status=Competition.Status.IN_PROGRESS
+    user_competition = UserCompetitionField(
+        queryset=UserCompetition.objects.filter(
+            competition__is_active=True,
+            competition__status=Competition.Status.IN_PROGRESS,
         )
     )
     selected_choice = ChoiceField(queryset=Choice.objects.all())
