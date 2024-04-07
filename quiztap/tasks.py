@@ -30,6 +30,10 @@ def setup_competition_to_start(competition_pk):
     question.can_be_shown = True
     competition.save(update_fields=("status",))
     question.save(update_fields=("can_be_shown",))
+    user_competition_count = competition.participants.count()
+    cache.set(
+        f"comp_{competition_pk}_total_partisipants_count", user_competition_count, 360
+    )
     process_competition_answers.apply_async(
         (competition_pk, question.pk),
         eta=competition.start_at + timedelta(seconds=ANSWER_TIME_SECOND),
@@ -83,7 +87,10 @@ def process_competition_answers(competition_pk, ques_pk):
     users_answered_correct = current_question.users_answer.filter(
         selected_choice__is_correct=True
     ).values_list("user_competition__pk", flat=True)
-
+    user_competition_count = competition.participants.count()
+    cache.set(
+        f"comp_{competition_pk}_total_partisipants_count", user_competition_count, 360
+    )
     next_question = (
         competition.questions.filter(number__gt=current_question.number)
         .order_by("number")
@@ -102,12 +109,13 @@ def process_competition_answers(competition_pk, ques_pk):
         competition.save(update_fields=("status",))
         cache.delete(f"comp_{competition_pk}_eligible_users_count")
         cache.delete(f"comp_{competition_pk}_eligible_users")
+        cache.delete(f"comp_{competition_pk}_total_partisipants_count")
         return
 
     cache.set(
-        f"comp_{competition_pk}_eligible_users_count", len(users_answered_correct)
+        f"comp_{competition_pk}_eligible_users_count", len(users_answered_correct), 360
     )
-    cache.set(f"comp_{competition_pk}_eligible_users", set(users_answered_correct))
+    cache.set(f"comp_{competition_pk}_eligible_users", set(users_answered_correct), 360)
     process_competition_questions.apply_async(
         (competition_pk, next_question.pk),
         eta=competition.start_at

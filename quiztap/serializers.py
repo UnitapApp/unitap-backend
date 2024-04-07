@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework import serializers
 
 from authentication.serializers import SimpleProfilerSerializer
@@ -42,6 +43,9 @@ class QuestionSerializer(serializers.ModelSerializer):
     competition = CompetitionSerializer()
     choices = ChoiceSerializer(many=True)
     is_eligible = serializers.SerializerMethodField(read_only=True)
+    remain_partisipants_count = serializers.SerializerMethodField(read_only=True)
+    total_partisipants_count = serializers.SerializerMethodField(read_only=True)
+    won_amount_per_user = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Question
@@ -54,6 +58,37 @@ class QuestionSerializer(serializers.ModelSerializer):
             return False
         else:
             return is_user_eligible_to_participate(user_profile, ques.competition)
+
+    def get_remain_partisipants_count(self, ques: Question):
+        remain_partisipants_count = cache.get(
+            f"comp_{ques.competition.pk}_eligible_users_count"
+        )
+        return (
+            remain_partisipants_count
+            if remain_partisipants_count is not None
+            else cache.get(f"comp_{ques.competition.pk}_total_partisipants_count")
+        )
+
+    def get_total_partisipants_count(self, ques: Question):
+        total_partisipants_count = cache.get(
+            f"comp_{ques.competition.pk}_total_partisipants_count"
+        )
+        return total_partisipants_count
+
+    def get_won_amount_per_user(self, ques: Question):
+        prize_amount = ques.competition.prize_amount
+        remain_partisipants_count = cache.get(
+            f"comp_{ques.competition.pk}_eligible_users_count", 0
+        ) or cache.get(f"comp_{ques.competition.pk}_total_partisipants_count", 0)
+        try:
+            prize_amount_per_user = prize_amount // remain_partisipants_count
+            return prize_amount_per_user
+        except ZeroDivisionError:
+            if (
+                ques.competition.is_active
+                and ques.competition.status == Competition.Status.IN_PROGRESS
+            ):
+                return prize_amount
 
 
 class CompetitionField(serializers.PrimaryKeyRelatedField):
