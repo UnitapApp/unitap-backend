@@ -47,7 +47,3 @@ class UserAnswerView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save()
-
-
-class ParticipantsNumberView(RetrieveAPIView):
-    pass
