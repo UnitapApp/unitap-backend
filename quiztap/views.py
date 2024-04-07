@@ -10,7 +10,7 @@ from authentication.permissions import IsMeetVerified
 from core.filters import ChainFilterBackend, IsOwnerFilterBackend, StatusFilterBackend
 from core.paginations import StandardResultsSetPagination
 from quiztap.models import Competition, Question, UserCompetition
-from quiztap.permissions import IsParticipatedInCompetition
+from quiztap.permissions import IsEligibleToAnswer
 from quiztap.serializers import (
     CompetitionSerializer,
     QuestionSerializer,
@@ -44,7 +44,7 @@ class EnrollInCompetitionView(ListCreateAPIView):
 
 
 class UserAnswerView(CreateAPIView):
-    permission_classes = [IsAuthenticated, IsMeetVerified, IsParticipatedInCompetition]
+    permission_classes = [IsAuthenticated, IsMeetVerified, IsEligibleToAnswer]
     serializer_class = UserAnswerSerializer
 
     def perform_create(self, serializer):
