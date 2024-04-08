@@ -45,7 +45,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     is_eligible = serializers.SerializerMethodField(read_only=True)
     remain_partisipants_count = serializers.SerializerMethodField(read_only=True)
     total_partisipants_count = serializers.SerializerMethodField(read_only=True)
-    won_amount_per_user = serializers.SerializerMethodField(read_only=True)
+    amount_won_per_user = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Question
@@ -75,7 +75,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         )
         return total_partisipants_count
 
-    def get_won_amount_per_user(self, ques: Question):
+    def get_amount_won_per_user(self, ques: Question):
         prize_amount = ques.competition.prize_amount
         remain_partisipants_count = cache.get(
             f"comp_{ques.competition.pk}_eligible_users_count"

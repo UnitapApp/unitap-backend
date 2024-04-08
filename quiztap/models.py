@@ -45,6 +45,8 @@ class Competition(models.Model):
     participants = models.ManyToManyField(
         UserProfile, through="UserCompetition", related_name="participated_competitions"
     )
+    winner_count = models.IntegerField(default=0)
+    amount_won = BigNumField(default=0)
 
     is_active = models.BooleanField(default=True)
 
