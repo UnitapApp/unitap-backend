@@ -102,8 +102,11 @@ def process_competition_answers(competition_pk, ques_pk):
             UserCompetition.objects.filter(pk__in=users_answered_correct).update(
                 is_winner=True, amount_won=amount_won
             )
+            competition.amount_won = amount_won
+
+        competition.winner_count = len(users_answered_correct)
         competition.status = competition.Status.FINISHED
-        competition.save(update_fields=("status",))
+        competition.save(update_fields=("status", "amount_won", "winner_count"))
         cache.delete(f"comp_{competition_pk}_eligible_users_count")
         cache.delete(f"comp_{competition_pk}_eligible_users")
         cache.delete(f"comp_{competition_pk}_total_partisipants_count")
