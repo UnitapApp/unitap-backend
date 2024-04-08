@@ -233,7 +233,9 @@ def set_raffle_ids(self):
                         if raffle.prize_asset != onchain_raffle["currency"]:
                             is_valid = False
                             logging.error(f"Mismatch raffle {raffle.pk} currency")
-                    if is_valid:
-                        raffle.save()
+                    if not is_valid:
+                        raffle.raffleId = None
+                        raffle.status = Raffle.Status.REJECTED
+                    raffle.save()
                 except Exception as e:
                     logging.error(e)
