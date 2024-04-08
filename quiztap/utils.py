@@ -19,5 +19,5 @@ def is_user_eligible_to_participate(
         competition.is_active
         and competition.status == competition.Status.IN_PROGRESS
         and competition.start_at <= timezone.now()
-        and ((eligible_users is None or user_competition_pk in eligible_users))
+        and (eligible_users is None or user_competition_pk in eligible_users)
     )

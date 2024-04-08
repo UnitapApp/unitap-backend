@@ -88,9 +88,6 @@ def process_competition_answers(competition_pk, ques_pk):
         selected_choice__is_correct=True
     ).values_list("user_competition__pk", flat=True)
     user_competition_count = competition.participants.count()
-    cache.set(
-        f"comp_{competition_pk}_total_partisipants_count", user_competition_count, 360
-    )
     next_question = (
         competition.questions.filter(number__gt=current_question.number)
         .order_by("number")
@@ -112,6 +109,9 @@ def process_competition_answers(competition_pk, ques_pk):
         cache.delete(f"comp_{competition_pk}_total_partisipants_count")
         return
 
+    cache.set(
+        f"comp_{competition_pk}_total_partisipants_count", user_competition_count, 360
+    )
     cache.set(
         f"comp_{competition_pk}_eligible_users_count", len(users_answered_correct), 360
     )
@@ -135,7 +135,7 @@ def register_competition_to_start(self):
 
     with memcache_lock(id_, self.app.oid) as acquired:
         if not acquired:
-            logging.warning("Could not acquire process lock at {self.name}")
+            logging.warning(f"Could not acquire process lock at {self.name}")
             return
         threshold = now + timedelta(seconds=REGISTER_COMPETITION_TASK_PERIOD_SECONDS)
 
