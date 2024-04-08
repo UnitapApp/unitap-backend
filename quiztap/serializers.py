@@ -43,8 +43,8 @@ class QuestionSerializer(serializers.ModelSerializer):
     competition = CompetitionSerializer()
     choices = ChoiceSerializer(many=True)
     is_eligible = serializers.SerializerMethodField(read_only=True)
-    remain_partisipants_count = serializers.SerializerMethodField(read_only=True)
-    total_partisipants_count = serializers.SerializerMethodField(read_only=True)
+    remain_participants_count = serializers.SerializerMethodField(read_only=True)
+    total_participants_count = serializers.SerializerMethodField(read_only=True)
     amount_won_per_user = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -59,29 +59,29 @@ class QuestionSerializer(serializers.ModelSerializer):
         else:
             return is_user_eligible_to_participate(user_profile, ques.competition)
 
-    def get_remain_partisipants_count(self, ques: Question):
-        remain_partisipants_count = cache.get(
+    def get_remain_participants_count(self, ques: Question):
+        remain_participants_count = cache.get(
             f"comp_{ques.competition.pk}_eligible_users_count"
         )
         return (
-            remain_partisipants_count
-            if remain_partisipants_count is not None
-            else cache.get(f"comp_{ques.competition.pk}_total_partisipants_count")
+            remain_participants_count
+            if remain_participants_count is not None
+            else cache.get(f"comp_{ques.competition.pk}_total_participants_count")
         )
 
-    def get_total_partisipants_count(self, ques: Question):
-        total_partisipants_count = cache.get(
-            f"comp_{ques.competition.pk}_total_partisipants_count"
+    def get_total_participants_count(self, ques: Question):
+        total_participants_count = cache.get(
+            f"comp_{ques.competition.pk}_total_participants_count"
         )
-        return total_partisipants_count
+        return total_participants_count
 
     def get_amount_won_per_user(self, ques: Question):
         prize_amount = ques.competition.prize_amount
-        remain_partisipants_count = cache.get(
+        remain_participants_count = cache.get(
             f"comp_{ques.competition.pk}_eligible_users_count"
         )
         try:
-            prize_amount_per_user = prize_amount / remain_partisipants_count
+            prize_amount_per_user = prize_amount / remain_participants_count
             return prize_amount_per_user
         except ZeroDivisionError:
             if (
@@ -94,10 +94,10 @@ class QuestionSerializer(serializers.ModelSerializer):
                 ques.competition.is_active
                 and ques.competition.status == Competition.Status.IN_PROGRESS
             ):
-                remain_partisipants_count = cache.get(
-                    f"comp_{ques.competition.pk}_total_partisipants_count", 1
+                remain_participants_count = cache.get(
+                    f"comp_{ques.competition.pk}_total_participants_count", 1
                 )
-                return prize_amount / remain_partisipants_count
+                return prize_amount / remain_participants_count
 
 
 class CompetitionField(serializers.PrimaryKeyRelatedField):

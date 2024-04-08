@@ -32,7 +32,7 @@ def setup_competition_to_start(competition_pk):
     question.save(update_fields=("can_be_shown",))
     user_competition_count = competition.participants.count()
     cache.set(
-        f"comp_{competition_pk}_total_partisipants_count", user_competition_count, 360
+        f"comp_{competition_pk}_total_participants_count", user_competition_count, 360
     )
     process_competition_answers.apply_async(
         (competition_pk, question.pk),
@@ -82,17 +82,18 @@ def process_competition_answers(competition_pk, ques_pk):
     except Question.DoesNotExist:
         logging.warning(f"Question with pk {ques_pk} not exists.")
         return
+
     current_question.answer_can_be_shown = True
     current_question.save(update_fields=("answer_can_be_shown",))
-    users_answered_correct = current_question.users_answer.filter(
-        selected_choice__is_correct=True
-    ).values_list("user_competition__pk", flat=True)
-    user_competition_count = competition.participants.count()
     next_question = (
         competition.questions.filter(number__gt=current_question.number)
         .order_by("number")
         .first()
     )
+    users_answered_correct = current_question.users_answer.filter(
+        selected_choice__is_correct=True
+    ).values_list("user_competition__pk", flat=True)
+
     if next_question is None:
         try:
             amount_won = Decimal(competition.prize_amount / len(users_answered_correct))
@@ -109,11 +110,11 @@ def process_competition_answers(competition_pk, ques_pk):
         competition.save(update_fields=("status", "amount_won", "winner_count"))
         cache.delete(f"comp_{competition_pk}_eligible_users_count")
         cache.delete(f"comp_{competition_pk}_eligible_users")
-        cache.delete(f"comp_{competition_pk}_total_partisipants_count")
+        cache.delete(f"comp_{competition_pk}_total_participants_count")
         return
-
+    user_competition_count = competition.participants.count()
     cache.set(
-        f"comp_{competition_pk}_total_partisipants_count", user_competition_count, 360
+        f"comp_{competition_pk}_total_participants_count", user_competition_count, 360
     )
     cache.set(
         f"comp_{competition_pk}_eligible_users_count", len(users_answered_correct), 360
