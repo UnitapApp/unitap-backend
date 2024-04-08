@@ -78,8 +78,8 @@ class QuestionSerializer(serializers.ModelSerializer):
     def get_won_amount_per_user(self, ques: Question):
         prize_amount = ques.competition.prize_amount
         remain_partisipants_count = cache.get(
-            f"comp_{ques.competition.pk}_eligible_users_count", 0
-        ) or cache.get(f"comp_{ques.competition.pk}_total_partisipants_count", 0)
+            f"comp_{ques.competition.pk}_eligible_users_count"
+        )
         try:
             prize_amount_per_user = prize_amount // remain_partisipants_count
             return prize_amount_per_user
@@ -89,6 +89,15 @@ class QuestionSerializer(serializers.ModelSerializer):
                 and ques.competition.status == Competition.Status.IN_PROGRESS
             ):
                 return prize_amount
+        except TypeError:
+            if (
+                ques.competition.is_active
+                and ques.competition.status == Competition.Status.IN_PROGRESS
+            ):
+                remain_partisipants_count = cache.get(
+                    f"comp_{ques.competition.pk}_total_partisipants_count", 1
+                )
+                return prize_amount // remain_partisipants_count
 
 
 class CompetitionField(serializers.PrimaryKeyRelatedField):
