@@ -81,7 +81,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             f"comp_{ques.competition.pk}_eligible_users_count"
         )
         try:
-            prize_amount_per_user = prize_amount // remain_partisipants_count
+            prize_amount_per_user = prize_amount / remain_partisipants_count
             return prize_amount_per_user
         except ZeroDivisionError:
             if (
@@ -97,7 +97,7 @@ class QuestionSerializer(serializers.ModelSerializer):
                 remain_partisipants_count = cache.get(
                     f"comp_{ques.competition.pk}_total_partisipants_count", 1
                 )
-                return prize_amount // remain_partisipants_count
+                return prize_amount / remain_partisipants_count
 
 
 class CompetitionField(serializers.PrimaryKeyRelatedField):
