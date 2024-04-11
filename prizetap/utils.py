@@ -10,6 +10,7 @@ from .constants import (
     VRF_CLIENT_MUMBAI_ADDRESS,
     VRF_CLIENT_POLYGON_ADDRESS,
 )
+from .models import Chain
 
 
 class PrizetapContractClient:
@@ -91,7 +92,12 @@ class PrizetapContractClient:
 
 
 class VRFClientContractClient:
-    def __init__(self, chain) -> None:
+    def __init__(self) -> None:
+        if DEPLOYMENT_ENV == "main":
+            chain = Chain.objects.filter(chain_id="137")
+        else:
+            chain = Chain.objects.filter(chain_id="80001")
+
         self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
         address = (
             VRF_CLIENT_POLYGON_ADDRESS
