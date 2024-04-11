@@ -1,6 +1,7 @@
 import time
 
 from brightIDfaucet.settings import DEPLOYMENT_ENV
+from core.models import Chain
 from core.utils import Web3Utils
 
 from .constants import (
@@ -10,7 +11,6 @@ from .constants import (
     VRF_CLIENT_MUMBAI_ADDRESS,
     VRF_CLIENT_POLYGON_ADDRESS,
 )
-from .models import Chain
 
 
 class PrizetapContractClient:
@@ -94,9 +94,9 @@ class PrizetapContractClient:
 class VRFClientContractClient:
     def __init__(self) -> None:
         if DEPLOYMENT_ENV == "main":
-            chain = Chain.objects.filter(chain_id="137")
+            chain = Chain.objects.filter(chain_id="137").get()
         else:
-            chain = Chain.objects.filter(chain_id="80001")
+            chain = Chain.objects.filter(chain_id="80001").get()
 
         self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
         address = (
