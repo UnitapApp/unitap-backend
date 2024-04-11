@@ -71,6 +71,10 @@ app.conf.beat_schedule = {
         "task": "quiztap.tasks.register_competition_to_start",
         "schedule": 10,
     },
+    # "analytics-update-users": {
+    #     "task": "analytics.tasks.update_user_analytics",
+    #     "schedule": 900,
+    # },
 }
 
 # Load task modules from all registered Django apps.
