@@ -294,3 +294,10 @@ class AbstractGlobalSettings(models.Model):
                 obj, _ = cls.set(index, default)
                 return obj.value
             raise e
+
+
+class Sponsor(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    link = models.URLField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    # TODO: image

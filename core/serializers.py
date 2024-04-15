@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from core.constraints import ConstraintVerification, get_constraint
 
-from .models import Chain, UserConstraint
+from .models import Chain, Sponsor, UserConstraint
 from .utils import UploadFileStorage
 
 
@@ -149,3 +149,13 @@ class ConstraintProviderSerializer(serializers.Serializer):
                     )
             validated_data["constraint_params"] = json.dumps(constraint_params)
         return validated_data
+
+
+class SponsorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sponsor
+        fields = [
+            "name",
+            "link",
+            "description",
+        ]
