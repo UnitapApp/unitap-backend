@@ -18,8 +18,8 @@ class Competition(models.Model):
     sponsor = models.ForeignKey(
         Sponsor,
         related_name="competitions",
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
         on_delete=models.PROTECT,
     )
     user_profile = models.ForeignKey(
