@@ -260,7 +260,7 @@ class UserRafflesListView(ListAPIView):
 
     def get(self, request):
         queryset = Raffle.objects.filter(creator_profile=request.user.profile).order_by(
-            "pk"
+            "-pk"
         )
         serializer = RaffleSerializer(
             queryset, many=True, context={"user": request.user.profile}
