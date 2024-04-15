@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import BigNumField, Chain
+from core.models import BigNumField, Chain, Sponsor
 
 # Create your models here.
 
@@ -15,7 +15,13 @@ class Competition(models.Model):
         FINISHED = "FINISHED", _("Finished")
 
     title = models.CharField(max_length=255)
-    sponsor = models.CharField(max_length=127, blank=True, null=True)
+    sponsor = models.ForeignKey(
+        Sponsor,
+        related_name="competitions",
+        null=False,
+        blank=False,
+        on_delete=models.PROTECT,
+    )
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="held_competitions"
     )

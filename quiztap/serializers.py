@@ -2,6 +2,7 @@ from django.core.cache import cache
 from rest_framework import serializers
 
 from authentication.serializers import SimpleProfilerSerializer
+from core.serializers import SponsorSerializer
 from quiztap.models import Choice, Competition, Question, UserAnswer, UserCompetition
 from quiztap.utils import is_user_eligible_to_participate
 
@@ -15,6 +16,7 @@ class SmallQuestionSerializer(serializers.ModelSerializer):
 class CompetitionSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     questions = SmallQuestionSerializer(many=True, read_only=True)
+    sponsor = SponsorSerializer(read_only=True)
 
     class Meta:
         model = Competition
