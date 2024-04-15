@@ -22,6 +22,11 @@ class CompetitionViewList(ListAPIView):
     serializer_class = CompetitionSerializer
 
 
+class CompetitionView(RetrieveAPIView):
+    queryset = Competition.objects.filter(is_active=True)
+    serializer_class = CompetitionSerializer
+
+
 class QuestionView(RetrieveAPIView):
     http_method_names = ["get"]
     serializer_class = QuestionSerializer
