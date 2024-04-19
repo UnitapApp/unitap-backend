@@ -15,6 +15,7 @@ from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
+from core.views import AbstractConstraintsListView
 
 from .constants import CONTRACT_ADDRESSES
 from .models import Constraint, LineaRaffleEntries, Raffle, RaffleEntry
@@ -259,7 +260,7 @@ class UserRafflesListView(ListAPIView):
 
     def get(self, request):
         queryset = Raffle.objects.filter(creator_profile=request.user.profile).order_by(
-            "pk"
+            "-pk"
         )
         serializer = RaffleSerializer(
             queryset, many=True, context={"user": request.user.profile}
@@ -267,8 +268,8 @@ class UserRafflesListView(ListAPIView):
         return Response(serializer.data)
 
 
-class ConstraintsListView(ListAPIView):
-    queryset = Constraint.objects.all()
+class ConstraintsListView(AbstractConstraintsListView):
+    queryset = Constraint.objects.filter(is_active=True)
     serializer_class = ConstraintSerializer
 
 

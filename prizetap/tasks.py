@@ -31,7 +31,7 @@ def set_raffle_random_words(self):
 
         if raffle:
             print(f"Setting the raffle {raffle.name} random words")
-            vrf_client = VRFClientContractClient(raffle.chain)
+            vrf_client = VRFClientContractClient()
             last_request = vrf_client.get_last_request()
             expiration_time = last_request[0]
             num_words = last_request[1]
@@ -150,7 +150,7 @@ def request_random_words_for_expired_raffles(self):
 
 
 def request_random_words(raffle: Raffle):
-    vrf_client = VRFClientContractClient(raffle.chain)
+    vrf_client = VRFClientContractClient()
     raffle_client = PrizetapContractClient(raffle)
     winners_count = raffle_client.get_raffle_winners_count()
     tx_hash = vrf_client.request_random_words(winners_count)
@@ -233,7 +233,9 @@ def set_raffle_ids(self):
                         if raffle.prize_asset != onchain_raffle["currency"]:
                             is_valid = False
                             logging.error(f"Mismatch raffle {raffle.pk} currency")
-                    if is_valid:
-                        raffle.save()
+                    if not is_valid:
+                        raffle.raffleId = None
+                        raffle.status = Raffle.Status.REJECTED
+                    raffle.save()
                 except Exception as e:
                     logging.error(e)

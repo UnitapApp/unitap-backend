@@ -13,10 +13,26 @@ from faucet.faucet_manager.lnpay_client import LNPayClient
 
 from .constraints import (
     AllowListVerification,
+    Attest,
+    BeAttestedBy,
+    BeFollowedByFarcasterUser,
+    BeFollowedByLensUser,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
+    DidCollectLensPublication,
+    DidLikedFarcasterCast,
+    DidMirrorOnLensPublication,
+    DidRecastFarcasterCast,
+    HasENSVerification,
+    HasFarcasterProfile,
+    HasLensProfile,
+    HasMinimumFarcasterFollower,
+    HasMinimumLensFollower,
+    HasMinimumLensPost,
     HasNFTVerification,
     HasTokenVerification,
+    IsFollowingFarcasterUser,
+    IsFollowingLensUser,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -74,6 +90,22 @@ class UserConstraint(models.Model):
         HasNFTVerification,
         HasTokenVerification,
         AllowListVerification,
+        HasENSVerification,
+        HasLensProfile,
+        IsFollowingLensUser,
+        BeFollowedByLensUser,
+        DidMirrorOnLensPublication,
+        DidCollectLensPublication,
+        HasMinimumLensPost,
+        HasMinimumLensFollower,
+        BeFollowedByFarcasterUser,
+        HasMinimumFarcasterFollower,
+        DidLikedFarcasterCast,
+        DidRecastFarcasterCast,
+        IsFollowingFarcasterUser,
+        HasFarcasterProfile,
+        BeAttestedBy,
+        Attest,
     ]
 
     name = models.CharField(
@@ -93,6 +125,7 @@ class UserConstraint(models.Model):
     explanation = models.TextField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
     icon_url = models.CharField(max_length=255, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return self.name
@@ -194,7 +227,7 @@ class Chain(models.Model):
         return self.get_wallet_balance()
 
     def get_wallet_balance(self):
-        if not self.rpc_url_private:
+        if not self.is_active or not self.rpc_url_private:
             return 0
 
         try:
@@ -231,7 +264,7 @@ class Chain(models.Model):
 
     @property
     def gas_price(self):
-        if not self.rpc_url_private:
+        if not self.is_active or not self.rpc_url_private:
             return self.max_gas_price + 1
 
         try:
@@ -261,3 +294,10 @@ class AbstractGlobalSettings(models.Model):
                 obj, _ = cls.set(index, default)
                 return obj.value
             raise e
+
+
+class Sponsor(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    link = models.URLField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    # TODO: image

@@ -1,9 +1,11 @@
 from django.urls import path
 
 from tokenTap.views import (
+    ClaimDetailView,
     ConstraintsListView,
     CreateTokenDistribution,
     GetTokenDistributionConstraintsView,
+    SetDistributionTXView,
     TokenDistributionClaimListView,
     TokenDistributionClaimRetrieveView,
     TokenDistributionClaimStatusUpdateView,
@@ -23,6 +25,11 @@ urlpatterns = [
         "token-distribution/<int:pk>/claim/",
         TokenDistributionClaimView.as_view(),
         name="token-distribution-claim",
+    ),
+    path(
+        "claim-detail/<int:pk>/",
+        ClaimDetailView.as_view(),
+        name="claim-detail",
     ),
     path("claims-list/", TokenDistributionClaimListView.as_view(), name="claims-list"),
     path(
@@ -60,4 +67,9 @@ urlpatterns = [
         UserTokenDistributionsView.as_view(),
         name="user-token-distributions",
     ),
+    path(
+        "set-distribution-tx/<int:pk>/",
+        SetDistributionTXView.as_view(),
+        name="set-distribution-tx"
+    )
 ]

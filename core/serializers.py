@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from core.constraints import ConstraintVerification, get_constraint
 
-from .models import Chain, UserConstraint
+from .models import Chain, Sponsor, UserConstraint
 from .utils import UploadFileStorage
 
 
@@ -97,6 +97,10 @@ class ConstraintProviderSerializer(serializers.Serializer):
             reversed_constraints = str(data["reversed_constraints"]).split(",")
         if len(constraints) != 0:
             for c in constraints:
+                if not c.is_active:
+                    raise serializers.ValidationError(
+                        {"constraints": f"Constraint {c.name} is not active"}
+                    )
                 constraint_class: ConstraintVerification = get_constraint(c.name)
                 try:
                     if len(constraint_class.param_keys()) != 0:
@@ -145,3 +149,13 @@ class ConstraintProviderSerializer(serializers.Serializer):
                     )
             validated_data["constraint_params"] = json.dumps(constraint_params)
         return validated_data
+
+
+class SponsorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sponsor
+        fields = [
+            "name",
+            "link",
+            "description",
+        ]

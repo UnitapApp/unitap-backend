@@ -6,6 +6,8 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 from django.db.models.functions import Lower
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from django.utils import timezone
 from safedelete.models import SafeDeleteModel
 
@@ -13,6 +15,7 @@ from safedelete.models import SafeDeleteModel
 from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
+    GitcoinPassportDriver,
 )
 from core.models import NetworkTypes
 
@@ -74,6 +77,8 @@ class UserProfile(models.Model):
         blank=True,
         unique=True,
     )
+
+    is_verified = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
@@ -191,3 +196,30 @@ class BrightIDConnection(BaseThirdPartyConnection):
     def is_aura_verified(self):
         return False
         return self.driver.get_aura_verification_status(self.context_id)
+
+
+class GitcoinPassportSaveError(Exception):
+    pass
+
+
+class GitcoinPassportConnection(BaseThirdPartyConnection):
+    title = "GitcoinPassport"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = GitcoinPassportDriver()
+
+    @property
+    def score(self):
+        return self.driver.get_score(self.user_wallet_address)[0]
+
+
+@receiver(pre_save, sender=GitcoinPassportConnection)
+def submit_passport(sender, instance: GitcoinPassportConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.driver.submit_passport(instance.user_wallet_address)
+    if res is None:
+        raise GitcoinPassportSaveError(
+            "Something went wrong in connection to gitcoin passport server"
+        )
+    if res == "0":
+        raise GitcoinPassportSaveError("Gitcoin passport not exists.")

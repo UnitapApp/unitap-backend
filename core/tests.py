@@ -7,6 +7,8 @@ from authentication.models import UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
 
 from .constraints import (
+    Attest,
+    BeAttestedBy,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     HasNFTVerification,
@@ -209,3 +211,89 @@ class TestNonNativeTokenConstraint(BaseTestCase):
         }
 
         self.assertEqual(constraint.is_observed(), False)
+
+
+class TestBeAttestedByConstraint(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        create_new_wallet(
+            self.user_profile,
+            "0xf3c6f3Afb66fCEA5CC6f1Eee51fd26646F89e4e9",
+            NetworkTypes.EVM,
+        )
+        self.address = "0x2D93c2F74b2C4697f9ea85D0450148AA45D4D5a2"
+        self.schema_id = (
+            "0x3eed14a2055f68d13ad270640208640413b951e12b382b253a08518dedc5172a"
+        )
+        self.key = "signedUp"
+        self.value = "true"
+        self.wallet = WalletAccount.objects.create(
+            name="Sepolia Chain Wallet",
+            private_key=test_wallet_key,
+            network_type=NetworkTypes.EVM,
+        )
+        self.chain = Chain.objects.create(
+            chain_name="Optimism",
+            wallet=self.wallet,
+            rpc_url_private="https://optimism-rpc.com/",
+            explorer_url="https://etherscan.io/",
+            native_currency_name="ETH",
+            symbol="ETH",
+            chain_id="1",
+        )
+
+    def test_by_attested_by(self):
+        constraint = BeAttestedBy(self.user_profile)
+
+        constraint.param_values = {
+            "CHAIN": self.chain.pk,
+            "ADDRESS": self.address,
+            "KEY": self.key,
+            "VALUE": self.value,
+            "EAS_SCHEMA_ID": self.schema_id,
+        }
+
+        self.assertEqual(constraint.is_observed(), True)
+
+
+class TestEASAttestConstraint(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        create_new_wallet(
+            self.user_profile,
+            "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92",
+            NetworkTypes.EVM,
+        )
+        self.address = "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92"
+        self.schema_id = (
+            "0x3969bb076acfb992af54d51274c5c868641ca5344e1aacd0b1f5e4f80ac0822f"
+        )
+        self.key = "message"
+        self.value = "test"
+        self.wallet = WalletAccount.objects.create(
+            name="Sepolia Chain Wallet",
+            private_key=test_wallet_key,
+            network_type=NetworkTypes.EVM,
+        )
+        self.chain = Chain.objects.create(
+            chain_name="Optimism",
+            wallet=self.wallet,
+            rpc_url_private="https://optimism-rpc.com/",
+            explorer_url="https://etherscan.io/",
+            native_currency_name="ETH",
+            symbol="ETH",
+            chain_id="1",
+        )
+
+    def test_EAS_attest_constraints(self):
+        constraint = Attest(self.user_profile)
+
+        constraint.param_values = {
+            "CHAIN": self.chain.pk,
+            "ADDRESS": self.address,
+            "KEY": self.key,
+            "VALUE": self.value,
+            "EAS_SCHEMA_ID": self.schema_id,
+        }
+
+        self.assertEqual(constraint.is_observed(), True)

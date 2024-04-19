@@ -22,39 +22,88 @@ PRIZETAP_ERC20_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "user", "type": "address"},
-            {"indexed": False, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": False, "internalType": "uint256", "name": "multiplier", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "user",
+                "type": "address",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "multiplier",
+                "type": "uint256",
+            },
         ],
         "name": "Participate",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": False, "internalType": "address", "name": "account", "type": "address"}],
+        "inputs": [
+            {
+                "indexed": False,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            }
+        ],
         "name": "Paused",
         "type": "event",
     },
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": True, "internalType": "address", "name": "winner", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "winner",
+                "type": "address",
+            },
         ],
         "name": "PrizeClaimed",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"}],
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            }
+        ],
         "name": "PrizeRefunded",
         "type": "event",
     },
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "initiator", "type": "address"},
-            {"indexed": False, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "initiator",
+                "type": "address",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
         ],
         "name": "RaffleCreated",
         "type": "event",
@@ -62,8 +111,18 @@ PRIZETAP_ERC20_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": True, "internalType": "address", "name": "rejector", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "rejector",
+                "type": "address",
+            },
         ],
         "name": "RaffleRejected",
         "type": "event",
@@ -71,9 +130,24 @@ PRIZETAP_ERC20_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "previousAdminRole", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "newAdminRole", "type": "bytes32"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "previousAdminRole",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "newAdminRole",
+                "type": "bytes32",
+            },
         ],
         "name": "RoleAdminChanged",
         "type": "event",
@@ -81,9 +155,24 @@ PRIZETAP_ERC20_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleGranted",
         "type": "event",
@@ -91,25 +180,62 @@ PRIZETAP_ERC20_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleRevoked",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": False, "internalType": "address", "name": "account", "type": "address"}],
+        "inputs": [
+            {
+                "indexed": False,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            }
+        ],
         "name": "Unpaused",
         "type": "event",
     },
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": False, "internalType": "uint256", "name": "fromId", "type": "uint256"},
-            {"indexed": False, "internalType": "uint256", "name": "toId", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "fromId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "toId",
+                "type": "uint256",
+            },
         ],
         "name": "WinnersSpecified",
         "type": "event",
@@ -165,7 +291,9 @@ PRIZETAP_ERC20_ABI = [
             {"internalType": "uint256", "name": "toId", "type": "uint256"},
         ],
         "name": "getParticipants",
-        "outputs": [{"internalType": "address[]", "name": "participants", "type": "address[]"}],
+        "outputs": [
+            {"internalType": "address[]", "name": "participants", "type": "address[]"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
@@ -183,14 +311,18 @@ PRIZETAP_ERC20_ABI = [
             {"internalType": "uint256", "name": "toId", "type": "uint256"},
         ],
         "name": "getWinners",
-        "outputs": [{"internalType": "address[]", "name": "winners", "type": "address[]"}],
+        "outputs": [
+            {"internalType": "address[]", "name": "winners", "type": "address[]"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
     {
         "inputs": [{"internalType": "uint256", "name": "raffleId", "type": "uint256"}],
         "name": "getWinnersCount",
-        "outputs": [{"internalType": "uint256", "name": "winnersCount", "type": "uint256"}],
+        "outputs": [
+            {"internalType": "uint256", "name": "winnersCount", "type": "uint256"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
@@ -261,7 +393,9 @@ PRIZETAP_ERC20_ABI = [
     {
         "inputs": [],
         "name": "muon",
-        "outputs": [{"internalType": "contract IMuonClient", "name": "", "type": "address"}],
+        "outputs": [
+            {"internalType": "contract IMuonClient", "name": "", "type": "address"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
@@ -322,7 +456,13 @@ PRIZETAP_ERC20_ABI = [
         "stateMutability": "nonpayable",
         "type": "function",
     },
-    {"inputs": [], "name": "pause", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {
+        "inputs": [],
+        "name": "pause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
     {
         "inputs": [],
         "name": "paused",
@@ -361,12 +501,20 @@ PRIZETAP_ERC20_ABI = [
             {"internalType": "uint256", "name": "maxMultiplier", "type": "uint256"},
             {"internalType": "uint256", "name": "startTime", "type": "uint256"},
             {"internalType": "uint256", "name": "endTime", "type": "uint256"},
-            {"internalType": "uint256", "name": "lastParticipantIndex", "type": "uint256"},
+            {
+                "internalType": "uint256",
+                "name": "lastParticipantIndex",
+                "type": "uint256",
+            },
             {"internalType": "uint256", "name": "lastWinnerIndex", "type": "uint256"},
             {"internalType": "uint256", "name": "participantsCount", "type": "uint256"},
             {"internalType": "uint256", "name": "winnersCount", "type": "uint256"},
             {"internalType": "bool", "name": "exists", "type": "bool"},
-            {"internalType": "enum AbstractPrizetapRaffle.Status", "name": "status", "type": "uint8"},
+            {
+                "internalType": "enum AbstractPrizetapRaffle.Status",
+                "name": "status",
+                "type": "uint8",
+            },
             {"internalType": "bytes32", "name": "requirementsHash", "type": "bytes32"},
         ],
         "stateMutability": "view",
@@ -414,21 +562,27 @@ PRIZETAP_ERC20_ABI = [
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "address", "name": "_muonAddress", "type": "address"}],
+        "inputs": [
+            {"internalType": "address", "name": "_muonAddress", "type": "address"}
+        ],
         "name": "setMuonAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "uint256", "name": "_muonAppId", "type": "uint256"}],
+        "inputs": [
+            {"internalType": "uint256", "name": "_muonAppId", "type": "uint256"}
+        ],
         "name": "setMuonAppId",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "address", "name": "_gatewayAddress", "type": "address"}],
+        "inputs": [
+            {"internalType": "address", "name": "_gatewayAddress", "type": "address"}
+        ],
         "name": "setMuonGateway",
         "outputs": [],
         "stateMutability": "nonpayable",
@@ -475,7 +629,9 @@ PRIZETAP_ERC20_ABI = [
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "uint256", "name": "periodSeconds", "type": "uint256"}],
+        "inputs": [
+            {"internalType": "uint256", "name": "periodSeconds", "type": "uint256"}
+        ],
         "name": "setValidationPeriod",
         "outputs": [],
         "stateMutability": "nonpayable",
@@ -498,7 +654,13 @@ PRIZETAP_ERC20_ABI = [
         "stateMutability": "view",
         "type": "function",
     },
-    {"inputs": [], "name": "unpause", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {
+        "inputs": [],
+        "name": "unpause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
     {
         "inputs": [],
         "name": "validationPeriod",
@@ -575,39 +737,88 @@ PRIZETAP_ERC721_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "user", "type": "address"},
-            {"indexed": False, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": False, "internalType": "uint256", "name": "multiplier", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "user",
+                "type": "address",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "multiplier",
+                "type": "uint256",
+            },
         ],
         "name": "Participate",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": False, "internalType": "address", "name": "account", "type": "address"}],
+        "inputs": [
+            {
+                "indexed": False,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            }
+        ],
         "name": "Paused",
         "type": "event",
     },
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": True, "internalType": "address", "name": "winner", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "winner",
+                "type": "address",
+            },
         ],
         "name": "PrizeClaimed",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"}],
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            }
+        ],
         "name": "PrizeRefunded",
         "type": "event",
     },
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "initiator", "type": "address"},
-            {"indexed": False, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "initiator",
+                "type": "address",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
         ],
         "name": "RaffleCreated",
         "type": "event",
@@ -615,8 +826,18 @@ PRIZETAP_ERC721_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": True, "internalType": "address", "name": "rejector", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "rejector",
+                "type": "address",
+            },
         ],
         "name": "RaffleRejected",
         "type": "event",
@@ -624,9 +845,24 @@ PRIZETAP_ERC721_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "previousAdminRole", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "newAdminRole", "type": "bytes32"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "previousAdminRole",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "newAdminRole",
+                "type": "bytes32",
+            },
         ],
         "name": "RoleAdminChanged",
         "type": "event",
@@ -634,9 +870,24 @@ PRIZETAP_ERC721_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleGranted",
         "type": "event",
@@ -644,25 +895,62 @@ PRIZETAP_ERC721_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleRevoked",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": False, "internalType": "address", "name": "account", "type": "address"}],
+        "inputs": [
+            {
+                "indexed": False,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            }
+        ],
         "name": "Unpaused",
         "type": "event",
     },
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "uint256", "name": "raffleId", "type": "uint256"},
-            {"indexed": False, "internalType": "uint256", "name": "fromId", "type": "uint256"},
-            {"indexed": False, "internalType": "uint256", "name": "toId", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "raffleId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "fromId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "toId",
+                "type": "uint256",
+            },
         ],
         "name": "WinnersSpecified",
         "type": "event",
@@ -725,7 +1013,9 @@ PRIZETAP_ERC721_ABI = [
             {"internalType": "uint256", "name": "toId", "type": "uint256"},
         ],
         "name": "getParticipants",
-        "outputs": [{"internalType": "address[]", "name": "participants", "type": "address[]"}],
+        "outputs": [
+            {"internalType": "address[]", "name": "participants", "type": "address[]"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
@@ -743,14 +1033,18 @@ PRIZETAP_ERC721_ABI = [
             {"internalType": "uint256", "name": "toId", "type": "uint256"},
         ],
         "name": "getWinners",
-        "outputs": [{"internalType": "address[]", "name": "winners", "type": "address[]"}],
+        "outputs": [
+            {"internalType": "address[]", "name": "winners", "type": "address[]"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
     {
         "inputs": [{"internalType": "uint256", "name": "raffleId", "type": "uint256"}],
         "name": "getWinnersCount",
-        "outputs": [{"internalType": "uint256", "name": "winnersCount", "type": "uint256"}],
+        "outputs": [
+            {"internalType": "uint256", "name": "winnersCount", "type": "uint256"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
@@ -821,7 +1115,9 @@ PRIZETAP_ERC721_ABI = [
     {
         "inputs": [],
         "name": "muon",
-        "outputs": [{"internalType": "contract IMuonClient", "name": "", "type": "address"}],
+        "outputs": [
+            {"internalType": "contract IMuonClient", "name": "", "type": "address"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
@@ -894,7 +1190,13 @@ PRIZETAP_ERC721_ABI = [
         "stateMutability": "nonpayable",
         "type": "function",
     },
-    {"inputs": [], "name": "pause", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {
+        "inputs": [],
+        "name": "pause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
     {
         "inputs": [],
         "name": "paused",
@@ -932,13 +1234,25 @@ PRIZETAP_ERC721_ABI = [
             {"internalType": "uint256", "name": "maxMultiplier", "type": "uint256"},
             {"internalType": "uint256", "name": "startTime", "type": "uint256"},
             {"internalType": "uint256", "name": "endTime", "type": "uint256"},
-            {"internalType": "uint256", "name": "lastParticipantIndex", "type": "uint256"},
+            {
+                "internalType": "uint256",
+                "name": "lastParticipantIndex",
+                "type": "uint256",
+            },
             {"internalType": "uint256", "name": "lastWinnerIndex", "type": "uint256"},
             {"internalType": "uint256", "name": "participantsCount", "type": "uint256"},
             {"internalType": "uint256", "name": "winnersCount", "type": "uint256"},
-            {"internalType": "uint256", "name": "lastNotClaimedTokenIndex", "type": "uint256"},
+            {
+                "internalType": "uint256",
+                "name": "lastNotClaimedTokenIndex",
+                "type": "uint256",
+            },
             {"internalType": "bool", "name": "exists", "type": "bool"},
-            {"internalType": "enum AbstractPrizetapRaffle.Status", "name": "status", "type": "uint8"},
+            {
+                "internalType": "enum AbstractPrizetapRaffle.Status",
+                "name": "status",
+                "type": "uint8",
+            },
             {"internalType": "bytes32", "name": "requirementsHash", "type": "bytes32"},
         ],
         "stateMutability": "view",
@@ -986,21 +1300,27 @@ PRIZETAP_ERC721_ABI = [
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "address", "name": "_muonAddress", "type": "address"}],
+        "inputs": [
+            {"internalType": "address", "name": "_muonAddress", "type": "address"}
+        ],
         "name": "setMuonAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "uint256", "name": "_muonAppId", "type": "uint256"}],
+        "inputs": [
+            {"internalType": "uint256", "name": "_muonAppId", "type": "uint256"}
+        ],
         "name": "setMuonAppId",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "address", "name": "_gatewayAddress", "type": "address"}],
+        "inputs": [
+            {"internalType": "address", "name": "_gatewayAddress", "type": "address"}
+        ],
         "name": "setMuonGateway",
         "outputs": [],
         "stateMutability": "nonpayable",
@@ -1047,7 +1367,9 @@ PRIZETAP_ERC721_ABI = [
         "type": "function",
     },
     {
-        "inputs": [{"internalType": "uint256", "name": "periodSeconds", "type": "uint256"}],
+        "inputs": [
+            {"internalType": "uint256", "name": "periodSeconds", "type": "uint256"}
+        ],
         "name": "setValidationPeriod",
         "outputs": [],
         "stateMutability": "nonpayable",
@@ -1070,7 +1392,13 @@ PRIZETAP_ERC721_ABI = [
         "stateMutability": "view",
         "type": "function",
     },
-    {"inputs": [], "name": "unpause", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {
+        "inputs": [],
+        "name": "unpause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
     {
         "inputs": [],
         "name": "validationPeriod",
@@ -1129,9 +1457,24 @@ UNITAP_PASS_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "owner", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "approved", "type": "address"},
-            {"indexed": True, "internalType": "uint256", "name": "tokenId", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "owner",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "approved",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256",
+            },
         ],
         "name": "Approval",
         "type": "event",
@@ -1139,9 +1482,24 @@ UNITAP_PASS_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "owner", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "operator", "type": "address"},
-            {"indexed": False, "internalType": "bool", "name": "approved", "type": "bool"},
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "owner",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "operator",
+                "type": "address",
+            },
+            {
+                "indexed": False,
+                "internalType": "bool",
+                "name": "approved",
+                "type": "bool",
+            },
         ],
         "name": "ApprovalForAll",
         "type": "event",
@@ -1149,9 +1507,24 @@ UNITAP_PASS_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "previousAdminRole", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "newAdminRole", "type": "bytes32"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "previousAdminRole",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "newAdminRole",
+                "type": "bytes32",
+            },
         ],
         "name": "RoleAdminChanged",
         "type": "event",
@@ -1159,9 +1532,24 @@ UNITAP_PASS_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleGranted",
         "type": "event",
@@ -1169,25 +1557,62 @@ UNITAP_PASS_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleRevoked",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": False, "internalType": "string", "name": "baseURI", "type": "string"}],
+        "inputs": [
+            {
+                "indexed": False,
+                "internalType": "string",
+                "name": "baseURI",
+                "type": "string",
+            }
+        ],
         "name": "SetBaseURI",
         "type": "event",
     },
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "from", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "to", "type": "address"},
-            {"indexed": True, "internalType": "uint256", "name": "tokenId", "type": "uint256"},
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "from",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "to",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256",
+            },
         ],
         "name": "Transfer",
         "type": "event",
@@ -1372,7 +1797,9 @@ UNITAP_PASS_ABI = [
     {
         "inputs": [],
         "name": "tokenIdCounter",
-        "outputs": [{"internalType": "uint256", "name": "idCounter", "type": "uint256"}],
+        "outputs": [
+            {"internalType": "uint256", "name": "idCounter", "type": "uint256"}
+        ],
         "stateMutability": "view",
         "type": "function",
     },
@@ -1399,8 +1826,16 @@ UNITAP_PASS_ABI = [
 VRF_CLIENT_ABI = [
     {
         "inputs": [
-            {"internalType": "address", "name": "_chainlinkVRFCoordinator", "type": "address"},
-            {"internalType": "uint64", "name": "_chainlinkVRFSubscriptionId", "type": "uint64"},
+            {
+                "internalType": "address",
+                "name": "_chainlinkVRFCoordinator",
+                "type": "address",
+            },
+            {
+                "internalType": "uint64",
+                "name": "_chainlinkVRFSubscriptionId",
+                "type": "uint64",
+            },
             {"internalType": "bytes32", "name": "_chainlinkKeyHash", "type": "bytes32"},
             {"internalType": "address", "name": "_admin", "type": "address"},
             {"internalType": "address", "name": "_operator", "type": "address"},
@@ -1419,9 +1854,24 @@ VRF_CLIENT_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "previousAdminRole", "type": "bytes32"},
-            {"indexed": True, "internalType": "bytes32", "name": "newAdminRole", "type": "bytes32"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "previousAdminRole",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "newAdminRole",
+                "type": "bytes32",
+            },
         ],
         "name": "RoleAdminChanged",
         "type": "event",
@@ -1429,9 +1879,24 @@ VRF_CLIENT_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleGranted",
         "type": "event",
@@ -1439,9 +1904,24 @@ VRF_CLIENT_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "bytes32", "name": "role", "type": "bytes32"},
-            {"indexed": True, "internalType": "address", "name": "account", "type": "address"},
-            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {
+                "indexed": True,
+                "internalType": "bytes32",
+                "name": "role",
+                "type": "bytes32",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "account",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address",
+            },
         ],
         "name": "RoleRevoked",
         "type": "event",
@@ -1449,15 +1929,32 @@ VRF_CLIENT_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": False, "internalType": "uint256", "name": "requestId", "type": "uint256"},
-            {"indexed": False, "internalType": "uint256[]", "name": "randomWords", "type": "uint256[]"},
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "requestId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256[]",
+                "name": "randomWords",
+                "type": "uint256[]",
+            },
         ],
         "name": "VRFRequestFulfilled",
         "type": "event",
     },
     {
         "anonymous": False,
-        "inputs": [{"indexed": False, "internalType": "uint256", "name": "requestId", "type": "uint256"}],
+        "inputs": [
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "requestId",
+                "type": "uint256",
+            }
+        ],
         "name": "VRFRequestSent",
         "type": "event",
     },
@@ -1643,15 +2140,19 @@ VRF_CLIENT_ABI = [
 ]
 
 VRF_CLIENT_POLYGON_ADDRESS = "0xd713f3584EADc92848d64C31fD66CD50AdF272CD"
-VRF_CLIENT_MUMBAI_ADDRESS = "0xD1E7877A1C3F782dec76FB58C2B926365433d46F"
+VRF_CLIENT_BSCTEST_ADDRESS = "0xb8B0c04282d9c55cb17d7ef0bF56ef3Bbe203F3C"
 
 CONTRACT_ADDRESSES = {
-    "137": {
-        "erc20_prizetap_addr": "0xB521C36F76d28Edb287346C9D649Fa1A60754f04",
-        "erc721_prizetap_addr": "0xb68D3f2946Bf477978c68b509FD9f85E9e20F869",
-    },
     "80001": {
         "erc20_prizetap_addr": "0x57b2BA844fD37F20E9358ABaa6995caA4fCC9994",
         "erc721_prizetap_addr": "0xDB7bA3A3cbEa269b993250776aB5B275a5F004a0",
+    },
+    "42161": {
+        "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+        "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+    },
+    "30": {
+        "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+        "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
     },
 }

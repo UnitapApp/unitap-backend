@@ -8,7 +8,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -18,6 +18,7 @@ from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
+from core.views import AbstractConstraintsListView
 from faucet.models import ClaimReceipt, Faucet
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
@@ -36,6 +37,7 @@ from .helpers import (
     hash_message,
     sign_hashed_message,
 )
+from .validators import SetDistributionTxValidator
 
 
 class TokenDistributionListView(ListAPIView):
@@ -80,10 +82,19 @@ class TokenDistributionClaimView(CreateAPIView):
                 if not constraint.is_observed(token_distribution=token_distribution):
                     raise PermissionDenied(constraint.response)
 
-    def check_user_credit(self, user_profile):
-        if not has_credit_left(user_profile):
+    def check_user_credit(self, distribution, user_profile):
+        if distribution.is_one_time_claim:
+            already_claimed = distribution.claims.filter(
+                user_profile=user_profile,
+                status=ClaimReceipt.VERIFIED,
+            ).exists()
+            if already_claimed:
+                raise rest_framework.exceptions.PermissionDenied(
+                    "You have already claimed"
+                )
+        elif not has_credit_left(distribution, user_profile):
             raise rest_framework.exceptions.PermissionDenied(
-                "You have reached your weekly claim limit"
+                "You have reached your claim limit"
             )
 
     def wallet_is_vaild(self, user_profile, user_wallet_address, token_distribution):
@@ -148,7 +159,7 @@ class TokenDistributionClaimView(CreateAPIView):
         except TokenDistributionClaim.DoesNotExist:
             pass
 
-        self.check_user_credit(user_profile)
+        self.check_user_credit(token_distribution, user_profile)
 
         nonce = create_uint32_random_nonce()
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
@@ -310,7 +321,7 @@ class ValidChainsView(ListAPIView):
 
 
 class CreateTokenDistribution(CreateAPIView):
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [IsAuthenticated]
     serializer_class = CreateTokenDistributionSerializer
 
@@ -335,6 +346,45 @@ class UserTokenDistributionsView(ListAPIView):
         ).order_by("-pk")
 
 
-class ConstraintsListView(ListAPIView):
-    queryset = Constraint.objects.all()
+class ConstraintsListView(AbstractConstraintsListView):
+    queryset = Constraint.objects.filter(is_active=True)
     serializer_class = ConstraintSerializer
+
+
+class ClaimDetailView(APIView):
+    def get(self, request, pk):
+        claim = get_object_or_404(TokenDistributionClaim, pk=pk)
+
+        return Response(
+            {"success": True, "data": TokenDistributionClaimSerializer(claim).data},
+            status=200,
+        )
+
+
+class SetDistributionTXView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user_profile = request.user.profile
+        token_distribution = get_object_or_404(TokenDistribution, pk=pk)
+
+        validator = SetDistributionTxValidator(
+            user_profile=user_profile, token_distribution=token_distribution
+        )
+
+        validator.is_valid(self.request.data)
+
+        tx_hash = self.request.data.get("tx_hash", None)
+        token_distribution.tx_hash = tx_hash
+        token_distribution.save()
+
+        return Response(
+            {
+                "detail": "Token distribution updated successfully",
+                "success": True,
+                "token_distribution": TokenDistributionSerializer(
+                    token_distribution, context={"user": request.user.profile}
+                ).data,
+            },
+            status=200,
+        )

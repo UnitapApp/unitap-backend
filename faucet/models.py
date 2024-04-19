@@ -181,12 +181,25 @@ class Faucet(models.Model):
 
     is_active = models.BooleanField(default=True)
     show_in_gastap = models.BooleanField(default=True)
+    is_deprecated = models.BooleanField(default=False)
+
+    fuel_level = models.IntegerField(default=100)
 
     def __str__(self):
         return (
             f"{self.chain.chain_name} - {self.pk} - "
             f"{self.chain.symbol}:{self.chain.chain_id}"
         )
+
+    @property
+    def current_fuel_level(self):
+        current_fuel_level = cache.get(f"{self.pk}_current_fuel_level")
+        return current_fuel_level if current_fuel_level is not None else -1
+
+    @property
+    def remaining_claim_number(self):
+        remaining_claim_number = cache.get(f"{self.pk}_remaining_claim_number")
+        return remaining_claim_number if remaining_claim_number is not None else -1
 
     @property
     def has_enough_funds(self):
@@ -200,7 +213,6 @@ class Faucet(models.Model):
 
     @property
     def block_scan_address(self):
-        address = ""
         if not self.chain.explorer_url:
             return None
         if self.chain.explorer_url[-1] == "/":
@@ -214,6 +226,9 @@ class Faucet(models.Model):
         return self.get_manager_balance()
 
     def get_manager_balance(self):
+        if not self.is_active or self.is_deprecated:
+            return 0
+
         if not self.chain.rpc_url_private:
             return 0
 
@@ -254,6 +269,9 @@ class Faucet(models.Model):
 
     @property
     def is_gas_price_too_high(self):
+        if not self.is_active or self.is_deprecated:
+            return True
+
         if not self.chain.rpc_url_private:
             return True
 

@@ -1,13 +1,14 @@
 import time
 
 from brightIDfaucet.settings import DEPLOYMENT_ENV
+from core.models import Chain
 from core.utils import Web3Utils
 
 from .constants import (
     PRIZETAP_ERC20_ABI,
     PRIZETAP_ERC721_ABI,
     VRF_CLIENT_ABI,
-    VRF_CLIENT_MUMBAI_ADDRESS,
+    VRF_CLIENT_BSCTEST_ADDRESS,
     VRF_CLIENT_POLYGON_ADDRESS,
 )
 
@@ -91,12 +92,17 @@ class PrizetapContractClient:
 
 
 class VRFClientContractClient:
-    def __init__(self, chain) -> None:
+    def __init__(self) -> None:
+        if DEPLOYMENT_ENV == "main":
+            chain = Chain.objects.filter(chain_id="137").get()
+        else:
+            chain = Chain.objects.filter(chain_id="97").get()
+
         self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
         address = (
             VRF_CLIENT_POLYGON_ADDRESS
             if DEPLOYMENT_ENV == "main"
-            else VRF_CLIENT_MUMBAI_ADDRESS
+            else VRF_CLIENT_BSCTEST_ADDRESS
         )
         self.web3_utils.set_contract(address, VRF_CLIENT_ABI)
         self.web3_utils.set_account(chain.wallet.private_key)

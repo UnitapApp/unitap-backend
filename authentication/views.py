@@ -23,9 +23,15 @@ from authentication.helpers import (
     verify_login_signature,
     verify_signature_eth_scheme,
 )
-from authentication.models import BrightIDConnection, UserProfile, Wallet
+from authentication.models import (
+    BrightIDConnection,
+    GitcoinPassportSaveError,
+    UserProfile,
+    Wallet,
+)
 from authentication.permissions import IsOwner
 from authentication.serializers import (
+    GitcoinPassportConnectionSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
     UserHistoryCountSerializer,
@@ -364,7 +370,7 @@ class LoginView(APIView):
                         "message": "Something went wrong with the linking process. \
                             please link BrightID with Unitap.\n"
                         "If the problem persists, clear your browser cache \
-                                                  and try again."
+                                                             and try again."
                     },
                     status=403,
                 )
@@ -384,6 +390,21 @@ class LoginView(APIView):
         print("token", token)
 
         return Response(ProfileSerializer(profile).data, status=200)
+
+
+class GitcoinPassportConnectionView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = GitcoinPassportConnectionSerializer
+
+    @property
+    def user_profile(self):
+        return self.request.user.profile
+
+    def perform_create(self, serializer):
+        try:
+            serializer.save(user_profile=self.user_profile)
+        except GitcoinPassportSaveError as e:
+            raise ValidationError({"address": str(e)})
 
 
 class SetUsernameView(CreateAPIView):

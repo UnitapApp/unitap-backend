@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
 from core.models import AbstractGlobalSettings, Chain, UserConstraint
-from faucet.constraints import OptimismHasClaimedGasInThisRound
+from faucet.constraints import OptimismHasClaimedGasConstraint
 from faucet.models import ClaimReceipt
 
 from .constraints import (
@@ -20,7 +20,7 @@ class Constraint(UserConstraint):
     constraints = UserConstraint.constraints + [
         OncePerMonthVerification,
         OnceInALifeTimeVerification,
-        OptimismHasClaimedGasInThisRound,
+        OptimismHasClaimedGasConstraint,
     ]
     name = UserConstraint.create_name_field(constraints)
 
@@ -48,10 +48,13 @@ class TokenDistribution(models.Model):
 
     token = models.CharField(max_length=100)
     token_address = models.CharField(max_length=255)
+    decimals = models.IntegerField(null=True, blank=True)
     amount = models.CharField(max_length=100)
+    is_one_time_claim = models.BooleanField(default=True)
     chain = models.ForeignKey(
         Chain, on_delete=models.CASCADE, related_name="token_distribution"
     )
+    distribution_id = models.BigIntegerField(null=True, blank=True)
     contract = models.CharField(max_length=255, null=True, blank=True)
 
     constraints = models.ManyToManyField(
@@ -75,6 +78,7 @@ class TokenDistribution(models.Model):
         max_length=10, choices=Status.choices, default=Status.PENDING
     )
     rejection_reason = models.TextField(null=True, blank=True)
+    tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
 
@@ -96,7 +100,12 @@ class TokenDistribution(models.Model):
 
     @property
     def is_claimable(self):
-        return not self.is_expired and not self.is_maxed_out and self.is_active
+        return (
+            not self.is_expired
+            and not self.is_maxed_out
+            and self.is_active
+            and self.status == self.Status.VERIFIED
+        )
 
     @property
     def number_of_claims(self):

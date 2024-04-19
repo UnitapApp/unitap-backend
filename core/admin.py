@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Chain, TokenPrice, WalletAccount
+from .models import Chain, Sponsor, TokenPrice, WalletAccount
 
 
 class UserConstraintBaseAdmin(admin.ModelAdmin):
@@ -13,6 +13,7 @@ class UserConstraintBaseAdmin(admin.ModelAdmin):
         "explanation",
         "response",
         "icon_url",
+        "is_active",
     ]
     list_display = ["pk", "name", "description"]
 
@@ -30,6 +31,12 @@ class TokenPriceAdmin(admin.ModelAdmin):
     list_filter = ["symbol"]
 
 
+class SponsorAdmin(admin.ModelAdmin):
+    list_display = ["name", "link"]
+    search_fields = ["name"]
+
+
 admin.site.register(WalletAccount, WalletAccountAdmin)
 admin.site.register(Chain, ChainAdmin)
 admin.site.register(TokenPrice, TokenPriceAdmin)
+admin.site.register(Sponsor, SponsorAdmin)

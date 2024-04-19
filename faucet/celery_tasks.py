@@ -1,8 +1,10 @@
 import decimal
 import logging
+import math
 
 import requests
 import web3.exceptions
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import F, Func
 from django.utils import timezone
@@ -13,6 +15,7 @@ from core.models import TokenPrice
 from core.utils import Web3Utils
 from tokenTap.models import TokenDistributionClaim
 
+from .constants import FUEL_LEVEL_STATUS_NUMBER
 from .faucet_manager.fund_manager import FundMangerException, get_fund_manager
 from .models import (
     ClaimReceipt,
@@ -146,7 +149,7 @@ class CeleryTasks:
     def update_needs_funding_status_faucet(faucet_id):
         try:
             faucet = Faucet.objects.get(pk=faucet_id)
-            # if has enough funds and enough fees, needs_funding is False
+            # if it has enough funds and enough fees, needs_funding is False
 
             faucet.needs_funding = True
 
@@ -156,6 +159,42 @@ class CeleryTasks:
             faucet.save()
         except Exception as e:
             logging.exception(str(e))
+            capture_exception()
+
+    @staticmethod
+    def update_remaining_claim_number(faucet_id):
+        try:
+            faucet = Faucet.objects.get(pk=faucet_id)
+            fund_manager_balance = decimal.Decimal(faucet.manager_balance)
+            max_claim = decimal.Decimal(faucet.max_claim_amount)
+            remaining_claim_number = fund_manager_balance // max_claim
+            cache.set(
+                f"{faucet_id}_remaining_claim_number",
+                remaining_claim_number,
+                timeout=600,
+            )
+        except Exception as e:
+            logging.error(str(e))
+            capture_exception()
+
+    @staticmethod
+    def update_current_fuel_level_faucet(faucet_id):
+        try:
+            # TODO: must check chain wallet balance and gasprice
+            remaining_claim_number = cache.get(f"{faucet_id}_remaining_claim_number")
+            if remaining_claim_number is None:
+                return
+            faucet = Faucet.objects.get(pk=faucet_id)
+
+            float_fuel_level = (
+                remaining_claim_number * FUEL_LEVEL_STATUS_NUMBER
+            ) / faucet.fuel_level
+            fuel_level = math.ceil(float_fuel_level)
+            fuel_level = min(FUEL_LEVEL_STATUS_NUMBER, fuel_level)
+
+            cache.set(f"{faucet_id}_current_fuel_level", fuel_level, timeout=600)
+        except Exception as e:
+            logging.error(str(e))
             capture_exception()
 
     @staticmethod

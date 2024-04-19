@@ -229,7 +229,16 @@ class FaucetBalanceView(RetrieveAPIView):
         faucet_pk = self.kwargs.get("faucet_pk", None)
         if faucet_pk is None:
             raise Http404("Faucet ID not provided")
-        return Faucet.objects.get(pk=faucet_pk)
+        return get_object_or_404(
+            Faucet, pk=faucet_pk, show_in_gastap=True, is_deprecated=False
+        )
+
+
+class FaucetBalanceListView(ListAPIView):
+    serializer_class = FaucetBalanceSerializer
+    queryset = Faucet.objects.filter(
+        is_active=True, show_in_gastap=True, is_deprecated=False
+    )
 
 
 class DonationReceiptView(ListCreateAPIView):

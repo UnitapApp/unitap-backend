@@ -6,6 +6,7 @@ from faucet.views import (
     ClaimCountView,
     ClaimMaxView,
     DonationReceiptView,
+    FaucetBalanceListView,
     FaucetBalanceView,
     FaucetListView,
     FuelChampionView,
@@ -46,6 +47,9 @@ urlpatterns = [
     path("claims/count/", ClaimCountView.as_view(), name="claims-count"),
     path("faucet/list/", FaucetListView.as_view(), name="faucet-list"),
     path("faucet/small-list/", SmallFaucetListView.as_view(), name="small-faucet-list"),
+    path(
+        "faucet/balance/", FaucetBalanceListView.as_view(), name="faucet-balance-list"
+    ),
     path(
         "faucet/<int:faucet_pk>/claim-max/",
         ClaimMaxView.as_view(),
