@@ -10,6 +10,7 @@ class ConstraintApp(Enum):
     FARCASTER = "farcaster"
     ENS = "ENS"
     EAS = "EAS"
+    POAP = "POAP"
 
     @classmethod
     def choices(cls):
