@@ -1,9 +1,9 @@
-from locust import HttpUser, task, between
+from locust import HttpUser, between, task
 
 
 class WebsiteUser(HttpUser):
-    wait_time = between(1, 5)
+    wait_time = between(5, 10)
 
     @task
     def load_page(self):
-        self.client.get("/gas-tap")
+        self.client.get("/api/gastap/faucet/list/")
