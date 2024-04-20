@@ -2147,12 +2147,12 @@ CONTRACT_ADDRESSES = {
     #     "erc20_prizetap_addr": "0x57b2BA844fD37F20E9358ABaa6995caA4fCC9994",
     #     "erc721_prizetap_addr": "0xDB7bA3A3cbEa269b993250776aB5B275a5F004a0",
     # },
-    # "42161": {
-    #     "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-    #     "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-    # },
-    "30": {
+    "42161": {
         "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
         "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
     },
+    # "30": {
+    #     "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+    #     "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+    # },
 }
