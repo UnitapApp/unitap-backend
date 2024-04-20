@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.decorators.cache import cache_page
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 
@@ -45,7 +46,11 @@ urlpatterns = [
     path("user/claims/", ListClaims.as_view(), name="claims"),
     path("user/one-time-claims/", ListOneTimeClaims.as_view(), name="one-time-claims"),
     path("claims/count/", ClaimCountView.as_view(), name="claims-count"),
-    path("faucet/list/", FaucetListView.as_view(), name="faucet-list"),
+    path(
+        "faucet/list/",
+        cache_page(60 * 10)(FaucetListView.as_view()),
+        name="faucet-list",
+    ),
     path("faucet/small-list/", SmallFaucetListView.as_view(), name="small-faucet-list"),
     path(
         "faucet/balance/", FaucetBalanceListView.as_view(), name="faucet-balance-list"
