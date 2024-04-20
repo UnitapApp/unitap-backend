@@ -45,13 +45,21 @@ urlpatterns = [
     path("user/last-claim/", LastClaimView.as_view(), name="last-claim"),
     path("user/claims/", ListClaims.as_view(), name="claims"),
     path("user/one-time-claims/", ListOneTimeClaims.as_view(), name="one-time-claims"),
-    path("claims/count/", ClaimCountView.as_view(), name="claims-count"),
+    path(
+        "claims/count/",
+        cache_page(60 * 10)(ClaimCountView.as_view()),
+        name="claims-count",
+    ),
     path(
         "faucet/list/",
-        cache_page(60 * 10)(FaucetListView.as_view()),
+        cache_page(60 * 15)(FaucetListView.as_view()),
         name="faucet-list",
     ),
-    path("faucet/small-list/", SmallFaucetListView.as_view(), name="small-faucet-list"),
+    path(
+        "faucet/small-list/",
+        cache_page(60 * 15)(SmallFaucetListView.as_view()),
+        name="small-faucet-list",
+    ),
     path(
         "faucet/balance/", FaucetBalanceListView.as_view(), name="faucet-balance-list"
     ),
@@ -78,12 +86,12 @@ urlpatterns = [
     path("leaderboard/", LeaderboardView.as_view(), name="gas-tap-leaderboard"),
     path(
         "fuel-champion/",
-        FuelChampionView.as_view(),
+        cache_page(60 * 1)(FuelChampionView.as_view()),
         name="gas-tap-fuel-champion",
     ),
     path(
         "user/leaderboard/",
-        UserLeaderboardView.as_view(),
+        cache_page(60 * 1)(UserLeaderboardView.as_view()),
         name="user-gas-tap-leaderboard",
     ),
 ]
