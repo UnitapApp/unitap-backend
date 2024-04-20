@@ -232,12 +232,12 @@ class Chain(models.Model):
 
         try:
             if self.chain_type == NetworkTypes.EVM or int(self.chain_id) == 500:
-                return Web3Utils(self.rpc_url, self.poa).get_balance(
+                return Web3Utils(self.rpc_url_private, self.poa).get_balance(
                     self.wallet.address
                 )
             elif self.chain_type == NetworkTypes.SOLANA:
                 return (
-                    SolanaWeb3Utils(self.rpc_url)
+                    SolanaWeb3Utils(self.rpc_url_private)
                     .w3.get_balance(Pubkey.from_string(self.wallet.address))
                     .value
                 )
@@ -268,7 +268,7 @@ class Chain(models.Model):
             return self.max_gas_price + 1
 
         try:
-            return Web3Utils(self.rpc_url, self.poa).get_gas_price()
+            return Web3Utils(self.rpc_url_private, self.poa).get_gas_price()
         except:  # noqa: E722
             logging.exception(f"Error getting gas price for {self.chain_name}")
             return self.max_gas_price + 1
