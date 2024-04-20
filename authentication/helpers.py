@@ -139,8 +139,8 @@ def is_username_valid_and_available(username):
 
     # Check if the string matches the required format
     validator = RegexValidator(
-        regex=r"^(?=.*[a-zA-Z])([\w.@+-]{3,150})$",
-        message="Username must be more than 2 characters, contain at \
+        regex=r"^(?=.*[a-zA-Z])([\w.@+-]{4,150})$",
+        message="Username must be more than 3 characters, contain at \
             least one letter, and only contain letters, digits and @/./+/-/_.",
     )
 
@@ -149,7 +149,7 @@ def is_username_valid_and_available(username):
     except ValidationError:
         return (
             False,
-            "Username must be more than 2 characters, contain at least one \
+            "Username must be more than 3 characters, contain at least one \
                 letter, and only contain letters, digits and @/./+/-/_.",
             "validation_error",
         )

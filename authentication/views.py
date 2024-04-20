@@ -481,7 +481,7 @@ class CheckUsernameView(CreateAPIView):
                 schema=MessageResponseSerializer(),
             ),
             403: openapi.Response(
-                description="Username must be more than 2 characters, contain at least"
+                description="Username must be more than 3 characters, contain at least"
                 " one letter, and only contain letters, digits and @/./+/-/_.",
                 schema=MessageResponseSerializer(),
             ),
