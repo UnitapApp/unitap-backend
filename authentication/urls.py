@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.decorators.cache import cache_page
 
 from authentication.views import (
     CheckUserExistsView,
@@ -22,7 +23,11 @@ app_name = "AUTHENTICATION"
 urlpatterns = [
     path("user/login/", LoginView.as_view(), name="login-user"),
     path("user/wallet-login/", LoginRegisterView.as_view(), name="wallet-login"),
-    path("user/count/", UserProfileCountView.as_view(), name="user-count"),
+    path(
+        "user/count/",
+        cache_page(60 * 15)(UserProfileCountView.as_view()),
+        name="user-count",
+    ),
     path(
         "user/set-username/",
         SetUsernameView.as_view(),
@@ -59,7 +64,9 @@ urlpatterns = [
         name="all-connections",
     ),
     path(
-        "user/history-count/", UserHistoryCountView.as_view(), name="user-history-count"
+        "user/history-count/",
+        cache_page(60 * 1)(UserHistoryCountView.as_view()),
+        name="user-history-count",
     ),
     path(
         "user/connect/gitcoin-passport/",
