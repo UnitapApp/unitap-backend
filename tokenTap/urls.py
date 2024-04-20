@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.decorators.cache import cache_page
 
 from tokenTap.views import (
     ClaimDetailView,
@@ -18,7 +19,7 @@ from tokenTap.views import (
 urlpatterns = [
     path(
         "token-distribution-list/",
-        TokenDistributionListView.as_view(),
+        cache_page(60 * 3)(TokenDistributionListView.as_view()),
         name="token-distribution-list",
     ),
     path(
@@ -49,12 +50,12 @@ urlpatterns = [
     ),
     path(
         "get-constraints/",
-        ConstraintsListView.as_view(),
+        cache_page(60 * 2)(ConstraintsListView.as_view()),
         name="get-constraints",
     ),
     path(
         "get-valid-chains/",
-        ValidChainsView.as_view(),
+        cache_page(60 * 3)(ValidChainsView.as_view()),
         name="get-valid-chains",
     ),
     path(
@@ -70,6 +71,6 @@ urlpatterns = [
     path(
         "set-distribution-tx/<int:pk>/",
         SetDistributionTXView.as_view(),
-        name="set-distribution-tx"
-    )
+        name="set-distribution-tx",
+    ),
 ]

@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.decorators.cache import cache_page
 
 from prizetap.views import (
     ConstraintsListView,
@@ -20,7 +21,7 @@ from prizetap.views import (
 urlpatterns = [
     path(
         "raffle-list/",
-        RaffleListView.as_view(),
+        cache_page(60 * 3)(RaffleListView.as_view()),
         name="raffle-list",
     ),
     path(
@@ -55,7 +56,7 @@ urlpatterns = [
     ),
     path(
         "get-valid-chains/",
-        ValidChainsView.as_view(),
+        cache_page(60 * 2)(ValidChainsView.as_view()),
         name="get-valid-chains",
     ),
     path(
@@ -65,7 +66,7 @@ urlpatterns = [
     ),
     path(
         "get-constraints/",
-        ConstraintsListView.as_view(),
+        cache_page(60 * 2)(ConstraintsListView.as_view()),
         name="get-constraints",
     ),
     path(
@@ -75,7 +76,7 @@ urlpatterns = [
     ),
     path(
         "get-linea-entries/",
-        LineaRaffleView.as_view(),
+        cache_page(60 * 15)(LineaRaffleView.as_view()),
         name="get-linea-entries",
     ),
     path(
