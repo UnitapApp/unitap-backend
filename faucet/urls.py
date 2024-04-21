@@ -52,12 +52,12 @@ urlpatterns = [
     ),
     path(
         "faucet/list/",
-        cache_page(60 * 15)(FaucetListView.as_view()),
+        cache_page(60 * 3)(FaucetListView.as_view()),
         name="faucet-list",
     ),
     path(
         "faucet/small-list/",
-        cache_page(60 * 15)(SmallFaucetListView.as_view()),
+        cache_page(60 * 3)(SmallFaucetListView.as_view()),
         name="small-faucet-list",
     ),
     path(
