@@ -136,11 +136,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 "user_wallet_address is a required field"
             )
 
-        self.check_token_distribution_is_claimable(token_distribution)
-
         self.wallet_is_vaild(user_profile, user_wallet_address, token_distribution)
-
-        self.check_user_permissions(token_distribution, user_profile)
 
         try:
             tdc = TokenDistributionClaim.objects.get(
@@ -158,6 +154,10 @@ class TokenDistributionClaimView(CreateAPIView):
 
         except TokenDistributionClaim.DoesNotExist:
             pass
+
+        self.check_user_permissions(token_distribution, user_profile)
+
+        self.check_token_distribution_is_claimable(token_distribution)
 
         self.check_user_credit(token_distribution, user_profile)
 
