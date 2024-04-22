@@ -313,24 +313,26 @@ class Faucet(models.Model):
 
     @property
     def total_claims_since_last_round(self):
-        cached_total_claims_since_last_round = cache.get(
-            f"gas_tap_chain_total_claims_since_last_round_{self.pk}"
-        )
-        if cached_total_claims_since_last_round:
-            return cached_total_claims_since_last_round
-        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
+        """ Retrieves the total claims since the last round from the cache. """
+        total_claims_since_last_round = cache.get(f"gas_tap_chain_total_claims_since_last_round_{self.pk}")
+        if total_claims_since_last_round is None:
+            self.update_total_claims_since_last_round_cache()
+            total_claims_since_last_round = cache.get(f"gas_tap_chain_total_claims_since_last_round_{self.pk}", 0)
+        return total_claims_since_last_round
 
+    def update_total_claims_since_last_round_cache(self):
+        """ Updates the total claims since last round in cache, called by Celery task. """
+        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
         total_claims_since_last_round = ClaimReceipt.objects.filter(
             faucet=self,
             datetime__gte=RoundCreditStrategy.get_start_of_previous_round(),
-            _status__in=[ClaimReceipt.VERIFIED],
+            _status__in=[ClaimReceipt.VERIFIED]
         ).count()
         cache.set(
             f"gas_tap_chain_total_claims_since_last_round_{self.pk}",
             total_claims_since_last_round,
-            get_cache_time(self.pk),
+            get_cache_time(self.pk)
         )
-        return total_claims_since_last_round
 
 
 class GlobalSettings(AbstractGlobalSettings):

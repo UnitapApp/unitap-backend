@@ -127,3 +127,9 @@ def update_donation_receipt_pending_status():
     )
     for pending_donation_receipt in pending_donation_receipts:
         process_donation_receipt.delay(pending_donation_receipt.pk)
+
+
+@shared_task
+def update_claims_cache_task(faucet_id):
+    faucet = Faucet.objects.get(pk=faucet_id)
+    faucet.update_total_claims_since_last_round_cache()
