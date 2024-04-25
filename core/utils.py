@@ -20,7 +20,7 @@ from web3.middleware import geth_poa_middleware
 from web3.types import TxParams, Type
 
 from brightIDfaucet.settings import MEDIA_ROOT
-from core.constants import ERC20_READ_METHODS, ERC721_READ_METHODS
+from core.constants import ERC20_METHODS, ERC721_READ_METHODS
 
 
 @contextmanager
@@ -290,7 +290,7 @@ class TokenClient:
         self,
         chain,
         contract=None,
-        abi=ERC20_READ_METHODS,
+        abi=ERC20_METHODS,
     ) -> None:
         self.web3_utils = Web3Utils(chain.rpc_url_private, chain.poa)
         if contract:
@@ -309,6 +309,7 @@ class TokenClient:
             raise InvalidAddressException("Invalid contract address")
 
     def get_native_token_balance(self, address: str):
+        address = self.to_checksum_address(address)
         if self.web3_utils.contract:
             raise InvalidAddressException("Invalid contract address")
         try:
@@ -318,6 +319,20 @@ class TokenClient:
             web3.exceptions.BadFunctionCallOutput,
         ):
             raise InvalidAddressException("Invalid contract address")
+
+    def get_non_native_token_transfer_amount(self, address: str):
+        if not self.web3_utils.contract:
+            raise InvalidAddressException("Invalid contract address")
+        transfer_event = self.web3_utils.contract.events.Transfer.create_filter(
+            fromBlock=0,
+            argument_filters={
+                "from": address,
+            },
+        )
+        total_transferred = 0
+        for event in transfer_event.get_all_entries():
+            total_transferred += event.args.value
+        return total_transferred
 
     def to_checksum_address(self, address: str):
         return self.web3_utils.w3.to_checksum_address(address)
