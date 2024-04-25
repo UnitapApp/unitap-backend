@@ -24,6 +24,7 @@ from core.constraints.farcaster import (
 from core.constraints.general import (
     AllowListVerification,
     HasNFTVerification,
+    HasTokenTransferVerification,
     HasTokenVerification,
 )
 from core.constraints.lens import (

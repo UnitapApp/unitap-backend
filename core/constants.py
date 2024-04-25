@@ -69,7 +69,7 @@ ERC721_READ_METHODS = [
     },
 ]
 
-ERC20_READ_METHODS = [
+ERC20_METHODS = [
     {
         "constant": True,
         "inputs": [],
@@ -80,12 +80,37 @@ ERC20_READ_METHODS = [
         "type": "function",
     },
     {
+        "constant": False,
+        "inputs": [
+            {"name": "_spender", "type": "address"},
+            {"name": "_value", "type": "uint256"},
+        ],
+        "name": "approve",
+        "outputs": [{"name": "", "type": "bool"}],
+        "payable": False,
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
         "constant": True,
         "inputs": [],
         "name": "totalSupply",
         "outputs": [{"name": "", "type": "uint256"}],
         "payable": False,
         "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "constant": False,
+        "inputs": [
+            {"name": "_from", "type": "address"},
+            {"name": "_to", "type": "address"},
+            {"name": "_value", "type": "uint256"},
+        ],
+        "name": "transferFrom",
+        "outputs": [{"name": "", "type": "bool"}],
+        "payable": False,
+        "stateMutability": "nonpayable",
         "type": "function",
     },
     {
@@ -116,6 +141,18 @@ ERC20_READ_METHODS = [
         "type": "function",
     },
     {
+        "constant": False,
+        "inputs": [
+            {"name": "_to", "type": "address"},
+            {"name": "_value", "type": "uint256"},
+        ],
+        "name": "transfer",
+        "outputs": [{"name": "", "type": "bool"}],
+        "payable": False,
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
         "constant": True,
         "inputs": [
             {"name": "_owner", "type": "address"},
@@ -126,5 +163,26 @@ ERC20_READ_METHODS = [
         "payable": False,
         "stateMutability": "view",
         "type": "function",
+    },
+    {"payable": True, "stateMutability": "payable", "type": "fallback"},
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "name": "owner", "type": "address"},
+            {"indexed": True, "name": "spender", "type": "address"},
+            {"indexed": False, "name": "value", "type": "uint256"},
+        ],
+        "name": "Approval",
+        "type": "event",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "name": "from", "type": "address"},
+            {"indexed": True, "name": "to", "type": "address"},
+            {"indexed": False, "name": "value", "type": "uint256"},
+        ],
+        "name": "Transfer",
+        "type": "event",
     },
 ]

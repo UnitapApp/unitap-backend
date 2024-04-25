@@ -1,4 +1,5 @@
 import csv
+from abc import ABC, abstractmethod
 
 import rest_framework.exceptions
 from django.db.models.functions import Lower
@@ -41,7 +42,7 @@ class HasNFTVerification(ConstraintVerification):
         return token_count >= int(minimum)
 
 
-class HasTokenVerification(ConstraintVerification):
+class ABCTokenVerification(ConstraintVerification, ABC):
     _param_keys = [
         ConstraintParam.CHAIN,
         ConstraintParam.ADDRESS,
@@ -51,17 +52,21 @@ class HasTokenVerification(ConstraintVerification):
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
 
+    @abstractmethod
+    def get_amount(
+        self, user_address: str, token_address: str, token_client: TokenClient
+    ) -> int:
+        raise NotImplementedError("you must implement this function")
+
     def is_observed(self, *args, **kwargs):
         from core.models import Chain
 
         chain_pk = self.param_values[ConstraintParam.CHAIN.name]
         token_address = self.param_values[ConstraintParam.ADDRESS.name]
         minimum = self.param_values[ConstraintParam.MINIMUM.name]
-        is_native_token = False
 
         if token_address[:4] == "0x00":
             token_address = None
-            is_native_token = True
 
         chain = Chain.objects.get(pk=chain_pk)
 
@@ -70,24 +75,43 @@ class HasTokenVerification(ConstraintVerification):
         token_client = TokenClient(chain=chain, contract=token_address)
 
         token_count = 0
-        if is_native_token:
-            try:
-                for wallet in user_wallets:
-                    token_count += token_client.get_native_token_balance(
-                        token_client.to_checksum_address(wallet.address)
-                    )
-            except InvalidAddressException as e:
-                raise rest_framework.exceptions.ValidationError(e)
-        else:
-            try:
-                for wallet in user_wallets:
-                    token_count += token_client.get_non_native_token_balance(
-                        token_client.to_checksum_address(wallet.address)
-                    )
-            except InvalidAddressException as e:
-                raise rest_framework.exceptions.ValidationError(e)
+
+        try:
+            for wallet in user_wallets:
+                token_count += self.get_amount(
+                    wallet.address, token_address, token_client
+                )
+        except InvalidAddressException as e:
+            raise rest_framework.exceptions.ValidationError(e)
 
         return token_count >= int(minimum)
+
+
+class HasTokenVerification(ABCTokenVerification):
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def get_amount(
+        self, user_address: str, token_address: str, token_client: TokenClient
+    ) -> int:
+        if token_address is None:
+            return token_client.get_non_native_token_balance(user_address)
+        return token_client.get_native_token_balance(user_address)
+
+
+class HasTokenTransferVerification(ABCTokenVerification):
+    _param_keys = [
+        ConstraintParam.CHAIN,
+        ConstraintParam.ADDRESS,
+        ConstraintParam.MINIMUM,
+    ]
+
+    def get_amount(
+        self, user_address: str, token_address: str, token_client: TokenClient
+    ) -> int:
+        if token_address is None:
+            return 0
+        return token_client.get_non_native_token_transfer_amount(user_address)
 
 
 class AllowListVerification(ConstraintVerification):
