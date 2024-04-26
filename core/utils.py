@@ -323,14 +323,14 @@ class TokenClient:
     def get_non_native_token_transfer_amount(self, address: str):
         if not self.web3_utils.contract:
             raise InvalidAddressException("Invalid contract address")
-        transfer_event = self.web3_utils.contract.events.Transfer.create_filter(
+        transfer_event = self.web3_utils.contract.events.Transfer.get_logs(
             fromBlock=0,
             argument_filters={
                 "from": address,
             },
         )
         total_transferred = 0
-        for event in transfer_event.get_all_entries():
+        for event in transfer_event:
             total_transferred += event.args.value
         return total_transferred
 
