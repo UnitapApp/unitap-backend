@@ -21,7 +21,7 @@ from prizetap.views import (
 urlpatterns = [
     path(
         "raffle-list/",
-        cache_page(60 * 3)(RaffleListView.as_view()),
+        RaffleListView.as_view(),
         name="raffle-list",
     ),
     path(
