@@ -258,6 +258,34 @@ class TestClaim(APITestCase):
             claim_manager_faucet.claim(claim_amount_3, address)
         except AssertionError:
             self.assertEqual(True, True)
+    @patch(
+        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+        lambda a: True,
+    )        
+    def test_update_claims_task_with_various_statuses(self):
+        ClaimReceipt.objects.create(
+            faucet=self.test_faucet1,
+            user_profile=self.verified_user,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            amount=10,
+        )           
+
+        ClaimReceipt.objects.create(
+            faucet=self.test_faucet1,
+            user_profile=self.verified_user,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.VERIFIED,
+            amount=10,
+        )   
+        #call shared task to update claims
+        from .tasks import update_total_claims_this_round
+        update_total_claims_this_round()
+        
+        self.assertEqual(self.test_faucet1.total_claims_this_round, 2)
+        
+                
+        
 
 
 class TestClaimAPI(APITestCase):
