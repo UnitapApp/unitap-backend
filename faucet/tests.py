@@ -278,9 +278,29 @@ class TestClaim(APITestCase):
             _status=ClaimReceipt.VERIFIED,
             amount=10,
         )   
+        
+        ClaimReceipt.objects.create(
+            faucet=self.test_faucet1,
+            user_profile=self.verified_user,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.REJECTED,
+            amount=10,
+        )
+        
+        ClaimReceipt.objects.create(
+            faucet=self.test_faucet1,
+            user_profile=self.verified_user,
+            datetime=timezone.now(),
+            _status=ClaimReceipt.PENDING,
+            amount=10,
+        )
+        
         #call shared task to update claims
         from .tasks import update_total_claims_this_round
         update_total_claims_this_round()
+        
+        #refetch test_faucet from DB
+        self.test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
         
         self.assertEqual(self.test_faucet1.total_claims_this_round, 2)
         

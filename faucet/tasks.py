@@ -145,12 +145,10 @@ def update_claims_count():
 def update_total_claims_this_round():
     active_faucets = Faucet.objects.filter(is_active=True)
     for faucet in active_faucets:
-        print(faucet.total_claims_since_last_round)
         total_claims_this_round = ClaimReceipt.objects.filter(
             faucet=faucet,
             datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
             _status__in=[ClaimReceipt.VERIFIED]
         ).count()
-        print(total_claims_this_round)
         faucet.total_claims_this_round = total_claims_this_round
         faucet.save()
