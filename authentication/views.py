@@ -371,10 +371,10 @@ class LoginView(APIView):
             elif aura_context_ids == 4:  # is not linked
                 return Response(
                     {
-                        "message": "Something went wrong with the linking process. \
-                            please link BrightID with Unitap.\n"
-                        "If the problem persists, clear your browser cache \
-                                                                        and try again."
+                        "message": "Something went wrong with the linking process."
+                        " please link BrightID with Unitap.\n"
+                        "If the problem persists,"
+                        " clear your browser cache and try again."
                     },
                     status=403,
                 )
@@ -620,7 +620,7 @@ class TwitterOAuthView(APIView):
             twitter_connection = TwitterConnection(
                 oauth_token=oauth_token,
                 oauth_token_secret=oauth_token_secret,
-                user_profile=self.get_user_profile,
+                user_profile=self.get_user_profile(),
             )
             twitter_connection.save()
         return Response({"redirect_url": url}, status=HTTP_302_FOUND)
@@ -628,8 +628,8 @@ class TwitterOAuthView(APIView):
 
 class TwitterOAuthCallbackView(APIView):
     def get(self, request, *args, **kwargs):
-        oauth_token = request.kwargs.get("oauth_token")
-        oauth_verifier = request.kwargs.get("oauth_verifier")
+        oauth_token = request.query_params.get("oauth_token")
+        oauth_verifier = request.query_params.get("oauth_verifier")
 
         if oauth_verifier is None and oauth_token is None:
             raise ParseError("You must set oauth_verifier and oauth_token ")

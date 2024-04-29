@@ -8,6 +8,7 @@ from authentication.helpers import verify_login_signature
 from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
     GitcoinPassportConnection,
+    TwitterConnection,
     UserProfile,
     Wallet,
 )
@@ -88,7 +89,8 @@ class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
 def get_third_party_connection_serializer(connection):
     serializer_class = {
         BrightIDConnection: BaseThirdPartyConnectionSerializer,
-        GitcoinPassportConnection: GitcoinPassportConnectionSerializer
+        GitcoinPassportConnection: GitcoinPassportConnectionSerializer,
+        TwitterConnection: TwitterConnectionSerializer,
         # other mappings for different third-party connection models
     }.get(type(connection), BaseThirdPartyConnectionSerializer)
 
@@ -170,3 +172,14 @@ class GitcoinPassportConnectionSerializer(BaseThirdPartyConnectionSerializer):
             )
 
         return is_address_valid and super_is_validated
+
+
+class TwitterConnectionSerializer(BaseThirdPartyConnectionSerializer):
+    class Meta:
+        model = TwitterConnection
+
+        exclude = (
+            "oauth_token_secret",
+            "access_token",
+            "access_token_secret",
+        )
