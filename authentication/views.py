@@ -605,7 +605,7 @@ class TwitterOAuthView(APIView):
                 user_profile=self.get_user_profile()
             )
             twitter_connection.oauth_token = oauth_token
-            twitter_connection.oauth_token = oauth_token_secret
+            twitter_connection.oauth_token_secret = oauth_token_secret
             twitter_connection.access_token = None
             twitter_connection.access_token_secret = None
             twitter_connection.save(
