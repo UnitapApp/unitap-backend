@@ -95,7 +95,7 @@ class UserProfile(models.Model):
         try:
             bo = BrightIDConnection.get_connection(self)
             return bo.is_meets_verified
-        except BrightIDConnection.DoesNotExist:
+        except:  # noqa E722
             return False
 
     @property
