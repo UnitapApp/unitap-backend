@@ -16,7 +16,7 @@ from rest_framework.generics import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_302_FOUND
+from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 
 from authentication.helpers import (
@@ -623,7 +623,7 @@ class TwitterOAuthView(APIView):
                 user_profile=self.get_user_profile(),
             )
             twitter_connection.save()
-        return Response({"redirect_url": url}, status=HTTP_302_FOUND)
+        return Response({"url": url}, status=HTTP_200_OK)
 
 
 class TwitterOAuthCallbackView(APIView):
