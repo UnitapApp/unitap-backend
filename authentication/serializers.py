@@ -73,9 +73,14 @@ class WalletSerializer(serializers.ModelSerializer):
 
 
 class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
+    is_connected = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = BrightIDConnection
-        fields = ["user_profile", "created_at"]
+        fields = ["user_profile", "created_at", "is_connected"]
+
+    def get_is_connected(self, obj):
+        return True
 
 
 # class BrightIDConnectionSerializer(BaseThirdPartyConnectionSerializer):
@@ -183,3 +188,6 @@ class TwitterConnectionSerializer(BaseThirdPartyConnectionSerializer):
             "access_token",
             "access_token_secret",
         )
+
+    def get_is_connected(self, obj):
+        return bool(obj.access_token and obj.access_token_secret)
