@@ -11,6 +11,8 @@ from authentication.views import (
     LoginView,
     SetUsernameView,
     SponsorView,
+    TwitterOAuthCallbackView,
+    TwitterOAuthView,
     UserHistoryCountView,
     UserProfileCountView,
     UserThirdPartyConnectionsView,
@@ -72,5 +74,11 @@ urlpatterns = [
         "user/connect/gitcoin-passport/",
         GitcoinPassportConnectionView.as_view(),
         name="connect-gitcoin-passport",
+    ),
+    path("twitter/", TwitterOAuthView.as_view(), name="twitter-oauth"),
+    path(
+        "twitter/callback/",
+        TwitterOAuthCallbackView.as_view(),
+        name="twitter-oauth-callback",
     ),
 ]
