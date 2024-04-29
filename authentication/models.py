@@ -131,12 +131,6 @@ class UserProfile(models.Model):
                 rel.related_model, BaseThirdPartyConnection
             ):
                 related_manager = getattr(self, rel.get_accessor_name())
-                if isinstance(rel.related_model, TwitterConnection):
-                    connections.extend(
-                        related_manager.filter(access_token__isnull=False)
-                    )
-                    continue
-
                 connections.extend(related_manager.all())
 
         return connections
