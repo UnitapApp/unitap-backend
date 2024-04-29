@@ -232,10 +232,8 @@ class TwitterConnection(BaseThirdPartyConnection):
     oauth_token_secret = models.CharField(
         max_length=255, unique=True, blank=False, null=False
     )
-    access_token = models.CharField(
-        max_length=255, unique=True, blank=False, null=False
-    )
+    access_token = models.CharField(max_length=255, unique=True, blank=True, null=True)
     access_token_secret = models.CharField(
-        max_length=255, unique=True, blank=False, null=False
+        max_length=255, unique=True, blank=True, null=True
     )
     driver = TwitterDriver()
