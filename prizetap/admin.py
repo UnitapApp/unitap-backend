@@ -14,6 +14,7 @@ class RaffleٍEntryAdmin(admin.ModelAdmin):
         "pk",
         "raffle",
         "user_wallet_address",
+        "tx_hash",
         "age",
     ]
 
