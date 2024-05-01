@@ -1,11 +1,12 @@
 import json
+import logging
 
 from django.db import IntegrityError
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ParseError, ValidationError
+from rest_framework.exceptions import APIException, ParseError, ValidationError
 from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
@@ -15,6 +16,7 @@ from rest_framework.generics import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 
 from authentication.helpers import (
@@ -26,6 +28,7 @@ from authentication.helpers import (
 from authentication.models import (
     BrightIDConnection,
     GitcoinPassportSaveError,
+    TwitterConnection,
     UserProfile,
     Wallet,
 )
@@ -40,6 +43,7 @@ from authentication.serializers import (
     thirdparty_connection_serializer,
 )
 from core.filters import IsOwnerFilterBackend
+from core.thirdpartyapp import TwitterUtils
 
 
 class UserProfileCountView(ListAPIView):
@@ -367,10 +371,10 @@ class LoginView(APIView):
             elif aura_context_ids == 4:  # is not linked
                 return Response(
                     {
-                        "message": "Something went wrong with the linking process. \
-                            please link BrightID with Unitap.\n"
-                        "If the problem persists, clear your browser cache \
-                                                             and try again."
+                        "message": "Something went wrong with the linking process."
+                        " please link BrightID with Unitap.\n"
+                        "If the problem persists,"
+                        " clear your browser cache and try again."
                     },
                     status=403,
                 )
@@ -578,3 +582,76 @@ class GetProfileView(RetrieveAPIView):
 
     def get_object(self):
         return self.request.user.profile
+
+
+class TwitterOAuthView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_user_profile(self):
+        return self.request.user.profile
+
+    def get(self, request, *args, **kwargs):
+        try:
+            url, request_token = TwitterUtils.get_authorization_url_and_token()
+        except Exception as e:
+            logging.error(f"Could not connect to twitter: {e}")
+            raise APIException("Twitter did not respond")
+
+        oauth_token = request_token.get("oauth_token")
+        oauth_token_secret = request_token.get("oauth_token_secret")
+
+        try:
+            twitter_connection = TwitterConnection.objects.get(
+                user_profile=self.get_user_profile()
+            )
+            twitter_connection.oauth_token = oauth_token
+            twitter_connection.oauth_token_secret = oauth_token_secret
+            twitter_connection.access_token = None
+            twitter_connection.access_token_secret = None
+            twitter_connection.save(
+                update_fields=(
+                    "oauth_token",
+                    "oauth_token_secret",
+                    "access_token",
+                    "access_token_secret",
+                )
+            )
+        except TwitterConnection.DoesNotExist:
+            twitter_connection = TwitterConnection(
+                oauth_token=oauth_token,
+                oauth_token_secret=oauth_token_secret,
+                user_profile=self.get_user_profile(),
+            )
+            twitter_connection.save()
+        return Response({"url": url}, status=HTTP_200_OK)
+
+
+class TwitterOAuthCallbackView(APIView):
+    def get(self, request, *args, **kwargs):
+        oauth_token = request.query_params.get("oauth_token")
+        oauth_verifier = request.query_params.get("oauth_verifier")
+
+        if oauth_verifier is None and oauth_token is None:
+            raise ParseError("You must set oauth_verifier and oauth_token ")
+
+        try:
+            twitter_connection = TwitterConnection.objects.get(oauth_token=oauth_token)
+        except TwitterConnection.DoesNotExist:
+            raise ParseError("TwitterConnection not found")
+
+        try:
+            access_token, access_token_secret = TwitterUtils.get_access_token(
+                oauth_token=oauth_token,
+                oauth_token_secret=twitter_connection.oauth_token_secret,
+                oauth_verifier=oauth_verifier,
+            )
+        except Exception as e:
+            logging.error(f"Could not connect to twitter: {e}")
+            raise ParseError("Could not connect to twitter")
+
+        twitter_connection.access_token = access_token
+        twitter_connection.access_token_secret = access_token_secret
+
+        twitter_connection.save(update_fields=("access_token", "access_token_secret"))
+
+        return Response({}, HTTP_200_OK)

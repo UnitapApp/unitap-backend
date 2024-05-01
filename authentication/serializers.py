@@ -8,6 +8,7 @@ from authentication.helpers import verify_login_signature
 from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
     GitcoinPassportConnection,
+    TwitterConnection,
     UserProfile,
     Wallet,
 )
@@ -72,9 +73,14 @@ class WalletSerializer(serializers.ModelSerializer):
 
 
 class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
+    is_connected = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = BrightIDConnection
-        fields = ["user_profile", "created_at"]
+        fields = ["user_profile", "created_at", "is_connected"]
+
+    def get_is_connected(self, obj):
+        return True
 
 
 # class BrightIDConnectionSerializer(BaseThirdPartyConnectionSerializer):
@@ -88,7 +94,8 @@ class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
 def get_third_party_connection_serializer(connection):
     serializer_class = {
         BrightIDConnection: BaseThirdPartyConnectionSerializer,
-        GitcoinPassportConnection: GitcoinPassportConnectionSerializer
+        GitcoinPassportConnection: GitcoinPassportConnectionSerializer,
+        TwitterConnection: TwitterConnectionSerializer,
         # other mappings for different third-party connection models
     }.get(type(connection), BaseThirdPartyConnectionSerializer)
 
@@ -170,3 +177,17 @@ class GitcoinPassportConnectionSerializer(BaseThirdPartyConnectionSerializer):
             )
 
         return is_address_valid and super_is_validated
+
+
+class TwitterConnectionSerializer(BaseThirdPartyConnectionSerializer):
+    class Meta:
+        model = TwitterConnection
+
+        exclude = (
+            "oauth_token_secret",
+            "access_token",
+            "access_token_secret",
+        )
+
+    def get_is_connected(self, obj):
+        return bool(obj.access_token and obj.access_token_secret)

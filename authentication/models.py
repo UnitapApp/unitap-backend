@@ -16,6 +16,7 @@ from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
     GitcoinPassportDriver,
+    TwitterDriver,
 )
 from core.models import NetworkTypes
 
@@ -223,3 +224,16 @@ def submit_passport(sender, instance: GitcoinPassportConnection, **kwargs):
         )
     if res == "0":
         raise GitcoinPassportSaveError("Gitcoin passport not exists.")
+
+
+class TwitterConnection(BaseThirdPartyConnection):
+    title = "Twitter"
+    oauth_token = models.CharField(max_length=255, unique=True, blank=False, null=False)
+    oauth_token_secret = models.CharField(
+        max_length=255, unique=True, blank=False, null=False
+    )
+    access_token = models.CharField(max_length=255, unique=True, blank=True, null=True)
+    access_token_secret = models.CharField(
+        max_length=255, unique=True, blank=True, null=True
+    )
+    driver = TwitterDriver()
