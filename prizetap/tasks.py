@@ -113,18 +113,24 @@ def get_raffle_winners(self):
         )
         if raffles_queryset.count() > 0:
             for raffle in raffles_queryset:
-                print(f"Getting the winner of raffle {raffle.name}")
-                raffle_client = PrizetapContractClient(raffle)
-                winner_addresses = raffle_client.get_raffle_winners()
-                for addr in winner_addresses:
-                    if addr and addr != "0x0000000000000000000000000000000000000000":
-                        winner_entry = raffle.entries.filter(
-                            user_profile__wallets__address__iexact=addr
-                        ).get()
-                        winner_entry.is_winner = True
-                        winner_entry.save()
-                        raffle.status = Raffle.Status.CLOSED
-                        raffle.save()
+                try:
+                    print(f"Getting the winner of raffle {raffle.name}")
+                    raffle_client = PrizetapContractClient(raffle)
+                    winner_addresses = raffle_client.get_raffle_winners()
+                    for addr in winner_addresses:
+                        if (
+                            addr
+                            and addr != "0x0000000000000000000000000000000000000000"
+                        ):
+                            winner_entry = raffle.entries.filter(
+                                user_profile__wallets__address__iexact=addr
+                            ).get()
+                            winner_entry.is_winner = True
+                            winner_entry.save()
+                            raffle.status = Raffle.Status.CLOSED
+                            raffle.save()
+                except Exception as e:
+                    logging.error(e)
 
 
 @shared_task(bind=True)
