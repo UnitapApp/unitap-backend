@@ -32,10 +32,9 @@ class TokenDistributionClaimAdmin(admin.ModelAdmin):
         "status",
         "user_profile",
         "age",
-        "user_wallet_address",
     ]
-    list_filter = ["token_distribution", "status"]
     search_fields = ["user_wallet_address"]
+    list_filter = ["token_distribution", "status"]
 
 
 class GlobalSettingsAdmin(admin.ModelAdmin):
