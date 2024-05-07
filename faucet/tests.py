@@ -623,8 +623,10 @@ class TestFuelChampion(APITestCase):
         )
         self.client.force_authenticate(user=self.user_profile.user)
 
+    def tearDown(self) -> None:
+        cache.clear()
+
     def test_get_unverified_fuel_champion(self):
-        cache.delete("FuelChampionQuerySet")
         endpoint = reverse("FAUCET:gas-tap-fuel-champion")
         DonationReceipt.objects.create(
             user_profile=self.user_profile,
@@ -637,7 +639,6 @@ class TestFuelChampion(APITestCase):
         self.assertEqual(len(res.data), 0)
 
     def test_get_verified_fuel_champion(self):
-        cache.delete("FuelChampionQuerySet")
         endpoint = reverse("FAUCET:gas-tap-fuel-champion")
         DonationReceipt.objects.create(
             user_profile=self.user_profile,
@@ -651,7 +652,6 @@ class TestFuelChampion(APITestCase):
         self.assertEqual(len(res.data), 1)
 
     def test_get_fuel_champion_when_two_person_had_donation(self):
-        cache.delete("FuelChampionQuerySet")
         endpoint = reverse("FAUCET:gas-tap-fuel-champion")
         DonationReceipt.objects.create(
             user_profile=self.user_profile,

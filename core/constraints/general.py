@@ -95,8 +95,8 @@ class HasTokenVerification(ABCTokenVerification):
         self, user_address: str, token_address: str, token_client: TokenClient
     ) -> int:
         if token_address is None:
-            return token_client.get_non_native_token_balance(user_address)
-        return token_client.get_native_token_balance(user_address)
+            return token_client.get_native_token_balance(user_address)
+        return token_client.get_non_native_token_balance(user_address)
 
 
 class HasTokenTransferVerification(ABCTokenVerification):
