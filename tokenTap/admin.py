@@ -33,6 +33,7 @@ class TokenDistributionClaimAdmin(admin.ModelAdmin):
         "user_profile",
         "age",
     ]
+    search_fields = ["user_wallet_address"]
     list_filter = ["token_distribution", "status"]
 
 
