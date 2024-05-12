@@ -36,6 +36,7 @@ def set_raffle_random_words(self):
             now = int(time.time())
             if now >= expiration_time:
                 print("Random words have expired")
+                raffles_queryset.update(vrf_tx_hash=None)
                 return
             for raffle in raffles_queryset:
                 try:
