@@ -44,7 +44,7 @@ def set_raffle_random_words(self):
                         set_random_words(raffle)
                         break
                     else:
-                        raise Exception("Mismatch num words")
+                        raise Exception(f"Mismatch the raffle {raffle.name} num words")
                 except Exception as e:
                     raffle.vrf_tx_hash = None
                     raffle.save()
