@@ -82,7 +82,7 @@ def set_random_words(raffle: Raffle):
         raffle.status = Raffle.Status.RANDOM_WORDS_SET
         raffle.save()
     else:
-        print(muon_response["error"]["message"])
+        print(muon_response["error"]["message"], muon_response["error"]["detail"])
 
 
 @shared_task(bind=True)
