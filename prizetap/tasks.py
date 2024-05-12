@@ -85,8 +85,8 @@ def set_random_words(raffle: Raffle):
         print(
             muon_response["error"]["message"],
             (
-                f"Error {muon_response['error']['detail']} has been ",
-                "raised in the raffle {raffle.raffleId}",
+                f"Error {muon_response['error']['detail']} has been "
+                f"raised in the raffle {raffle.raffleId}"
             ),
         )
 
