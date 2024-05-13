@@ -1,5 +1,3 @@
-import contextlib
-
 import requests
 
 
@@ -78,10 +76,6 @@ class RequestHelper:
         except requests.RequestException as e:
             raise RequestException(e)
 
-    @contextlib.contextmanager
     def get_session(self):
         session = requests.Session()
-        try:
-            yield session
-        finally:
-            session.close()
+        return session
