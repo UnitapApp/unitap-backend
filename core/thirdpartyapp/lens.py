@@ -55,16 +55,16 @@ class LensUtil:
             logging.error(f"connection lost, {e}")
             return None
 
-        # except (KeyError, TypeError, AttributeError):
-        #     return None
+        except (KeyError, TypeError, AttributeError):
+            return None
 
     def _get_profile_id(self, address: str):
         address = Web3Utils.to_checksum_address(address)
-        # try:
-        profile_info = self._get_profile_info(address)
-        return profile_info.get("id")
-        # except (KeyError, TypeError, AttributeError):
-        #     return None
+        try:
+            profile_info = self._get_profile_info(address)
+            return profile_info.get("id")
+        except (KeyError, TypeError, AttributeError):
+            return None
 
     def get_profile_id(self, address: str) -> None | str:
         """get EVM address profile_id in lens
