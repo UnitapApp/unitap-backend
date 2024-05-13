@@ -11,9 +11,6 @@ class LensUtil:
     def __init__(self) -> None:
         self.session = self.requests.get_session()
 
-    def __del__(self):
-        self.session.close()
-
     @property
     def headers(self):
         return {
