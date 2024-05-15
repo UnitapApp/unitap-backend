@@ -149,6 +149,7 @@ class RaffleTestCase(BaseTestCase):
                 username="test_2",
             ),
             multiplier=1,
+            tx_hash="0x00",
         )
 
         self.assertTrue(self.raffle.is_maxed_out)
