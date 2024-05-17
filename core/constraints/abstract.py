@@ -10,6 +10,7 @@ class ConstraintApp(Enum):
     FARCASTER = "farcaster"
     ENS = "ENS"
     EAS = "EAS"
+    GITCOIN_PASSPORT = "gitcoin_passport"
 
     @classmethod
     def choices(cls):

@@ -2,6 +2,7 @@ import logging
 
 from core.request_helper import RequestException, RequestHelper
 from core.thirdpartyapp import config
+from authentication.models import GitcoinPassportConnection
 
 
 class GitcoinPassportRequestError(RequestException):
@@ -57,3 +58,6 @@ class GitcoinPassport:
             logging.error(f"error in gitcoin-passport occurred: {e}")
             return None
         return res.get("score"), res.get("stamp_scores")
+    
+    def get_connection(self, user_profile) -> bool:
+        return GitcoinPassportConnection.is_connected(user_profile=user_profile)
