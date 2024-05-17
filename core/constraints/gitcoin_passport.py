@@ -4,6 +4,7 @@ from core.constraints.abstract import (
     ConstraintVerification,
 )
 from core.thirdpartyapp import GitcoinPassport
+from authentication.models import GitcoinPassportConnection
 
 
 class HasGitcoinPassportProfile(ConstraintVerification):
@@ -14,9 +15,8 @@ class HasGitcoinPassportProfile(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        gitcoin_passport_utils = GitcoinPassport()
         user_profile = self.user_profile
-        if gitcoin_passport_utils.get_connection(user_profile):
+        if GitcoinPassportConnection.is_connected(user_profile=user_profile):
                 return True
         return False
 
