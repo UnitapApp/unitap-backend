@@ -71,6 +71,8 @@ MEMCACHED_URL = os.environ.get("MEMCACHEDCLOUD_SERVERS")
 MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
 MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
 DEPLOYMENT_ENV = os.environ.get("DEPLOYMENT_ENV")
+TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
+TELEGRAM_API_TOKEN = os.environ.get("TELEGRAM_API_TOKEN")
 
 assert DEPLOYMENT_ENV in ["dev", "main"]
 
@@ -138,6 +140,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # 'telegram.LogMiddleware'
+    "telegram.LogMiddleware"
+    
+    
 ]
 
 ROOT_URLCONF = "brightIDfaucet.urls"
