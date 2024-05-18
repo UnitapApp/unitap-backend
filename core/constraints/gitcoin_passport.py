@@ -3,8 +3,6 @@ from core.constraints.abstract import (
     ConstraintParam,
     ConstraintVerification,
 )
-from core.thirdpartyapp import GitcoinPassport
-from authentication.models import GitcoinPassportConnection
 
 
 class HasGitcoinPassportProfile(ConstraintVerification):
@@ -15,9 +13,17 @@ class HasGitcoinPassportProfile(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import GitcoinPassportConnection
+
         user_profile = self.user_profile
-        if GitcoinPassportConnection.is_connected(user_profile=user_profile):
-                return True
+        try:
+            gitcoint_passport = GitcoinPassportConnection.objects.get(
+                user_profile=user_profile
+            )
+        except GitcoinPassportConnection.DoesNotExist:
+            return False
+        if gitcoint_passport:
+            return True
         return False
 
 
@@ -29,11 +35,17 @@ class HasMinimumHumanityScore(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        gitcoin_passport_utils = GitcoinPassport()
-        user_address = self.user_addresses
-        for address in user_address:
-            if int(gitcoin_passport_utils.get_score(address)[0]) >= int(
-                self.param_values[ConstraintParam.MINIMUM.name]
-            ):
-                return True
+        from authentication.models import GitcoinPassportConnection
+
+        user_profile = self.user_profile
+        try:
+            gitcoint_passport = GitcoinPassportConnection.objects.get(
+                user_profile=user_profile
+            )
+        except GitcoinPassportConnection.DoesNotExist:
+            return False
+        if int(gitcoint_passport.score) >= int(
+            self.param_values[ConstraintParam.MINIMUM.name]
+        ):
+            return True
         return False

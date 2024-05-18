@@ -1,6 +1,7 @@
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
+from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from authentication.models import UserProfile, Wallet
@@ -11,6 +12,8 @@ from .constraints import (
     BeAttestedBy,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
+    HasGitcoinPassportProfile,
+    HasMinimumHumanityScore,
     HasNFTVerification,
     HasTokenVerification,
 )
@@ -297,3 +300,53 @@ class TestEASAttestConstraint(BaseTestCase):
         }
 
         self.assertEqual(constraint.is_observed(), True)
+
+
+class TestGitcoinPassportConstraint(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        create_new_wallet(
+            self.user_profile,
+            "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92",
+            NetworkTypes.EVM,
+        )
+        self.address = "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92"
+        self.schema_id = (
+            "0x3969bb076acfb992af54d51274c5c868641ca5344e1aacd0b1f5e4f80ac0822f"
+        )
+        self.key = "message"
+        self.minimum = 1
+        self.value = "test"
+        self.wallet = WalletAccount.objects.create(
+            name="Sepolia Chain Wallet",
+            private_key=test_wallet_key,
+            network_type=NetworkTypes.EVM,
+        )
+        self.chain = Chain.objects.create(
+            chain_name="Optimism",
+            wallet=self.wallet,
+            rpc_url_private="https://optimism-rpc.com/",
+            explorer_url="https://etherscan.io/",
+            native_currency_name="ETH",
+            symbol="ETH",
+            chain_id="1",
+        )
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.client.post(
+            reverse("AUTHENTICATION:connect-gitcoin-passport"),
+            data={"user_wallet_address": self.address},
+        )
+
+    def test_gitcoin_passport_minimum_score_constraint(self):
+        constraint = HasMinimumHumanityScore(self.user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": self.minimum,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    def test_gitcoin_passport_connection_constraint(self):
+        constraint = HasGitcoinPassportProfile(self.user_profile)
+
+        self.assertEqual(constraint.is_observed(), False)
