@@ -44,7 +44,7 @@ class HasMinimumHumanityScore(ConstraintVerification):
             )
         except GitcoinPassportConnection.DoesNotExist:
             return False
-        if int(gitcoint_passport.score) >= int(
+        if float(gitcoint_passport.score) >= float(
             self.param_values[ConstraintParam.MINIMUM.name]
         ):
             return True

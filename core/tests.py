@@ -305,32 +305,13 @@ class TestEASAttestConstraint(BaseTestCase):
 class TestGitcoinPassportConstraint(BaseTestCase):
     def setUp(self):
         super().setUp()
+        self.address = "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF6"
+        self.user_profile = self.user_profile
         create_new_wallet(
-            self.user_profile,
-            "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92",
-            NetworkTypes.EVM,
+            user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
         )
-        self.address = "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92"
-        self.schema_id = (
-            "0x3969bb076acfb992af54d51274c5c868641ca5344e1aacd0b1f5e4f80ac0822f"
-        )
-        self.key = "message"
         self.minimum = 1
-        self.value = "test"
-        self.wallet = WalletAccount.objects.create(
-            name="Sepolia Chain Wallet",
-            private_key=test_wallet_key,
-            network_type=NetworkTypes.EVM,
-        )
-        self.chain = Chain.objects.create(
-            chain_name="Optimism",
-            wallet=self.wallet,
-            rpc_url_private="https://optimism-rpc.com/",
-            explorer_url="https://etherscan.io/",
-            native_currency_name="ETH",
-            symbol="ETH",
-            chain_id="1",
-        )
+
         self.client.force_authenticate(user=self.user_profile.user)
         self.client.post(
             reverse("AUTHENTICATION:connect-gitcoin-passport"),
@@ -344,9 +325,9 @@ class TestGitcoinPassportConstraint(BaseTestCase):
             "MINIMUM": self.minimum,
         }
 
-        self.assertEqual(constraint.is_observed(), False)
+        self.assertEqual(constraint.is_observed(), True)
 
     def test_gitcoin_passport_connection_constraint(self):
         constraint = HasGitcoinPassportProfile(self.user_profile)
 
-        self.assertEqual(constraint.is_observed(), False)
+        self.assertEqual(constraint.is_observed(), True)

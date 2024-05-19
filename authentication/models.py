@@ -210,7 +210,8 @@ class GitcoinPassportConnection(BaseThirdPartyConnection):
 
     @property
     def score(self):
-        return self.driver.get_score(self.user_wallet_address)[0]
+        score_tuple = self.driver.get_score(self.user_wallet_address)
+        return score_tuple[0] if score_tuple else 0.0
 
 
 @receiver(pre_save, sender=GitcoinPassportConnection)
