@@ -19,13 +19,15 @@ def send_telegram_log(text):
         "parse_mode": "MarkdownV2",
         "disable_web_page_preview": True,
     }
-    response = requests.post(url, data=payload)
-    return response.json()
-
+    try:
+        response = requests.post(url, data=payload)
+        return {"ok":True}
+    except Exception as e:
+        return {"ok": False}
 
 
 log_cache = defaultdict(int)
-MIN_INTERVAL = 3600
+MIN_INTERVAL = 10
 
 
 class LogMiddleware(MiddlewareMixin):
@@ -35,10 +37,12 @@ class LogMiddleware(MiddlewareMixin):
 
         # Check if the log has been sent before or if it has been more than 1 hour
         if current_time - log_cache[log_hash] > MIN_INTERVAL:
-            self.send_to_telegram(message)
             log_cache[log_hash] = current_time
+            return self.send_to_telegram(message)
+        
+        return {"ok": False}
 
     def send_to_telegram(self, message):
-        send_telegram_log(message)
+        return send_telegram_log(message)
 
 

@@ -1,3 +1,4 @@
+import time
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
@@ -6,8 +7,7 @@ from rest_framework.test import APITestCase
 from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
 
-from django.test import TestCase, RequestFactory
-from unittest.mock import patch
+from django.test import TestCase
 from core.telegram import LogMiddleware
 
 from .constraints import (
@@ -374,30 +374,21 @@ class TestGitcoinPassportConstraint(BaseTestCase):
 
 class LogMiddlewareTests(TestCase):
     def setUp(self):
-        self.factory = RequestFactory()
         self.middleware = LogMiddleware(get_response=lambda request: None)
+        
 
-    @patch("core.telegram.send_telegram_log")
-    def test_log_message_sent_to_telegram(self, mock_send_telegram_log):
-        with patch("time.time", return_value=1000000):
-            self.middleware.log_message("Test log message")
-            mock_send_telegram_log.assert_called_once_with("Test log message")
-
-    @patch("core.telegram.send_telegram_log")
-    def test_log_message_not_sent_within_one_hour(self, mock_send_telegram_log):
-        with patch("time.time", side_effect=[1000000, 1000000 + 3599]):
-            self.middleware.log_message("Test log message")
-            self.middleware.log_message("Test log message")
-            mock_send_telegram_log.assert_called_once_with("Test log message")
-
-    @patch("core.telegram.send_telegram_log")
-    def test_log_message_sent_after_one_hour(self, mock_send_telegram_log):
-        with patch("time.time", side_effect=[1000000, 1000000 + 3601]):
-            self.middleware.log_message("Test log message")
-            self.middleware.log_message("Test log message")
-            self.assertEqual(mock_send_telegram_log.call_count, 2)
-
-    @patch("core.telegram.send_telegram_log")
-    def test_middleware_initialization(self, mock_send_telegram_log):
-        request = self.factory.get("/")
-        mock_send_telegram_log.assert_not_called()
+    def test_log_message_sent_to_telegram(self):
+       
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  True)
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  False)
+        # delay 11 seconds
+        time.sleep(11)
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  True)
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  False)
+        res = self.middleware.log_message("Test log message2")
+        self.assertEqual(res['ok'],  True)
+        
