@@ -74,6 +74,7 @@ DEPLOYMENT_ENV = os.environ.get("DEPLOYMENT_ENV")
 TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 TELEGRAM_API_TOKEN = os.environ.get("TELEGRAM_API_TOKEN")
 
+
 assert DEPLOYMENT_ENV in ["dev", "main"]
 
 
@@ -264,3 +265,5 @@ REST_FRAMEWORK = {
     ),
 }
 CELERY_BROKER_URL = REDIS_URL
+
+TELEGRAM_MIN_LOG_INTERVAL = 10 # seconds

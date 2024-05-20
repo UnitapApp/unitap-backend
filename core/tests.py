@@ -9,6 +9,9 @@ from core.models import Chain, NetworkTypes, WalletAccount
 
 from django.test import TestCase
 from core.telegram import LogMiddleware
+from django.conf import settings
+
+TELEGRAM_MIN_LOG_INTERVAL = settings.TELEGRAM_MIN_LOG_INTERVAL
 
 from .constraints import (
     Attest,
@@ -383,8 +386,8 @@ class LogMiddlewareTests(TestCase):
         self.assertEqual(res['ok'],  True)
         res = self.middleware.log_message("Test log message")
         self.assertEqual(res['ok'],  False)
-        # delay 11 seconds
-        time.sleep(11)
+        # delay
+        time.sleep(TELEGRAM_MIN_LOG_INTERVAL)
         res = self.middleware.log_message("Test log message")
         self.assertEqual(res['ok'],  True)
         res = self.middleware.log_message("Test log message")

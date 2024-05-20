@@ -6,6 +6,7 @@ from django.conf import settings
 
 API_TOKEN = settings.TELEGRAM_API_TOKEN
 CHANNEL_ID = settings.TELEGRAM_CHANNEL_ID
+MIN_INTERVAL = settings.TELEGRAM_MIN_LOG_INTERVAL
 
 
 BASE_URL = f"https://api.telegram.org/bot{API_TOKEN}"
@@ -27,7 +28,7 @@ def send_telegram_log(text):
 
 
 log_cache = defaultdict(int)
-MIN_INTERVAL = 10
+
 
 
 class LogMiddleware(MiddlewareMixin):
