@@ -36,7 +36,7 @@ class LogMiddleware(MiddlewareMixin):
         log_hash = hash(message)
         current_time = time.time()
 
-        # Check if the log has been sent before or if it has been more than 1 hour
+        # Check if the log has been sent before
         if current_time - log_cache[log_hash] > MIN_INTERVAL:
             log_cache[log_hash] = current_time
             return self.send_to_telegram(message)
