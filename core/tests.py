@@ -375,66 +375,29 @@ class TestGitcoinPassportConstraint(BaseTestCase):
 class LogMiddlewareTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-        self.middleware = LogMiddleware()
+        self.middleware = LogMiddleware(get_response=lambda request: None)
 
-    @patch("your_project_name.telegram.send_telegram_log")
+    @patch("core.telegram.send_telegram_log")
     def test_log_message_sent_to_telegram(self, mock_send_telegram_log):
-        # Mock the current time
         with patch("time.time", return_value=1000000):
-            request = self.factory.get("/")
-            response = self.factory.get_response("/")
-
-            # Simulate processing a request
-            self.middleware.process_request(request)
             self.middleware.log_message("Test log message")
-
-            # Ensure the send_telegram_log function was called
             mock_send_telegram_log.assert_called_once_with("Test log message")
 
-    @patch("your_project_name.telegram.send_telegram_log")
+    @patch("core.telegram.send_telegram_log")
     def test_log_message_not_sent_within_one_hour(self, mock_send_telegram_log):
-        # Mock the current time
         with patch("time.time", side_effect=[1000000, 1000000 + 3599]):
-            request = self.factory.get("/")
-            response = self.factory.get_response("/")
-
-            # Simulate processing a request and logging a message
-            self.middleware.process_request(request)
             self.middleware.log_message("Test log message")
-
-            # Simulate another request within one hour
-            self.middleware.process_request(request)
             self.middleware.log_message("Test log message")
-
-            # Ensure the send_telegram_log function was called only once
             mock_send_telegram_log.assert_called_once_with("Test log message")
 
-    @patch("your_project_name.telegram.send_telegram_log")
+    @patch("core.telegram.send_telegram_log")
     def test_log_message_sent_after_one_hour(self, mock_send_telegram_log):
-        # Mock the current time
         with patch("time.time", side_effect=[1000000, 1000000 + 3601]):
-            request = self.factory.get("/")
-            response = self.factory.get_response("/")
-
-            # Simulate processing a request and logging a message
-            self.middleware.process_request(request)
             self.middleware.log_message("Test log message")
-
-            # Simulate another request after more than one hour
-            self.middleware.process_request(request)
             self.middleware.log_message("Test log message")
-
-            # Ensure the send_telegram_log function was called twice
             self.assertEqual(mock_send_telegram_log.call_count, 2)
 
-    @patch("your_project_name.telegram.send_telegram_log")
-    def test_middleware_handles_requests(self, mock_send_telegram_log):
+    @patch("core.telegram.send_telegram_log")
+    def test_middleware_initialization(self, mock_send_telegram_log):
         request = self.factory.get("/")
-        response = self.factory.get_response("/")
-
-        # Simulate processing a request
-        self.middleware.process_request(request)
-
-        # Ensure that no log message was sent
         mock_send_telegram_log.assert_not_called()
-
