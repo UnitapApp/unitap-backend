@@ -25,8 +25,10 @@ from .constraints import (
     DidRecastFarcasterCast,
     HasENSVerification,
     HasFarcasterProfile,
+    HasGitcoinPassportProfile,
     HasLensProfile,
     HasMinimumFarcasterFollower,
+    HasMinimumHumanityScore,
     HasMinimumLensFollower,
     HasMinimumLensPost,
     HasNFTVerification,
@@ -108,6 +110,8 @@ class UserConstraint(models.Model):
         HasFarcasterProfile,
         BeAttestedBy,
         Attest,
+        HasMinimumHumanityScore,
+        HasGitcoinPassportProfile,
     ]
 
     name = models.CharField(

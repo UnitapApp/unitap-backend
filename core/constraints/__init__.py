@@ -27,6 +27,10 @@ from core.constraints.general import (
     HasTokenTransferVerification,
     HasTokenVerification,
 )
+from core.constraints.gitcoin_passport import (
+    HasGitcoinPassportProfile,
+    HasMinimumHumanityScore,
+)
 from core.constraints.lens import (
     BeFollowedByLensUser,
     DidCollectLensPublication,
