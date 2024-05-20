@@ -1,10 +1,9 @@
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
-from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from authentication.models import UserProfile, Wallet
+from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
 
 from .constraints import (
@@ -310,15 +309,25 @@ class TestGitcoinPassportConstraint(BaseTestCase):
         create_new_wallet(
             user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
         )
-        self.minimum = 1
+        self.minimum = 10
 
-        self.client.force_authenticate(user=self.user_profile.user)
-        self.client.post(
-            reverse("AUTHENTICATION:connect-gitcoin-passport"),
-            data={"user_wallet_address": self.address},
+        self.gp = GitcoinPassportConnection.objects.create(
+            user_wallet_address=self.address, user_profile=self.user_profile
         )
 
-    def test_gitcoin_passport_minimum_score_constraint(self):
+        self.not_connected_user_profile = UserProfile.objects.create(
+            user=User.objects.create_user(username="newtest", password="1234"),
+            initial_context_id="newtest",
+            username="newtest",
+        )
+        self.not_connected_address = "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92"
+        create_new_wallet(
+            user_profile=self.not_connected_user_profile,
+            _address=self.not_connected_address,
+            wallet_type="EVM",
+        )
+
+    def test_gitcoin_passport_minimum_score_constraint_success(self):
         constraint = HasMinimumHumanityScore(self.user_profile)
 
         constraint.param_values = {
@@ -327,7 +336,30 @@ class TestGitcoinPassportConstraint(BaseTestCase):
 
         self.assertEqual(constraint.is_observed(), True)
 
-    def test_gitcoin_passport_connection_constraint(self):
+    def test_gitcoin_passport_minimum_score_constraint_fail_on_connection(self):
+        constraint = HasMinimumHumanityScore(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": self.minimum,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    def test_gitcoin_passport_minimum_score_constraint_fail_on_minimum(self):
+        constraint = HasMinimumHumanityScore(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": 30,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    def test_gitcoin_passport_connection_constraint_success(self):
         constraint = HasGitcoinPassportProfile(self.user_profile)
 
         self.assertEqual(constraint.is_observed(), True)
+
+    def test_gitcoin_passport_connection_constraint_fail(self):
+        constraint = HasGitcoinPassportProfile(self.not_connected_user_profile)
+
+        self.assertEqual(constraint.is_observed(), False)
