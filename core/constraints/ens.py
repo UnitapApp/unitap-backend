@@ -15,6 +15,4 @@ class HasENSVerification(ConstraintVerification):
             ens = ENSConnection.objects.get(user_profile=self.user_profile)
         except ENSConnection.DoesNotExist:
             return False
-        if ens.name is not None:
-            return True
-        return False
+        return ens.name is not None
