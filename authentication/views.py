@@ -27,6 +27,7 @@ from authentication.helpers import (
 )
 from authentication.models import (
     BrightIDConnection,
+    ENSSaveError,
     GitcoinPassportSaveError,
     TwitterConnection,
     UserProfile,
@@ -34,6 +35,7 @@ from authentication.models import (
 )
 from authentication.permissions import IsOwner
 from authentication.serializers import (
+    ENSConnectionSerializer,
     GitcoinPassportConnectionSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
@@ -409,6 +411,21 @@ class GitcoinPassportConnectionView(CreateAPIView):
         try:
             serializer.save(user_profile=self.user_profile)
         except GitcoinPassportSaveError as e:
+            raise ValidationError({"address": str(e)})
+
+
+class ENSConnectionView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ENSConnectionSerializer
+
+    @property
+    def user_profile(self):
+        return self.request.user.profile
+
+    def perform_create(self, serializer):
+        try:
+            serializer.save(user_profile=self.user_profile)
+        except ValidationError as e:
             raise ValidationError({"address": str(e)})
 
 

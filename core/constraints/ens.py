@@ -1,5 +1,4 @@
 from core.constraints.abstract import ConstraintApp, ConstraintVerification
-from core.thirdpartyapp import ENSUtil
 
 
 class HasENSVerification(ConstraintVerification):
@@ -10,11 +9,12 @@ class HasENSVerification(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import ENSConnection
 
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        ens_util = ENSUtil()
-        for wallet in user_wallets:
-            if ens_util.get_name(wallet.address) is not None:
-                return True
+        try:
+            ens = ENSConnection.objects.get(user_profile=self.user_profile)
+        except ENSConnection.DoesNotExist:
+            return False
+        if ens.name is not None:
+            return True
         return False

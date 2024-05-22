@@ -5,6 +5,7 @@ from authentication.views import (
     CheckUserExistsView,
     CheckUsernameView,
     ConnectBrightIDView,
+    ENSConnectionView,
     GetProfileView,
     GitcoinPassportConnectionView,
     LoginRegisterView,
@@ -80,5 +81,10 @@ urlpatterns = [
         "twitter/callback/",
         TwitterOAuthCallbackView.as_view(),
         name="twitter-oauth-callback",
+    ),
+    path(
+        "user/connect/ens/",
+        ENSConnectionView.as_view(),
+        name="connect-ens",
     ),
 ]

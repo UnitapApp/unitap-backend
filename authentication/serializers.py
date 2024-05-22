@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from authentication.helpers import verify_login_signature
 from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
+    ENSConnection,
     GitcoinPassportConnection,
     TwitterConnection,
     UserProfile,
@@ -81,6 +82,19 @@ class BaseThirdPartyConnectionSerializer(serializers.ModelSerializer):
 
     def get_is_connected(self, obj):
         return obj.is_connected()
+
+    def validate_address(self, raise_exception=False):
+        user_profile = self.context.get("request").user.profile
+        address = self.validated_data.get("user_wallet_address")
+        is_address_valid = user_profile.owns_wallet(address)
+        if not is_address_valid and raise_exception:
+            raise serializers.ValidationError(
+                {"user_wallet_address": "user_wallet_address is not owned by user"}
+            )
+        elif not is_address_valid:
+            return False
+        else:
+            return True
 
 
 # class BrightIDConnectionSerializer(BaseThirdPartyConnectionSerializer):
@@ -168,13 +182,7 @@ class GitcoinPassportConnectionSerializer(BaseThirdPartyConnectionSerializer):
 
     def is_valid(self, raise_exception=False):
         super_is_validated = super().is_valid(raise_exception)
-        user_profile = self.context.get("request").user.profile
-        address = self.validated_data.get("user_wallet_address")
-        is_address_valid = user_profile.owns_wallet(address)
-        if not is_address_valid and raise_exception:
-            raise serializers.ValidationError(
-                {"user_wallet_address": "user_wallet_address is not owned by user"}
-            )
+        is_address_valid = self.validate_address(raise_exception)
 
         return is_address_valid and super_is_validated
 
@@ -188,3 +196,24 @@ class TwitterConnectionSerializer(BaseThirdPartyConnectionSerializer):
             "access_token",
             "access_token_secret",
         )
+
+    def get_is_connected(self, obj):
+        return bool(obj.access_token and obj.access_token_secret)
+
+
+class ENSConnectionSerializer(BaseThirdPartyConnectionSerializer):
+    class Meta:
+        model = ENSConnection
+        fields = "__all__"
+        read_only_fields = [
+            "created_on",
+            "pk",
+            "user_profile",
+            "title",
+        ]
+
+    def is_valid(self, raise_exception=False):
+        super_is_validated = super().is_valid(raise_exception)
+        is_address_valid = self.validate_address(raise_exception)
+
+        return is_address_valid and super_is_validated
