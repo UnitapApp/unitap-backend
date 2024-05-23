@@ -6,6 +6,7 @@ from authentication.views import (
     CheckUsernameView,
     ConnectBrightIDView,
     ENSConnectionView,
+    ENSDisconnectionView,
     GetProfileView,
     GitcoinPassportConnectionView,
     LoginRegisterView,
@@ -86,5 +87,10 @@ urlpatterns = [
         "user/connect/ens/",
         ENSConnectionView.as_view(),
         name="connect-ens",
+    ),
+    path(
+        "user/disconnect/ens/<int:pk>/",
+        ENSDisconnectionView.as_view(),
+        name="disconnect-ens",
     ),
 ]

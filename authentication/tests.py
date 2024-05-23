@@ -713,3 +713,23 @@ class TestENSThirdPartyConnection(APITestCase):
             data={"user_wallet_address": address},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_ens_disconnect_successful(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.client.post(
+            reverse("AUTHENTICATION:connect-ens"),
+            data={"user_wallet_address": self.address},
+        )
+        ens_instance = ENSConnection.objects.get(
+            user_profile=self.user_profile, user_wallet_address=self.address
+        )
+        response = self.client.delete(
+            reverse("AUTHENTICATION:disconnect-ens", kwargs={"pk": ens_instance.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            ENSConnection.objects.filter(
+                user_profile=self.user_profile, user_wallet_address=self.address
+            ).count(),
+            0,
+        )
