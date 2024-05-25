@@ -12,7 +12,7 @@ class HasENSVerification(ConstraintVerification):
         from authentication.models import ENSConnection
 
         try:
-            ens = ENSConnection.objects.get(user_profile=self.user_profile)
+            ens = ENSConnection.get_connection(self.user_profile)
         except ENSConnection.DoesNotExist:
             return False
-        return ens.name is not None
+        return ens.is_connected()
