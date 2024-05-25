@@ -208,6 +208,7 @@ def set_raffle_ids(self):
                     log = contract_client.get_raffle_created_log(receipt)
 
                     raffle.raffleId = log["args"]["raffleId"]
+                    raffle.status = Raffle.Status.VERIFIED
                     onchain_raffle = contract_client.get_raffle()
                     is_valid = True
                     if onchain_raffle["status"] != 0:
@@ -259,6 +260,7 @@ def set_raffle_ids(self):
                     if not is_valid:
                         raffle.raffleId = None
                         raffle.status = Raffle.Status.REJECTED
+
                     raffle.save()
                 except Exception as e:
                     logging.error(e)
