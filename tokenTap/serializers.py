@@ -79,6 +79,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "is_expired",
             "is_maxed_out",
             "is_claimable",
+            "check_for_extension",
         ]
 
     def get_constraints(self, distribution: TokenDistribution):

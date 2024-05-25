@@ -1,6 +1,8 @@
 import logging
+from datetime import datetime
 
 from celery import shared_task
+from django.utils.timezone import make_aware
 
 from core.helpers import memcache_lock
 
@@ -37,6 +39,7 @@ def set_distribution_id(self):
                     log = contract_client.get_token_distributed_log(receipt)
 
                     token_distribution.distribution_id = log["args"]["distributionId"]
+                    token_distribution.status = TokenDistribution.Status.VERIFIED
                     onchain_distribution = contract_client.get_distribution()
                     is_valid = True
                     if (
@@ -106,6 +109,47 @@ def set_distribution_id(self):
                     if not is_valid:
                         token_distribution.distribution_id = None
                         token_distribution.status = TokenDistribution.Status.REJECTED
+                    token_distribution.save()
+                except Exception as e:
+                    logging.error(e)
+
+
+@shared_task(bind=True)
+def extend_distribution(self):
+    id = f"{self.name}-LOCK"
+
+    with memcache_lock(id, self.app.oid) as acquired:
+        if not acquired:
+            print(f"Could not acquire process lock at {self.name}")
+            return
+        token_distributions_queryset = TokenDistribution.objects.filter(
+            check_for_extension=True
+        ).order_by("id")
+        if token_distributions_queryset.count() > 0:
+            for token_distribution in token_distributions_queryset:
+                try:
+                    print(
+                        "Check token_distribution "
+                        f"{token_distribution.name} extension"
+                    )
+
+                    contract_client = TokentapContractClient(token_distribution)
+                    onchain_distribution = contract_client.get_distribution()
+
+                    if (
+                        int(onchain_distribution["maxNumClaims"])
+                        > token_distribution.max_number_of_claims
+                    ):
+                        token_distribution.max_number_of_claims = onchain_distribution[
+                            "maxNumClaims"
+                        ]
+                    if onchain_distribution["endTime"] > int(
+                        token_distribution.deadline.timestamp()
+                    ):
+                        token_distribution.deadline = make_aware(
+                            datetime.fromtimestamp(onchain_distribution["endTime"])
+                        )
+                    token_distribution.check_for_extension = False
                     token_distribution.save()
                 except Exception as e:
                     logging.error(e)

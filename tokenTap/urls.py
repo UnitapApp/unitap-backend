@@ -5,6 +5,7 @@ from tokenTap.views import (
     ClaimDetailView,
     ConstraintsListView,
     CreateTokenDistribution,
+    ExtendTokenDistribution,
     GetTokenDistributionConstraintsView,
     SetDistributionTXView,
     TokenDistributionClaimListView,
@@ -72,5 +73,10 @@ urlpatterns = [
         "set-distribution-tx/<int:pk>/",
         SetDistributionTXView.as_view(),
         name="set-distribution-tx",
+    ),
+    path(
+        "extend-distribution/<int:pk>/",
+        ExtendTokenDistribution.as_view(),
+        name="extend-distribution",
     ),
 ]

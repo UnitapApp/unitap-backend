@@ -81,6 +81,7 @@ class TokenDistribution(models.Model):
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
+    check_for_extension = models.BooleanField(default=False)
 
     @property
     def reversed_constraints_list(self):
