@@ -6,7 +6,7 @@ from django.db import IntegrityError
 from django.urls import reverse
 from django.utils import timezone
 from eth_account import Account
-from eth_account.messages import encode_structured_data
+from eth_account.messages import encode_typed_data
 from rest_framework.authtoken.models import Token
 from rest_framework.status import (
     HTTP_200_OK,
@@ -283,7 +283,8 @@ class TestListCreateWallet(APITestCase):
             },
         }
 
-        hashed_message = encode_structured_data(primitive=message)
+        hashed_message = encode_typed_data(full_message=message)
+
         account = Account.from_key(self.private_key_test1)
         signed_message = account.sign_message(hashed_message)
         signature = signed_message.signature.hex()
@@ -581,7 +582,8 @@ class TestVerifyLoginSignature(APITestCase):
             },
         }
 
-        hashed_message = encode_structured_data(primitive=message)
+        hashed_message = encode_typed_data(full_message=message)
+
         account = Account.from_key(self.private_key_test1)
         signed_message = account.sign_message(hashed_message)
         signature = signed_message.signature.hex()

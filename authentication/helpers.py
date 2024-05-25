@@ -10,7 +10,7 @@ from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from eth_account import Account
-from eth_account.messages import encode_defunct, encode_structured_data
+from eth_account.messages import encode_defunct, encode_typed_data
 
 
 def verify_signature_eth_scheme(address, message, signature):
@@ -40,7 +40,7 @@ def verify_login_signature(address, message, signature):
     if current_time - timestamp > datetime.timedelta(minutes=5):
         return False
 
-    hashed_message = encode_structured_data(primitive=message)
+    hashed_message = encode_typed_data(full_message=message)
 
     try:
         signer = Account.recover_message(hashed_message, signature=signature)
