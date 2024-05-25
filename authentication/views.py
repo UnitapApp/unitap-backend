@@ -243,7 +243,8 @@ class ConnectBrightIDView(CreateAPIView):
         profile = request.user.profile
 
         try:
-            is_connected = BrightIDConnection.is_connected(profile)
+            bic = BrightIDConnection.get_connection(profile)
+            is_connected = bic.is_connected()
             if is_connected:
                 return Response(
                     {"message": "You are already connected to BrightID"}, status=403
