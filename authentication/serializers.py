@@ -197,9 +197,6 @@ class TwitterConnectionSerializer(BaseThirdPartyConnectionSerializer):
             "access_token_secret",
         )
 
-    def get_is_connected(self, obj):
-        return bool(obj.access_token and obj.access_token_secret)
-
 
 class ENSConnectionSerializer(BaseThirdPartyConnectionSerializer):
     class Meta:
