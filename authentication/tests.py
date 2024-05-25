@@ -692,6 +692,10 @@ class TestENSThirdPartyConnection(APITestCase):
             user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
         )
 
+    @patch(
+        "authentication.thirdpartydrivers.ens.ENSDriver.get_name",
+        lambda a, b: "test",
+    )
     def test_ens_connection_successful(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
@@ -706,6 +710,10 @@ class TestENSThirdPartyConnection(APITestCase):
             1,
         )
 
+    @patch(
+        "authentication.thirdpartydrivers.ens.ENSDriver.get_name",
+        lambda a, b: "test",
+    )
     def test_address_not_owned_by_user(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
@@ -714,6 +722,10 @@ class TestENSThirdPartyConnection(APITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
+    @patch(
+        "authentication.thirdpartydrivers.ens.ENSDriver.get_name",
+        lambda a, b: "test",
+    )
     def test_ens_disconnect_successful(self):
         self.client.force_authenticate(user=self.user_profile.user)
         self.client.post(
