@@ -2,6 +2,7 @@ import json
 import logging
 
 import rest_framework.exceptions
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_yasg import openapi
@@ -333,6 +334,36 @@ class CreateTokenDistribution(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"success": True, "data": serializer.data})
+
+
+class ExtendTokenDistribution(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TokenDistributionSerializer
+
+    def get(self, request: Request, pk):
+        distribution_pk = pk
+        try:
+            distribution = TokenDistribution.objects.get(pk=distribution_pk)
+        except TokenDistribution.DoesNotExist:
+            raise Http404(
+                f"Token distribution with pk {distribution_pk} Does not Exist"
+            )
+        if distribution.status != TokenDistribution.Status.VERIFIED:
+            raise rest_framework.exceptions.PermissionDenied(
+                "Token distribution is not verified"
+            )
+        if distribution.distributor_profile != request.user.profile:
+            raise rest_framework.exceptions.PermissionDenied(
+                "You are not owner of distribution"
+            )
+        distribution.check_for_extension = True
+        distribution.save()
+        return Response(
+            {
+                "success": True,
+                "data": TokenDistributionSerializer(instance=distribution).data,
+            }
+        )
 
 
 class UserTokenDistributionsView(ListAPIView):
