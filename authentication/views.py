@@ -29,7 +29,6 @@ from authentication.helpers import (
 from authentication.models import (
     BrightIDConnection,
     ENSConnection,
-    ENSSaveError,
     GitcoinPassportSaveError,
     TwitterConnection,
     UserProfile,
