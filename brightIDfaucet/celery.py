@@ -1,6 +1,7 @@
 import os
 
 from celery import Celery
+from celery.schedules import crontab
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "brightIDfaucet.settings")
@@ -40,7 +41,7 @@ app.conf.beat_schedule = {
     },
     "update-tokens-price": {
         "task": "faucet.tasks.update_tokens_price",
-        "schedule": 600,
+        "schedule": crontab(minute="0", hour="*/2"),
     },
     "update-donation-receipt-status": {
         "task": "faucet.tasks.update_donation_receipt_pending_status",
