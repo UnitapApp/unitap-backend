@@ -9,6 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import APIException, ParseError, ValidationError
 from rest_framework.generics import (
     CreateAPIView,
+    DestroyAPIView,
     ListAPIView,
     ListCreateAPIView,
     RetrieveAPIView,
@@ -27,6 +28,7 @@ from authentication.helpers import (
 )
 from authentication.models import (
     BrightIDConnection,
+    ENSConnection,
     GitcoinPassportSaveError,
     TwitterConnection,
     UserProfile,
@@ -34,6 +36,7 @@ from authentication.models import (
 )
 from authentication.permissions import IsOwner
 from authentication.serializers import (
+    ENSConnectionSerializer,
     GitcoinPassportConnectionSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
@@ -410,6 +413,27 @@ class GitcoinPassportConnectionView(CreateAPIView):
             serializer.save(user_profile=self.user_profile)
         except GitcoinPassportSaveError as e:
             raise ValidationError({"address": str(e)})
+
+
+class ENSConnectionView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ENSConnectionSerializer
+
+    @property
+    def user_profile(self):
+        return self.request.user.profile
+
+    def perform_create(self, serializer):
+        try:
+            serializer.save(user_profile=self.user_profile)
+        except ValidationError as e:
+            raise ValidationError({"address": str(e)})
+
+
+class ENSDisconnectionView(DestroyAPIView):
+    queryset = ENSConnection.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = ENSConnectionSerializer
 
 
 class SetUsernameView(CreateAPIView):

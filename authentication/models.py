@@ -15,6 +15,7 @@ from safedelete.models import SafeDeleteModel
 from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
+    ENSDriver,
     GitcoinPassportDriver,
     TwitterDriver,
 )
@@ -236,3 +237,16 @@ class TwitterConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.access_token and self.access_token_secret)
+
+
+class ENSConnection(BaseThirdPartyConnection):
+    title = "ENS"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = ENSDriver()
+
+    @property
+    def name(self):
+        return self.driver.get_name(self.user_wallet_address)
+
+    def is_connected(self):
+        return bool(self.name)
