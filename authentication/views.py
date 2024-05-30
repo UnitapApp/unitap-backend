@@ -6,7 +6,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import APIException, ParseError, ValidationError
+from rest_framework.exceptions import (
+    APIException,
+    AuthenticationFailed,
+    ParseError,
+    ValidationError,
+)
 from rest_framework.generics import (
     CreateAPIView,
     DestroyAPIView,
@@ -308,8 +313,12 @@ class ConnectBrightIDView(CreateAPIView):
                 context_ids = meet_context_ids
             # elif aura_context_ids is not None:
             #     context_ids = aura_context_ids
+        try:
+            first_context_id = context_ids[-1]
+        except IndexError as e:
+            logging.warning(f"Context-id address: {address}, error: {e}")
+            raise ParseError("Can not verify brightID please try again.")
 
-        first_context_id = context_ids[-1]
         try:
             BrightIDConnection.objects.create(
                 user_profile=profile, context_id=first_context_id
@@ -388,8 +397,12 @@ class LoginView(APIView):
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:
                 context_ids = aura_context_ids
+        try:
+            first_context_id = context_ids[-1]
+        except IndexError as e:
+            logging.warning(f"Context-id address: {address}, error: {e}")
+            raise AuthenticationFailed("Please try again.")
 
-        first_context_id = context_ids[-1]
         profile = UserProfile.objects.get_or_create(first_context_id=first_context_id)
         user = profile.user
 
