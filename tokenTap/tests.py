@@ -10,7 +10,7 @@ from rest_framework.test import APITestCase, override_settings
 
 from authentication.models import UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
-from faucet.models import ClaimReceipt, Faucet, TransactionBatch
+from faucet.models import ClaimReceipt
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 
 from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
@@ -277,28 +277,6 @@ class TokenDistributionAPITestCase(APITestCase):
             chain_id="100",
         )
 
-        self.btc_chain = Chain.objects.create(
-            chain_name="Bitcoin",
-            wallet=WalletAccount.objects.create(
-                name="Bitcoin Wallet",
-                private_key=test_wallet_key,
-                network_type=NetworkTypes.LIGHTNING,
-            ),
-            rpc_url_private=test_rpc_url_private,
-            native_currency_name="bitcoin",
-            explorer_url="https://blockstream.info/testnet/",
-            symbol="BTC",
-            chain_id="1010",
-            chain_type=NetworkTypes.LIGHTNING,
-        )
-
-        self.faucet_btc = Faucet.objects.create(
-            chain=self.btc_chain,
-            fund_manager_address=fund_manager,
-            max_claim_amount=100,
-            tokentap_contract_address=gnosis_tokentap_contract_address,
-        )
-
         self.user_profile = UserProfile.objects.get_or_create("mamad")
 
         self.td = TokenDistribution.objects.create(
@@ -338,29 +316,10 @@ class TokenDistributionAPITestCase(APITestCase):
 
         self.td.constraints.set([self.permission1, self.permission4])
 
-        self.btc_td = TokenDistribution.objects.create(
-            name="Test Distribution",
-            distributor="Test distributor",
-            distributor_profile=self.user_profile,
-            distributor_url="https://example.com/distributor",
-            discord_url="https://discord.com/example",
-            twitter_url="https://twitter.com/example",
-            image_url="https://example.com/image.png",
-            token="TEST",
-            token_address="0x83ff60e2f93f8edd0637ef669c69d5fb4f64ca8e",
-            amount=100,
-            chain=self.btc_chain,
-            deadline=timezone.now() + timezone.timedelta(days=7),
-            max_number_of_claims=10,
-            notes="Test Notes",
-            status=TokenDistribution.Status.VERIFIED,
-        )
-        self.btc_td.constraints.set([self.permission1, self.permission5])
-
     def test_token_distribution_list(self):
         response = self.client.get(reverse("token-distribution-list"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["name"], "Test Distribution")
         self.assertEqual(
             response.data[0]["constraints"][0]["name"], "core.BrightIDMeetVerification"
@@ -498,77 +457,6 @@ class TokenDistributionAPITestCase(APITestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-
-    @patch(
-        "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
-    )
-    def test_btc_lightning_claimable(self):
-        Wallet.objects.create(
-            user_profile=self.user_profile,
-            wallet_type=NetworkTypes.EVM,
-            address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
-        )
-        self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
-            data={"user_wallet_address": "test"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["signature"]["status"], "Pending")
-        self.assertEqual(ClaimReceipt.objects.count(), 1)
-        self.assertEqual(
-            ClaimReceipt.objects.first().faucet.chain.chain_id,
-            self.btc_td.chain.chain_id,
-        )
-
-    @patch(
-        "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
-    )
-    def test_btc_lightning_claimable_claim_updates_after_6seconds(self):
-        Wallet.objects.create(
-            user_profile=self.user_profile,
-            wallet_type=NetworkTypes.EVM,
-            address="0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
-        )
-        self.client.force_authenticate(user=self.user_profile.user)
-        response = self.client.post(
-            reverse("token-distribution-claim", kwargs={"pk": self.btc_td.pk}),
-            data={"user_wallet_address": "test"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["signature"]["status"], "Pending")
-        self.assertEqual(ClaimReceipt.objects.count(), 1)
-        gas_tap_claim = ClaimReceipt.objects.first()
-        self.assertEqual(
-            gas_tap_claim.faucet.chain.chain_id, self.btc_td.chain.chain_id
-        )
-        self.assertEqual(gas_tap_claim._status, ClaimReceipt.PENDING)
-
-        tb = TransactionBatch.objects.create(
-            faucet=self.faucet_btc,
-            tx_hash="test hash",
-            _status=ClaimReceipt.VERIFIED,
-        )
-
-        gas_tap_claim.batch = tb
-        gas_tap_claim._status = ClaimReceipt.VERIFIED
-        gas_tap_claim.save()
-
-        from faucet.tasks import update_tokentap_claim_for_verified_lightning_claims
-
-        update_tokentap_claim_for_verified_lightning_claims.apply()
-
-        gas_tap_claim.refresh_from_db()
-        self.assertEqual(gas_tap_claim._status, ClaimReceipt.PROCESSED_FOR_TOKENTAP)
-        self.assertEqual(gas_tap_claim.tx_hash, "test hash")
-        self.assertEqual(
-            TokenDistributionClaim.objects.first().status, ClaimReceipt.VERIFIED
-        )
-        self.assertEqual(TokenDistributionClaim.objects.first().tx_hash, "test hash")
 
 
 class HelpersTestCase(APITestCase):
