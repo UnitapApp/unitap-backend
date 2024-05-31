@@ -35,10 +35,6 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.reject_expired_pending_claims",
         "schedule": 120,
     },
-    "update_tokentap_claim_for_verified_lightning_claims": {
-        "task": "faucet.tasks.update_tokentap_claim_for_verified_lightning_claims",
-        "schedule": 9,
-    },
     "update-tokens-price": {
         "task": "faucet.tasks.update_tokens_price",
         "schedule": crontab(minute="0", hour="*/2"),
