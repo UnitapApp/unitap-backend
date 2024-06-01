@@ -3,8 +3,14 @@ from unittest.mock import PropertyMock, patch
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 
-from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
+from authentication.models import (
+    GitcoinPassportConnection,
+    TwitterConnection,
+    UserProfile,
+    Wallet,
+)
 from core.models import Chain, NetworkTypes, WalletAccount
+from core.thirdpartyapp.twitter import TwitterUtils
 
 from .constraints import (
     Attest,
@@ -13,8 +19,11 @@ from .constraints import (
     BrightIDMeetVerification,
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
+    HasMinimumTweetCount,
+    HasMinimumTwitterFollowerCount,
     HasNFTVerification,
     HasTokenVerification,
+    HasTwitter,
 )
 
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
@@ -361,5 +370,103 @@ class TestGitcoinPassportConstraint(BaseTestCase):
 
     def test_gitcoin_passport_connection_constraint_fail(self):
         constraint = HasGitcoinPassportProfile(self.not_connected_user_profile)
+
+        self.assertEqual(constraint.is_observed(), False)
+
+
+class TestTwitterConstraint(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.address = "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF6"
+        create_new_wallet(
+            user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
+        )
+        self.minimum = 1
+
+        url, request_token = TwitterUtils.get_authorization_url_and_token()
+        oauth_token = request_token.get("oauth_token")
+        oauth_token_secret = request_token.get("oauth_token_secret")
+
+        self.twitter = TwitterConnection.objects.create(
+            user_profile=self.user_profile,
+            oauth_token=oauth_token,
+            oauth_token_secret=oauth_token_secret,
+            access_token=None,
+            access_token_secret=None,
+        )
+
+        self.not_connected_user_profile = UserProfile.objects.create(
+            user=User.objects.create_user(username="newtest", password="1234"),
+            initial_context_id="newtest",
+            username="newtest",
+        )
+        self.not_connected_address = "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92"
+        create_new_wallet(
+            user_profile=self.not_connected_user_profile,
+            _address=self.not_connected_address,
+            wallet_type="EVM",
+        )
+
+    def test_twitter_minimum_tweet_constraint_success(self):
+        constraint = HasMinimumTweetCount(self.user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": self.minimum,
+        }
+
+        self.assertEqual(constraint.is_observed(), True)
+
+    def test_twitter_minimum_tweet_constraint_fail_on_connection(self):
+        constraint = HasMinimumTweetCount(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": self.minimum,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    def test_twitter_minimum_tweet_constraint_fail_on_minimum(self):
+        constraint = HasMinimumTweetCount(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": 30,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    def test_twitter_connection_constraint_success(self):
+        constraint = HasTwitter(self.user_profile)
+
+        self.assertEqual(constraint.is_observed(), True)
+
+    def test_twitter_connection_constraint_fail(self):
+        constraint = HasTwitter(self.not_connected_user_profile)
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    def test_twitter_minimum_follower_constraint_success(self):
+        constraint = HasMinimumTwitterFollowerCount(self.user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": self.minimum,
+        }
+
+        self.assertEqual(constraint.is_observed(), True)
+
+    def test_twitter_minimum_follower_constraint_fail_on_connection(self):
+        constraint = HasMinimumTwitterFollowerCount(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": self.minimum,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    def test_twitter_minimum_follower_constraint_fail_on_minimum(self):
+        constraint = HasMinimumTwitterFollowerCount(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "MINIMUM": 30,
+        }
 
         self.assertEqual(constraint.is_observed(), False)
