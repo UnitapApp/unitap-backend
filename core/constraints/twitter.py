@@ -22,7 +22,7 @@ class HasTwitter(ConstraintVerification):
         return twitter.is_connected()
 
 
-class HasMinimumFollowerCount(ConstraintVerification):
+class HasMinimumTwitterFollowerCount(ConstraintVerification):
     _param_keys = [ConstraintParam.MINIMUM]
     app_name = ConstraintApp.TWITTER.value
 

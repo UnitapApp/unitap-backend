@@ -57,5 +57,19 @@ class TwitterUtils:
 
         return access_token, access_token_secret
 
-    def get_username(self, access_token, access_token_secret):
-        pass
+    def get_username(self) -> str:
+        try:
+            username = self.api.verify_credentials().screen_name
+        except tweepy.TweepyException as e:
+            raise TwitterUtilsError(f"Can not get username, error: {e}")
+        return username
+
+    def get_tweet_count(self) -> int:
+        username = self.get_username()
+        user = self.api.get_user(username)
+        return user.followers_count
+
+    def get_follower_count(self) -> int:
+        username = self.get_username()
+        user = self.api.get_user(username)
+        return user.statuses_count
