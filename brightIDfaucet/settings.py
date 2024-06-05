@@ -118,6 +118,7 @@ INSTALLED_APPS = [
     "quiztap.apps.QuiztapConfig",
     # "permissions.apps.PermissionsConfig",
     "authentication.apps.AuthenticationConfig",
+    "seasons.apps.SeasonsConfig",
     "rest_framework",
     "rest_framework.authtoken",
     "encrypted_model_fields",
