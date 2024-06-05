@@ -5,10 +5,12 @@ from core.thirdpartyapp import TwitterUtils
 class TwitterDriver(BaseThirdPartyDriver):
     def get_tweet_count(
         self, access_token: str, access_token_secret: str
-    ) -> None | str:
+    ) -> None | int:
         twitter = TwitterUtils(access_token, access_token_secret)
         return twitter.get_tweet_count()
 
-    def get_follower_count(self, access_token: str, access_token_secret: str) -> str:
+    def get_follower_count(
+        self, access_token: str, access_token_secret: str
+    ) -> None | int:
         twitter = TwitterUtils(access_token, access_token_secret)
         return twitter.get_follower_count()

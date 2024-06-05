@@ -36,9 +36,11 @@ class HasMinimumTwitterFollowerCount(ConstraintVerification):
             twitter = TwitterConnection.get_connection(self.user_profile)
         except TwitterConnection.DoesNotExist:
             return False
-        if twitter.driver.get_follower_count() >= float(
-            self.param_values[ConstraintParam.MINIMUM.name]
-        ):
+        try:
+            follower_count = twitter.driver.get_follower_count()
+        except Exception:
+            return False
+        if follower_count >= int(self.param_values[ConstraintParam.MINIMUM.name]):
             return True
         return False
 
@@ -57,8 +59,10 @@ class HasMinimumTweetCount(ConstraintVerification):
             twitter = TwitterConnection.get_connection(self.user_profile)
         except TwitterConnection.DoesNotExist:
             return False
-        if twitter.driver.get_tweet_count() >= float(
-            self.param_values[ConstraintParam.MINIMUM.name]
-        ):
+        try:
+            tweet_count = twitter.driver.get_tweet_count()
+        except Exception:
+            return False
+        if tweet_count >= int(self.param_values[ConstraintParam.MINIMUM.name]):
             return True
         return False
