@@ -67,9 +67,9 @@ class TwitterUtils:
     def get_tweet_count(self) -> int:
         username = self.get_username()
         user = self.api.get_user(username)
-        return user.followers_count
+        return user.statuses_count
 
     def get_follower_count(self) -> int:
         username = self.get_username()
         user = self.api.get_user(username)
-        return user.statuses_count
+        return user.followers_count

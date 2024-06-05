@@ -425,7 +425,7 @@ class TestTwitterConstraint(BaseTestCase):
 
         self.assertEqual(constraint.is_observed(), False)
 
-    def test_twitter_minimum_tweet_constraint_fail_on_minimum(self):
+    def test_twitter_minimum_tweet_constraint_fail_due_to_high_minimum(self):
         constraint = HasMinimumTweetCount(self.not_connected_user_profile)
 
         constraint.param_values = {
@@ -462,7 +462,7 @@ class TestTwitterConstraint(BaseTestCase):
 
         self.assertEqual(constraint.is_observed(), False)
 
-    def test_twitter_minimum_follower_constraint_fail_on_minimum(self):
+    def test_twitter_minimum_follower_constraint_fail_due_to_high_minimum(self):
         constraint = HasMinimumTwitterFollowerCount(self.not_connected_user_profile)
 
         constraint.param_values = {
