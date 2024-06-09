@@ -25,5 +25,5 @@ class getUserAnalytics(APIView):
                 "gitcoinpassport_users_count": gitcoinpassport_users_count,
             }
             # set cache
-            cache.set("analytics_users_count", analytics, 10 * 60)
+            cache.set("analytics_users_count", analytics, timeout=10 * 60)
         return Response(analytics)

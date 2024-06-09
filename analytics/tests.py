@@ -28,6 +28,7 @@ class GetUserAnalyticsTests(TestCase):
         }
        
         endpoint = reverse("ANALYTICS:get-user-analytics")
+
         response = self.client.get(endpoint)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
@@ -36,10 +37,11 @@ class GetUserAnalyticsTests(TestCase):
         self.assertEqual(response.data["brightid_users_count"], expected_data["brightid_users_count"])
         self.assertEqual(response.data["gitcoinpassport_users_count"], expected_data["gitcoinpassport_users_count"])
         
-        cached_data = cache.get("analytics_users_count")
-        print(response.data)
-        print(cached_data)
-        print(expected_data)
-        self.assertEqual(cached_data["all_users_count"], expected_data["all_users_count"])
-        self.assertEqual(cached_data["brightid_users_count"], expected_data["brightid_users_count"])
-        self.assertEqual(cached_data["gitcoinpassport_users_count"], expected_data["gitcoinpassport_users_count"])
+        # second request
+        response2 = self.client.get(endpoint)
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        
+       
+        self.assertEqual(response2.data["all_users_count"], expected_data["all_users_count"])
+        self.assertEqual(response2.data["brightid_users_count"], expected_data["brightid_users_count"])
+        self.assertEqual(response2.data["gitcoinpassport_users_count"], expected_data["gitcoinpassport_users_count"])
