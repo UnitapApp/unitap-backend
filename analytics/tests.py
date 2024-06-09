@@ -35,7 +35,8 @@ class GetUserAnalyticsTests(TestCase):
         response = self.client.get(endpoint)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-    
+        print(response.data)
+        print(expected_data)
         
         self.assertEqual(response.data["allUsersCount"], expected_data["allUsersCount"])
         self.assertEqual(response.data["brightidUsersCount"], expected_data["brightidUsersCount"])
