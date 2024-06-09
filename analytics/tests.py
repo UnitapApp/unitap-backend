@@ -9,7 +9,7 @@ class GetUserAnalyticsTests(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.url = '/api/analytics/'  
-    
+        cache.clear() 
 
     def tearDown(self) -> None:
         cache.clear()
