@@ -36,6 +36,8 @@ class GetUserAnalyticsTests(TestCase):
             "brightidUsersCount": 20,
             "gitcoinpassportUsersCount": 10,
         }
+        print(response.data)
+        
         self.assertEqual(response.data["allUsersCount"], expected_data["allUsersCount"])
         self.assertEqual(response.data["brightidUsersCount"], expected_data["brightidUsersCount"])
         self.assertEqual(response.data["gitcoinpassportUsersCount"], expected_data["gitcoinpassportUsersCount"])
