@@ -4,11 +4,11 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from authentication.models import BrightIDConnection, GitcoinPassportConnection, UserProfile
 from unittest.mock import patch
+from django.urls import reverse
 
 class GetUserAnalyticsTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.url = '/api/analytics/'  
         cache.clear() 
 
     def tearDown(self) -> None:
@@ -27,8 +27,8 @@ class GetUserAnalyticsTests(TestCase):
             "brightidUsersCount": 20,
             "gitcoinpassportUsersCount": 10,
         })
-        
-        response = self.client.get(self.url)
+        endpoint = reverse("ANALYTICS:get-user-analytics")
+        response = self.client.get(endpoint)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         expected_data = {

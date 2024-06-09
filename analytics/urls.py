@@ -7,6 +7,8 @@ admin.site.site_header = "Unitap Administration"
 admin.site.index_title = "Unitap Administration"
 admin.site.site_title = "Unitap Administration"
 
+app_name = "ANALYTICS"
+
 urlpatterns = [
-    path("", getUserAnalytics.as_view(), name="get_user_analytics"),
+    path("user-analytics/", getUserAnalytics.as_view(), name="get-user-analytics"),
 ]
