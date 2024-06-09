@@ -11,6 +11,8 @@ class GetUserAnalyticsTests(TestCase):
         self.url = '/api/analytics/'  
     
 
+    def tearDown(self) -> None:
+        cache.clear()
     
     @patch('authentication.models.UserProfile.user_count')
     @patch('authentication.models.BrightIDConnection.objects.all')
