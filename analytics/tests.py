@@ -22,28 +22,26 @@ class GetUserAnalyticsTests(TestCase):
         mock_brightid_all.return_value.count.return_value = 50
         mock_gitcoinpassport_all.return_value.count.return_value = 30
         expected_data = {
-            "allUsersCount": 100,
-            "brightidUsersCount": 50,
-            "gitcoinpassportUsersCount": 30,
+            "all_users_count": 100,
+            "brightid_users_count": 50,
+            "gitcoinpassport_users_count": 30,
         }
         cache.set("analytics_users_count", {
-            "allUsersCount": expected_data["allUsersCount"],
-            "brightidUsersCount": expected_data["brightidUsersCount"],
-            "gitcoinpassportUsersCount": expected_data["gitcoinpassportUsersCount"],
+            "all_users_count": expected_data["all_users_count"],
+            "brightid_users_count": expected_data["brightid_users_count"],
+            "gitcoinpassport_users_count": expected_data["gitcoinpassport_users_count"],
         })
         endpoint = reverse("ANALYTICS:get-user-analytics")
         response = self.client.get(endpoint)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        print(response.data)
-        print(expected_data)
-        
-        self.assertEqual(response.data["allUsersCount"], expected_data["allUsersCount"])
-        self.assertEqual(response.data["brightidUsersCount"], expected_data["brightidUsersCount"])
-        self.assertEqual(response.data["gitcoinpassportUsersCount"], expected_data["gitcoinpassportUsersCount"])
+       
+        self.assertEqual(response.data["all_users_count"], expected_data["all_users_count"])
+        self.assertEqual(response.data["brightid_users_count"], expected_data["brightid_users_count"])
+        self.assertEqual(response.data["gitcoinpassport_users_count"], expected_data["gitcoinpassport_users_count"])
         
         cached_data = cache.get("analytics_users_count")
 
-        self.assertEqual(cached_data["allUsersCount"], expected_data["allUsersCount"])
-        self.assertEqual(cached_data["brightidUsersCount"], expected_data["brightidUsersCount"])
-        self.assertEqual(cached_data["gitcoinpassportUsersCount"], expected_data["gitcoinpassportUsersCount"])
+        self.assertEqual(cached_data["all_users_count"], expected_data["all_users_count"])
+        self.assertEqual(cached_data["brightid_users_count"], expected_data["brightid_users_count"])
+        self.assertEqual(cached_data["gitcoinpassport_users_count"], expected_data["gitcoinpassport_users_count"])
