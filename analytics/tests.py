@@ -21,22 +21,21 @@ class GetUserAnalyticsTests(TestCase):
         mock_user_count.return_value = 100
         mock_brightid_all.return_value.count.return_value = 50
         mock_gitcoinpassport_all.return_value.count.return_value = 30
-        
+        expected_data = {
+            "allUsersCount": 100,
+            "brightidUsersCount": 50,
+            "gitcoinpassportUsersCount": 30,
+        }
         cache.set("analytics_users_count", {
-            "allUsersCount": 50,
-            "brightidUsersCount": 20,
-            "gitcoinpassportUsersCount": 10,
+            "allUsersCount": expected_data["allUsersCount"],
+            "brightidUsersCount": expected_data["brightidUsersCount"],
+            "gitcoinpassportUsersCount": expected_data["gitcoinpassportUsersCount"],
         })
         endpoint = reverse("ANALYTICS:get-user-analytics")
         response = self.client.get(endpoint)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        expected_data = {
-            "allUsersCount": 50,
-            "brightidUsersCount": 20,
-            "gitcoinpassportUsersCount": 10,
-        }
-        print(response.data)
+    
         
         self.assertEqual(response.data["allUsersCount"], expected_data["allUsersCount"])
         self.assertEqual(response.data["brightidUsersCount"], expected_data["brightidUsersCount"])
