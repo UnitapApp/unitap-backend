@@ -41,7 +41,9 @@ class GetUserAnalyticsTests(TestCase):
         self.assertEqual(response.data["gitcoinpassport_users_count"], expected_data["gitcoinpassport_users_count"])
         
         cached_data = cache.get("analytics_users_count")
-
+        print(response.data)
+        print(cached_data)
+        print(expected_data)
         self.assertEqual(cached_data["all_users_count"], expected_data["all_users_count"])
         self.assertEqual(cached_data["brightid_users_count"], expected_data["brightid_users_count"])
         self.assertEqual(cached_data["gitcoinpassport_users_count"], expected_data["gitcoinpassport_users_count"])
