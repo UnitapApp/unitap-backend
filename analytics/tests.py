@@ -26,11 +26,7 @@ class GetUserAnalyticsTests(TestCase):
             "brightid_users_count": 50,
             "gitcoinpassport_users_count": 30,
         }
-        cache.set("analytics_users_count", {
-            "all_users_count": expected_data["all_users_count"],
-            "brightid_users_count": expected_data["brightid_users_count"],
-            "gitcoinpassport_users_count": expected_data["gitcoinpassport_users_count"],
-        })
+       
         endpoint = reverse("ANALYTICS:get-user-analytics")
         response = self.client.get(endpoint)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
