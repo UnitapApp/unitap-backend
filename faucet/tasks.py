@@ -8,7 +8,6 @@ from core.utils import memcache_lock
 
 from .celery_tasks import CeleryTasks
 from .models import ClaimReceipt, DonationReceipt, Faucet, TransactionBatch
-from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
 def passive_address_is_not_none(address):
     if address is not None or address != "" or address != " ":
@@ -128,27 +127,12 @@ def update_donation_receipt_pending_status():
     for pending_donation_receipt in pending_donation_receipts:
         process_donation_receipt.delay(pending_donation_receipt.pk)
 
-@shared_task
-def update_claims_count():
-    active_faucets = Faucet.objects.filter(is_active=True)
-    for faucet in active_faucets:
-        total_claims_since_last_round = ClaimReceipt.objects.filter(
-            faucet=faucet,
-            datetime__gte=RoundCreditStrategy.get_start_of_previous_round(),
-            _status__in=[ClaimReceipt.VERIFIED]
-        ).count()
-        faucet.total_claims_since_last_round = total_claims_since_last_round
-        faucet.save()
 
 
 @shared_task
-def update_total_claims_this_round():
+def update_all_faucets_claims(since_last_round=True):
     active_faucets = Faucet.objects.filter(is_active=True)
-    for faucet in active_faucets:
-        total_claims_this_round = ClaimReceipt.objects.filter(
-            faucet=faucet,
-            datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
-            _status__in=[ClaimReceipt.VERIFIED]
-        ).count()
-        faucet.total_claims_this_round = total_claims_this_round
-        faucet.save()
+    
+    for active_faucet in active_faucets:
+        CeleryTasks.update_claims_for_faucet.delay(active_faucet.pk, since_last_round)
+       

@@ -12,6 +12,9 @@ from core.models import WalletAccount
 from faucet.constraints import OptimismDonationConstraint
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
+from faucet.faucet_manager.fund_manager import LightningFundManager
+from faucet.helpers import memcache_lock
+from .celery_tasks import CeleryTasks
 from faucet.models import (
     Chain,
     ClaimReceipt,
@@ -295,16 +298,31 @@ class TestClaim(APITestCase):
             amount=10,
         )
         
-        #call shared task to update claims
-        from .tasks import update_total_claims_this_round
-        update_total_claims_this_round()
+      
+        CeleryTasks.update_claims_for_faucet(self.test_faucet1.pk, False)
         
         #refetch test_faucet from DB
-        self.test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
+        db_test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
+        self.assertEqual(db_test_faucet1.total_claims_this_round, 2)
+
+    def test_update_claims_task_since_last_round(self):
+        ClaimReceipt.objects.create(
+                faucet=self.test_faucet1,
+                user_profile=self.verified_user,
+                datetime=RoundCreditStrategy.get_start_of_previous_round(),
+                _status=ClaimReceipt.VERIFIED,
+                amount=10,
+            )      
+
+
         
-        self.assertEqual(self.test_faucet1.total_claims_this_round, 2)
+        CeleryTasks.update_claims_for_faucet(self.test_faucet1.pk,True)
         
-                
+        db_test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
+        
+        self.assertEqual(db_test_faucet1.total_claims_since_last_round, 1)
+
+                    
         
 
 

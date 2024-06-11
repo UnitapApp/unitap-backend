@@ -73,11 +73,12 @@ app.conf.beat_schedule = {
         "schedule": 10,
     },
     'update_claims_count_every_10_minutes': {
-        'task': 'faucet.tasks.update_claims_count',
-        'schedule': 600
+        'task': 'faucet.tasks.update_all_faucets_claims',
+        'schedule': 600,
+        'args': (False,)
     },
     'update_total_claims_this_round_every_10_minutes': {
-        'task': 'faucet.tasks.update_total_claims_this_round',
+        'task': 'faucet.tasks.update_all_faucets_claims',
         'schedule': 600
     }
 }
