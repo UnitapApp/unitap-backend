@@ -12,8 +12,6 @@ from core.models import WalletAccount
 from faucet.constraints import OptimismDonationConstraint
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
-from faucet.faucet_manager.fund_manager import LightningFundManager
-from faucet.helpers import memcache_lock
 from .celery_tasks import CeleryTasks
 from faucet.models import (
     Chain,
