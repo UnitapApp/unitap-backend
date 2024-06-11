@@ -1,6 +1,7 @@
 from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.request import Request
 from authentication.models import (
     BrightIDConnection,
     GitcoinPassportConnection,
@@ -9,8 +10,8 @@ from authentication.models import (
 
 
 
-class getUserAnalytics(APIView):
-    def get(self, request):
+class GetUserAnalytics(APIView):
+    def get(self, request : Request) -> Response:
         # check cache
         analytics = cache.get("analytics_users_count")
         if analytics is None:
