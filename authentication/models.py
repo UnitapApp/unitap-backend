@@ -263,6 +263,16 @@ class TwitterConnection(BaseThirdPartyConnection):
     def is_connected(self):
         return bool(self.access_token and self.access_token_secret)
 
+    @property
+    def tweet_count(self):
+        return self.driver.get_tweet_count(self.access_token, self.access_token_secret)
+
+    @property
+    def follower_count(self):
+        return self.driver.get_follower_count(
+            self.access_token, self.access_token_secret
+        )
+
 
 class ENSConnection(BaseThirdPartyConnection):
     title = "ENS"

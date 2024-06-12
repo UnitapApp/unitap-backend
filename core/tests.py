@@ -391,8 +391,8 @@ class TestTwitterConstraint(BaseTestCase):
             user_profile=self.user_profile,
             oauth_token=oauth_token,
             oauth_token_secret=oauth_token_secret,
-            access_token=None,
-            access_token_secret=None,
+            access_token="test",
+            access_token_secret="test",
         )
 
         self.not_connected_user_profile = UserProfile.objects.create(
@@ -407,6 +407,10 @@ class TestTwitterConstraint(BaseTestCase):
             wallet_type="EVM",
         )
 
+    @patch(
+        "authentication.thirdpartydrivers.twitter.TwitterDriver.get_tweet_count",
+        lambda a, b, c: 100,
+    )
     def test_twitter_minimum_tweet_constraint_success(self):
         constraint = HasMinimumTweetCount(self.user_profile)
 
@@ -425,6 +429,10 @@ class TestTwitterConstraint(BaseTestCase):
 
         self.assertEqual(constraint.is_observed(), False)
 
+    @patch(
+        "authentication.thirdpartydrivers.twitter.TwitterDriver.get_tweet_count",
+        lambda a, b, c: 5,
+    )
     def test_twitter_minimum_tweet_constraint_fail_due_to_high_minimum(self):
         constraint = HasMinimumTweetCount(self.not_connected_user_profile)
 
@@ -444,6 +452,10 @@ class TestTwitterConstraint(BaseTestCase):
 
         self.assertEqual(constraint.is_observed(), False)
 
+    @patch(
+        "authentication.thirdpartydrivers.twitter.TwitterDriver.get_follower_count",
+        lambda a, b, c: 100,
+    )
     def test_twitter_minimum_follower_constraint_success(self):
         constraint = HasMinimumTwitterFollowerCount(self.user_profile)
 
@@ -462,6 +474,10 @@ class TestTwitterConstraint(BaseTestCase):
 
         self.assertEqual(constraint.is_observed(), False)
 
+    @patch(
+        "authentication.thirdpartydrivers.twitter.TwitterDriver.get_follower_count",
+        lambda a, b, c: 5,
+    )
     def test_twitter_minimum_follower_constraint_fail_due_to_high_minimum(self):
         constraint = HasMinimumTwitterFollowerCount(self.not_connected_user_profile)
 
