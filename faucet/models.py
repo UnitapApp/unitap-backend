@@ -183,6 +183,8 @@ class Faucet(models.Model):
     is_deprecated = models.BooleanField(default=False)
 
     fuel_level = models.IntegerField(default=100)
+    total_claims_since_last_round = models.IntegerField(default=0)
+    total_claims_this_round = models.IntegerField(default=0)
 
     def __str__(self):
         return (
@@ -289,49 +291,6 @@ class Faucet(models.Model):
             get_cache_time(self.pk),
         )
         return total_claims
-
-    @property
-    def total_claims_this_round(self):
-        cached_total_claims_this_round = cache.get(
-            f"gas_tap_chain_total_claims_this_round_{self.pk}"
-        )
-        if cached_total_claims_this_round:
-            return cached_total_claims_this_round
-        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
-
-        total_claims_this_round = ClaimReceipt.objects.filter(
-            faucet=self,
-            datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
-            _status__in=[ClaimReceipt.VERIFIED],
-        ).count()
-        cache.set(
-            f"gas_tap_chain_total_claims_this_round_{self.pk}",
-            total_claims_this_round,
-            get_cache_time(self.pk),
-        )
-        return total_claims_this_round
-
-    @property
-    def total_claims_since_last_round(self):
-        cached_total_claims_since_last_round = cache.get(
-            f"gas_tap_chain_total_claims_since_last_round_{self.pk}"
-        )
-        if cached_total_claims_since_last_round:
-            return cached_total_claims_since_last_round
-        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
-
-        total_claims_since_last_round = ClaimReceipt.objects.filter(
-            faucet=self,
-            datetime__gte=RoundCreditStrategy.get_start_of_previous_round(),
-            _status__in=[ClaimReceipt.VERIFIED],
-        ).count()
-        cache.set(
-            f"gas_tap_chain_total_claims_since_last_round_{self.pk}",
-            total_claims_since_last_round,
-            get_cache_time(self.pk),
-        )
-        return total_claims_since_last_round
-
 
 class GlobalSettings(AbstractGlobalSettings):
     pass
