@@ -8,9 +8,7 @@ from .models import Chain, NetworkTypes
 
 def address_validator(address, chain: Chain):
     is_address_valid = False
-    if chain.chain_type == NetworkTypes.LIGHTNING:
-        return
-    elif chain.chain_type == NetworkTypes.EVM:
+    if chain.chain_type == NetworkTypes.EVM:
         try:
             Web3Utils.to_checksum_address(address)
             return

@@ -6,9 +6,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import APIException, ParseError, ValidationError
+from rest_framework.exceptions import (
+    APIException,
+    AuthenticationFailed,
+    ParseError,
+    ValidationError,
+)
 from rest_framework.generics import (
     CreateAPIView,
+    DestroyAPIView,
     ListAPIView,
     ListCreateAPIView,
     RetrieveAPIView,
@@ -27,6 +33,7 @@ from authentication.helpers import (
 )
 from authentication.models import (
     BrightIDConnection,
+    ENSConnection,
     GitcoinPassportSaveError,
     TwitterConnection,
     UserProfile,
@@ -34,6 +41,7 @@ from authentication.models import (
 )
 from authentication.permissions import IsOwner
 from authentication.serializers import (
+    ENSConnectionSerializer,
     GitcoinPassportConnectionSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
@@ -243,7 +251,8 @@ class ConnectBrightIDView(CreateAPIView):
         profile = request.user.profile
 
         try:
-            is_connected = BrightIDConnection.is_connected(profile)
+            bic = BrightIDConnection.get_connection(profile)
+            is_connected = bic.is_connected()
             if is_connected:
                 return Response(
                     {"message": "You are already connected to BrightID"}, status=403
@@ -304,8 +313,12 @@ class ConnectBrightIDView(CreateAPIView):
                 context_ids = meet_context_ids
             # elif aura_context_ids is not None:
             #     context_ids = aura_context_ids
+        try:
+            first_context_id = context_ids[-1]
+        except IndexError as e:
+            logging.warning(f"Context-id address: {address}, error: {e}")
+            raise ParseError("Can not verify brightID please try again.")
 
-        first_context_id = context_ids[-1]
         try:
             BrightIDConnection.objects.create(
                 user_profile=profile, context_id=first_context_id
@@ -384,8 +397,12 @@ class LoginView(APIView):
                 context_ids = meet_context_ids
             elif aura_context_ids is not None:
                 context_ids = aura_context_ids
+        try:
+            first_context_id = context_ids[-1]
+        except IndexError as e:
+            logging.warning(f"Context-id address: {address}, error: {e}")
+            raise AuthenticationFailed("Please try again.")
 
-        first_context_id = context_ids[-1]
         profile = UserProfile.objects.get_or_create(first_context_id=first_context_id)
         user = profile.user
 
@@ -409,6 +426,27 @@ class GitcoinPassportConnectionView(CreateAPIView):
             serializer.save(user_profile=self.user_profile)
         except GitcoinPassportSaveError as e:
             raise ValidationError({"address": str(e)})
+
+
+class ENSConnectionView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ENSConnectionSerializer
+
+    @property
+    def user_profile(self):
+        return self.request.user.profile
+
+    def perform_create(self, serializer):
+        try:
+            serializer.save(user_profile=self.user_profile)
+        except ValidationError as e:
+            raise ValidationError({"address": str(e)})
+
+
+class ENSDisconnectionView(DestroyAPIView):
+    queryset = ENSConnection.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = ENSConnectionSerializer
 
 
 class SetUsernameView(CreateAPIView):

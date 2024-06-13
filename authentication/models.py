@@ -15,6 +15,7 @@ from safedelete.models import SafeDeleteModel
 from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
+    ENSDriver,
     GitcoinPassportDriver,
     TwitterDriver,
 )
@@ -103,10 +104,6 @@ class UserProfile(models.Model):
     def is_aura_verified(self):
         return False
 
-    @property
-    def is_connected_to_brightid(self):
-        return BrightIDConnection.is_connected(self)
-
     def owns_wallet(self, wallet_address):
         return self.wallets.filter(address=wallet_address).exists()
 
@@ -169,9 +166,8 @@ class BaseThirdPartyConnection(models.Model):
     class Meta:
         abstract = True
 
-    @classmethod
-    def is_connected(cls, user_profile):
-        return cls.objects.filter(user_profile=user_profile).exists()
+    def is_connected(self):
+        return bool(self.created_at)
 
     @classmethod
     def get_connection(cls, user_profile):
@@ -210,7 +206,8 @@ class GitcoinPassportConnection(BaseThirdPartyConnection):
 
     @property
     def score(self):
-        return self.driver.get_score(self.user_wallet_address)[0]
+        score_tuple = self.driver.get_score(self.user_wallet_address)
+        return score_tuple[0] if score_tuple else 0.0
 
 
 @receiver(pre_save, sender=GitcoinPassportConnection)
@@ -237,3 +234,19 @@ class TwitterConnection(BaseThirdPartyConnection):
         max_length=255, unique=True, blank=True, null=True
     )
     driver = TwitterDriver()
+
+    def is_connected(self):
+        return bool(self.access_token and self.access_token_secret)
+
+
+class ENSConnection(BaseThirdPartyConnection):
+    title = "ENS"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = ENSDriver()
+
+    @property
+    def name(self):
+        return self.driver.get_name(self.user_wallet_address)
+
+    def is_connected(self):
+        return bool(self.name)

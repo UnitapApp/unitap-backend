@@ -6,7 +6,7 @@ from django.db import IntegrityError
 from django.urls import reverse
 from django.utils import timezone
 from eth_account import Account
-from eth_account.messages import encode_structured_data
+from eth_account.messages import encode_typed_data
 from rest_framework.authtoken.models import Token
 from rest_framework.status import (
     HTTP_200_OK,
@@ -19,7 +19,12 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
-from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
+from authentication.models import (
+    ENSConnection,
+    GitcoinPassportConnection,
+    UserProfile,
+    Wallet,
+)
 from faucet.models import ClaimReceipt
 
 # get address as username and signed address as password and verify signature
@@ -283,7 +288,8 @@ class TestListCreateWallet(APITestCase):
             },
         }
 
-        hashed_message = encode_structured_data(primitive=message)
+        hashed_message = encode_typed_data(full_message=message)
+
         account = Account.from_key(self.private_key_test1)
         signed_message = account.sign_message(hashed_message)
         signature = signed_message.signature.hex()
@@ -581,7 +587,8 @@ class TestVerifyLoginSignature(APITestCase):
             },
         }
 
-        hashed_message = encode_structured_data(primitive=message)
+        hashed_message = encode_typed_data(full_message=message)
+
         account = Account.from_key(self.private_key_test1)
         signed_message = account.sign_message(hashed_message)
         signature = signed_message.signature.hex()
@@ -675,3 +682,66 @@ class TestGitcoinPassportThirdPartyConnection(APITestCase):
             data={"user_wallet_address": address},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+
+class TestENSThirdPartyConnection(APITestCase):
+    def setUp(self) -> None:
+        self.address = "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF6"
+        self.user_profile = create_new_user()
+        create_new_wallet(
+            user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
+        )
+
+    @patch(
+        "authentication.thirdpartydrivers.ens.ENSDriver.get_name",
+        lambda a, b: "test",
+    )
+    def test_ens_connection_successful(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("AUTHENTICATION:connect-ens"),
+            data={"user_wallet_address": self.address},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(
+            ENSConnection.objects.filter(
+                user_profile=self.user_profile, user_wallet_address=self.address
+            ).count(),
+            1,
+        )
+
+    @patch(
+        "authentication.thirdpartydrivers.ens.ENSDriver.get_name",
+        lambda a, b: "test",
+    )
+    def test_address_not_owned_by_user(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("AUTHENTICATION:connect-ens"),
+            data={"user_wallet_address": address},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    @patch(
+        "authentication.thirdpartydrivers.ens.ENSDriver.get_name",
+        lambda a, b: "test",
+    )
+    def test_ens_disconnect_successful(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.client.post(
+            reverse("AUTHENTICATION:connect-ens"),
+            data={"user_wallet_address": self.address},
+        )
+        ens_instance = ENSConnection.objects.get(
+            user_profile=self.user_profile, user_wallet_address=self.address
+        )
+        response = self.client.delete(
+            reverse("AUTHENTICATION:disconnect-ens", kwargs={"pk": ens_instance.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            ENSConnection.objects.filter(
+                user_profile=self.user_profile, user_wallet_address=self.address
+            ).count(),
+            0,
+        )

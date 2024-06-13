@@ -81,6 +81,7 @@ class TokenDistribution(models.Model):
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
+    check_for_extension = models.BooleanField(default=False)
 
     @property
     def reversed_constraints_list(self):
@@ -96,7 +97,11 @@ class TokenDistribution(models.Model):
     def is_maxed_out(self):
         if self.max_number_of_claims is None:
             return False
-        return self.max_number_of_claims <= self.claims.count()
+        return self.max_number_of_claims <= self.number_of_onchain_claims
+
+    @property
+    def number_of_onchain_claims(self):
+        return self.claims.filter(tx_hash__isnull=False).count()
 
     @property
     def is_claimable(self):

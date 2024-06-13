@@ -21,27 +21,35 @@ def set_raffle_random_words(self):
             print(f"Could not acquire process lock at {self.name}")
             return
 
-        raffle = (
+        raffles_queryset = (
             Raffle.objects.filter(deadline__lt=timezone.now())
             .filter(status=Raffle.Status.VERIFIED)
             .filter(vrf_tx_hash__isnull=False)
             .exclude(vrf_tx_hash__exact="")
-            .first()
         )
 
-        if raffle:
-            print(f"Setting the raffle {raffle.name} random words")
+        if raffles_queryset.count() > 0:
             vrf_client = VRFClientContractClient()
             last_request = vrf_client.get_last_request()
             expiration_time = last_request[0]
             num_words = last_request[1]
             now = int(time.time())
-            if now < expiration_time and num_words == raffle.winners_count:
-                set_random_words(raffle)
-            else:
+            if now >= expiration_time:
                 print("Random words have expired")
-                raffle.vrf_tx_hash = None
-                raffle.save()
+                raffles_queryset.update(vrf_tx_hash=None)
+                return
+            for raffle in raffles_queryset:
+                try:
+                    if num_words == raffle.winners_count:
+                        print(f"Setting the raffle {raffle.name} random words")
+                        set_random_words(raffle)
+                        break
+                    else:
+                        raise Exception(f"Mismatch the raffle {raffle.name} num words")
+                except Exception as e:
+                    raffle.vrf_tx_hash = None
+                    raffle.save()
+                    logging.error(e)
 
 
 def set_random_words(raffle: Raffle):
@@ -74,7 +82,13 @@ def set_random_words(raffle: Raffle):
         raffle.status = Raffle.Status.RANDOM_WORDS_SET
         raffle.save()
     else:
-        print(muon_response["error"]["message"])
+        print(
+            muon_response["error"]["message"],
+            (
+                f"Error {muon_response['error']['detail']} has been "
+                f"raised in the raffle {raffle.raffleId}"
+            ),
+        )
 
 
 @shared_task(bind=True)
@@ -149,10 +163,13 @@ def request_random_words_for_expired_raffles(self):
         )
         if raffles_queryset.count() > 0:
             for raffle in raffles_queryset:
-                if raffle.number_of_onchain_entries > 0:
-                    print(f"Request random words for the raffle {raffle.name}")
-                    request_random_words(raffle)
-                    break
+                try:
+                    if raffle.number_of_onchain_entries > 0:
+                        print(f"Request random words for the raffle {raffle.name}")
+                        request_random_words(raffle)
+                        break
+                except Exception as e:
+                    logging.error(e)
 
 
 def request_random_words(raffle: Raffle):
@@ -191,6 +208,7 @@ def set_raffle_ids(self):
                     log = contract_client.get_raffle_created_log(receipt)
 
                     raffle.raffleId = log["args"]["raffleId"]
+                    raffle.status = Raffle.Status.VERIFIED
                     onchain_raffle = contract_client.get_raffle()
                     is_valid = True
                     if onchain_raffle["status"] != 0:
@@ -242,6 +260,7 @@ def set_raffle_ids(self):
                     if not is_valid:
                         raffle.raffleId = None
                         raffle.status = Raffle.Status.REJECTED
+
                     raffle.save()
                 except Exception as e:
                     logging.error(e)

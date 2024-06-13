@@ -8,7 +8,6 @@ from .models import (
     DonationReceipt,
     Faucet,
     GlobalSettings,
-    LightningConfig,
     TransactionBatch,
 )
 
@@ -109,11 +108,6 @@ class TransactionBatchAdmin(admin.ModelAdmin):
     list_filter = ["faucet", "_status", "updating"]
 
 
-class LightningConfigAdmin(admin.ModelAdmin):
-    readonly_fields = ["claimed_amount", "current_round"]
-    list_display = ["pk", "period", "period_max_cap", "claimed_amount", "current_round"]
-
-
 class DonationReceiptAdmin(admin.ModelAdmin):
     list_display = [
         "tx_hash",
@@ -146,6 +140,5 @@ admin.site.register(BrightUser, BrightUserAdmin)
 admin.site.register(ClaimReceipt, ClaimReceiptAdmin)
 admin.site.register(GlobalSettings, GlobalSettingsAdmin)
 admin.site.register(TransactionBatch, TransactionBatchAdmin)
-admin.site.register(LightningConfig, LightningConfigAdmin)
 admin.site.register(DonationReceipt, DonationReceiptAdmin)
 admin.site.register(DonationContract, DonationContractAdmin)

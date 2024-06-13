@@ -1,10 +1,9 @@
 import logging
 
 from celery import shared_task
-from django.conf import settings as django_settings
 from django.core.cache import cache
 
-from core.models import NetworkTypes, TokenPrice
+from core.models import TokenPrice
 from core.utils import memcache_lock
 
 from .celery_tasks import CeleryTasks
@@ -93,39 +92,6 @@ def update_needs_funding_status():  # periodic task
     faucets = Faucet.objects.filter(is_active=True)
     for _faucet in faucets:
         update_needs_funding_status_faucet.delay(_faucet.pk)
-
-
-@shared_task
-def process_verified_lightning_claim(gas_tap_claim_id):
-    CeleryTasks.process_verified_lightning_claim(gas_tap_claim_id)
-
-
-@shared_task
-def process_rejected_lightning_claim(gas_tap_claim_id):
-    CeleryTasks.process_rejected_lightning_claim(gas_tap_claim_id)
-
-
-@shared_task
-def update_tokentap_claim_for_verified_lightning_claims():
-    claims = ClaimReceipt.objects.filter(
-        _status__in=[ClaimReceipt.VERIFIED, ClaimReceipt.REJECTED],
-        faucet__chain__chain_type=NetworkTypes.LIGHTNING,
-    )
-    for _claim in claims:
-        if django_settings.IS_TESTING:
-            if _claim._status == ClaimReceipt.VERIFIED:
-                process_verified_lightning_claim.apply((_claim.pk,))
-            elif _claim._status == ClaimReceipt.REJECTED:
-                process_rejected_lightning_claim.apply((_claim.pk,))
-        else:
-            if _claim._status == ClaimReceipt.VERIFIED:
-                process_verified_lightning_claim.delay(
-                    _claim.pk,
-                )
-            elif _claim._status == ClaimReceipt.REJECTED:
-                process_rejected_lightning_claim.delay(
-                    _claim.pk,
-                )
 
 
 @shared_task

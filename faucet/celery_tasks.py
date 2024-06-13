@@ -10,10 +10,8 @@ from django.db.models import F, Func
 from django.utils import timezone
 from sentry_sdk import capture_exception
 
-from authentication.models import NetworkTypes
 from core.models import TokenPrice
 from core.utils import Web3Utils
-from tokenTap.models import TokenDistributionClaim
 
 from .constants import FUEL_LEVEL_STATUS_NUMBER
 from .faucet_manager.fund_manager import FundMangerException, get_fund_manager
@@ -132,10 +130,7 @@ class CeleryTasks:
             if receipts.count() == 0:
                 return
 
-            if faucet.chain.chain_type == NetworkTypes.LIGHTNING:
-                receipts = receipts.order_by("pk")[:1]
-            else:
-                receipts = receipts.order_by("pk")[:32]
+            receipts = receipts.order_by("pk")[:32]
 
             # if there are no pending batches, create a new batch
             batch = TransactionBatch.objects.create(faucet=faucet)
@@ -196,62 +191,6 @@ class CeleryTasks:
         except Exception as e:
             logging.error(str(e))
             capture_exception()
-
-    @staticmethod
-    def process_verified_lightning_claim(gas_tap_claim_id):
-        try:
-            claim = ClaimReceipt.objects.get(pk=gas_tap_claim_id)
-            user_profile = claim.user_profile
-            tokentap_lightning_claim = (
-                TokenDistributionClaim.objects.filter(
-                    user_profile=user_profile,
-                    token_distribution__chain__chain_type=NetworkTypes.LIGHTNING,
-                )
-                .order_by("-created_at")
-                .first()
-            )
-
-            if not tokentap_lightning_claim:
-                logging.info("No tokentap claim found for user")
-                return
-
-            tokentap_lightning_claim.status = ClaimReceipt.VERIFIED
-            tokentap_lightning_claim.tx_hash = claim.tx_hash
-            tokentap_lightning_claim.save()
-
-            claim._status = ClaimReceipt.PROCESSED_FOR_TOKENTAP
-            claim.save()
-
-        except Exception as e:
-            capture_exception()
-            logging.exception(f"error in processing lightning claims: {str(e)}")
-
-    @staticmethod
-    def process_rejected_lightning_claim(gas_tap_claim_id):
-        try:
-            claim = ClaimReceipt.objects.get(pk=gas_tap_claim_id)
-            user_profile = claim.user_profile
-            tokentap_lightning_claim = (
-                TokenDistributionClaim.objects.filter(
-                    user_profile=user_profile,
-                    token_distribution__chain__chain_type=NetworkTypes.LIGHTNING,
-                )
-                .order_by("-created_at")
-                .first()
-            )
-
-            if not tokentap_lightning_claim:
-                logging.info("No tokentap claim found for user")
-                return
-
-            tokentap_lightning_claim.delete()
-
-            claim._status = ClaimReceipt.PROCESSED_FOR_TOKENTAP_REJECT
-            claim.save()
-
-        except Exception as e:
-            capture_exception()
-            logging.exception(f"error in processing lightning claims: {str(e)}")
 
     @staticmethod
     def update_token_price(token_pk):

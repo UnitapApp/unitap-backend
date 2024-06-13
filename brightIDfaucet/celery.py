@@ -1,6 +1,7 @@
 import os
 
 from celery import Celery
+from celery.schedules import crontab
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "brightIDfaucet.settings")
@@ -34,13 +35,9 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.reject_expired_pending_claims",
         "schedule": 120,
     },
-    "update_tokentap_claim_for_verified_lightning_claims": {
-        "task": "faucet.tasks.update_tokentap_claim_for_verified_lightning_claims",
-        "schedule": 9,
-    },
     "update-tokens-price": {
         "task": "faucet.tasks.update_tokens_price",
-        "schedule": 600,
+        "schedule": crontab(minute="0", hour="*/2"),
     },
     "update-donation-receipt-status": {
         "task": "faucet.tasks.update_donation_receipt_pending_status",
@@ -66,6 +63,10 @@ app.conf.beat_schedule = {
     "set-token-distribution-ids": {
         "task": "tokenTap.tasks.set_distribution_id",
         "schedule": 300,
+    },
+    "extend-distribution": {
+        "task": "tokenTap.tasks.extend_distribution",
+        "schedule": 600,
     },
     "register-competition-to-start": {
         "task": "quiztap.tasks.register_competition_to_start",

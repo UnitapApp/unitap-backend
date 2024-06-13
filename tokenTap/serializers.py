@@ -68,6 +68,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "deadline",
             "max_number_of_claims",
             "number_of_claims",
+            "number_of_onchain_claims",
             "total_claims_since_last_round",
             "notes",
             "necessary_information",
@@ -78,6 +79,7 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "is_expired",
             "is_maxed_out",
             "is_claimable",
+            "check_for_extension",
         ]
 
     def get_constraints(self, distribution: TokenDistribution):

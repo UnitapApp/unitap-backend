@@ -100,7 +100,7 @@ class HasMinimumFarcasterFollower(ConstraintVerification):
         user_addresses = self.user_addresses
         minimum = self.param_values[ConstraintParam.MINIMUM.name]
         for address in user_addresses:
-            if int(farcaster_util.get_follower_number(address)) > int(minimum):
+            if int(farcaster_util.get_follower_number(address)) >= int(minimum):
                 return True
         return False
 

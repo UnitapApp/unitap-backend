@@ -1,7 +1,5 @@
 import datetime
 import json
-import os
-import time
 from unittest.mock import patch
 
 from django.core.cache import cache
@@ -11,19 +9,15 @@ from rest_framework.test import APITestCase
 
 from authentication.models import UserProfile, Wallet
 from core.models import WalletAccount
-from faucet.constants import MEMCACHE_LIGHTNING_LOCK_KEY
 from faucet.constraints import OptimismDonationConstraint
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
-from faucet.faucet_manager.fund_manager import LightningFundManager
-from faucet.helpers import memcache_lock
 from faucet.models import (
     Chain,
     ClaimReceipt,
     DonationReceipt,
     Faucet,
     GlobalSettings,
-    LightningConfig,
     NetworkTypes,
     TransactionBatch,
 )
@@ -38,15 +32,6 @@ test_rpc_url_private = "http://ganache:7545"
 test_wallet_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
 test_chain_id = 1337
 test_rpc_url = "http://127.0.0.1:7545"
-
-LIGHTNING_WALLET = os.environ.get("LIGHTNING_WALLET")
-LIGHTNING_FUND_MANAGER = os.environ.get("LIGHTNING_FUND_MANAGER")
-
-LIGHTNING_RPC_URL = "https://api.lnpay.co/v1/"
-LIGHTNING_INVOICE = "lnbc100n1pjxtceppp5q65xc3w8tnnmzkhqgg9c7h4a8hzplm0dppr9\
-44upwsq4q62sjeesdqu2askcmr9wssx7e3q2dshgmmndp5scqzzsxqyz5vqsp5hj2vzha0x4qvuyz\
-rym6ryvxwnccn4kjwa57037dgcshl5ls4tves9qyyssqj24t4j2dkp2r29ptgxqz2etsk0qp8ggwm\
-t20czfu48h5akgme43zevg6x040scjzx3qgtp8mkcg2gurv0hy8d8xm3hhf8k68uefl9sqqqscuvz"
 
 
 def create_new_user(
@@ -77,24 +62,6 @@ def create_test_faucet(
         chain=chain,
         max_claim_amount=max_claim_amount,
         fund_manager_address=fund_manager,
-    )
-
-
-def create_lightning_faucet(wallet) -> Faucet:
-    chain = Chain.objects.create(
-        chain_name="Lightning",
-        native_currency_name="BTC",
-        symbol="BTC",
-        rpc_url_private=LIGHTNING_RPC_URL,
-        wallet=wallet,
-        chain_id=286621,
-        explorer_url="https://ftmscan.com/",
-    )
-
-    return Faucet.objects.create(
-        chain=chain,
-        max_claim_amount=100,
-        fund_manager_address=LIGHTNING_FUND_MANAGER,
     )
 
 
@@ -298,22 +265,13 @@ class TestClaimAPI(APITestCase):
         self.wallet = WalletAccount.objects.create(
             name="Test Wallet", private_key=test_wallet_key
         )
-        self.lightning_wallet = WalletAccount.objects.create(
-            name="Test Lightning Wallet", private_key=LIGHTNING_WALLET
-        )
         self.verified_user = create_new_user()
         self.test_faucet = create_test_faucet(self.wallet)
-        self.lightning_faucet = create_lightning_faucet(self.lightning_wallet)
         self.initial_context_id = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
         self.password = "test"
         self._address = "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"
 
         GlobalSettings.set("gastap_round_claim_limit", "2")
-        LightningConfig.objects.create(
-            period=86800,
-            period_max_cap=100,
-            current_round=int(int(time.time()) / 86800) * 86800,
-        )
 
         self.client.force_authenticate(user=self.verified_user.user)
         self.user_profile = self.verified_user
@@ -456,29 +414,6 @@ class TestClaimAPI(APITestCase):
         data = json.loads(response.content)
         self.assertEqual(data[0]["pk"], c2.pk)
         self.assertEqual(data[1]["pk"], c1.pk)
-
-    def test_lightning_claim_race_condition(self):
-        with self.assertRaises(AssertionError):
-            with memcache_lock(MEMCACHE_LIGHTNING_LOCK_KEY, os.getpid()):
-                invoice = LIGHTNING_INVOICE
-
-                lightning_fund_manager = LightningFundManager(self.lightning_faucet)
-                lightning_fund_manager.multi_transfer([{"amount": 10, "data": invoice}])
-
-    def test_lightning_claim_max_cap_exceeded(self):
-        lightning_fund_manager = LightningFundManager(self.lightning_faucet)
-        config = lightning_fund_manager.config
-        config.claimed_amount = 100
-        config.save()
-        is_exceeded = (
-            lightning_fund_manager._LightningFundManager__check_max_cap_exceeds(10)
-        )
-        self.assertEqual(is_exceeded, True)
-
-        with self.assertRaises(AssertionError):
-            invoice = LIGHTNING_INVOICE
-
-            lightning_fund_manager.multi_transfer([{"amount": 10, "data": invoice}])
 
 
 class TestWeeklyCreditStrategy(APITestCase):
