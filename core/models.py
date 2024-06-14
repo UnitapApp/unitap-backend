@@ -9,8 +9,6 @@ from encrypted_model_fields.fields import EncryptedCharField
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
-from faucet.faucet_manager.lnpay_client import LNPayClient
-
 from .constraints import (
     AllowListVerification,
     Attest,
@@ -247,13 +245,6 @@ class Chain(models.Model):
                     .w3.get_balance(Pubkey.from_string(self.wallet.address))
                     .value
                 )
-            elif self.chain_type == NetworkTypes.LIGHTNING:
-                lnpay_client = LNPayClient(
-                    self.rpc_url_private,
-                    self.wallet.main_key,
-                    self.fund_manager_address,
-                )
-                return lnpay_client.get_balance()
             raise Exception("Invalid chain type")
         except Exception as e:
             logging.exception(

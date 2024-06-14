@@ -4,7 +4,6 @@ import logging
 import rest_framework.exceptions
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
@@ -20,7 +19,7 @@ from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
 from core.views import AbstractConstraintsListView
-from faucet.models import ClaimReceipt, Faucet
+from faucet.models import ClaimReceipt
 from tokenTap.models import Constraint, TokenDistribution, TokenDistributionClaim
 from tokenTap.serializers import (
     ConstraintSerializer,
@@ -99,10 +98,7 @@ class TokenDistributionClaimView(CreateAPIView):
             )
 
     def wallet_is_vaild(self, user_profile, user_wallet_address, token_distribution):
-        if token_distribution.chain.chain_type == NetworkTypes.LIGHTNING:
-            return  # TODO - check if user_wallet_address is a valid lightning invoice
-
-        elif token_distribution.chain.chain_type == NetworkTypes.EVM:
+        if token_distribution.chain.chain_type == NetworkTypes.EVM:
             if not user_profile.owns_wallet(user_wallet_address):
                 raise PermissionDenied("This wallet is not registered for this user")
 
@@ -179,23 +175,6 @@ class TokenDistributionClaimView(CreateAPIView):
                 signature=signature,
                 token_distribution=token_distribution,
                 user_wallet_address=user_wallet_address,
-            )
-
-        elif token_distribution.chain.chain_type == NetworkTypes.LIGHTNING:
-            tdc = TokenDistributionClaim.objects.create(
-                user_profile=user_profile,
-                nonce=nonce,
-                signature=user_wallet_address,
-                user_wallet_address=user_wallet_address,
-                token_distribution=token_distribution,
-            )
-            ClaimReceipt.objects.create(
-                faucet=Faucet.objects.get(chain__chain_type=NetworkTypes.LIGHTNING),
-                user_profile=user_profile,
-                datetime=timezone.now(),
-                amount=token_distribution.amount,
-                _status=ClaimReceipt.PENDING,
-                to_address=user_wallet_address,
             )
 
         return Response(

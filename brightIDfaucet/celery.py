@@ -35,10 +35,6 @@ app.conf.beat_schedule = {
         "task": "faucet.tasks.reject_expired_pending_claims",
         "schedule": 120,
     },
-    "update_tokentap_claim_for_verified_lightning_claims": {
-        "task": "faucet.tasks.update_tokentap_claim_for_verified_lightning_claims",
-        "schedule": 9,
-    },
     "update-tokens-price": {
         "task": "faucet.tasks.update_tokens_price",
         "schedule": crontab(minute="0", hour="*/2"),
@@ -76,6 +72,15 @@ app.conf.beat_schedule = {
         "task": "quiztap.tasks.register_competition_to_start",
         "schedule": 10,
     },
+    'update_claims_count_every_10_minutes': {
+        'task': 'faucet.tasks.update_all_faucets_claims',
+        'schedule': 600,
+        'args': (False,)
+    },
+    'update_total_claims_this_round_every_10_minutes': {
+        'task': 'faucet.tasks.update_all_faucets_claims',
+        'schedule': 600
+    }
 }
 
 # Load task modules from all registered Django apps.

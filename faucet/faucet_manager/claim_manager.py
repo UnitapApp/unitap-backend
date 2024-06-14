@@ -1,5 +1,4 @@
 import abc
-import logging
 from abc import ABC
 
 import rest_framework.exceptions
@@ -7,14 +6,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from authentication.models import UserProfile
-from core.models import NetworkTypes
 from faucet.faucet_manager.credit_strategy import (
     CreditStrategy,
     CreditStrategyFactory,
     RoundCreditStrategy,
 )
 from faucet.faucet_manager.fund_manager import EVMFundManager
-from faucet.faucet_manager.lnpay_client import LNPayClient
 from faucet.models import BrightUser, ClaimReceipt, GlobalSettings
 
 
@@ -100,30 +97,12 @@ class LimitedChainClaimManager(SimpleClaimManager):
         assert total_claims < self.get_round_limit()
 
 
-class LightningClaimManger(LimitedChainClaimManager):
-    def claim(self, amount, to_address):
-        try:
-            lnpay_client = LNPayClient(
-                self.credit_strategy.faucet.chain.rpc_url_private,
-                self.credit_strategy.faucet.chain.wallet.main_key,
-                self.credit_strategy.faucet.fund_manager_address,
-            )
-            decoded_invoice = lnpay_client.decode_invoice(to_address)
-        except Exception as e:
-            logging.error(e)
-            raise AssertionError("Could not decode the invoice")
-        assert int(decoded_invoice["num_satoshis"]) == amount, "Invalid amount"
-        return super().claim(amount, to_address)
-
-
 class ClaimManagerFactory:
     def __init__(self, faucet, user_profile):
         self.faucet = faucet
         self.user_profile = user_profile
 
     def get_manager_class(self):
-        if self.faucet.chain.chain_type == NetworkTypes.LIGHTNING:
-            return LightningClaimManger
         return LimitedChainClaimManager
 
     def get_manager(self) -> ClaimManager:

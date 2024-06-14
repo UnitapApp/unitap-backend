@@ -13,7 +13,6 @@ from safedelete.models import SafeDeleteModel
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
 from core.models import AbstractGlobalSettings, BigNumField, Chain, NetworkTypes
-from faucet.faucet_manager.lnpay_client import LNPayClient
 
 
 def get_cache_time(id):
@@ -184,6 +183,8 @@ class Faucet(models.Model):
     is_deprecated = models.BooleanField(default=False)
 
     fuel_level = models.IntegerField(default=100)
+    total_claims_since_last_round = models.IntegerField(default=0)
+    total_claims_this_round = models.IntegerField(default=0)
 
     def __str__(self):
         return (
@@ -251,13 +252,6 @@ class Faucet(models.Model):
                 fund_manager = SolanaFundManager(self)
                 v = fund_manager.w3.get_balance(fund_manager.lock_account_address).value
                 return v
-            elif self.chain.chain_type == NetworkTypes.LIGHTNING:
-                lnpay_client = LNPayClient(
-                    self.chain.rpc_url_private,
-                    self.chain.wallet.main_key,
-                    self.fund_manager_address,
-                )
-                return lnpay_client.get_balance()
 
             raise Exception("Invalid chain type")
         except Exception as e:
@@ -297,49 +291,6 @@ class Faucet(models.Model):
             get_cache_time(self.pk),
         )
         return total_claims
-
-    @property
-    def total_claims_this_round(self):
-        cached_total_claims_this_round = cache.get(
-            f"gas_tap_chain_total_claims_this_round_{self.pk}"
-        )
-        if cached_total_claims_this_round:
-            return cached_total_claims_this_round
-        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
-
-        total_claims_this_round = ClaimReceipt.objects.filter(
-            faucet=self,
-            datetime__gte=RoundCreditStrategy.get_start_of_the_round(),
-            _status__in=[ClaimReceipt.VERIFIED],
-        ).count()
-        cache.set(
-            f"gas_tap_chain_total_claims_this_round_{self.pk}",
-            total_claims_this_round,
-            get_cache_time(self.pk),
-        )
-        return total_claims_this_round
-
-    @property
-    def total_claims_since_last_round(self):
-        cached_total_claims_since_last_round = cache.get(
-            f"gas_tap_chain_total_claims_since_last_round_{self.pk}"
-        )
-        if cached_total_claims_since_last_round:
-            return cached_total_claims_since_last_round
-        from faucet.faucet_manager.claim_manager import RoundCreditStrategy
-
-        total_claims_since_last_round = ClaimReceipt.objects.filter(
-            faucet=self,
-            datetime__gte=RoundCreditStrategy.get_start_of_previous_round(),
-            _status__in=[ClaimReceipt.VERIFIED],
-        ).count()
-        cache.set(
-            f"gas_tap_chain_total_claims_since_last_round_{self.pk}",
-            total_claims_since_last_round,
-            get_cache_time(self.pk),
-        )
-        return total_claims_since_last_round
-
 
 class GlobalSettings(AbstractGlobalSettings):
     pass
@@ -394,17 +345,6 @@ class TransactionBatch(models.Model):
     @property
     def is_expired(self):
         return self.age > timedelta(minutes=ClaimReceipt.MAX_PENDING_DURATION)
-
-
-class LightningConfig(models.Model):
-    period = models.IntegerField(default=64800)
-    period_max_cap = models.BigIntegerField()
-    claimed_amount = models.BigIntegerField(default=0)
-    current_round = models.IntegerField(null=True)
-
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
 
 
 class DonationReceipt(models.Model):
