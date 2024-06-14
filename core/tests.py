@@ -17,6 +17,7 @@ from .constraints import (
     BeAttestedBy,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
+    HasCommentOnATweet,
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
     HasMinimumTweetCount,
@@ -24,6 +25,7 @@ from .constraints import (
     HasNFTVerification,
     HasTokenVerification,
     HasTwitter,
+    HasVoteOnATweet,
 )
 
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
@@ -483,6 +485,52 @@ class TestTwitterConstraint(BaseTestCase):
 
         constraint.param_values = {
             "MINIMUM": 30,
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    @patch(
+        "authentication.thirdpartydrivers.twitter.TwitterDriver.get_is_replied",
+        lambda a, b, c, d, e: True,
+    )
+    def test_twitter_replied_to_tweet_constraint_success(self):
+        constraint = HasCommentOnATweet(self.user_profile)
+
+        constraint.param_values = {
+            "TWEET_ID": "1",
+            "TARGET_TWEET_ID": "2",
+        }
+
+        self.assertEqual(constraint.is_observed(), True)
+
+    def test_twitter_replied_to_tweet_constraint_fail(self):
+        constraint = HasCommentOnATweet(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "TWEET_ID": "1",
+            "TARGET_TWEET_ID": "2",
+        }
+
+        self.assertEqual(constraint.is_observed(), False)
+
+    @patch(
+        "authentication.thirdpartydrivers.twitter.TwitterDriver.get_is_liked",
+        lambda a, b, c, d: True,
+    )
+    def test_twitter_liked_tweet_constraint_success(self):
+        constraint = HasVoteOnATweet(self.user_profile)
+
+        constraint.param_values = {
+            "TARGET_TWEET_ID": "2",
+        }
+
+        self.assertEqual(constraint.is_observed(), True)
+
+    def test_twitter_liked_tweet_constraint_fail(self):
+        constraint = HasVoteOnATweet(self.not_connected_user_profile)
+
+        constraint.param_values = {
+            "TARGET_TWEET_ID": "2",
         }
 
         self.assertEqual(constraint.is_observed(), False)

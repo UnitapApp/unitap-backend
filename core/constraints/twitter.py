@@ -62,3 +62,48 @@ class HasMinimumTweetCount(ConstraintVerification):
         if twitter.tweet_count >= int(self.param_values[ConstraintParam.MINIMUM.name]):
             return True
         return False
+
+
+class HasVoteOnATweet(ConstraintVerification):
+    _param_keys = [ConstraintParam.TARGET_TWEET_ID]
+    app_name = ConstraintApp.TWITTER.value
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import TwitterConnection
+
+        try:
+            twitter = TwitterConnection.get_connection(self.user_profile)
+        except TwitterConnection.DoesNotExist:
+            return False
+
+        if twitter.is_liked(
+            target_tweet_id=self.param_values[ConstraintParam.TARGET_TWEET_ID.name]
+        ):
+            return True
+        return False
+
+
+class HasCommentOnATweet(ConstraintVerification):
+    _param_keys = [ConstraintParam.TARGET_TWEET_ID, ConstraintParam.TWEET_ID]
+    app_name = ConstraintApp.TWITTER.value
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import TwitterConnection
+
+        try:
+            twitter = TwitterConnection.get_connection(self.user_profile)
+        except TwitterConnection.DoesNotExist:
+            return False
+
+        if twitter.is_replied(
+            self_tweet_id=self.param_values[ConstraintParam.TWEET_ID.name],
+            target_tweet_id=self.param_values[ConstraintParam.TARGET_TWEET_ID.name],
+        ):
+            return True
+        return False

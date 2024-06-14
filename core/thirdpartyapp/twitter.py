@@ -20,6 +20,13 @@ class TwitterUtils:
             access_token_secret=access_token_secret,
         )
         self.api = tweepy.API(auth)
+        self.client = tweepy.Client(
+            consumer_key=self.consumer_key,
+            consumer_secret=self.consumer_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret,
+            wait_on_rate_limit=True,
+        )
 
     @classmethod
     def get_authorization_url_and_token(cls) -> tuple:
@@ -64,6 +71,13 @@ class TwitterUtils:
             raise TwitterUtilsError(f"Can not get username, error: {e}")
         return username
 
+    def get_user_id(self) -> str:
+        try:
+            user_id = self.api.verify_credentials().id_str
+        except tweepy.TweepyException as e:
+            raise TwitterUtilsError(f"Can not get user_id, error: {e}")
+        return user_id
+
     def get_tweet_count(self) -> int:
         username = self.get_username()
         user = self.api.get_user(username)
@@ -73,3 +87,36 @@ class TwitterUtils:
         username = self.get_username()
         user = self.api.get_user(username)
         return user.followers_count
+
+    def get_is_replied(self, user_tweet_id: str, reference_tweet_id: str) -> bool:
+        user_id = self.get_user_id()
+
+        tweet = self.client.get_tweet(
+            id=user_tweet_id,
+            tweet_fields=["referenced_tweets"],
+            user_fields=["id"],
+            expansions=["referenced_tweets.id", "author_id"],
+            user_auth=True,
+        ).data
+
+        if tweet.referenced_tweets:
+            for referenced_tweet in tweet.referenced_tweets:
+                if (
+                    referenced_tweet.type == "replied_to"
+                    and referenced_tweet.id == str(reference_tweet_id)
+                ):
+                    if tweet.author_id == user_id:
+                        return True
+        return False
+
+    def get_is_liked(self, reference_tweet_id: str) -> bool:
+        user_id = self.get_user_id()
+
+        liked_users = self.client.get_liking_users(
+            id=reference_tweet_id, user_auth=True
+        ).data
+
+        for liker in liked_users:
+            if liker.id == user_id:
+                return True
+        return False
