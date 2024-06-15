@@ -34,7 +34,6 @@ class ConstraintParam(Enum):
     KEY = "key"
     VALUE = "value"
     EAS_SCHEMA_ID = "eas_schema_id"
-    TWEET_ID = "tweet_id"
     TARGET_TWEET_ID = "target_tweet_id"
 
     @classmethod
