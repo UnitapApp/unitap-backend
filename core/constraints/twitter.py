@@ -87,7 +87,7 @@ class HasVoteOnATweet(ConstraintVerification):
 
 
 class HasCommentOnATweet(ConstraintVerification):
-    _param_keys = [ConstraintParam.TARGET_TWEET_ID, ConstraintParam.TWEET_ID]
+    _param_keys = [ConstraintParam.TARGET_TWEET_ID]
     app_name = ConstraintApp.TWITTER.value
 
     def __init__(self, user_profile) -> None:
@@ -101,8 +101,12 @@ class HasCommentOnATweet(ConstraintVerification):
         except TwitterConnection.DoesNotExist:
             return False
 
+        self_tweet_id: str = kwargs["tweet_id"] if "tweet_id" in kwargs else None
+        if not self_tweet_id:
+            return False
+
         if twitter.is_replied(
-            self_tweet_id=self.param_values[ConstraintParam.TWEET_ID.name],
+            self_tweet_id=self_tweet_id,
             target_tweet_id=self.param_values[ConstraintParam.TARGET_TWEET_ID.name],
         ):
             return True

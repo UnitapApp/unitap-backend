@@ -497,21 +497,19 @@ class TestTwitterConstraint(BaseTestCase):
         constraint = HasCommentOnATweet(self.user_profile)
 
         constraint.param_values = {
-            "TWEET_ID": "1",
             "TARGET_TWEET_ID": "2",
         }
 
-        self.assertEqual(constraint.is_observed(), True)
+        self.assertEqual(constraint.is_observed(tweet_id="1"), True)
 
     def test_twitter_replied_to_tweet_constraint_fail(self):
         constraint = HasCommentOnATweet(self.not_connected_user_profile)
 
         constraint.param_values = {
-            "TWEET_ID": "1",
             "TARGET_TWEET_ID": "2",
         }
 
-        self.assertEqual(constraint.is_observed(), False)
+        self.assertEqual(constraint.is_observed(tweet_id="1"), False)
 
     @patch(
         "authentication.thirdpartydrivers.twitter.TwitterDriver.get_is_liked",
