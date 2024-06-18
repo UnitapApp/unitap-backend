@@ -12,6 +12,7 @@ class FarcasterUtil:
         "cast": "cast",
         "get_bulk_profile_by_address": "user/bulk-by-address",
         "get_bulk_profile_by_fid": "user/bulk",
+        "get_bulk_channel": "channel/bulk",
     }
 
     def __init__(self):
@@ -157,5 +158,27 @@ class FarcasterUtil:
             logging.error(f"could not check following status, error: {e}")
         return False
 
-    def is_following_channel(self, channel_id: str, address: str):
-        pass
+    def is_following_channel(self, channel_id: str, addresses: list[str]):
+        """check if one address is following channel.
+        :param channel_id: channel id that must be followed by user
+        :param addresses: list of EVM address
+        :return: True or False
+        """
+        path = self.paths.get("get_bulk_channel")
+        try:
+            profiles = self._get_bulk_profile(addresses)
+            fids = set([profile[0]["fid"] for profile in profiles])
+            params = {
+                "ids": channel_id,
+                "type": "id",
+            }
+            for fid in fids:
+                params["viewer_fid"] = fid
+                res = self.requests.get(
+                    path, session=self.session, params=params, headers=self.headers
+                )
+                if res.get("viewer_context").get("following"):
+                    return True
+        except (RequestException, KeyError, AttributeError) as e:
+            logging.error(f"Channel not found, error: {e}")
+        return False
