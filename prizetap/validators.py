@@ -4,7 +4,6 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
-from core.constraints.abstract import ConstraintParam
 
 from .models import Raffle, RaffleEntry
 
@@ -13,7 +12,9 @@ class RaffleEnrollmentValidator:
     def __init__(self, *args, **kwargs):
         self.user_profile: UserProfile = kwargs["user_profile"]
         self.raffle: Raffle = kwargs["raffle"]
-        self.tweet_id: str = kwargs["tweet_id"] if "tweet_id" in kwargs else None
+        self.raffle_data: dict = (
+            kwargs["raffle_data"] if "raffle_data" in kwargs else None
+        )
 
     def can_enroll_in_raffle(self):
         if not self.raffle.is_claimable:
@@ -34,14 +35,24 @@ class RaffleEnrollmentValidator:
             except KeyError:
                 pass
             if str(c.pk) in self.raffle.reversed_constraints_list:
-                if ConstraintParam.TARGET_TWEET_ID in constraint.param_keys():
-                    if constraint.is_observed(tweet_id=self.tweet_id):
+                if str(c.pk) in self.raffle_data.keys():
+                    cdata = (
+                        dict(self.raffle_data[str(c.pk)])
+                        if self.raffle_data
+                        else dict()
+                    )
+                    if constraint.is_observed(**cdata):
                         raise PermissionDenied(constraint.response)
                 elif constraint.is_observed():
                     raise PermissionDenied(constraint.response)
             else:
-                if ConstraintParam.TARGET_TWEET_ID in constraint.param_keys():
-                    if not constraint.is_observed(tweet_id=self.tweet_id):
+                if str(c.pk) in self.raffle_data.keys():
+                    cdata = (
+                        dict(self.raffle_data[str(c.pk)])
+                        if self.raffle_data
+                        else dict()
+                    )
+                    if not constraint.is_observed(**cdata):
                         raise PermissionDenied(constraint.response)
                 elif not constraint.is_observed():
                     raise PermissionDenied(constraint.response)
