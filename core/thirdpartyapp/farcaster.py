@@ -8,7 +8,6 @@ from core.utils import Web3Utils
 class FarcasterUtil:
     requests = RequestHelper(config.FARCASTER_BASE_URL)
     paths = {
-        "get_profile_by_address": "user/custody-address?custody_address",
         "cast": "cast",
         "get_bulk_profile_by_address": "user/bulk-by-address",
         "get_bulk_profile_by_fid": "user/bulk",
@@ -27,12 +26,12 @@ class FarcasterUtil:
 
     def _get_profile(self, address: str) -> dict:
         address = Web3Utils.to_checksum_address(address)
-        params = {"custody_address": address}
-        path = self.paths.get("get_profile_by_address")
+        params = {"addresses": address}
+        path = self.paths.get("get_bulk_profile_by_address")
         res = self.requests.get(
             path=path, headers=self.headers, params=params, session=self.session
         )
-        return res["user"]
+        return res[address][0]
 
     def _get_bulk_profile(self, addresses: list[str]) -> dict:
         path = self.paths.get("get_bulk_profile_by_address")
@@ -79,6 +78,10 @@ class FarcasterUtil:
         )
         return res["reactions"]
 
+    def _get_fids_from_addresses(self, addreses: list[str]) -> list[str]:
+        profiles = self._get_bulk_profile(addreses)
+        return set([profiles[address][0]["fid"] for address in profiles])
+
     def did_liked_cast(self, cast_hash: str, addresses: list[str]) -> bool:
         """
         :param cast_hash: cast must be liked
@@ -86,8 +89,7 @@ class FarcasterUtil:
         :return: True or False
         """
         try:
-            profiles = self._get_bulk_profile(addresses)
-            fids = set([profile[0]["fid"] for profile in profiles])
+            fids = self._get_fids_from_addresses(addresses)
             likes = self._get_reacts_on_casts(cast_hash)["likes"]
             for like in likes:
                 if like["fid"] in fids:
@@ -103,8 +105,7 @@ class FarcasterUtil:
         :return: True or False
         """
         try:
-            profiles = self._get_bulk_profile(addresses)
-            fids = set([profile[0]["fid"] for profile in profiles])
+            fids = self._get_fids_from_addresses(addresses)
             recasts = self._get_reacts_on_casts(cast_hash)["recasts"]
             for recast in recasts:
                 if recast["fid"] in fids:
@@ -158,7 +159,7 @@ class FarcasterUtil:
             logging.error(f"could not check following status, error: {e}")
         return False
 
-    def is_following_channel(self, channel_id: str, addresses: list[str]):
+    def is_following_channel(self, channel_id: str, addresses: list[str]) -> bool:
         """check if one address is following channel.
         :param channel_id: channel id that must be followed by user
         :param addresses: list of EVM address
@@ -166,8 +167,7 @@ class FarcasterUtil:
         """
         path = self.paths.get("get_bulk_channel")
         try:
-            profiles = self._get_bulk_profile(addresses)
-            fids = set([profile[0]["fid"] for profile in profiles])
+            fids = self._get_fids_from_addresses(addresses)
             params = {
                 "ids": channel_id,
                 "type": "id",
