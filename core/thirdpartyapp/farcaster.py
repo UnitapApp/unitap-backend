@@ -177,7 +177,7 @@ class FarcasterUtil:
                 res = self.requests.get(
                     path, session=self.session, params=params, headers=self.headers
                 )
-                if res.get("viewer_context").get("following"):
+                if res.get("channels")[0].get("viewer_context").get("following"):
                     return True
         except (RequestException, KeyError, AttributeError) as e:
             logging.error(f"Channel not found, error: {e}")
