@@ -35,7 +35,7 @@ class RaffleEnrollmentValidator:
             except KeyError:
                 pass
             if str(c.pk) in self.raffle.reversed_constraints_list:
-                if str(c.pk) in self.raffle_data.keys():
+                if self.raffle_data and str(c.pk) in self.raffle_data.keys():
                     cdata = (
                         dict(self.raffle_data[str(c.pk)])
                         if self.raffle_data
@@ -46,7 +46,7 @@ class RaffleEnrollmentValidator:
                 elif constraint.is_observed():
                     raise PermissionDenied(constraint.response)
             else:
-                if str(c.pk) in self.raffle_data.keys():
+                if self.raffle_data and str(c.pk) in self.raffle_data.keys():
                     cdata = (
                         dict(self.raffle_data[str(c.pk)])
                         if self.raffle_data
