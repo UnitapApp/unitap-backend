@@ -15,7 +15,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constraints import ConstraintVerification, get_constraint
-from core.constraints.abstract import ConstraintParam
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
@@ -64,7 +63,9 @@ class TokenDistributionClaimView(CreateAPIView):
                 "This token is not claimable"
             )
 
-    def check_user_permissions(self, token_distribution, user_profile, tweet_id=None):
+    def check_user_permissions(
+        self, token_distribution, user_profile, raffle_data=None
+    ):
         try:
             param_values = json.loads(token_distribution.constraint_params)
         except Exception:
@@ -77,14 +78,24 @@ class TokenDistributionClaimView(CreateAPIView):
             except KeyError:
                 pass
             if str(c.pk) in token_distribution.reversed_constraints_list:
-                if ConstraintParam.TARGET_TWEET_ID in constraint.param_keys():
-                    if constraint.is_observed(tweet_id=tweet_id):
+                if str(c.pk) in self.raffle_data.keys():
+                    cdata = (
+                        dict(self.raffle_data[str(c.pk)])
+                        if self.raffle_data
+                        else dict()
+                    )
+                    if constraint.is_observed(**cdata):
                         raise PermissionDenied(constraint.response)
                 elif constraint.is_observed(token_distribution=token_distribution):
                     raise PermissionDenied(constraint.response)
             else:
-                if ConstraintParam.TARGET_TWEET_ID in constraint.param_keys():
-                    if not constraint.is_observed(tweet_id=tweet_id):
+                if str(c.pk) in self.raffle_data.keys():
+                    cdata = (
+                        dict(self.raffle_data[str(c.pk)])
+                        if self.raffle_data
+                        else dict()
+                    )
+                    if constraint.is_observed(**cdata):
                         raise PermissionDenied(constraint.response)
                 elif not constraint.is_observed(token_distribution=token_distribution):
                     raise PermissionDenied(constraint.response)
@@ -135,7 +146,7 @@ class TokenDistributionClaimView(CreateAPIView):
         user_profile = request.user.profile
         token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
         user_wallet_address = request.data.get("user_wallet_address", None)
-        tweet_id = request.data.get("tweet_id", None)
+        raffle_data = request.data.get("raffle_data", None)
         if user_wallet_address is None:
             raise rest_framework.exceptions.ParseError(
                 "user_wallet_address is a required field"
@@ -160,7 +171,7 @@ class TokenDistributionClaimView(CreateAPIView):
         except TokenDistributionClaim.DoesNotExist:
             pass
 
-        self.check_user_permissions(token_distribution, user_profile, tweet_id)
+        self.check_user_permissions(token_distribution, user_profile, raffle_data)
 
         self.check_token_distribution_is_claimable(token_distribution)
 
