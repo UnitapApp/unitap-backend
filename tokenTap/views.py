@@ -80,23 +80,15 @@ class TokenDistributionClaimView(CreateAPIView):
             except KeyError:
                 pass
             if str(c.pk) in token_distribution.reversed_constraints_list:
-                if str(c.pk) in self.raffle_data.keys():
-                    cdata = (
-                        dict(self.raffle_data[str(c.pk)])
-                        if self.raffle_data
-                        else dict()
-                    )
+                if raffle_data and str(c.pk) in raffle_data.keys():
+                    cdata = dict(raffle_data[str(c.pk)]) if raffle_data else dict()
                     if constraint.is_observed(**cdata):
                         raise PermissionDenied(constraint.response)
                 elif constraint.is_observed(token_distribution=token_distribution):
                     raise PermissionDenied(constraint.response)
             else:
-                if str(c.pk) in self.raffle_data.keys():
-                    cdata = (
-                        dict(self.raffle_data[str(c.pk)])
-                        if self.raffle_data
-                        else dict()
-                    )
+                if raffle_data and str(c.pk) in raffle_data.keys():
+                    cdata = dict(raffle_data[str(c.pk)]) if raffle_data else dict()
                     if constraint.is_observed(**cdata):
                         raise PermissionDenied(constraint.response)
                 elif not constraint.is_observed(token_distribution=token_distribution):
