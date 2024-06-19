@@ -32,7 +32,6 @@ from .constraints import (
     HasNFTVerification,
     HasTokenTransferVerification,
     HasTokenVerification,
-    IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
 )
@@ -111,7 +110,6 @@ class UserConstraint(models.Model):
         Attest,
         HasMinimumHumanityScore,
         HasGitcoinPassportProfile,
-        IsFollowingFarcasterChannel,
     ]
 
     name = models.CharField(

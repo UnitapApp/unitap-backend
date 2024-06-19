@@ -72,15 +72,6 @@ app.conf.beat_schedule = {
         "task": "quiztap.tasks.register_competition_to_start",
         "schedule": 10,
     },
-    'update_claims_count_every_10_minutes': {
-        'task': 'faucet.tasks.update_all_faucets_claims',
-        'schedule': 600,
-        'args': (False,)
-    },
-    'update_total_claims_this_round_every_10_minutes': {
-        'task': 'faucet.tasks.update_all_faucets_claims',
-        'schedule': 600
-    }
 }
 
 # Load task modules from all registered Django apps.

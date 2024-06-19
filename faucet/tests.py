@@ -12,7 +12,6 @@ from core.models import WalletAccount
 from faucet.constraints import OptimismDonationConstraint
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
-from .celery_tasks import CeleryTasks
 from faucet.models import (
     Chain,
     ClaimReceipt,
@@ -259,69 +258,6 @@ class TestClaim(APITestCase):
             claim_manager_faucet.claim(claim_amount_3, address)
         except AssertionError:
             self.assertEqual(True, True)
-    @patch(
-        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
-        lambda a: True,
-    )        
-    def test_update_claims_task_with_various_statuses(self):
-        ClaimReceipt.objects.create(
-            faucet=self.test_faucet1,
-            user_profile=self.verified_user,
-            datetime=timezone.now(),
-            _status=ClaimReceipt.VERIFIED,
-            amount=10,
-        )           
-
-        ClaimReceipt.objects.create(
-            faucet=self.test_faucet1,
-            user_profile=self.verified_user,
-            datetime=timezone.now(),
-            _status=ClaimReceipt.VERIFIED,
-            amount=10,
-        )   
-        
-        ClaimReceipt.objects.create(
-            faucet=self.test_faucet1,
-            user_profile=self.verified_user,
-            datetime=timezone.now(),
-            _status=ClaimReceipt.REJECTED,
-            amount=10,
-        )
-        
-        ClaimReceipt.objects.create(
-            faucet=self.test_faucet1,
-            user_profile=self.verified_user,
-            datetime=timezone.now(),
-            _status=ClaimReceipt.PENDING,
-            amount=10,
-        )
-        
-      
-        CeleryTasks.update_claims_for_faucet(self.test_faucet1.pk, False)
-        
-        #refetch test_faucet from DB
-        db_test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
-        self.assertEqual(db_test_faucet1.total_claims_this_round, 2)
-
-    def test_update_claims_task_since_last_round(self):
-        ClaimReceipt.objects.create(
-                faucet=self.test_faucet1,
-                user_profile=self.verified_user,
-                datetime=RoundCreditStrategy.get_start_of_previous_round(),
-                _status=ClaimReceipt.VERIFIED,
-                amount=10,
-            )      
-
-
-        
-        CeleryTasks.update_claims_for_faucet(self.test_faucet1.pk,True)
-        
-        db_test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
-        
-        self.assertEqual(db_test_faucet1.total_claims_since_last_round, 1)
-
-                    
-        
 
 
 class TestClaimAPI(APITestCase):
