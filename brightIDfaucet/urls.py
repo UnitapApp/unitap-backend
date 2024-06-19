@@ -30,4 +30,5 @@ urlpatterns = [
     path("api/tokentap/", include("tokenTap.urls")),
     path("api/prizetap/", include("prizetap.urls")),
     path("api/quiztap/", include("quiztap.urls")),
+    path("api/analytics/", include("analytics.urls")),
 ]
