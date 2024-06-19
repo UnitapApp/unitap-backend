@@ -19,7 +19,6 @@ from core.constraints.farcaster import (
     DidRecastFarcasterCast,
     HasFarcasterProfile,
     HasMinimumFarcasterFollower,
-    IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
 )
 from core.constraints.general import (

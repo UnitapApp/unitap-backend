@@ -116,7 +116,6 @@ INSTALLED_APPS = [
     "tokenTap.apps.TokentapConfig",
     "prizetap.apps.PrizetapConfig",
     "quiztap.apps.QuiztapConfig",
-    "analytics.apps.AnalyticsConfig",
     # "permissions.apps.PermissionsConfig",
     "authentication.apps.AuthenticationConfig",
     "rest_framework",

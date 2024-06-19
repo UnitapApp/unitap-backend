@@ -9,6 +9,7 @@ from core.utils import memcache_lock
 from .celery_tasks import CeleryTasks
 from .models import ClaimReceipt, DonationReceipt, Faucet, TransactionBatch
 
+
 def passive_address_is_not_none(address):
     if address is not None or address != "" or address != " ":
         return True
@@ -126,13 +127,3 @@ def update_donation_receipt_pending_status():
     )
     for pending_donation_receipt in pending_donation_receipts:
         process_donation_receipt.delay(pending_donation_receipt.pk)
-
-
-
-@shared_task
-def update_all_faucets_claims(since_last_round=True):
-    active_faucets = Faucet.objects.filter(is_active=True)
-    
-    for active_faucet in active_faucets:
-        CeleryTasks.update_claims_for_faucet.delay(active_faucet.pk, since_last_round)
-       
