@@ -22,6 +22,7 @@ from .models import (
     Faucet,
     TransactionBatch,
 )
+from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
 
 def has_pending_batch(faucet):
@@ -293,3 +294,22 @@ class CeleryTasks:
             donation_receipt.status = ClaimReceipt.REJECTED
             donation_receipt.save()
             return
+    @staticmethod
+    def update_claims_for_faucet(faucet_id, since_last_round):
+        faucet = Faucet.objects.get(pk=faucet_id)
+        if since_last_round:
+            start_time = RoundCreditStrategy.get_start_of_previous_round()
+            claim_field = 'total_claims_since_last_round'
+        else:
+            start_time = RoundCreditStrategy.get_start_of_the_round()
+            claim_field = 'total_claims_this_round'
+        
+        total_claims = ClaimReceipt.objects.filter(
+            faucet=faucet,
+            datetime__gte=start_time,
+            _status__in=[ClaimReceipt.VERIFIED]
+        ).count()
+
+        setattr(faucet, claim_field, total_claims)
+        faucet.save()
+
