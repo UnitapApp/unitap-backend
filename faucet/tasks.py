@@ -8,6 +8,7 @@ from core.utils import memcache_lock
 
 from .celery_tasks import CeleryTasks
 from .models import ClaimReceipt, DonationReceipt, Faucet, TransactionBatch
+from celery.signals import worker_ready
 
 def passive_address_is_not_none(address):
     if address is not None or address != "" or address != " ":
@@ -132,7 +133,14 @@ def update_donation_receipt_pending_status():
 @shared_task
 def update_all_faucets_claims(since_last_round=True):
     active_faucets = Faucet.objects.filter(is_active=True)
-    
     for active_faucet in active_faucets:
         CeleryTasks.update_claims_for_faucet.delay(active_faucet.pk, since_last_round)
        
+
+
+
+@worker_ready.connect
+def at_start(sender, **k):
+    with sender.app.connection() as conn:
+         sender.app.send_task(('faucet.tasks.update_all_faucets_claims'), (True,),connection=conn)
+         sender.app.send_task(('faucet.tasks.update_all_faucets_claims'), (False,),connection=conn)
