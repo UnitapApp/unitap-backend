@@ -183,8 +183,10 @@ class Faucet(models.Model):
     is_deprecated = models.BooleanField(default=False)
 
     fuel_level = models.IntegerField(default=100)
-    total_claims_since_last_round = models.IntegerField(default=0)
-    total_claims_this_round = models.IntegerField(default=0)
+    total_claims_since_last_round = models.IntegerField(
+        default=0, blank=True, null=True
+    )
+    total_claims_this_round = models.IntegerField(default=0, blank=True, null=True)
 
     def __str__(self):
         return (
@@ -291,6 +293,7 @@ class Faucet(models.Model):
             get_cache_time(self.pk),
         )
         return total_claims
+
 
 class GlobalSettings(AbstractGlobalSettings):
     pass
