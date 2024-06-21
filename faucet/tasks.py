@@ -129,14 +129,15 @@ def update_donation_receipt_pending_status():
         process_donation_receipt.delay(pending_donation_receipt.pk)
 
 
-
 @shared_task
+def update_faucet_claims(_id , since_last_round=True):
+    CeleryTasks.update_claims_for_faucet(_id, since_last_round)
+
+@shared_task       
 def update_all_faucets_claims(since_last_round=True):
     active_faucets = Faucet.objects.filter(is_active=True)
     for active_faucet in active_faucets:
-        CeleryTasks.update_claims_for_faucet.delay(active_faucet.pk, since_last_round)
-       
-
+        update_faucet_claims.delay(active_faucet.pk, since_last_round)
 
 
 @worker_ready.connect
