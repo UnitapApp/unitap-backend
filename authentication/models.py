@@ -15,6 +15,7 @@ from safedelete.models import SafeDeleteModel
 from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
+    DiscordDriver,
     ENSDriver,
     GitcoinPassportDriver,
     TwitterDriver,
@@ -250,3 +251,14 @@ class ENSConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.name)
+
+
+class DiscordConnection(BaseThirdPartyConnection):
+    title = "Discord"
+    access_token = models.CharField(max_length=255, null=True, blank=True)
+    refresh_token = models.CharField(max_length=255, null=True, blank=True)
+
+    driver = DiscordDriver()
+
+    def is_connected(self):
+        return bool(self.access_token and self.refresh_token)

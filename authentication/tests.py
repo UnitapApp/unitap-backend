@@ -20,11 +20,13 @@ from rest_framework.status import (
 from rest_framework.test import APITestCase
 
 from authentication.models import (
+    DiscordConnection,
     ENSConnection,
     GitcoinPassportConnection,
     UserProfile,
     Wallet,
 )
+from core.thirdpartyapp.discord import DiscordUtils
 from faucet.models import ClaimReceipt
 
 # get address as username and signed address as password and verify signature
@@ -745,3 +747,73 @@ class TestENSThirdPartyConnection(APITestCase):
             ).count(),
             0,
         )
+
+
+class TestDiscordConnection(APITestCase):
+    def setUp(self):
+        self.user = create_new_user()
+
+    def test_discord_connection_creation(self):
+        connection = DiscordConnection.objects.create(
+            user_profile=self.user,
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+        )
+        self.assertEqual(DiscordConnection.objects.count(), 1)
+        self.assertEqual(connection.user_profile, self.user)
+        self.assertEqual(connection.access_token, "test_access_token")
+        self.assertEqual(connection.refresh_token, "test_refresh_token")
+
+    def test_discord_connection_update(self):
+        connection = DiscordConnection.objects.create(
+            user_profile=self.user,
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+        )
+        connection.access_token = "new_access_token"
+        connection.refresh_token = "new_refresh_token"
+        connection.save()
+
+        updated_connection = DiscordConnection.objects.get(user_profile=self.user)
+        self.assertEqual(updated_connection.access_token, "new_access_token")
+        self.assertEqual(updated_connection.refresh_token, "new_refresh_token")
+
+
+class TestDiscordUtils(APITestCase):
+    @patch("core.thirdpartyapp.discord.DiscordUtils.get_authorization_url")
+    def test_get_authorization_url(self, mock_get_auth_url):
+        mock_get_auth_url.return_value = """https://discord.com/api/oauth2/authorize
+        ?client_id=123&redirect_uri=http://localhost:8000/callback&response_type=
+        code&scope=identify%20guilds"""
+        url = DiscordUtils.get_authorization_url()
+        self.assertTrue(url.startswith("https://discord.com/api/oauth2/authorize"))
+        self.assertIn("client_id", url)
+        self.assertIn("redirect_uri", url)
+        self.assertIn("response_type=code", url)
+        self.assertIn("scope=identify%20guilds", url)
+
+    @patch("core.thirdpartyapp.discord.DiscordUtils.get_tokens")
+    def test_get_tokens(self, mock_get_tokens):
+        mock_get_tokens.return_value = ("access_token", "refresh_token")
+        access_token, refresh_token = DiscordUtils.get_tokens("test_code")
+        self.assertEqual(access_token, "access_token")
+        self.assertEqual(refresh_token, "refresh_token")
+
+    @patch("core.thirdpartyapp.discord.DiscordUtils.get_user_info")
+    def test_get_user_info(self, mock_get_user_info):
+        mock_user_info = {
+            "id": "12345",
+            "username": "testuser",
+            "discriminator": "1234",
+            "avatar": "avatar_hash",
+        }
+        mock_get_user_info.return_value = mock_user_info
+        user_info = DiscordUtils.get_user_info("test_access_token")
+        self.assertEqual(user_info, mock_user_info)
+
+    @patch("core.thirdpartyapp.discord.DiscordUtils.get_user_guilds")
+    def test_get_user_guilds(self, mock_get_user_guilds):
+        mock_guilds = [{"id": "1", "name": "Guild 1"}, {"id": "2", "name": "Guild 2"}]
+        mock_get_user_guilds.return_value = mock_guilds
+        guilds = DiscordUtils.get_user_guilds("test_access_token")
+        self.assertEqual(guilds, mock_guilds)

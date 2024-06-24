@@ -5,6 +5,8 @@ from authentication.views import (
     CheckUserExistsView,
     CheckUsernameView,
     ConnectBrightIDView,
+    DiscordOAuthCallbackView,
+    DiscordOAuthView,
     ENSConnectionView,
     ENSDisconnectionView,
     GetProfileView,
@@ -92,5 +94,11 @@ urlpatterns = [
         "user/disconnect/ens/<int:pk>/",
         ENSDisconnectionView.as_view(),
         name="disconnect-ens",
+    ),
+    path("discord/", DiscordOAuthView.as_view(), name="discord-oauth"),
+    path(
+        "discord/callback/",
+        DiscordOAuthCallbackView.as_view(),
+        name="discord-oauth-callback",
     ),
 ]
