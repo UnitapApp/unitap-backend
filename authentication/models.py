@@ -113,6 +113,12 @@ class UserProfile(models.Model):
     def owns_wallet(self, wallet_address):
         return self.wallets.filter(address=wallet_address).exists()
 
+    def has_unitap_pass(self):
+        return (
+            False,
+            [],
+        )  # TODO implement. returns True/False, list of unitap pass ids or []
+
     def __str__(self) -> str:
         return self.username if self.username else f"User{self.pk}"
 
