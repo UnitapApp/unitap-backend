@@ -782,9 +782,9 @@ class TestDiscordConnection(APITestCase):
 class TestDiscordUtils(APITestCase):
     @patch("core.thirdpartyapp.discord.DiscordUtils.get_authorization_url")
     def test_get_authorization_url(self, mock_get_auth_url):
-        mock_get_auth_url.return_value = """https://discord.com/api/oauth2/authorize
-        ?client_id=123&redirect_uri=http://localhost:8000/callback&response_type=
-        code&scope=identify%20guilds"""
+        mock_get_auth_url.return_value = "https://discord.com/api/oauth2/\
+            authorize?client_id=123&redirect_uri=http://localhost:8000/callback\
+                &response_type=code&scope=identify%20guilds"
         url = DiscordUtils.get_authorization_url()
         self.assertTrue(url.startswith("https://discord.com/api/oauth2/authorize"))
         self.assertIn("client_id", url)
