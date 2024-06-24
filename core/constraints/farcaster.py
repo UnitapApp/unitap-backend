@@ -105,4 +105,17 @@ class HasMinimumFarcasterFollower(ConstraintVerification):
         return False
 
 
-# TODO: add following farcaster channel constraint
+class IsFollowingFarcasterChannel(ConstraintVerification):
+    _param_keys = [ConstraintParam.FARCASTER_CHANNEL_ID]
+    app_name = ConstraintApp.FARCASTER.value
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        farcaster_util = FarcasterUtil()
+        user_addresses = self.user_addresses
+        channel_id = self.param_values[ConstraintParam.FARCASTER_CHANNEL_ID.name]
+        return farcaster_util.is_following_channel(
+            channel_id=channel_id, addresses=user_addresses
+        )

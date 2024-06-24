@@ -34,7 +34,11 @@ class ConstraintParam(Enum):
     KEY = "key"
     VALUE = "value"
     EAS_SCHEMA_ID = "eas_schema_id"
+<<<<<<< feature/unt-669-add-twitter-connection
     TARGET_TWEET_ID = "target_tweet_id"
+=======
+    FARCASTER_CHANNEL_ID = "FARCASTER_CHANNEL_ID"
+>>>>>>> develop
 
     @classmethod
     def choices(cls):
