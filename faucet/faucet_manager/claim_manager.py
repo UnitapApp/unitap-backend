@@ -17,7 +17,7 @@ from faucet.models import BrightUser, ClaimReceipt, GlobalSettings
 
 class ClaimManager(ABC):
     @abc.abstractmethod
-    def claim(self, amount, to_address=None) -> ClaimReceipt:
+    def claim(self, amount, to_address=None, ups=[]) -> ClaimReceipt:
         pass
 
     @abc.abstractmethod
@@ -33,32 +33,39 @@ class SimpleClaimManager(ClaimManager):
     def fund_manager(self):
         return EVMFundManager(self.credit_strategy.faucet)
 
-    def claim(self, amount, to_address=None):
+    def claim(self, amount, to_address=None, ups=[]):
         with transaction.atomic():
             user_profile = UserProfile.objects.select_for_update().get(
                 pk=self.credit_strategy.user_profile.pk
             )
-            self.assert_pre_claim_conditions(amount, user_profile)
+            self.assert_pre_claim_conditions(amount, user_profile, ups)
             return self.create_pending_claim_receipt(
-                amount, to_address
+                amount, to_address, ups
             )  # all pending claims will be processed periodically
 
-    def assert_pre_claim_conditions(self, amount, user_profile):
+    def assert_pre_claim_conditions(self, amount, user_profile, ups=[]):
         assert amount <= self.credit_strategy.get_unclaimed()
-        assert self.user_is_meet_verified() is True
+        # assert self.user_is_meet_verified() is True
+        for up in ups:
+            assert up not in self.credit_strategy.faucet.used_unitap_pass_list
         assert not ClaimReceipt.objects.filter(
             faucet__chain=self.credit_strategy.faucet.chain,
             user_profile=user_profile,
             _status=ClaimReceipt.PENDING,
         ).exists()
 
-    def create_pending_claim_receipt(self, amount, to_address):
+    def create_pending_claim_receipt(self, amount, to_address, ups=[]):
         if to_address is None:
             raise rest_framework.exceptions.ParseError("wallet address is required")
+        _faucet = self.credit_strategy.faucet
+        _user_profile = self.credit_strategy.user_profile
+
+        for up in ups:
+            _faucet.used_unitap_pass_list.append(up)
 
         return ClaimReceipt.objects.create(
-            faucet=self.credit_strategy.faucet,
-            user_profile=self.credit_strategy.user_profile,
+            faucet=_faucet,
+            user_profile=_user_profile,
             datetime=timezone.now(),
             amount=amount,
             _status=ClaimReceipt.PENDING,
