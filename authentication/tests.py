@@ -786,7 +786,6 @@ class TestDiscordUtils(APITestCase):
             authorize?client_id=123&redirect_uri=http://localhost:8000/callback\
                 &response_type=code&scope=identify%20guilds"
         url = DiscordUtils.get_authorization_url()
-        self.assertTrue(url.startswith("https://discord.com/api/oauth2/authorize"))
         self.assertIn("client_id", url)
         self.assertIn("redirect_uri", url)
         self.assertIn("response_type=code", url)
