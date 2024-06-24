@@ -33,6 +33,7 @@ from authentication.helpers import (
 )
 from authentication.models import (
     BrightIDConnection,
+    DiscordConnection,
     ENSConnection,
     GitcoinPassportSaveError,
     TwitterConnection,
@@ -51,7 +52,7 @@ from authentication.serializers import (
     thirdparty_connection_serializer,
 )
 from core.filters import IsOwnerFilterBackend
-from core.thirdpartyapp import TwitterUtils
+from core.thirdpartyapp import DiscordUtils, TwitterUtils
 
 
 class UserProfileCountView(ListAPIView):
@@ -691,5 +692,58 @@ class TwitterOAuthCallbackView(APIView):
         twitter_connection.access_token_secret = access_token_secret
 
         twitter_connection.save(update_fields=("access_token", "access_token_secret"))
+
+        return Response({}, HTTP_200_OK)
+
+
+class DiscordOAuthView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_user_profile(self):
+        return self.request.user.profile
+
+    def get(self, request, *args, **kwargs):
+        try:
+            url = DiscordUtils.get_authorization_url()
+        except Exception as e:
+            logging.error(f"Could not connect to Discord: {e}")
+            raise APIException("Discord did not respond")
+
+        try:
+            discord_connection = DiscordConnection.objects.get(
+                user_profile=self.get_user_profile()
+            )
+            discord_connection.access_token = None
+            discord_connection.refresh_token = None
+            discord_connection.save(update_fields=("access_token", "refresh_token"))
+        except DiscordConnection.DoesNotExist:
+            discord_connection = DiscordConnection(user_profile=self.get_user_profile())
+            discord_connection.save()
+
+        return Response({"url": url}, status=HTTP_200_OK)
+
+
+class DiscordOAuthCallbackView(APIView):
+    def get(self, request, *args, **kwargs):
+        code = request.query_params.get("code")
+        if code is None:
+            raise ParseError("You must provide an authorization code")
+
+        try:
+            access_token, refresh_token = DiscordUtils.get_tokens(code)
+        except Exception as e:
+            logging.error(f"Could not connect to Discord: {e}")
+            raise ParseError("Could not connect to Discord")
+
+        try:
+            discord_connection = DiscordConnection.objects.get(
+                user_profile__user=request.user
+            )
+        except DiscordConnection.DoesNotExist:
+            raise ParseError("DiscordConnection not found")
+
+        discord_connection.access_token = access_token
+        discord_connection.refresh_token = refresh_token
+        discord_connection.save(update_fields=("access_token", "refresh_token"))
 
         return Response({}, HTTP_200_OK)
