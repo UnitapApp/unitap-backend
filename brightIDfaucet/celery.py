@@ -80,10 +80,6 @@ app.conf.beat_schedule = {
     'update_total_claims_this_round_every_10_minutes': {
         'task': 'faucet.tasks.update_all_faucets_claims',
         'schedule': 600
-    },
-    'weekly_nft_pass_prize_pool_trigger':{
-        'task': 'core.tasks.prize_pool_trigger',
-        'schedule': 10
     }
 }
 

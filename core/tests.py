@@ -5,6 +5,7 @@ from rest_framework.test import APITestCase
 
 from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
+from .thirdpartyapp.subgraph import fetch_nft_pass_wallets
 
 from .constraints import (
     Attest,
@@ -363,3 +364,9 @@ class TestGitcoinPassportConstraint(BaseTestCase):
         constraint = HasGitcoinPassportProfile(self.not_connected_user_profile)
 
         self.assertEqual(constraint.is_observed(), False)
+
+
+class TestNFTpassWallets(BaseTestCase):
+    def test_fetch_nft_pass(self):
+        results = fetch_nft_pass_wallets()
+        self.assertNotEqual(len(list(results)), 0)
