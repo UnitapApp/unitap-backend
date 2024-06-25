@@ -23,7 +23,7 @@ def fetch_nft_pass_wallets():
             logging.error(f"Error fetching nft pass wallets from subgraph : {e}")
             holders = {}
             break
-        try:
+        else:
             if len(data["data"]["nfts"]) == 0:
                 break
             for item in data["data"]["nfts"]:
@@ -33,13 +33,5 @@ def fetch_nft_pass_wallets():
                 holders[item["owner"]].append(item)
             if len(data["data"]["nfts"]) != 1000:
                 break
-        except KeyError as e:
-            logging.error(f"Key error: {e}")
-            holders = {}
-            break
-        except Exception as e:
-            logging.error(f"An unexpected error occurred: {e}")
-            holders = {}
-            break
     session.close()
     return holders
