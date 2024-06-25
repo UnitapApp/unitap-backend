@@ -4,36 +4,42 @@ from core.thirdpartyapp import config
 
 
 def fetch_nft_pass_wallets():
-    results = []
+    count = 0
+    requests = RequestHelper()
+    session = requests.get_session()
+    holders = {}
     while True:
-
-        requests = RequestHelper()
-        session = requests.get_session()
         data = None
         try:
             data = session.post(
                 config.NFT_PASS_SUBGRAPH_URL,
                 json={
                     "query": "{nfts(first: 1000, skip: "
-                    + str(len(results))
+                    + str(count)
                     + ") {id owner tokenId}}"
                 },
             ).json()
-        except:
-            logging.error("Error fetching nft pass wallets")
+        except RequestException as e:
+            logging.error(f"Error fetching nft pass wallets from subgraph : {e}")
+            holders = {}
             break
-
-        if len(data["data"]["nfts"]) == 0:
+        try:
+            if len(data["data"]["nfts"]) == 0:
+                break
+            for item in data["data"]["nfts"]:
+                count += 1
+                if item["owner"] not in holders:
+                    holders[item["owner"]] = []
+                holders[item["owner"]].append(item)
+            if len(data["data"]["nfts"]) != 1000:
+                break
+        except KeyError as e:
+            logging.error(f"Key error: {e}")
+            holders = {}
             break
-        for item in data["data"]["nfts"]:
-            results.append(item)
-        if len(data["data"]["nfts"]) != 1000:
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            holders = {}
             break
-
-    holders = {}
-    for item in results:
-        if item["owner"] not in holders:
-            holders[item["owner"]] = []
-        holders[item["owner"]].append(item)
     session.close()
     return holders
