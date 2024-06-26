@@ -16,6 +16,7 @@ from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
     ENSDriver,
+    FarcasterDriver,
     GitcoinPassportDriver,
     TwitterDriver,
 )
@@ -250,3 +251,29 @@ class ENSConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.name)
+
+
+class FarcasterConnection(BaseThirdPartyConnection):
+    title = "Farcaster"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = FarcasterDriver()
+
+    @property
+    def fid(self):
+        return self.driver.get_fid(self.user_wallet_address)
+
+    def is_connected(self):
+        return bool(self.fid)
+
+
+class FarcasterSaveError(Exception):
+    pass
+
+
+@receiver(pre_save, sender=FarcasterConnection)
+def check_farcaster_profile_existance(sender, instance: FarcasterConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.driver.get_fid(instance.user_wallet_address)
+    if res is None:
+        raise FarcasterSaveError("Farcaster profile for this wallet not found.")
