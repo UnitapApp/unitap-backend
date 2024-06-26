@@ -8,7 +8,6 @@ from authentication.helpers import verify_login_signature
 from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
     ENSConnection,
-    FarcasterConnection,
     GitcoinPassportConnection,
     TwitterConnection,
     UserProfile,
@@ -202,24 +201,6 @@ class TwitterConnectionSerializer(BaseThirdPartyConnectionSerializer):
 class ENSConnectionSerializer(BaseThirdPartyConnectionSerializer):
     class Meta:
         model = ENSConnection
-        fields = "__all__"
-        read_only_fields = [
-            "created_on",
-            "pk",
-            "user_profile",
-            "title",
-        ]
-
-    def is_valid(self, raise_exception=False):
-        super_is_validated = super().is_valid(raise_exception)
-        is_address_valid = self.validate_address(raise_exception)
-
-        return is_address_valid and super_is_validated
-
-
-class FarcasterConnectionSerializer(BaseThirdPartyConnectionSerializer):
-    class Meta:
-        model = FarcasterConnection
         fields = "__all__"
         read_only_fields = [
             "created_on",
