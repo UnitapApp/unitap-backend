@@ -445,7 +445,7 @@ class ENSConnectionView(CreateAPIView):
 
 class ENSDisconnectionView(DestroyAPIView):
     queryset = ENSConnection.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwner]
     serializer_class = ENSConnectionSerializer
 
 
