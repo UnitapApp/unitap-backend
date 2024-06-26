@@ -37,6 +37,8 @@ from authentication.models import (
     FarcasterConnection,
     FarcasterSaveError,
     GitcoinPassportSaveError,
+    LensConnection,
+    LensSaveError,
     TwitterConnection,
     UserProfile,
     Wallet,
@@ -46,6 +48,7 @@ from authentication.serializers import (
     ENSConnectionSerializer,
     FarcasterConnectionSerializer,
     GitcoinPassportConnectionSerializer,
+    LensConnectionSerializer,
     MessageResponseSerializer,
     ProfileSerializer,
     UserHistoryCountSerializer,
@@ -471,6 +474,27 @@ class FarcasterDisconnectionView(DestroyAPIView):
     queryset = FarcasterConnection.objects.all()
     permission_classes = [IsAuthenticated, IsOwner]
     serializer_class = FarcasterConnectionSerializer
+
+
+class LensConnectionView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = LensConnectionSerializer
+
+    @property
+    def user_profile(self):
+        return self.request.user.profile
+
+    def perform_create(self, serializer):
+        try:
+            serializer.save(user_profile=self.user_profile)
+        except (LensSaveError, ValidationError) as e:
+            raise ValidationError({"address": str(e)})
+
+
+class LensDisconnectionView(DestroyAPIView):
+    queryset = LensConnection.objects.all()
+    permission_classes = [IsAuthenticated, IsOwner]
+    serializer_class = LensConnectionSerializer
 
 
 class SetUsernameView(CreateAPIView):

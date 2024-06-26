@@ -11,6 +11,8 @@ from authentication.views import (
     FarcasterDisconnectionView,
     GetProfileView,
     GitcoinPassportConnectionView,
+    LensConnectionView,
+    LensDisconnectionView,
     LoginRegisterView,
     LoginView,
     SetUsernameView,
@@ -104,5 +106,15 @@ urlpatterns = [
         "user/disconnect/farcaster/<int:pk>/",
         FarcasterDisconnectionView.as_view(),
         name="disconnect-farcaster",
+    ),
+    path(
+        "user/connect/lens/",
+        LensConnectionView.as_view(),
+        name="connect-lens",
+    ),
+    path(
+        "user/disconnect/lens/<int:pk>/",
+        LensDisconnectionView.as_view(),
+        name="disconnect-lens",
     ),
 ]

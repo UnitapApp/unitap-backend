@@ -10,6 +10,7 @@ from authentication.models import (  # BaseThirdPartyConnection,
     ENSConnection,
     FarcasterConnection,
     GitcoinPassportConnection,
+    LensConnection,
     TwitterConnection,
     UserProfile,
     Wallet,
@@ -111,6 +112,8 @@ def get_third_party_connection_serializer(connection):
         BrightIDConnection: BaseThirdPartyConnectionSerializer,
         GitcoinPassportConnection: GitcoinPassportConnectionSerializer,
         TwitterConnection: TwitterConnectionSerializer,
+        LensConnection: LensConnectionSerializer,
+        FarcasterConnection: FarcasterConnectionSerializer,
         # other mappings for different third-party connection models
     }.get(type(connection), BaseThirdPartyConnectionSerializer)
 
@@ -220,6 +223,24 @@ class ENSConnectionSerializer(BaseThirdPartyConnectionSerializer):
 class FarcasterConnectionSerializer(BaseThirdPartyConnectionSerializer):
     class Meta:
         model = FarcasterConnection
+        fields = "__all__"
+        read_only_fields = [
+            "created_on",
+            "pk",
+            "user_profile",
+            "title",
+        ]
+
+    def is_valid(self, raise_exception=False):
+        super_is_validated = super().is_valid(raise_exception)
+        is_address_valid = self.validate_address(raise_exception)
+
+        return is_address_valid and super_is_validated
+
+
+class LensConnectionSerializer(BaseThirdPartyConnectionSerializer):
+    class Meta:
+        model = LensConnection
         fields = "__all__"
         read_only_fields = [
             "created_on",
