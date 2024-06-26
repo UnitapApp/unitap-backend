@@ -9,7 +9,6 @@ def fetch_nft_pass_wallets():
     session = requests.get_session()
     holders = {}
     while True:
-        data = None
         try:
             data = session.post(
                 config.NFT_PASS_SUBGRAPH_URL,
@@ -30,7 +29,7 @@ def fetch_nft_pass_wallets():
                 count += 1
                 if item["owner"] not in holders:
                     holders[item["owner"]] = []
-                holders[item["owner"]].append(item)
+                holders[item["owner"]].append(item['tokenId'])
             if len(data["data"]["nfts"]) != 1000:
                 break
     session.close()
