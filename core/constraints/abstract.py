@@ -11,6 +11,7 @@ class ConstraintApp(Enum):
     ENS = "ENS"
     EAS = "EAS"
     GITCOIN_PASSPORT = "gitcoin_passport"
+    TWITTER = "twitter"
 
     @classmethod
     def choices(cls):
@@ -33,6 +34,7 @@ class ConstraintParam(Enum):
     KEY = "key"
     VALUE = "value"
     EAS_SCHEMA_ID = "eas_schema_id"
+    TARGET_TWEET_ID = "target_tweet_id"
     FARCASTER_CHANNEL_ID = "FARCASTER_CHANNEL_ID"
 
     @classmethod

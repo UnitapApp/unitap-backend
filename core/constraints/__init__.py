@@ -41,6 +41,13 @@ from core.constraints.lens import (
     HasMinimumLensPost,
     IsFollowingLensUser,
 )
+from core.constraints.twitter import (
+    HasCommentOnATweet,
+    HasMinimumTweetCount,
+    HasMinimumTwitterFollowerCount,
+    HasTwitter,
+    HasVoteOnATweet,
+)
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:

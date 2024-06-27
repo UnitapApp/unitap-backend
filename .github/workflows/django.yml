@@ -38,4 +38,6 @@ jobs:
           MEMCACHEDCLOUD_PASSWORD: " "
           GITCOIN_PASSPORT_SCORER_ID: ${{ secrets.GITCOIN_PASSPORT_SCORER_ID }}
           GITCOIN_PASSPORT_API_KEY: ${{ secrets.GITCOIN_PASSPORT_API_KEY }}
+          CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
+          CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
           DEPLOYMENT_ENV: "dev"
