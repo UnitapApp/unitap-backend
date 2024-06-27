@@ -21,4 +21,4 @@ EAS_BASE_URL = {
         "OPTIMISM_EAS_BASE_URL", "https://optimism.easscan.org/graphql"
     ),
 }
-NFT_PASS_SUBGRAPH_URL = os.getenv("NFT_PASS_SUBGRAPH_URL", "https://api.studio.thegraph.com/query/73675/unitap-pass-eth/version/latest")
+SUBGRAPH_BASE_URL = os.getenv("SUBGRAPH_BASE_URL", "https://api.studio.thegraph.com")

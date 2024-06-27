@@ -137,6 +137,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "is_meet_verified",
             # "is_aura_verified",
             "wallets",
+            "prizetap_winning_chance_number",
         ]
 
     def get_token(self, instance):
@@ -155,6 +156,7 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
             "username",
             "is_verified",
             "wallets",
+            "prizetap_winning_chance_number",
         ]
 
     def get_username(self, user_profile: UserProfile):

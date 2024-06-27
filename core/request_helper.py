@@ -27,14 +27,8 @@ class RequestHelper:
     ) -> dict:
         try:
             url = self._get_url(path)
-            if session is None:
-                res = requests.get(
-                    url=url, params=params, headers=headers, timeout=timeout
-                )
-            else:
-                res = session.get(
-                    url=url, params=params, headers=headers, timeout=timeout
-                )
+            request = session or requests
+            res = request.get(url=url, params=params, headers=headers, timeout=timeout)
             res.raise_for_status()
             return res.json()
         except requests.RequestException as e:
@@ -53,24 +47,15 @@ class RequestHelper:
     ) -> dict:
         try:
             url = self._get_url(path)
-            if session is None:
-                res = requests.post(
-                    url=url,
-                    params=params,
-                    headers=headers,
-                    data=data,
-                    json=json,
-                    timeout=timeout,
-                )
-            else:
-                res = session.post(
-                    url=url,
-                    params=params,
-                    headers=headers,
-                    data=data,
-                    json=json,
-                    timeout=timeout,
-                )
+            request = session or requests
+            res = request.post(
+                url=url,
+                params=params,
+                headers=headers,
+                data=data,
+                json=json,
+                timeout=timeout,
+            )
             res.raise_for_status()
             return res.json()
         except requests.RequestException as e:
