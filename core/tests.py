@@ -1,3 +1,4 @@
+import time
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
@@ -5,6 +6,12 @@ from rest_framework.test import APITestCase
 
 from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
+
+from django.test import TestCase
+from core.telegram import LogMiddleware
+from django.conf import settings
+
+TELEGRAM_MIN_LOG_INTERVAL = settings.TELEGRAM_MIN_LOG_INTERVAL
 
 from .constraints import (
     Attest,
@@ -363,3 +370,28 @@ class TestGitcoinPassportConstraint(BaseTestCase):
         constraint = HasGitcoinPassportProfile(self.not_connected_user_profile)
 
         self.assertEqual(constraint.is_observed(), False)
+
+
+
+
+
+class LogMiddlewareTests(TestCase):
+    def setUp(self):
+        self.middleware = LogMiddleware(get_response=lambda request: None)
+        
+
+    def test_log_message_sent_to_telegram(self):
+       
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  True)
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  False)
+        # delay
+        time.sleep(TELEGRAM_MIN_LOG_INTERVAL)
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  True)
+        res = self.middleware.log_message("Test log message")
+        self.assertEqual(res['ok'],  False)
+        res = self.middleware.log_message("Test log message2")
+        self.assertEqual(res['ok'],  True)
+        
