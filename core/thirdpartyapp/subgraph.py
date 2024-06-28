@@ -46,6 +46,7 @@ class Subgraph:
         }
 
         while True:
+            vars["skip"] = count
             res = self.send_post_request(
                 self.path.get("unitap_pass"), query=query, vars=vars
             )
