@@ -1,3 +1,5 @@
+import logging
+
 from core.constraints.abstract import (
     ConstraintApp,
     ConstraintParam,
@@ -14,14 +16,15 @@ class HasLensProfile(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import LensConnection
 
         lens_util = LensUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if lens_util.get_profile_id(wallet.address):
-                return True
-        return False
+        try:
+            le_connection = LensConnection.get_connection(self.user_profile)
+        except LensConnection.DoesNotExist:
+            logging("Lens connection not found.")
+            return False
+        return bool(lens_util.get_profile_id(le_connection.user_wallet_address))
 
 
 class IsFollowingLensUser(ConstraintVerification):
@@ -32,16 +35,16 @@ class IsFollowingLensUser(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import LensConnection
 
         lens_util = LensUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if lens_util.is_following(
-                self.param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
-            ):
-                return True
-        return False
+        prfoile_id = self.param_values[ConstraintParam.LENS_PROFILE_ID.name]
+        try:
+            le_connection = LensConnection.get_connection(self.user_profile)
+        except LensConnection.DoesNotExist:
+            logging("Lens connection not found.")
+            return False
+        return bool(lens_util.is_following(prfoile_id, le_connection))
 
 
 class BeFollowedByLensUser(ConstraintVerification):
@@ -52,16 +55,18 @@ class BeFollowedByLensUser(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import LensConnection
 
         lens_util = LensUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if lens_util.be_followed_by(
-                self.param_values[ConstraintParam.LENS_PROFILE_ID.name], wallet.address
-            ):
-                return True
-        return False
+        profile_id = self.param_values[ConstraintParam.LENS_PROFILE_ID.name]
+        try:
+            le_connection = LensConnection.get_connection(self.user_profile)
+        except LensConnection.DoesNotExist:
+            logging("Lens connection not found.")
+            return False
+        return bool(
+            lens_util.be_followed_by(profile_id, le_connection.user_wallet_address)
+        )
 
 
 class DidMirrorOnLensPublication(ConstraintVerification):
@@ -72,17 +77,20 @@ class DidMirrorOnLensPublication(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import LensConnection
 
         lens_util = LensUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if lens_util.did_mirror_on_publication(
-                self.param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
-                wallet.address,
-            ):
-                return True
-        return False
+        publication_id = self.param_values[ConstraintParam.LENS_PUBLICATION_ID.name]
+        try:
+            le_connection = LensConnection.get_connection(self.user_profile)
+        except LensConnection.DoesNotExist:
+            logging("Lens connection not found.")
+            return False
+        return bool(
+            lens_util.did_mirror_on_publication(
+                publication_id, le_connection.user_wallet_address
+            )
+        )
 
 
 class DidCollectLensPublication(ConstraintVerification):
@@ -93,17 +101,21 @@ class DidCollectLensPublication(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import LensConnection
 
         lens_util = LensUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if lens_util.did_collect_publication(
-                self.param_values[ConstraintParam.LENS_PUBLICATION_ID.name],
-                wallet.address,
-            ):
-                return True
-        return False
+        publication_id = self.param_values[ConstraintParam.LENS_PUBLICATION_ID.name]
+        try:
+            le_connection = LensConnection.get_connection(self.user_profile)
+        except LensConnection.DoesNotExist:
+            logging("Lens connection not found.")
+            return False
+        return bool(
+            lens_util.did_collect_publication(
+                publication_id,
+                le_connection.user_wallet_address,
+            )
+        )
 
 
 class HasMinimumLensFollower(ConstraintVerification):
@@ -114,16 +126,22 @@ class HasMinimumLensFollower(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import LensConnection
 
         lens_util = LensUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if int(lens_util.get_follower_number(wallet.address)) >= int(
-                self.param_values[ConstraintParam.MINIMUM.name]
-            ):
-                return True
-        return False
+        minimum = int(self.param_values[ConstraintParam.MINIMUM.name])
+        try:
+            le_connection = LensConnection.get_connection(self.user_profile)
+        except LensConnection.DoesNotExist:
+            logging("Lens connection not found.")
+            return False
+        try:
+            return (
+                lens_util.get_follower_number(le_connection.user_wallet_address)
+                >= minimum
+            )
+        except TypeError:
+            return False
 
 
 class HasMinimumLensPost(ConstraintVerification):
@@ -134,13 +152,18 @@ class HasMinimumLensPost(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        from core.models import NetworkTypes
+        from authentication.models import LensConnection
 
         lens_util = LensUtil()
-        user_wallets = self.user_profile.wallets.filter(wallet_type=NetworkTypes.EVM)
-        for wallet in user_wallets:
-            if int(lens_util.get_post_number(wallet.address)) >= int(
-                self.param_values[ConstraintParam.MINIMUM.name]
-            ):
-                return True
-        return False
+        minimum = int(self.param_values[ConstraintParam.MINIMUM.name])
+        try:
+            le_connection = LensConnection.get_connection(self.user_profile)
+        except LensConnection.DoesNotExist:
+            logging("Lens connection not found.")
+            return False
+        try:
+            return (
+                lens_util.get_post_number(le_connection.user_wallet_address) >= minimum
+            )
+        except TypeError:
+            return False

@@ -229,10 +229,10 @@ class LensUtil:
             return profile_info.get("stats").get("followers")
         except RequestException as e:
             logging.error(f"connection lost, {e}")
-            return 0
+            return None
 
         except (KeyError, TypeError, AttributeError):
-            return 0
+            return None
 
     def get_post_number(self, address: str) -> None | int:
         """return post number
@@ -244,7 +244,7 @@ class LensUtil:
             return profile_info.get("stats").get("posts")
         except RequestException as e:
             logging.error(f"connection lost, {e}")
-            return 0
+            return None
 
         except (KeyError, TypeError, AttributeError):
-            return 0
+            return None

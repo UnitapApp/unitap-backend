@@ -7,8 +7,12 @@ from authentication.views import (
     ConnectBrightIDView,
     ENSConnectionView,
     ENSDisconnectionView,
+    FarcasterConnectionView,
+    FarcasterDisconnectionView,
     GetProfileView,
     GitcoinPassportConnectionView,
+    LensConnectionView,
+    LensDisconnectionView,
     LoginRegisterView,
     LoginView,
     SetUsernameView,
@@ -92,5 +96,25 @@ urlpatterns = [
         "user/disconnect/ens/<int:pk>/",
         ENSDisconnectionView.as_view(),
         name="disconnect-ens",
+    ),
+    path(
+        "user/connect/farcaster/",
+        FarcasterConnectionView.as_view(),
+        name="connect-farcaster",
+    ),
+    path(
+        "user/disconnect/farcaster/<int:pk>/",
+        FarcasterDisconnectionView.as_view(),
+        name="disconnect-farcaster",
+    ),
+    path(
+        "user/connect/lens/",
+        LensConnectionView.as_view(),
+        name="connect-lens",
+    ),
+    path(
+        "user/disconnect/lens/<int:pk>/",
+        LensDisconnectionView.as_view(),
+        name="disconnect-lens",
     ),
 ]

@@ -16,7 +16,9 @@ from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
     ENSDriver,
+    FarcasterDriver,
     GitcoinPassportDriver,
+    LensDriver,
     TwitterDriver,
 )
 from core.models import NetworkTypes
@@ -254,3 +256,55 @@ class ENSConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.name)
+
+
+class FarcasterConnection(BaseThirdPartyConnection):
+    title = "Farcaster"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = FarcasterDriver()
+
+    @property
+    def fid(self):
+        return self.driver.get_fid(self.user_wallet_address)
+
+    def is_connected(self):
+        return bool(self.fid)
+
+
+class FarcasterSaveError(Exception):
+    pass
+
+
+@receiver(pre_save, sender=FarcasterConnection)
+def check_farcaster_profile_existance(sender, instance: FarcasterConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.fid
+    if res is None:
+        raise FarcasterSaveError("Farcaster profile for this wallet not found.")
+
+
+class LensConnection(BaseThirdPartyConnection):
+    title = "Lens"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = LensDriver()
+
+    @property
+    def profile_id(self):
+        return self.driver.get_profile_id(self.user_wallet_address)
+
+    def is_connected(self):
+        return bool(self.profile_id)
+
+
+class LensSaveError(Exception):
+    pass
+
+
+@receiver(pre_save, sender=LensConnection)
+def check_lens_profile_existance(sender, instance: LensConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.profile_id
+    if res is None:
+        raise FarcasterSaveError("Lens profile for this wallet not found.")

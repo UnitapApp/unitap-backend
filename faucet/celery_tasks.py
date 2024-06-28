@@ -1,6 +1,7 @@
 import decimal
 import logging
 import math
+import os
 
 import requests
 import web3.exceptions
@@ -12,6 +13,7 @@ from sentry_sdk import capture_exception
 
 from core.models import TokenPrice
 from core.utils import Web3Utils
+from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
 from .constants import FUEL_LEVEL_STATUS_NUMBER
 from .faucet_manager.fund_manager import FundMangerException, get_fund_manager
@@ -22,7 +24,6 @@ from .models import (
     Faucet,
     TransactionBatch,
 )
-from faucet.faucet_manager.claim_manager import RoundCreditStrategy
 
 
 def has_pending_batch(faucet):
@@ -227,7 +228,10 @@ class CeleryTasks:
                         f"{type(e).__name__}. {str(e)}"
                     )
 
-            parse_request(token, requests.get(token.price_url, timeout=5))
+            params = {"x_cg_demo_api_key": os.getenv("COINGECKO_API_KEY", None)}
+            parse_request(
+                token, requests.get(token.price_url, params=params, timeout=5)
+            )
 
     @staticmethod
     def process_donation_receipt(donation_receipt_pk):
@@ -294,22 +298,20 @@ class CeleryTasks:
             donation_receipt.status = ClaimReceipt.REJECTED
             donation_receipt.save()
             return
+
     @staticmethod
     def update_claims_for_faucet(faucet_id, since_last_round):
         faucet = Faucet.objects.get(pk=faucet_id)
         if since_last_round:
             start_time = RoundCreditStrategy.get_start_of_previous_round()
-            claim_field = 'total_claims_since_last_round'
+            claim_field = "total_claims_since_last_round"
         else:
             start_time = RoundCreditStrategy.get_start_of_the_round()
-            claim_field = 'total_claims_this_round'
-        
+            claim_field = "total_claims_this_round"
+
         total_claims = ClaimReceipt.objects.filter(
-            faucet=faucet,
-            datetime__gte=start_time,
-            _status__in=[ClaimReceipt.VERIFIED]
+            faucet=faucet, datetime__gte=start_time, _status__in=[ClaimReceipt.VERIFIED]
         ).count()
 
         setattr(faucet, claim_field, total_claims)
         faucet.save()
-
