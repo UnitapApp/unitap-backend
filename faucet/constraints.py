@@ -44,7 +44,7 @@ class EvmClaimingGasConstraint(ConstraintVerification):
         chain_pk = self.param_values[ConstraintParam.CHAIN]
         chain = Chain.objects.get(pk=chain_pk)
         w3 = Web3Utils(chain.rpc_url_private, chain.poa)
-        current_block = w3.current_block()
+        current_block = w3.get_current_block()
         user_address = self.user_profile.wallets.get(
             wallet_type=chain.chain_type
         ).address

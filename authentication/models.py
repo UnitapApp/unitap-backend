@@ -2,7 +2,7 @@ import uuid
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 from django.db.models.functions import Lower
@@ -86,6 +86,10 @@ class UserProfile(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
+    prizetap_winning_chance_number = models.IntegerField(
+        default=0, blank=False, null=False, validators=(MinValueValidator(0),)
+    )
+
     objects = ProfileManager()
 
     @property
@@ -140,7 +144,7 @@ class Wallet(SafeDeleteModel):
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
     )
-    address = models.CharField(max_length=512)
+    address = models.CharField(max_length=512, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     class Meta:
