@@ -82,7 +82,7 @@ app.conf.beat_schedule = {
         "schedule": 600,
     },
     "update_prizetap_winning_chance_number_every_week": {
-        "task": "prizetap.task.update_prizetap_winning_chance_number",
+        "task": "prizetap.tasks.update_prizetap_winning_chance_number",
         "schedule": crontab(minute="*/2"),
     },
 }
