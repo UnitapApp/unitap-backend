@@ -4,12 +4,8 @@ from decimal import Decimal
 
 from celery import shared_task
 from django.core.cache import cache
-from django.db import transaction
-from django.db.models import F
 from django.utils import timezone
 
-from authentication.models import NetworkTypes, Wallet
-from core.thirdpartyapp import Subgraph
 from core.utils import memcache_lock
 from quiztap.constants import (
     ANSWER_TIME_SECOND,
@@ -158,23 +154,3 @@ def register_competition_to_start(self):
                 (competition.pk,),
                 eta=competition.start_at - timedelta(milliseconds=0.5),
             )
-
-
-@shared_task
-def update_prizetap_winning_chance_number():
-    sub = Subgraph()
-    holders = sub.get_unitap_pass_holders()
-    for holder_address, unitap_pass_ids in holders.items():
-        try:
-            user_profile = (
-                Wallet.objects.prefetch_related()
-                .get(address__iexact=holder_address, wallet_type=NetworkTypes.EVM)
-                .user_profile
-            )
-            with transaction.atomic():
-                user_profile.prizetap_winning_chance_number = F(
-                    "prizetap_winning_chance_number"
-                ) + len(unitap_pass_ids)
-                user_profile.save(update_fields=("prizetap_winning_chance_number",))
-        except Wallet.DoesNotExist:
-            logging.error(f"Wallet address: {holder_address} not exists.")

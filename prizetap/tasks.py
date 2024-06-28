@@ -3,10 +3,14 @@ import time
 
 import requests
 from celery import shared_task
+from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
+from authentication.models import NetworkTypes, Wallet
 from brightIDfaucet.settings import DEPLOYMENT_ENV
 from core.helpers import memcache_lock
+from core.thirdpartyapp import Subgraph
 
 from .models import Raffle
 from .utils import PrizetapContractClient, VRFClientContractClient
@@ -264,3 +268,23 @@ def set_raffle_ids(self):
                     raffle.save()
                 except Exception as e:
                     logging.error(e)
+
+
+@shared_task
+def update_prizetap_winning_chance_number():
+    sub = Subgraph()
+    holders = sub.get_unitap_pass_holders()
+    for holder_address, unitap_pass_ids in holders.items():
+        try:
+            user_profile = (
+                Wallet.objects.prefetch_related()
+                .get(address__iexact=holder_address, wallet_type=NetworkTypes.EVM)
+                .user_profile
+            )
+            with transaction.atomic():
+                user_profile.prizetap_winning_chance_number = F(
+                    "prizetap_winning_chance_number"
+                ) + len(unitap_pass_ids)
+                user_profile.save(update_fields=("prizetap_winning_chance_number",))
+        except Wallet.DoesNotExist:
+            logging.error(f"Wallet address: {holder_address} not exists.")
