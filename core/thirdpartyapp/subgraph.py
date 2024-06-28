@@ -3,7 +3,6 @@ from collections import defaultdict
 
 from core.request_helper import RequestException, RequestHelper
 from core.thirdpartyapp import config
-from core.utils import Web3Utils
 
 
 class Subgraph:
@@ -15,15 +14,6 @@ class Subgraph:
 
     def __del__(self):
         self.session.close()
-
-    @staticmethod
-    def get_current_block_number():
-        from core.models import Chain
-
-        eth_chain = Chain.objects.get(chain_id=1)
-        w3 = Web3Utils(eth_chain.rpc_url_private)
-        current_block_number = w3.get_current_block()
-        return current_block_number
 
     def send_post_request(self, path, query, vars, **kwargs):
         try:
@@ -43,18 +33,20 @@ class Subgraph:
 
         count = 0
         holders = defaultdict(set)
-        current_block_number = self.get_current_block_number()
         query = """
         query GetNFTHolders($first: Int, $skip: Int, $block_number: Int) {
-            nfts (first: $first, skip: $skip, block: {number: $number}) {
+            nfts (first: $first, skip: $skip) {
                 tokenId,
                 owner
             }
         }
         """
-        vars = {"first": first, "block_number": current_block_number - 1}
+        vars = {
+            "first": first,
+        }
 
         while True:
+            vars["skip"] = count
             res = self.send_post_request(
                 self.path.get("unitap_pass"), query=query, vars=vars
             )
