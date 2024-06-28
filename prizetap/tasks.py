@@ -287,4 +287,4 @@ def update_prizetap_winning_chance_number():
                 ) + len(unitap_pass_ids)
                 user_profile.save(update_fields=("prizetap_winning_chance_number",))
         except Wallet.DoesNotExist:
-            logging.error(f"Wallet address: {holder_address} not exists.")
+            logging.warning(f"Wallet address: {holder_address} not exists.")
