@@ -144,6 +144,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             "prizetap_winning_chance_number",
         ]
 
+        read_only_fields = ("prizetap_winning_chance_number",)
+
     def get_token(self, instance):
         token, bol = Token.objects.get_or_create(user=instance.user)
         return token.key
@@ -162,6 +164,7 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
             "wallets",
             "prizetap_winning_chance_number",
         ]
+        read_only_fields = ("prizetap_winning_chance_number",)
 
     def get_username(self, user_profile: UserProfile):
         if not user_profile.username:

@@ -222,10 +222,6 @@ class RaffleAPITestCase(RaffleTestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-    # @patch(
-    #     "authentication.models.UserProfile.is_meet_verified",
-    #     lambda b: False,
-    # )
     def test_raffle_enrollment_validation(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
@@ -233,6 +229,92 @@ class RaffleAPITestCase(RaffleTestCase):
             data={"user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb"},
         )
         self.assertEqual(response.status_code, 403)
+
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
+    )
+    def test_raffle_enrollment_prizetap_winning_chance_validation_more_than_two(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse("raflle-enrollment", kwargs={"pk": self.raffle.pk}),
+            data={
+                "user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+                "prizetap_winning_chance_number": 3,
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
+    )
+    def test_raffle_enrollment_prizetap_winning_chance_validation_negative(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        response = self.client.post(
+            reverse(
+                "raflle-enrollment",
+                kwargs={
+                    "pk": self.raffle.pk,
+                },
+            ),
+            data={
+                "user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+                "prizetap_winning_chance_number": -1,
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
+    )
+    def test_raffle_enrollment_prizetap_winning_chance_validation_not_enough(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.user_profile.prizetap_winning_chance_number = 0
+        self.user_profile.save()
+        response = self.client.post(
+            reverse(
+                "raflle-enrollment",
+                kwargs={
+                    "pk": self.raffle.pk,
+                },
+            ),
+            data={
+                "user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+                "prizetap_winning_chance_number": 2,
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @patch(
+        "authentication.models.UserProfile.is_meet_verified",
+        lambda a: (True, None),
+    )
+    def test_raffle_enrollment_with_prizetap_winning_chance(self):
+        self.client.force_authenticate(user=self.user_profile.user)
+        self.user_profile.prizetap_winning_chance_number = 3
+        self.user_profile.save()
+        response = self.client.post(
+            reverse(
+                "raflle-enrollment",
+                kwargs={
+                    "pk": self.raffle.pk,
+                },
+            ),
+            data={
+                "user_wallet_address": "0xc1cbb2ab97260a8a7d4591045a9fb34ec14e87fb",
+                "prizetap_winning_chance_number": 2,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            UserProfile.objects.get(
+                pk=self.user_profile.pk
+            ).prizetap_winning_chance_number,
+            1,
+        )
+        self.assertEqual(response.data.get("signature").get("multiplier"), 3)
 
     def test_create_raffle(self):
         self.client.force_authenticate(user=self.user_profile.user)
