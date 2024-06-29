@@ -29,7 +29,9 @@ class Subgraph:
         except RequestException:
             logging.error("Could not connect to subgraph API")
 
-    def get_unitap_pass_holders(self, first=1000) -> dict[str : set[str]]:
+    def get_unitap_pass_holders(
+        self, first=1000, *, addresses: list[str] | None = None
+    ) -> dict[str : set[str]]:
         """get unitap pass holders
         :return: {'owner_id':{'unitap_pass_id'}}
         """
@@ -37,17 +39,17 @@ class Subgraph:
         count = 0
         holders = defaultdict(set)
         query = """
-        query GetNFTHolders($first: Int, $skip: Int, $block_number: Int) {
-            nfts (first: $first, skip: $skip) {
+        query GetNFTHolders($first: Int, $skip: Int, $where: NFT_filter) {
+            nfts (first: $first, skip: $skip, where: $where) {
                 tokenId,
                 owner
             }
         }
         """
-        vars = {
-            "first": first,
-        }
-
+        vars = {"first": first, "where": {}}
+        if addresses:
+            or_ = [{"owner": address} for address in addresses]
+            vars["where"] = {"or": or_}
         while True:
             vars["skip"] = count
             res = self.send_post_request(
