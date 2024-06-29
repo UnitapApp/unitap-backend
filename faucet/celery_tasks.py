@@ -195,6 +195,14 @@ class CeleryTasks:
             capture_exception()
 
     @staticmethod
+    def empty_used_unitap_pass_list(faucet_id):
+        faucet = Faucet.objects.get(pk=faucet_id)
+        if faucet.is_one_time_claim:
+            return
+        faucet.used_unitap_pass_list = []
+        faucet.save()
+
+    @staticmethod
     def update_token_price(token_pk):
         with transaction.atomic():
             try:

@@ -174,13 +174,14 @@ class ClaimMaxView(APIView):
         return self.request.user.profile
 
     def check_user_is_verified(self, type="Meet"):
-        _is_verified = self.get_user().is_meet_verified
-        # _is_verified = True
-        if not _is_verified:
-            # return Response({"message": "You are not BrighID verified"}, status=403)
+        _is_meet_verified = self.get_user().is_meet_verified
+        _has_unitap_pass, ups = self.get_user().has_unitap_pass()
+
+        if not _is_meet_verified and not _has_unitap_pass:
             raise rest_framework.exceptions.PermissionDenied(
                 "You are not BrighID verified"
             )
+        return ups
 
     def to_address_is_provided(self):
         to_address = self.request.data.get("address", None)
@@ -202,23 +203,23 @@ class ClaimMaxView(APIView):
         to_address = self.request.data.get("address", None)
         address_validator(to_address, chain)
 
-    def claim_max(self, to_address) -> ClaimReceipt:
+    def claim_max(self, to_address, ups=[]) -> ClaimReceipt:
         manager = self.get_claim_manager()
         max_credit = manager.get_credit_strategy().get_unclaimed()
         try:
             assert max_credit > 0
-            return manager.claim(max_credit, to_address=to_address)
+            return manager.claim(max_credit, to_address=to_address, ups=ups)
         except AssertionError:
             raise rest_framework.exceptions.PermissionDenied("Something Went Wrong")
         except ValueError as e:
             raise rest_framework.exceptions.APIException(e)
 
     def post(self, request, *args, **kwargs):
-        self.check_user_is_verified()
+        ups = self.check_user_is_verified()
         self.to_address_is_provided()
         self.check_to_address_is_validate()
 
-        receipt = self.claim_max(to_address=request.data.get("address"))
+        receipt = self.claim_max(to_address=request.data.get("address"), ups=ups)
         return Response(ReceiptSerializer(instance=receipt).data)
 
 

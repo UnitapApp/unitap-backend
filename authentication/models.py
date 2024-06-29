@@ -22,6 +22,7 @@ from authentication.thirdpartydrivers import (
     TwitterDriver,
 )
 from core.models import NetworkTypes
+from core.thirdpartyapp import Subgraph
 
 
 class ProfileManager(models.Manager):
@@ -112,6 +113,15 @@ class UserProfile(models.Model):
 
     def owns_wallet(self, wallet_address):
         return self.wallets.filter(address=wallet_address).exists()
+
+    def has_unitap_pass(self):
+        sub = Subgraph()
+        addresses = Wallet.objects.filter(user__pk=self.pk).values("address", flat=True)
+        owners = sub.get_unitap_pass_holders(addresses=addresses)
+        return (
+            bool(owners),
+            [token_id for _, token_ids in owners.items() for token_id in token_ids],
+        )
 
     def __str__(self) -> str:
         return self.username if self.username else f"User{self.pk}"

@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, UniqueConstraint
@@ -74,7 +75,7 @@ class BrightUser(models.Model):
             return self.VERIFIED
         return self.get_verification_status()
 
-    def get_verification_status(self) -> states:
+    def get_verification_status(self):
         is_verified = BRIGHT_ID_INTERFACE.get_verification_status(str(self.context_id))
         if is_verified:
             self._verification_status = self.VERIFIED
@@ -187,6 +188,8 @@ class Faucet(models.Model):
         default=0, blank=True, null=True
     )
     total_claims_this_round = models.IntegerField(default=0, blank=True, null=True)
+
+    used_unitap_pass_list = ArrayField(models.IntegerField(), blank=True, default=list)
 
     def __str__(self):
         return (
