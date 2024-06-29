@@ -1,6 +1,6 @@
 import json
 
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
@@ -42,12 +42,29 @@ class RaffleEnrollmentValidator:
         if not self.user_profile.owns_wallet(user_wallet_address):
             raise PermissionDenied("This wallet is not registered for this user")
 
+    def check_prizetap_winning_chance(self, prizetap_winning_chance_number):
+        if prizetap_winning_chance_number > 2:
+            raise ValidationError("Winning chance could not be more than 2.")
+
+        if prizetap_winning_chance_number < 0:
+            raise ValidationError("Winning chance could not be negative.")
+
+        if (
+            prizetap_winning_chance_number
+            > self.user_profile.prizetap_winning_chance_number
+        ):
+            raise ValidationError("Insufficient winning chances available.")
+
     def is_valid(self, data):
         self.can_enroll_in_raffle()
 
         self.check_user_constraints()
 
         self.check_user_owns_wallet(data.get("user_wallet_address"))
+
+        self.check_prizetap_winning_chance(
+            int(data.get("prizetap_winning_chance_number", 0))
+        )
 
 
 class SetRaffleEntryTxValidator:
