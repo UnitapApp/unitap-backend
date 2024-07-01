@@ -1,4 +1,4 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -73,6 +73,14 @@ class Raffle(models.Model):
     max_number_of_entries = models.IntegerField(validators=[MinValueValidator(1)])
     max_multiplier = models.IntegerField(default=1, validators=[MinValueValidator(1)])
     winners_count = models.IntegerField(default=1, validators=[MinValueValidator(1)])
+
+    pre_enrollment_file = models.FileField(
+        upload_to="prizetap/pre_enrollments/%Y/%m/%d",
+        validators=[FileExtensionValidator(allowed_extensions=["csv"])],
+        blank=True,
+        null=True,
+    )
+    is_processed = models.BooleanField(default=False)
 
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.PENDING
@@ -156,6 +164,7 @@ class RaffleEntry(models.Model):
 
     multiplier = models.IntegerField(default=1)
     is_winner = models.BooleanField(blank=True, default=False)
+    pre_enrollment = models.BooleanField(blank=True, default=False)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
     claiming_prize_tx = models.CharField(max_length=255, blank=True, null=True)
 
