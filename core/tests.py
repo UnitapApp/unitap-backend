@@ -4,7 +4,9 @@ from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 
 from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
+from core.constraints.arbitrum import HasBridgedToken
 from core.models import Chain, NetworkTypes, WalletAccount
+from core.thirdpartyapp.arbitrum import ArbitrumUtils
 
 from .constraints import (
     Attest,
@@ -363,3 +365,108 @@ class TestGitcoinPassportConstraint(BaseTestCase):
         constraint = HasGitcoinPassportProfile(self.not_connected_user_profile)
 
         self.assertEqual(constraint.is_observed(), False)
+
+
+class TestArbitrumBridgeConstraint(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(username="testuser", password="12345")
+        self.user_profile = UserProfile.objects.create(
+            user=self.user, initial_context_id="testuser", username="testuser"
+        )
+        self.address1 = "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF6"
+        self.address2 = "0x319B32d11e29dB4a6dB9E4E3da91Fc7FA2D2ff92"
+        Wallet.objects.create(
+            user_profile=self.user_profile, address=self.address1, wallet_type="EVM"
+        )
+        Wallet.objects.create(
+            user_profile=self.user_profile, address=self.address2, wallet_type="EVM"
+        )
+        self.token_address = "0x1234567890123456789012345678901234567890"
+        self.minimum_amount = 1.0
+
+    @patch.object(ArbitrumUtils, "check_all_bridge_transactions")
+    def test_has_bridged_token_any_chain_success(self, mock_check_all):
+        mock_check_all.return_value = {
+            "Ethereum to Arbitrum": True,
+            "Arbitrum to Ethereum": False,
+        }
+        constraint = HasBridgedToken(self.user_profile)
+        constraint.param_values = {
+            "MINIMUM": self.minimum_amount,
+            "CHAIN": "any",
+            "ADDRESS": self.token_address,
+        }
+        self.assertTrue(constraint.is_observed())
+
+    @patch.object(ArbitrumUtils, "check_all_bridge_transactions")
+    def test_has_bridged_token_any_chain_fail(self, mock_check_all):
+        mock_check_all.return_value = {
+            "Ethereum to Arbitrum": False,
+            "Arbitrum to Ethereum": False,
+        }
+        constraint = HasBridgedToken(self.user_profile)
+        constraint.param_values = {
+            "MINIMUM": self.minimum_amount,
+            "CHAIN": "any",
+            "ADDRESS": self.token_address,
+        }
+        self.assertFalse(constraint.is_observed())
+
+    @patch.object(ArbitrumUtils, "check_bridge_transactions")
+    def test_has_bridged_token_specific_chain_success(self, mock_check):
+        mock_check.return_value = True
+        constraint = HasBridgedToken(self.user_profile)
+        constraint.param_values = {
+            "MINIMUM": self.minimum_amount,
+            "CHAIN": "ethereum_to_arbitrum",
+            "ADDRESS": self.token_address,
+        }
+        self.assertTrue(constraint.is_observed())
+
+    @patch.object(ArbitrumUtils, "check_bridge_transactions")
+    def test_has_bridged_token_specific_chain_fail(self, mock_check):
+        mock_check.return_value = False
+        constraint = HasBridgedToken(self.user_profile)
+        constraint.param_values = {
+            "MINIMUM": self.minimum_amount,
+            "CHAIN": "ethereum_to_arbitrum",
+            "ADDRESS": self.token_address,
+        }
+        self.assertFalse(constraint.is_observed())
+
+    @patch.object(ArbitrumUtils, "check_bridge_transactions")
+    def test_has_bridged_eth_success(self, mock_check):
+        mock_check.return_value = True
+        constraint = HasBridgedToken(self.user_profile)
+        constraint.param_values = {
+            "MINIMUM": self.minimum_amount,
+            "CHAIN": "ethereum_to_arbitrum",
+            "ADDRESS": "eth",
+        }
+        self.assertTrue(constraint.is_observed())
+        mock_check.assert_called_with(
+            self.address1, None, self.minimum_amount, "ethereum", "arbitrum"
+        )
+
+    @patch.object(ArbitrumUtils, "check_bridge_transactions")
+    def test_has_bridged_token_multiple_wallets(self, mock_check):
+        mock_check.side_effect = [False, True]
+        constraint = HasBridgedToken(self.user_profile)
+        constraint.param_values = {
+            "MINIMUM": self.minimum_amount,
+            "CHAIN": "ethereum_to_arbitrum",
+            "ADDRESS": self.token_address,
+        }
+        self.assertTrue(constraint.is_observed())
+        self.assertEqual(mock_check.call_count, 2)
+
+    def test_has_bridged_token_invalid_chain(self):
+        constraint = HasBridgedToken(self.user_profile)
+        constraint.param_values = {
+            "MINIMUM": self.minimum_amount,
+            "CHAIN": "invalid_chain",
+            "ADDRESS": self.token_address,
+        }
+        with self.assertRaises(ValueError):
+            constraint.is_observed()
