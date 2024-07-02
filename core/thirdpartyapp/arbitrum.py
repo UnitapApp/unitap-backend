@@ -4,11 +4,11 @@ from web3 import Web3
 class ArbitrumUtils:
     def __init__(self):
         # Initialize Web3 instances
-        self.eth_w3 = Web3(
-            Web3.HTTPProvider("https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID")
+        self.eth_w3 = Web3.HTTPProvider(
+            "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"
         )
-        self.arb_w3 = Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
-        self.nova_w3 = Web3(Web3.HTTPProvider("https://nova.arbitrum.io/rpc"))
+        self.arb_w3 = Web3.HTTPProvider("https://arb1.arbitrum.io/rpc")
+        self.nova_w3 = Web3.HTTPProvider("https://nova.arbitrum.io/rpc")
 
         # Bridge contract addresses
         self.eth_arb_bridge = "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a"
