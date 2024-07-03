@@ -42,14 +42,18 @@ from .validators import SetDistributionTxValidator
 
 class TokenDistributionListView(ListAPIView):
     serializer_class = TokenDistributionSerializer
-    queryset = TokenDistribution.objects.filter(is_active=True)
 
     def get_queryset(self):
-        q = TokenDistribution.objects.filter(is_active=True)
+        active_distributions = TokenDistribution.objects.filter(is_active=True)
 
-        sorted_queryset = sorted(
-            q, key=lambda obj: obj.total_claims_since_last_round, reverse=True
+        expired_distributions = [td for td in active_distributions if td.is_expired]
+        non_expired_distributions = [td for td in active_distributions if not td.is_expired]
+
+        sorted_expired_distributions = sorted(expired_distributions, key=lambda obj: obj.deadline)
+        sorted_non_expired_distributions = sorted(
+            non_expired_distributions, key=lambda obj: obj.total_claims_since_last_round, reverse=True
         )
+        sorted_queryset = sorted_non_expired_distributions + sorted_expired_distributions
 
         return sorted_queryset
 
