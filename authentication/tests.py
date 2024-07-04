@@ -25,6 +25,7 @@ from authentication.models import (
     UserProfile,
     Wallet,
 )
+from core.models import Chain, NetworkTypes, WalletAccount
 from faucet.models import ClaimReceipt
 
 # get address as username and signed address as password and verify signature
@@ -73,6 +74,22 @@ def create_new_wallet(user_profile, _address, wallet_type) -> Wallet:
         user_profile=user_profile, address=_address, wallet_type=wallet_type
     )
     return wallet
+
+
+def create_mainnet_chain():
+    return Chain.objects.create(
+        chain_name="ETH",
+        wallet=WalletAccount.objects.create(
+            name="Test Wallet",
+            private_key=test_wallet_key,
+            network_type=NetworkTypes.EVM,
+        ),
+        rpc_url_private="https://rpc.ankr.com/eth",
+        explorer_url="https://etherscan.io/",
+        native_currency_name="ETH",
+        symbol="ETH",
+        chain_id="1",
+    )
 
 
 class CheckUsernameTestCase(APITestCase):
@@ -517,6 +534,7 @@ class TestGetProfileView(APITestCase):
         self.endpoint = reverse("AUTHENTICATION:get-profile-user")
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
+        create_mainnet_chain()
 
     def test_request_to_this_api_is_ok(self):
         response = self.client.get(self.endpoint)
@@ -554,6 +572,7 @@ class TestVerifyLoginSignature(APITestCase):
             "2534fa7456f3aaf0f72ece66434a7d380d08cee47d8a2db56c08a3048890b50f"
         )
         self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
+        create_mainnet_chain()
 
     def create_and_sign_message(self):
         timestamp = datetime.datetime.now().isoformat() + "Z"
