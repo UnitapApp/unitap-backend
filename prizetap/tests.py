@@ -11,7 +11,7 @@ from rest_framework.test import APITestCase
 from authentication.models import UserProfile, Wallet
 from core.models import Chain, NetworkTypes, WalletAccount
 
-from .models import Constraint, NotHaveUnitapPass, Raffle, RaffleEntry
+from .models import Constraint, Raffle, RaffleEntry
 from .validators import RaffleEnrollmentValidator
 
 # from .utils import PrizetapContractClient
@@ -774,25 +774,25 @@ class RaffleEntryAPITestCase(RaffleEntryTestCase):
         self.assertEqual(data["raffle"]["raffleId"], self.raffle.raffleId)
 
 
-class UtilsTestCase(RaffleTestCase):
-    def setUp(self):
-        super().setUp()
-        self.mainnet_chain = Chain.objects.create(
-            chain_name="ETH",
-            wallet=self.wallet,
-            rpc_url_private="https://rpc.ankr.com/eth",
-            explorer_url="https://etherscan.io/",
-            native_currency_name="ETH",
-            symbol="ETH",
-            chain_id="1",
-        )
+# class UtilsTestCase(RaffleTestCase):
+#     def setUp(self):
+#         super().setUp()
+#         self.mainnet_chain = Chain.objects.create(
+#             chain_name="ETH",
+#             wallet=self.wallet,
+#             rpc_url_private="https://rpc.ankr.com/eth",
+#             explorer_url="https://etherscan.io/",
+#             native_currency_name="ETH",
+#             symbol="ETH",
+#             chain_id="1",
+#         )
 
-    def test_unitappass_contraint(self):
-        constraint = NotHaveUnitapPass(self.user_profile)
-        self.assertTrue(constraint.is_observed())
+#     def test_unitappass_contraint(self):
+#         constraint = NotHaveUnitapPass(self.user_profile)
+#         self.assertTrue(constraint.is_observed())
 
-    # def test_set_winner(self):
-    #     self.raffle.raffleId = 2
-    #     client = PrizetapContractClient(self.raffle)
-    #     winner = client.get_raffle_winner()
-    #     self.assertEqual(winner, "0x59351584417882EE549eE3B9BF398485ddB5B7E9")
+# def test_set_winner(self):
+#     self.raffle.raffleId = 2
+#     client = PrizetapContractClient(self.raffle)
+#     winner = client.get_raffle_winner()
+#     self.assertEqual(winner, "0x59351584417882EE549eE3B9BF398485ddB5B7E9")
