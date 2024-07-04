@@ -15,6 +15,8 @@ from authentication.models import (  # BaseThirdPartyConnection,
     UserProfile,
     Wallet,
 )
+from core.models import Chain
+from core.utils import NFTClient
 
 
 class UsernameRequestSerializer(serializers.Serializer):
@@ -130,6 +132,7 @@ def thirdparty_connection_serializer(connection_list):
 class ProfileSerializer(serializers.ModelSerializer):
     wallets = WalletSerializer(many=True, read_only=True)
     token = serializers.SerializerMethodField()
+    up_balance = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -142,6 +145,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             # "is_aura_verified",
             "wallets",
             "prizetap_winning_chance_number",
+            "up_balance",
         ]
 
         read_only_fields = ("prizetap_winning_chance_number",)
@@ -149,6 +153,20 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_token(self, instance):
         token, bol = Token.objects.get_or_create(user=instance.user)
         return token.key
+
+    def get_up_balance(self, instance):
+        eth_chain = Chain.objects.get(chain_id=1)
+        nft_client = NFTClient(eth_chain, "0x23826Fd930916718a98A21FF170088FBb4C30803")
+
+        user_addresses = [
+            nft_client.to_checksum_address(wallet.address.lower())
+            for wallet in instance.wallets.filter(wallet_type=eth_chain.chain_type)
+        ]
+
+        user_balance = 0
+        for user_address in user_addresses:
+            user_balance += int(nft_client.get_number_of_tokens(user_address))
+        return user_balance
 
 
 class SimpleProfilerSerializer(serializers.ModelSerializer):
