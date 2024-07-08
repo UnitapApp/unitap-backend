@@ -7,7 +7,10 @@ from core.thirdpartyapp import config
 
 class Subgraph:
     requests = RequestHelper(config.SUBGRAPH_BASE_URL)
-    path = {"unitap_pass": "query/73675/unitap-pass-eth/version/latest"}
+    path = {
+        "unitap_pass": "query/73675/unitap-pass-eth/version/latest",
+        "arb_bridge_mainnet": "query/21879/unitap-arb-bridge-mainnet/version/latest",
+    }
 
     def __init__(self):
         self.session = self.requests.get_session()
