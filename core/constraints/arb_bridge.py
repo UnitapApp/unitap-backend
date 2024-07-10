@@ -39,7 +39,7 @@ class BridgeEthToArb(ConstraintVerification):
         }
         """
         vars = {
-            "wallets": user_wallets,
+            "wallets": list(user_wallets),
         }
 
         res = subgraph.send_post_request(
