@@ -3,14 +3,15 @@ from core.constraints.abstract import (
     ConstraintParam,
     ConstraintVerification,
 )
-from core.thirdpartyapp.arbitrum import ArbitrumUtils
+from core.thirdpartyapp.arbitrum_bridge import ArbitrumBridgeUtils
 
 
 class HasBridgedToken(ConstraintVerification):
     _param_keys = [
         ConstraintParam.ADDRESS,
         ConstraintParam.MINIMUM,
-        ConstraintParam.CHAIN,
+        ConstraintParam.SOURCE_CHAIN,
+        ConstraintParam.DESTINATION_CHAIN,
     ]
     app_name = ConstraintApp.ARBITRUM.value
 
@@ -18,25 +19,26 @@ class HasBridgedToken(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        minimum_amount = float(self.param_values[ConstraintParam.MINIMUM.name])
-        chain = self.param_values[ConstraintParam.CHAIN.name]
+        minimum_amount = int(self.param_values[ConstraintParam.MINIMUM.name])
+        sourec_chain = self.param_values[ConstraintParam.SOURCE_CHAIN.name]
+        # dest_chain = self.param_values[ConstraintParam.DESTINATION_CHAIN.name]
         token_address = self.param_values[ConstraintParam.ADDRESS.name]
 
-        arb_utils = ArbitrumUtils()
+        arb_utils = ArbitrumBridgeUtils()
 
         if token_address.lower() in ["eth", ""]:
             token_address = None
 
         user_wallets = self.user_addresses
         for wallet in user_wallets:
-            if chain == "any":
+            if sourec_chain == "any":
                 bridging_results = arb_utils.check_all_bridge_transactions(
                     wallet, token_address, minimum_amount
                 )
                 if any(bridging_results.values()):
                     return True
             else:
-                source_chain, target_chain = self._parse_chain(chain)
+                source_chain, target_chain = self._parse_chain(sourec_chain)
                 if arb_utils.check_bridge_transactions(
                     wallet, token_address, minimum_amount, source_chain, target_chain
                 ):

@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 from authentication.models import GitcoinPassportConnection, UserProfile, Wallet
 from core.constraints.arbitrum import HasBridgedToken
 from core.models import Chain, NetworkTypes, WalletAccount
-from core.thirdpartyapp.arbitrum import ArbitrumUtils
+from core.thirdpartyapp.arbitrum_bridge import ArbitrumUtils
 
 from .constraints import (
     Attest,

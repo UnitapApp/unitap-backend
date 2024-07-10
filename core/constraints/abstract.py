@@ -35,6 +35,8 @@ class ConstraintParam(Enum):
     VALUE = "value"
     EAS_SCHEMA_ID = "eas_schema_id"
     FARCASTER_CHANNEL_ID = "FARCASTER_CHANNEL_ID"
+    SOURCE_CHAIN = "source_chain"
+    DESTINATION_CHAIN = "destination_chain"
 
     @classmethod
     def choices(cls):

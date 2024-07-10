@@ -1,20 +1,11 @@
 from typing import Optional
 
+from core.thirdpartyapp.config import ARB_BRIDGE_ADDRESSES
 from core.utils import Web3Utils
 
 
-class ArbitrumUtils:
-    ETH_W3 = Web3Utils("https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID")
-    ARB_W3 = Web3Utils("https://arb1.arbitrum.io/rpc")
-    NOVA_W3 = Web3Utils("https://nova.arbitrum.io/rpc")
-
-    BRIDGE_ADDRESSES = {
-        "ethereum": "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a",
-        "arbitrum": "0x0000000000000000000000000000000000000064",
-        "nova": "0x0000000000000000000000000000000000000064",
-    }
-
-    BRIDGE_ABI = [
+class ArbitrumBridgeUtils:
+    ARB_BRIDGE_ABI = [
         {
             "anonymous": False,
             "inputs": [
@@ -59,7 +50,9 @@ class ArbitrumUtils:
         },
     ]
 
-    def __init__(self):
+    def __init__(self, chain_name: str, rpc_url_private: str, poa: bool = False):
+        self.w3 = Web3Utils(rpc_url_private=rpc_url_private, poa=poa)
+        self.w3.set_contract(ARB_BRIDGE_ADDRESSES.get(chain_name), self.BRIDGE_ABI)
         self.contracts = {
             "ethereum": self.ETH_W3.set_contract(
                 self.BRIDGE_ADDRESSES["ethereum"], self.BRIDGE_ABI
