@@ -10,6 +10,7 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 from safedelete.models import SafeDeleteModel
+from web3 import Web3
 
 # from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 from authentication.thirdpartydrivers import (
@@ -36,7 +37,9 @@ class ProfileManager(models.Manager):
 
     def get_by_wallet_address(self, wallet_address):
         try:
-            return Wallet.objects.get(address=wallet_address).user_profile
+            return Wallet.objects.get(
+                address=Web3.to_checksum_address(wallet_address)
+            ).user_profile
         except Wallet.DoesNotExist:
             return None
 
@@ -46,7 +49,7 @@ class ProfileManager(models.Manager):
         Wallet.objects.create(
             wallet_type=NetworkTypes.EVM,  # TODO support register with non evms
             user_profile=_profile,
-            address=wallet_address,
+            address=Web3.to_checksum_address(wallet_address),
         )
         _profile.username = f"User{_profile.pk}"
         _profile.save()
@@ -54,7 +57,9 @@ class ProfileManager(models.Manager):
 
     def get_or_create_with_wallet_address(self, wallet_address):
         try:
-            profile = Wallet.objects.get(address=wallet_address).user_profile
+            profile = Wallet.objects.get(
+                address=Web3.to_checksum_address(wallet_address)
+            ).user_profile
             if profile.username is None:
                 profile.username = f"User{profile.pk}"
                 profile.save()

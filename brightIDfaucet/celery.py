@@ -85,6 +85,14 @@ app.conf.beat_schedule = {
         "task": "prizetap.tasks.update_prizetap_winning_chance_number",
         "schedule": crontab(minute="0", hour="0", day_of_week="1"),
     },
+    "process-raffle-pre-enrollments": {
+        "task": "prizetap.tasks.process_raffles_pre_enrollments",
+        "schedule": 300,
+    },
+    "onchain-pre-enrollments": {
+        "task": "prizetap.tasks.onchain_pre_enrollments",
+        "schedule": 300,
+    },
 }
 
 # Load task modules from all registered Django apps.
