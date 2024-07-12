@@ -155,7 +155,11 @@ class RaffleEntry(models.Model):
 
     raffle = models.ForeignKey(Raffle, on_delete=models.PROTECT, related_name="entries")
     user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.PROTECT, related_name="raffle_entries"
+        UserProfile,
+        blank=True,
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="raffle_entries",
     )
 
     user_wallet_address = models.CharField(max_length=255)
@@ -174,6 +178,9 @@ class RaffleEntry(models.Model):
     @property
     def age(self):
         return timezone.now() - self.created_at
+
+    def set_entry_user_profiles(self):
+        pass
 
 
 class LineaRaffleEntries(models.Model):
