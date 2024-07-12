@@ -559,7 +559,7 @@ class TestCheckUserExistsView(APITestCase):
     def test_check_user_not_exists(self):
         response = self.client.post(
             reverse("AUTHENTICATION:check-user-exists"),
-            data={"wallet_address": "0x90F8bf6A479f320ead074411a4B0e44Ea8c9C2"},
+            data={"wallet_address": "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["exists"], False)
