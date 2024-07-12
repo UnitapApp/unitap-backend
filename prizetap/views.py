@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from web3 import Web3
 
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
@@ -87,7 +88,7 @@ class RaffleEnrollmentView(CreateAPIView):
                 user_profile.save(update_fields=("prizetap_winning_chance_number",))
                 raffle_entry = RaffleEntry.objects.create(
                     user_profile_id=user_profile.pk,
-                    user_wallet_address=user_wallet_address,
+                    user_wallet_address=Web3.to_checksum_address(user_wallet_address),
                     raffle=raffle,
                     multiplier=prizetap_winning_chance_number + 1,
                 )

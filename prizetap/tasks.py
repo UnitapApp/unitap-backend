@@ -7,8 +7,9 @@ from celery import shared_task
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
+from web3 import Web3
 
-from authentication.models import NetworkTypes, Wallet
+from authentication.models import NetworkTypes, UserProfile, Wallet
 from brightIDfaucet.settings import DEPLOYMENT_ENV
 from core.helpers import memcache_lock
 from core.thirdpartyapp import Subgraph
@@ -313,8 +314,12 @@ def process_raffles_pre_enrollments(self):
                 with open(file_path, newline="") as f:
                     reader = csv.reader(f)
                     for row in reader:
+                        user_profile = UserProfile.objects.get_by_wallet_address(
+                            Web3.to_checksum_address(row[0])
+                        )
                         entry = RaffleEntry(
                             raffle=raffle,
+                            user_profile=user_profile,
                             user_wallet_address=row[0],
                             multiplier=row[1],
                             pre_enrollment=True,
