@@ -72,15 +72,27 @@ app.conf.beat_schedule = {
         "task": "quiztap.tasks.register_competition_to_start",
         "schedule": 10,
     },
-    'update_claims_count_every_10_minutes': {
-        'task': 'faucet.tasks.update_all_faucets_claims',
-        'schedule': 600,
-        'args': (False,)
+    "update_claims_count_every_10_minutes": {
+        "task": "faucet.tasks.update_all_faucets_claims",
+        "schedule": 600,
+        "args": (False,),
     },
-    'update_total_claims_this_round_every_10_minutes': {
-        'task': 'faucet.tasks.update_all_faucets_claims',
-        'schedule': 600
-    }
+    "update_total_claims_this_round_every_10_minutes": {
+        "task": "faucet.tasks.update_all_faucets_claims",
+        "schedule": 600,
+    },
+    "update_prizetap_winning_chance_number_every_week": {
+        "task": "prizetap.tasks.update_prizetap_winning_chance_number",
+        "schedule": crontab(minute="0", hour="0", day_of_week="1"),
+    },
+    "process-raffle-pre-enrollments": {
+        "task": "prizetap.tasks.process_raffles_pre_enrollments",
+        "schedule": 300,
+    },
+    "onchain-pre-enrollments": {
+        "task": "prizetap.tasks.onchain_pre_enrollments",
+        "schedule": 300,
+    },
 }
 
 # Load task modules from all registered Django apps.

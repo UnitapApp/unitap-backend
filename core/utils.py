@@ -205,7 +205,7 @@ class Web3Utils:
     def wait_for_transaction_receipt(self, tx_hash):
         return self.w3.eth.wait_for_transaction_receipt(tx_hash)
 
-    def current_block(self):
+    def get_current_block(self):
         return self.w3.eth.block_number
 
     def get_transaction_by_hash(self, tx_hash):

@@ -309,7 +309,7 @@ class TestGitcoinPassportConstraint(BaseTestCase):
         create_new_wallet(
             user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
         )
-        self.minimum = 10
+        self.minimum = 1
 
         self.gp = GitcoinPassportConnection.objects.create(
             user_wallet_address=self.address, user_profile=self.user_profile

@@ -1,6 +1,8 @@
 import json
 
 import rest_framework.exceptions
+from django.db import transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
@@ -10,7 +12,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from web3 import Web3
 
+from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain
 from core.serializers import ChainSerializer
@@ -59,7 +63,7 @@ class RaffleEnrollmentView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        user_profile = request.user.profile
+        user_profile: UserProfile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
         user_wallet_address = request.data.get("user_wallet_address", None)
         if not user_wallet_address:
@@ -70,16 +74,25 @@ class RaffleEnrollmentView(CreateAPIView):
         validator = RaffleEnrollmentValidator(user_profile=user_profile, raffle=raffle)
 
         validator.is_valid(self.request.data)
+        prizetap_winning_chance_number = int(
+            self.request.data.get("prizetap_winning_chance_number", 0)
+        )
 
         try:
             raffle_entry = raffle.entries.get(user_profile=user_profile)
         except RaffleEntry.DoesNotExist:
-            raffle_entry = RaffleEntry.objects.create(
-                user_profile=user_profile,
-                user_wallet_address=user_wallet_address,
-                raffle=raffle,
-            )
-            raffle_entry.save()
+            with transaction.atomic():
+                user_profile.prizetap_winning_chance_number = (
+                    F("prizetap_winning_chance_number") - prizetap_winning_chance_number
+                )
+                user_profile.save(update_fields=("prizetap_winning_chance_number",))
+                raffle_entry = RaffleEntry.objects.create(
+                    user_profile_id=user_profile.pk,
+                    user_wallet_address=Web3.to_checksum_address(user_wallet_address),
+                    raffle=raffle,
+                    multiplier=prizetap_winning_chance_number + 1,
+                )
+                raffle_entry.save()
 
         return Response(
             {

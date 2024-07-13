@@ -15,6 +15,7 @@ from .constraints import (
     BeAttestedBy,
     BeFollowedByFarcasterUser,
     BeFollowedByLensUser,
+    BridgeEthToArb,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     DidCollectLensPublication,
@@ -112,6 +113,7 @@ class UserConstraint(models.Model):
         HasMinimumHumanityScore,
         HasGitcoinPassportProfile,
         IsFollowingFarcasterChannel,
+        BridgeEthToArb,
     ]
 
     name = models.CharField(

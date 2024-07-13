@@ -8,11 +8,15 @@ from authentication.helpers import verify_login_signature
 from authentication.models import (  # BaseThirdPartyConnection,
     BrightIDConnection,
     ENSConnection,
+    FarcasterConnection,
     GitcoinPassportConnection,
+    LensConnection,
     TwitterConnection,
     UserProfile,
     Wallet,
 )
+from core.models import Chain
+from core.utils import NFTClient
 
 
 class UsernameRequestSerializer(serializers.Serializer):
@@ -110,6 +114,8 @@ def get_third_party_connection_serializer(connection):
         BrightIDConnection: BaseThirdPartyConnectionSerializer,
         GitcoinPassportConnection: GitcoinPassportConnectionSerializer,
         TwitterConnection: TwitterConnectionSerializer,
+        LensConnection: LensConnectionSerializer,
+        FarcasterConnection: FarcasterConnectionSerializer,
         # other mappings for different third-party connection models
     }.get(type(connection), BaseThirdPartyConnectionSerializer)
 
@@ -126,6 +132,7 @@ def thirdparty_connection_serializer(connection_list):
 class ProfileSerializer(serializers.ModelSerializer):
     wallets = WalletSerializer(many=True, read_only=True)
     token = serializers.SerializerMethodField()
+    up_balance = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -137,11 +144,29 @@ class ProfileSerializer(serializers.ModelSerializer):
             "is_meet_verified",
             # "is_aura_verified",
             "wallets",
+            "prizetap_winning_chance_number",
+            "up_balance",
         ]
+
+        read_only_fields = ("prizetap_winning_chance_number",)
 
     def get_token(self, instance):
         token, bol = Token.objects.get_or_create(user=instance.user)
         return token.key
+
+    def get_up_balance(self, instance):
+        eth_chain = Chain.objects.get(chain_id=1)
+        nft_client = NFTClient(eth_chain, "0x23826Fd930916718a98A21FF170088FBb4C30803")
+
+        user_addresses = [
+            nft_client.to_checksum_address(wallet.address.lower())
+            for wallet in instance.wallets.filter(wallet_type=eth_chain.chain_type)
+        ]
+
+        user_balance = 0
+        for user_address in user_addresses:
+            user_balance += int(nft_client.get_number_of_tokens(user_address))
+        return user_balance
 
 
 class SimpleProfilerSerializer(serializers.ModelSerializer):
@@ -155,7 +180,9 @@ class SimpleProfilerSerializer(serializers.ModelSerializer):
             "username",
             "is_verified",
             "wallets",
+            "prizetap_winning_chance_number",
         ]
+        read_only_fields = ("prizetap_winning_chance_number",)
 
     def get_username(self, user_profile: UserProfile):
         if not user_profile.username:
@@ -201,6 +228,42 @@ class TwitterConnectionSerializer(BaseThirdPartyConnectionSerializer):
 class ENSConnectionSerializer(BaseThirdPartyConnectionSerializer):
     class Meta:
         model = ENSConnection
+        fields = "__all__"
+        read_only_fields = [
+            "created_on",
+            "pk",
+            "user_profile",
+            "title",
+        ]
+
+    def is_valid(self, raise_exception=False):
+        super_is_validated = super().is_valid(raise_exception)
+        is_address_valid = self.validate_address(raise_exception)
+
+        return is_address_valid and super_is_validated
+
+
+class FarcasterConnectionSerializer(BaseThirdPartyConnectionSerializer):
+    class Meta:
+        model = FarcasterConnection
+        fields = "__all__"
+        read_only_fields = [
+            "created_on",
+            "pk",
+            "user_profile",
+            "title",
+        ]
+
+    def is_valid(self, raise_exception=False):
+        super_is_validated = super().is_valid(raise_exception)
+        is_address_valid = self.validate_address(raise_exception)
+
+        return is_address_valid and super_is_validated
+
+
+class LensConnectionSerializer(BaseThirdPartyConnectionSerializer):
+    class Meta:
+        model = LensConnection
         fields = "__all__"
         read_only_fields = [
             "created_on",

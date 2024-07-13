@@ -21,3 +21,4 @@ EAS_BASE_URL = {
         "OPTIMISM_EAS_BASE_URL", "https://optimism.easscan.org/graphql"
     ),
 }
+SUBGRAPH_BASE_URL = os.getenv("SUBGRAPH_BASE_URL", "https://api.studio.thegraph.com")

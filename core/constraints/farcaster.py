@@ -1,3 +1,5 @@
+import logging
+
 from core.constraints.abstract import (
     ConstraintApp,
     ConstraintParam,
@@ -14,12 +16,14 @@ class HasFarcasterProfile(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
-        farcaster_utils = FarcasterUtil()
-        user_address = self.user_addresses
-        for address in user_address:
-            if farcaster_utils.get_address_fid(address):
-                return True
-        return False
+        from authentication.models import FarcasterConnection
+
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging("Farcaster connection not found.")
+            return False
+        return fa_connection.is_connected()
 
 
 class IsFollowingFarcasterUser(ConstraintVerification):
@@ -30,13 +34,18 @@ class IsFollowingFarcasterUser(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import FarcasterConnection
+
         farcaster_fid = self.param_values[ConstraintParam.FARCASTER_FID.name]
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_addresses
-        for address in user_addresses:
-            if farcaster_util.is_following(farcaster_fid, address):
-                return True
-        return False
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging("Farcaster connection not found.")
+            return False
+        return farcaster_util.is_following(
+            farcaster_fid, fa_connection.user_wallet_address
+        )
 
 
 class BeFollowedByFarcasterUser(ConstraintVerification):
@@ -47,13 +56,18 @@ class BeFollowedByFarcasterUser(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import FarcasterConnection
+
         farcaster_fid = self.param_values[ConstraintParam.FARCASTER_FID.name]
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_addresses
-        for address in user_addresses:
-            if farcaster_util.be_followed_by(farcaster_fid, address):
-                return True
-        return False
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging("Farcaster connection not found.")
+            return False
+        return farcaster_util.be_followed_by(
+            farcaster_fid, fa_connection.user_wallet_address
+        )
 
 
 class DidLikedFarcasterCast(ConstraintVerification):
@@ -64,11 +78,19 @@ class DidLikedFarcasterCast(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import FarcasterConnection
+
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_addresses
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging("Farcaster connection not found.")
+            return False
         return farcaster_util.did_liked_cast(
             cast_hash=self.param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
-            addresses=user_addresses,
+            addresses=[
+                fa_connection.user_wallet_address,
+            ],
         )
 
 
@@ -80,11 +102,19 @@ class DidRecastFarcasterCast(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import FarcasterConnection
+
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_addresses
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging("Farcaster connection not found.")
+            return False
         return farcaster_util.did_recast_cast(
             cast_hash=self.param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
-            addresses=user_addresses,
+            addresses=[
+                fa_connection.user_wallet_address,
+            ],
         )
 
 
@@ -96,13 +126,22 @@ class HasMinimumFarcasterFollower(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import FarcasterConnection
+
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_addresses
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging("Farcaster connection not found.")
+            return False
         minimum = self.param_values[ConstraintParam.MINIMUM.name]
-        for address in user_addresses:
-            if int(farcaster_util.get_follower_number(address)) >= int(minimum):
-                return True
-        return False
+        try:
+            return farcaster_util.get_follower_number(
+                fa_connection.user_wallet_address
+            ) >= int(minimum)
+        except TypeError as e:
+            logging.error(f"Can not compare two value: {str(e)}")
+            return False
 
 
 class IsFollowingFarcasterChannel(ConstraintVerification):
@@ -113,9 +152,18 @@ class IsFollowingFarcasterChannel(ConstraintVerification):
         super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import FarcasterConnection
+
         farcaster_util = FarcasterUtil()
-        user_addresses = self.user_addresses
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging("Farcaster connection not found.")
+            return False
         channel_id = self.param_values[ConstraintParam.FARCASTER_CHANNEL_ID.name]
         return farcaster_util.is_following_channel(
-            channel_id=channel_id, addresses=user_addresses
+            channel_id=channel_id,
+            addresses=[
+                fa_connection.user_wallet_address,
+            ],
         )

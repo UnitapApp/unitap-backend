@@ -1,14 +1,20 @@
+import csv
 import logging
 import time
 
 import requests
 from celery import shared_task
+from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
+from web3 import Web3
 
+from authentication.models import NetworkTypes, UserProfile, Wallet
 from brightIDfaucet.settings import DEPLOYMENT_ENV
 from core.helpers import memcache_lock
+from core.thirdpartyapp import Subgraph
 
-from .models import Raffle
+from .models import Raffle, RaffleEntry
 from .utils import PrizetapContractClient, VRFClientContractClient
 
 
@@ -264,3 +270,103 @@ def set_raffle_ids(self):
                     raffle.save()
                 except Exception as e:
                     logging.error(e)
+
+
+@shared_task
+def update_prizetap_winning_chance_number():
+    sub = Subgraph()
+    holders = sub.get_unitap_pass_holders()
+    for holder_address, unitap_pass_ids in holders.items():
+        try:
+            user_profile = (
+                Wallet.objects.prefetch_related()
+                .get(address__iexact=holder_address, wallet_type=NetworkTypes.EVM)
+                .user_profile
+            )
+            with transaction.atomic():
+                user_profile.prizetap_winning_chance_number = F(
+                    "prizetap_winning_chance_number"
+                ) + len(unitap_pass_ids)
+                user_profile.save(update_fields=("prizetap_winning_chance_number",))
+        except Wallet.DoesNotExist:
+            logging.warning(f"Wallet address: {holder_address} not exists.")
+
+
+@shared_task(bind=True)
+def process_raffles_pre_enrollments(self):
+    id = f"{self.name}-LOCK"
+
+    with memcache_lock(id, self.app.oid) as acquired:
+        if not acquired:
+            print(f"Could not acquire process lock at {self.name}")
+            return
+
+        with transaction.atomic():
+            queryset = (
+                Raffle.objects.filter(pre_enrollment_file__isnull=False)
+                .filter(status=Raffle.Status.VERIFIED)
+                .filter(is_processed=False)
+                .order_by("id")
+            )
+            for raffle in queryset:
+                print(f"Process the raffle {raffle.pk} pre-enrollments")
+                file_path = raffle.pre_enrollment_file.path
+                with open(file_path, newline="") as f:
+                    reader = csv.reader(f)
+                    for row in reader:
+                        user_profile = UserProfile.objects.get_by_wallet_address(
+                            Web3.to_checksum_address(row[0])
+                        )
+                        entry = RaffleEntry(
+                            raffle=raffle,
+                            user_profile=user_profile,
+                            user_wallet_address=row[0],
+                            multiplier=row[1],
+                            pre_enrollment=True,
+                        )
+                        entry.save()
+                raffle.is_processed = True
+                raffle.save()
+
+
+@shared_task(bind=True)
+def onchain_pre_enrollments(self):
+    id = f"{self.name}-LOCK"
+
+    with memcache_lock(id, self.app.oid) as acquired:
+        if not acquired:
+            print(f"Could not acquire process lock at {self.name}")
+            return
+        entries_queryset = (
+            RaffleEntry.objects.filter(pre_enrollment=True)
+            .filter(tx_hash__isnull=True)
+            .order_by("id")
+        )
+        batch_size = 50
+        if entries_queryset.count() > 0:
+            first_entry = entries_queryset.first()
+
+            batch_entry = entries_queryset.filter(raffle=first_entry.raffle).all()[
+                :batch_size
+            ]
+
+            entry_pack = []
+            weight_pack = []
+
+            for entry in batch_entry:
+                entry_pack.append(entry.user_wallet_address)
+                weight_pack.append(entry.multiplier)
+
+            try:
+                contract_client = PrizetapContractClient(first_entry.raffle)
+                tx_hash = contract_client.batch_participate(entry_pack, weight_pack)
+
+                with transaction.atomic():
+                    for entry in batch_entry:
+                        entry.tx_hash = tx_hash
+                        entry.save()
+            except Exception as e:
+                logging.error(
+                    f"Unable to pre-enroll raffle {first_entry.raffle.pk} entries"
+                )
+                logging.error(e)

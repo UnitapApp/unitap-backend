@@ -2,7 +2,7 @@ import uuid
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 from django.db.models.functions import Lower
@@ -10,13 +10,16 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 from safedelete.models import SafeDeleteModel
+from web3 import Web3
 
 # from authentication.helpers import BRIGHTID_SOULDBOUND_INTERFACE
 from authentication.thirdpartydrivers import (
     BaseThirdPartyDriver,
     BrightIDConnectionDriver,
     ENSDriver,
+    FarcasterDriver,
     GitcoinPassportDriver,
+    LensDriver,
     TwitterDriver,
 )
 from core.models import NetworkTypes
@@ -34,7 +37,9 @@ class ProfileManager(models.Manager):
 
     def get_by_wallet_address(self, wallet_address):
         try:
-            return Wallet.objects.get(address=wallet_address).user_profile
+            return Wallet.objects.get(
+                address=Web3.to_checksum_address(wallet_address)
+            ).user_profile
         except Wallet.DoesNotExist:
             return None
 
@@ -44,7 +49,7 @@ class ProfileManager(models.Manager):
         Wallet.objects.create(
             wallet_type=NetworkTypes.EVM,  # TODO support register with non evms
             user_profile=_profile,
-            address=wallet_address,
+            address=Web3.to_checksum_address(wallet_address),
         )
         _profile.username = f"User{_profile.pk}"
         _profile.save()
@@ -52,7 +57,9 @@ class ProfileManager(models.Manager):
 
     def get_or_create_with_wallet_address(self, wallet_address):
         try:
-            profile = Wallet.objects.get(address=wallet_address).user_profile
+            profile = Wallet.objects.get(
+                address=Web3.to_checksum_address(wallet_address)
+            ).user_profile
             if profile.username is None:
                 profile.username = f"User{profile.pk}"
                 profile.save()
@@ -83,6 +90,10 @@ class UserProfile(models.Model):
     is_verified = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    prizetap_winning_chance_number = models.IntegerField(
+        default=0, blank=False, null=False, validators=(MinValueValidator(0),)
+    )
 
     objects = ProfileManager()
 
@@ -138,7 +149,7 @@ class Wallet(SafeDeleteModel):
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="wallets"
     )
-    address = models.CharField(max_length=512)
+    address = models.CharField(max_length=512, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     class Meta:
@@ -250,3 +261,55 @@ class ENSConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.name)
+
+
+class FarcasterConnection(BaseThirdPartyConnection):
+    title = "Farcaster"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = FarcasterDriver()
+
+    @property
+    def fid(self):
+        return self.driver.get_fid(self.user_wallet_address)
+
+    def is_connected(self):
+        return bool(self.fid)
+
+
+class FarcasterSaveError(Exception):
+    pass
+
+
+@receiver(pre_save, sender=FarcasterConnection)
+def check_farcaster_profile_existance(sender, instance: FarcasterConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.fid
+    if res is None:
+        raise FarcasterSaveError("Farcaster profile for this wallet not found.")
+
+
+class LensConnection(BaseThirdPartyConnection):
+    title = "Lens"
+    user_wallet_address = models.CharField(max_length=255)
+    driver = LensDriver()
+
+    @property
+    def profile_id(self):
+        return self.driver.get_profile_id(self.user_wallet_address)
+
+    def is_connected(self):
+        return bool(self.profile_id)
+
+
+class LensSaveError(Exception):
+    pass
+
+
+@receiver(pre_save, sender=LensConnection)
+def check_lens_profile_existance(sender, instance: LensConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.profile_id
+    if res is None:
+        raise FarcasterSaveError("Lens profile for this wallet not found.")

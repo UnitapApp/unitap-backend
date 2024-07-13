@@ -90,6 +90,12 @@ class PrizetapContractClient:
             receipt, errors=self.web3_utils.LOG_DISCARD
         )[0]
 
+    def batch_participate(self, participants, multipliers):
+        func = self.web3_utils.contract.functions.batchParticipate(
+            self.raffle.raffleId, participants, multipliers
+        )
+        return self.web3_utils.contract_txn(func)
+
 
 class VRFClientContractClient:
     def __init__(self) -> None:

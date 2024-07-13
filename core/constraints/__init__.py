@@ -7,6 +7,7 @@ from core.constraints.abstract import (
     ConstraintParam,
     ConstraintVerification,
 )
+from core.constraints.arb_bridge import BridgeEthToArb
 from core.constraints.bright_id import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
