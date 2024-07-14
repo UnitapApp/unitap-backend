@@ -1,3 +1,5 @@
+from brightIDfaucet.settings import DEPLOYMENT_ENV
+
 PRIZETAP_ERC20_ABI = [
     {
         "inputs": [
@@ -259,6 +261,28 @@ PRIZETAP_ERC20_ABI = [
         "name": "OPERATOR_ROLE",
         "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}],
         "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_amount", "type": "uint256"},
+            {"internalType": "address", "name": "_to", "type": "address"},
+            {"internalType": "address", "name": "_tokenAddr", "type": "address"},
+        ],
+        "name": "adminWithdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "raffleId", "type": "uint256"},
+            {"internalType": "address[]", "name": "participants", "type": "address[]"},
+            {"internalType": "uint256[]", "name": "multipliers", "type": "uint256[]"},
+        ],
+        "name": "batchParticipate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function",
     },
     {
@@ -2142,25 +2166,45 @@ VRF_CLIENT_ABI = [
 VRF_CLIENT_POLYGON_ADDRESS = "0xd713f3584EADc92848d64C31fD66CD50AdF272CD"
 VRF_CLIENT_BSCTEST_ADDRESS = "0xb8B0c04282d9c55cb17d7ef0bF56ef3Bbe203F3C"
 
-CONTRACT_ADDRESSES = {
-    # "80001": {
-    #     "erc20_prizetap_addr": "0x57b2BA844fD37F20E9358ABaa6995caA4fCC9994",
-    #     "erc721_prizetap_addr": "0xDB7bA3A3cbEa269b993250776aB5B275a5F004a0",
-    # },
-    "42161": {
-        "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-        "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-    },
-    # "30": {
-    #     "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-    #     "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-    # },
-    "10": {
-        "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-        "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-    },
-    "59144": {
-        "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-        "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-    },
-}
+match DEPLOYMENT_ENV:
+    case "main":
+        CONTRACT_ADDRESSES = {
+            # "80001": {
+            #     "erc20_prizetap_addr": "0x57b2BA844fD37F20E9358ABaa6995caA4fCC9994",
+            #     "erc721_prizetap_addr": "0xDB7bA3A3cbEa269b993250776aB5B275a5F004a0",
+            # },
+            "42161": {
+                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+            },
+            # "30": {
+            #     "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+            #     "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+            # },
+            "10": {
+                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+            },
+            "59144": {
+                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+            },
+        }
+    case "dev":
+        CONTRACT_ADDRESSES = {
+            "42161": {
+                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+            },
+            "10": {
+                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+            },
+            "59144": {
+                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
+                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+            },
+            "97": {"erc20_prizetap_addr": "0x183390bE36EA575D93b5651c36cFe73DF642eD1b"},
+        }
+    case _:
+        CONTRACT_ADDRESSES = {}
