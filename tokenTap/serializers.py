@@ -39,6 +39,9 @@ class DetailResponseSerializer(serializers.Serializer):
 class TokenDistributionSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
     constraints = serializers.SerializerMethodField()
+    claim_deadline_for_unitap_pass_user = serializers.SerializerMethodField()
+    max_claim_number_for_unitap_pass_user = serializers.SerializerMethodField()
+    remaining_claim_for_unitap_pass_user = serializers.SerializerMethodField()
 
     class Meta:
         model = TokenDistribution
@@ -80,6 +83,9 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             "is_maxed_out",
             "is_claimable",
             "check_for_extension",
+            "claim_deadline_for_unitap_pass_user",
+            "max_claim_number_for_unitap_pass_user",
+            "remaining_claim_for_unitap_pass_user",
         ]
 
     def get_constraints(self, distribution: TokenDistribution):
@@ -92,10 +98,22 @@ class TokenDistributionSerializer(serializers.ModelSerializer):
             for c in distribution.constraints.all()
         ]
 
+    def get_claim_deadline_for_unitap_pass_user(self, obj: TokenDistribution):
+        return obj.claim_deadline_for_unitap_pass_user
+
+    def get_max_claim_number_for_unitap_pass_user(self, obj: TokenDistribution):
+        return obj.max_claim_number_for_unitap_pass_user
+
+    def get_remaining_claim_for_unitap_pass_user(self, obj: TokenDistribution):
+        return obj.remaining_claim_for_unitap_pass_user
+
 
 class SmallTokenDistributionSerializer(serializers.ModelSerializer):
     chain = ChainSerializer()
     constraints = ConstraintSerializer(many=True)
+    claim_deadline_for_unitap_pass_user = serializers.SerializerMethodField()
+    max_claim_number_for_unitap_pass_user = serializers.SerializerMethodField()
+    remaining_claim_for_unitap_pass_user = serializers.SerializerMethodField()
 
     class Meta:
         model = TokenDistribution
@@ -122,7 +140,19 @@ class SmallTokenDistributionSerializer(serializers.ModelSerializer):
             "max_number_of_claims",
             "notes",
             "token_image_url",
+            "claim_deadline_for_unitap_pass_user",
+            "max_claim_number_for_unitap_pass_user",
+            "remaining_claim_for_unitap_pass_user",
         ]
+
+    def get_claim_deadline_for_unitap_pass_user(self, obj: TokenDistribution):
+        return obj.claim_deadline_for_unitap_pass_user
+
+    def get_max_claim_number_for_unitap_pass_user(self, obj: TokenDistribution):
+        return obj.max_claim_number_for_unitap_pass_user
+
+    def get_remaining_claim_for_unitap_pass_user(self, obj: TokenDistribution):
+        return obj.remaining_claim_for_unitap_pass_user
 
 
 class PayloadSerializer(serializers.ModelSerializer):
@@ -146,6 +176,10 @@ class TokenDistributionClaimSerializer(serializers.ModelSerializer):
             "payload",
             "status",
             "tx_hash",
+            "is_unitap_pass_share",
+        ]
+        read_only_fields = [
+            "is_unitap_pass_share",
         ]
 
     def get_payload(self, obj):

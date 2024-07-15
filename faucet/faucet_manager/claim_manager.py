@@ -98,8 +98,8 @@ class LimitedChainClaimManager(SimpleClaimManager):
             datetime__gte=start_of_the_round,
         ).count()
 
-    def assert_pre_claim_conditions(self, amount, user_profile):
-        super().assert_pre_claim_conditions(amount, user_profile)
+    def assert_pre_claim_conditions(self, amount, user_profile, ups):
+        super().assert_pre_claim_conditions(amount, user_profile, ups)
         total_claims = self.get_total_round_claims(user_profile)
         assert total_claims < self.get_round_limit()
 

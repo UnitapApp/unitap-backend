@@ -121,7 +121,11 @@ class UserProfile(models.Model):
 
     def has_unitap_pass(self):
         sub = Subgraph()
-        addresses = Wallet.objects.filter(user__pk=self.pk).values("address", flat=True)
+        addresses = Wallet.objects.filter(user_profile__pk=self.pk).values_list(
+            "address", flat=True
+        )
+        if not addresses:
+            return False, list()
         owners = sub.get_unitap_pass_holders(addresses=addresses)
         return (
             bool(owners),
