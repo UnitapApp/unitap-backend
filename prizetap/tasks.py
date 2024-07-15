@@ -303,7 +303,8 @@ def process_raffles_pre_enrollments(self):
 
         with transaction.atomic():
             queryset = (
-                Raffle.objects.filter(pre_enrollment_file__isnull=False)
+                Raffle.objects.exclude(pre_enrollment_file__isnull=True)
+                .exclude(pre_enrollment_file__exact="")
                 .filter(status=Raffle.Status.VERIFIED)
                 .filter(is_processed=False)
                 .order_by("id")
