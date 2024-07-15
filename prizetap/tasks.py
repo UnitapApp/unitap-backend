@@ -311,9 +311,7 @@ def process_raffles_pre_enrollments(self):
             )
             for raffle in queryset:
                 print(f"Process the raffle {raffle.pk} pre-enrollments")
-                file_path = raffle.pre_enrollment_file.path
-                print(file_path)
-                with open(file_path, newline="") as f:
+                with raffle.pre_enrollment_file.open("r") as f:
                     reader = csv.reader(f)
                     for row in reader:
                         user_profile = UserProfile.objects.get_by_wallet_address(
