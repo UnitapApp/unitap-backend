@@ -41,6 +41,14 @@ def memcache_lock(lock_id, oid, lock_expire=60):
             cache.delete(lock_id)
 
 
+def calculate_percentage_date(start_date, end_date, percentage: float):
+    total_duration = end_date - start_date
+    percentage_duration = total_duration * percentage
+    result_date = start_date + percentage_duration
+
+    return result_date
+
+
 class TimeUtils:
     #     @staticmethod
     #     def get_last_monday():

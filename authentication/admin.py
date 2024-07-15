@@ -11,7 +11,12 @@ from authentication.models import (
 
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ["pk", "username", "initial_context_id", "age"]
-    search_fields = ["initial_context_id", "username" ,"user__auth_token__key", "user__pk"]
+    search_fields = [
+        "initial_context_id",
+        "username",
+        "user__auth_token__key",
+        "user_profile__pk",
+    ]
 
 
 class WalletAdmin(admin.ModelAdmin):

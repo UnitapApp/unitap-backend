@@ -409,3 +409,7 @@ ERC20_TOKENTAP_ABI = [
         "type": "function",
     },
 ]
+
+
+UNITAP_PASS_CLAIM_PERCENT = 0.3
+UNITAP_PASS_CLAIM_TIME_AVAILABLE = 0.3

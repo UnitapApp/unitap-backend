@@ -177,7 +177,7 @@ class ClaimMaxView(APIView):
         _is_meet_verified = self.get_user().is_meet_verified
         _has_unitap_pass, ups = self.get_user().has_unitap_pass()
 
-        if not _is_meet_verified and not _has_unitap_pass:
+        if not _is_meet_verified:  # and not _has_unitap_pass:
             raise rest_framework.exceptions.PermissionDenied(
                 "You are not BrighID verified"
             )
