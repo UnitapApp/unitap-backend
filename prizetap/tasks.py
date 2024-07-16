@@ -1,4 +1,4 @@
-import csv
+# import csv
 import logging
 import time
 
@@ -302,29 +302,55 @@ def process_raffles_pre_enrollments(self):
             return
 
         with transaction.atomic():
+            # queryset = (
+            #     Raffle.objects.exclude(pre_enrollment_file__isnull=True)
+            #     .exclude(pre_enrollment_file__exact="")
+            #     .filter(status=Raffle.Status.VERIFIED)
+            #     .filter(is_processed=False)
+            #     .order_by("id")
+            # )
+            # for raffle in queryset:
+            #     print(f"Process the raffle {raffle.pk} pre-enrollments")
+            #     with raffle.pre_enrollment_file.open("r") as f:
+            #         reader = csv.reader(f)
+            #         for row in reader:
+            #             user_profile = UserProfile.objects.get_by_wallet_address(
+            #                 Web3.to_checksum_address(row[0])
+            #             )
+            #             entry = RaffleEntry(
+            #                 raffle=raffle,
+            #                 user_profile=user_profile,
+            #                 user_wallet_address=row[0],
+            #                 multiplier=row[1],
+            #                 pre_enrollment=True,
+            #             )
+            #             entry.save()
+            #     raffle.is_processed = True
+            #     raffle.save()
+
             queryset = (
-                Raffle.objects.exclude(pre_enrollment_file__isnull=True)
-                .exclude(pre_enrollment_file__exact="")
+                Raffle.objects.exclude(pre_enrollment_wallets__isnull=True)
+                .exclude(pre_enrollment_wallets__exact="")
                 .filter(status=Raffle.Status.VERIFIED)
                 .filter(is_processed=False)
                 .order_by("id")
             )
             for raffle in queryset:
                 print(f"Process the raffle {raffle.pk} pre-enrollments")
-                with raffle.pre_enrollment_file.open("r") as f:
-                    reader = csv.reader(f)
-                    for row in reader:
-                        user_profile = UserProfile.objects.get_by_wallet_address(
-                            Web3.to_checksum_address(row[0])
-                        )
-                        entry = RaffleEntry(
-                            raffle=raffle,
-                            user_profile=user_profile,
-                            user_wallet_address=row[0],
-                            multiplier=row[1],
-                            pre_enrollment=True,
-                        )
-                        entry.save()
+                lines = raffle.pre_enrollment_wallets.splitlines()
+                for line in lines:
+                    row = line.split(",")
+                    user_profile = UserProfile.objects.get_by_wallet_address(
+                        Web3.to_checksum_address(row[0])
+                    )
+                    entry = RaffleEntry(
+                        raffle=raffle,
+                        user_profile=user_profile,
+                        user_wallet_address=row[0],
+                        multiplier=row[1],
+                        pre_enrollment=True,
+                    )
+                    entry.save()
                 raffle.is_processed = True
                 raffle.save()
 
