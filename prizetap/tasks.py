@@ -338,6 +338,7 @@ def process_raffles_pre_enrollments(self):
             for raffle in queryset:
                 print(f"Process the raffle {raffle.pk} pre-enrollments")
                 lines = raffle.pre_enrollment_wallets.splitlines()
+                lines = list(filter(None, lines))
                 for line in lines:
                     row = line.split(",")
                     user_profile = UserProfile.objects.get_by_wallet_address(
