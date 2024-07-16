@@ -347,7 +347,7 @@ def process_raffles_pre_enrollments(self):
                     entry = RaffleEntry(
                         raffle=raffle,
                         user_profile=user_profile,
-                        user_wallet_address=row[0],
+                        user_wallet_address=Web3.to_checksum_address(row[0]),
                         multiplier=row[1],
                         pre_enrollment=True,
                     )
@@ -367,11 +367,17 @@ def onchain_pre_enrollments(self):
         entries_queryset = (
             RaffleEntry.objects.filter(pre_enrollment=True)
             .filter(tx_hash__isnull=True)
+            .exclude(raffle__deadline__lt=timezone.now())
             .order_by("id")
         )
         batch_size = 50
         if entries_queryset.count() > 0:
             first_entry = entries_queryset.first()
+
+            print(
+                f"Perform onchain transaction of the raffle {first_entry.raffle.pk}"
+                " pre-enrollments"
+            )
 
             batch_entry = entries_queryset.filter(raffle=first_entry.raffle).all()[
                 :batch_size
