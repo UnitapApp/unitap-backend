@@ -80,6 +80,10 @@ class Raffle(models.Model):
         blank=True,
         null=True,
     )
+    pre_enrollment_wallets = models.TextField(
+        blank=True,
+        null=True,
+    )
     is_processed = models.BooleanField(default=False)
 
     status = models.CharField(
