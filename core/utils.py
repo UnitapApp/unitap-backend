@@ -11,6 +11,7 @@ from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
 from django.utils import timezone
+from eth_account.datastructures import SignedTransaction
 from eth_account.messages import encode_defunct
 from solana.rpc.api import Client
 from web3 import Account, Web3
@@ -199,8 +200,8 @@ class Web3Utils:
     def sign_tx(self, tx_data: TxParams):
         return self.w3.eth.account.sign_transaction(tx_data, self.account.key)
 
-    def send_raw_tx(self, signed_tx):
-        return self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    def send_raw_tx(self, signed_tx: SignedTransaction):
+        return self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
     def wait_for_transaction_receipt(self, tx_hash):
         return self.w3.eth.wait_for_transaction_receipt(tx_hash)

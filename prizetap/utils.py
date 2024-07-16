@@ -94,7 +94,9 @@ class PrizetapContractClient:
         func = self.web3_utils.contract.functions.batchParticipate(
             self.raffle.raffleId, participants, multipliers
         )
-        return self.web3_utils.contract_txn(func)
+        tx_hash = self.web3_utils.contract_txn(func)
+        self.web3_utils.wait_for_transaction_receipt(tx_hash)
+        return tx_hash
 
 
 class VRFClientContractClient:
