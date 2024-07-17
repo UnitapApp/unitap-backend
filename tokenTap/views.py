@@ -2,6 +2,7 @@ import json
 import logging
 
 import rest_framework.exceptions
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
@@ -14,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
@@ -102,6 +104,31 @@ class TokenDistributionClaimView(CreateAPIView):
             if not user_profile.owns_wallet(user_wallet_address):
                 raise PermissionDenied("This wallet is not registered for this user")
 
+    def check_unitap_pass_share(
+        self, distribution: TokenDistribution, user_profile: UserProfile
+    ) -> tuple[bool, list[int]]:
+        if (
+            distribution.remaining_claim_for_unitap_pass_user is None
+            or not distribution.remaining_claim_for_unitap_pass_user > 0
+        ):
+            return False, list()
+
+        has_unitap_pass, unitap_pass_list = user_profile.has_unitap_pass()
+        if has_unitap_pass:
+            used_unitap_passes = set(distribution.used_unitap_pass_list)
+            not_used_unitap_passes = set(unitap_pass_list) - used_unitap_passes
+            if not len(not_used_unitap_passes):
+                raise PermissionDenied("You use all your unitap passes")
+            return has_unitap_pass, list(not_used_unitap_passes)
+
+        if distribution.claims.filter(is_unitap_pass_share=False).count() >= (
+            distribution.max_number_of_claims
+            - distribution.max_claim_number_for_unitap_pass_user
+        ):
+            raise PermissionDenied("Only unitap pass user could claim.")
+
+        return False, list()
+
     @swagger_auto_schema(
         responses={
             200: openapi.Response(
@@ -135,47 +162,56 @@ class TokenDistributionClaimView(CreateAPIView):
 
         self.wallet_is_vaild(user_profile, user_wallet_address, token_distribution)
 
-        try:
-            tdc = TokenDistributionClaim.objects.get(
-                user_profile=user_profile,
-                token_distribution=token_distribution,
-                status=ClaimReceipt.PENDING,
-            )
-            return Response(
-                {
-                    "detail": "Signature Was Already Created",
-                    "signature": TokenDistributionClaimSerializer(tdc).data,
-                },
-                status=200,
-            )
+        with transaction.atomic():
+            try:
+                tdc = TokenDistributionClaim.objects.get(
+                    user_profile=user_profile,
+                    token_distribution=token_distribution,
+                    status=ClaimReceipt.PENDING,
+                )
+                return Response(
+                    {
+                        "detail": "Signature Was Already Created",
+                        "signature": TokenDistributionClaimSerializer(tdc).data,
+                    },
+                    status=200,
+                )
 
-        except TokenDistributionClaim.DoesNotExist:
-            pass
+            except TokenDistributionClaim.DoesNotExist:
+                pass
 
-        self.check_user_permissions(token_distribution, user_profile)
+            self.check_user_permissions(token_distribution, user_profile)
 
-        self.check_token_distribution_is_claimable(token_distribution)
+            self.check_token_distribution_is_claimable(token_distribution)
 
-        self.check_user_credit(token_distribution, user_profile)
+            self.check_user_credit(token_distribution, user_profile)
 
-        nonce = create_uint32_random_nonce()
-        if token_distribution.chain.chain_type == NetworkTypes.EVM:
-            hashed_message = hash_message(
-                address=user_wallet_address,
-                token=token_distribution.token_address,
-                amount=token_distribution.amount,
-                nonce=nonce,
+            is_unitap_pass_user, user_unitap_pass_list = self.check_unitap_pass_share(
+                token_distribution, user_profile
             )
 
-            signature = sign_hashed_message(hashed_message=hashed_message)
+            nonce = create_uint32_random_nonce()
+            if token_distribution.chain.chain_type == NetworkTypes.EVM:
+                hashed_message = hash_message(
+                    address=user_wallet_address,
+                    token=token_distribution.token_address,
+                    amount=token_distribution.amount,
+                    nonce=nonce,
+                )
 
-            tdc = TokenDistributionClaim.objects.create(
-                user_profile=user_profile,
-                nonce=nonce,
-                signature=signature,
-                token_distribution=token_distribution,
-                user_wallet_address=user_wallet_address,
-            )
+                signature = sign_hashed_message(hashed_message=hashed_message)
+
+                tdc = TokenDistributionClaim.objects.create(
+                    user_profile=user_profile,
+                    nonce=nonce,
+                    signature=signature,
+                    token_distribution_id=token_distribution.pk,
+                    user_wallet_address=user_wallet_address,
+                    is_unitap_pass_share=is_unitap_pass_user,
+                )
+                # TODO: be careful about race condition
+                token_distribution.used_unitap_pass_list.extend(user_unitap_pass_list)
+                token_distribution.save(update_fields=["used_unitap_pass_list"])
 
         return Response(
             {

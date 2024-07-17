@@ -41,7 +41,7 @@ class IsFollowingFarcasterUser(ConstraintVerification):
         try:
             fa_connection = FarcasterConnection.get_connection(self.user_profile)
         except FarcasterConnection.DoesNotExist:
-            logging("Farcaster connection not found.")
+            logging.error("Farcaster connection not found.")
             return False
         return farcaster_util.is_following(
             farcaster_fid, fa_connection.user_wallet_address
@@ -63,7 +63,7 @@ class BeFollowedByFarcasterUser(ConstraintVerification):
         try:
             fa_connection = FarcasterConnection.get_connection(self.user_profile)
         except FarcasterConnection.DoesNotExist:
-            logging("Farcaster connection not found.")
+            logging.error("Farcaster connection not found.")
             return False
         return farcaster_util.be_followed_by(
             farcaster_fid, fa_connection.user_wallet_address
@@ -84,7 +84,7 @@ class DidLikedFarcasterCast(ConstraintVerification):
         try:
             fa_connection = FarcasterConnection.get_connection(self.user_profile)
         except FarcasterConnection.DoesNotExist:
-            logging("Farcaster connection not found.")
+            logging.error("Farcaster connection not found.")
             return False
         return farcaster_util.did_liked_cast(
             cast_hash=self.param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
@@ -108,7 +108,7 @@ class DidRecastFarcasterCast(ConstraintVerification):
         try:
             fa_connection = FarcasterConnection.get_connection(self.user_profile)
         except FarcasterConnection.DoesNotExist:
-            logging("Farcaster connection not found.")
+            logging.error("Farcaster connection not found.")
             return False
         return farcaster_util.did_recast_cast(
             cast_hash=self.param_values[ConstraintParam.FARCASTER_CAST_HASH.name],
@@ -158,7 +158,7 @@ class IsFollowingFarcasterChannel(ConstraintVerification):
         try:
             fa_connection = FarcasterConnection.get_connection(self.user_profile)
         except FarcasterConnection.DoesNotExist:
-            logging("Farcaster connection not found.")
+            logging.error("Farcaster connection not found.")
             return False
         channel_id = self.param_values[ConstraintParam.FARCASTER_CHANNEL_ID.name]
         return farcaster_util.is_following_channel(
