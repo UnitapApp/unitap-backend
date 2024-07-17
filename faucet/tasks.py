@@ -154,6 +154,13 @@ def update_all_faucets_claims(since_last_round=True):
         update_faucet_claims.delay(active_faucet.pk, since_last_round)
 
 
+@shared_task
+def remove_used_unitap_pass_list_for_each_faucet():
+    faucet_pk = Faucet.objects.values_list("pk", flat=True)
+    for faucet_pk in faucet_pk:
+        CeleryTasks.remove_unitap_pass_used_in_each_faucet(faucet_id=faucet_pk)
+
+
 @worker_ready.connect
 def at_start(sender, **k):
     with sender.app.connection() as conn:

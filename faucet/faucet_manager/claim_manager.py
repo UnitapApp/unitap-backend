@@ -46,8 +46,9 @@ class SimpleClaimManager(ClaimManager):
     def assert_pre_claim_conditions(self, amount, user_profile, ups=[]):
         assert amount <= self.credit_strategy.get_unclaimed()
         # assert self.user_is_meet_verified() is True
-        for up in ups:
-            assert up not in self.credit_strategy.faucet.used_unitap_pass_list
+        used_unitap_pass = set(self.credit_strategy.faucet.used_unitap_pass_list)
+        not_used_unitap_pass = set(ups) - used_unitap_pass
+        assert len(ups) == 0 or len(not_used_unitap_pass) != 0
         assert not ClaimReceipt.objects.filter(
             faucet__chain=self.credit_strategy.faucet.chain,
             user_profile=user_profile,
@@ -60,11 +61,17 @@ class SimpleClaimManager(ClaimManager):
         _faucet = self.credit_strategy.faucet
         _user_profile = self.credit_strategy.user_profile
 
-        for up in ups:
-            _faucet.used_unitap_pass_list.append(up)
+        used_unitap_pass = set(self.credit_strategy.faucet.used_unitap_pass_list)
+        not_used_unitap_pass = set(ups) - used_unitap_pass
+        _faucet.used_unitap_pass_list.extend(list(not_used_unitap_pass))
+        _faucet.save(
+            update_fields=[
+                "used_unitap_pass_list",
+            ]
+        )
 
         return ClaimReceipt.objects.create(
-            faucet=_faucet,
+            faucet_id=_faucet.pk,
             user_profile=_user_profile,
             datetime=timezone.now(),
             amount=amount,
