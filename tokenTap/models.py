@@ -1,4 +1,3 @@
-from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -6,7 +5,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import AbstractGlobalSettings, Chain, UserConstraint
+from core.models import AbstractGlobalSettings, Chain, UniqueArrayField, UserConstraint
 from core.utils import calculate_percentage_date
 from faucet.constraints import OptimismHasClaimedGasConstraint
 from faucet.models import ClaimReceipt
@@ -88,7 +87,9 @@ class TokenDistribution(models.Model):
 
     is_active = models.BooleanField(default=True)
     check_for_extension = models.BooleanField(default=False)
-    used_unitap_pass_list = ArrayField(models.IntegerField(), blank=True, default=list)
+    used_unitap_pass_list = UniqueArrayField(
+        models.IntegerField(), blank=True, default=list, unique_elements=True
+    )
 
     @property
     def reversed_constraints_list(self):
