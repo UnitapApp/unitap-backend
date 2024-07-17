@@ -49,6 +49,8 @@ class RaffleListView(ListAPIView):
 
     def get(self, request):
         queryset = self.get_queryset()
+        if request.user.is_authenticated:
+            RaffleEntry.set_entry_user_profiles(request.user)
         serializer = RaffleSerializer(
             queryset,
             many=True,
