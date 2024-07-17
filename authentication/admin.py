@@ -15,7 +15,7 @@ class ProfileAdmin(admin.ModelAdmin):
         "initial_context_id",
         "username",
         "user__auth_token__key",
-        "user_profile__pk",
+        "pk",
     ]
 
 
