@@ -3,7 +3,6 @@ import uuid
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, UniqueConstraint
@@ -13,7 +12,13 @@ from safedelete.models import SafeDeleteModel
 
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-from core.models import AbstractGlobalSettings, BigNumField, Chain, NetworkTypes
+from core.models import (
+    AbstractGlobalSettings,
+    BigNumField,
+    Chain,
+    NetworkTypes,
+    UniqueArrayField,
+)
 
 
 def get_cache_time(id):
@@ -189,7 +194,9 @@ class Faucet(models.Model):
     )
     total_claims_this_round = models.IntegerField(default=0, blank=True, null=True)
 
-    used_unitap_pass_list = ArrayField(models.IntegerField(), blank=True, default=list)
+    used_unitap_pass_list = UniqueArrayField(
+        models.IntegerField(), blank=True, default=list, unique=True
+    )
 
     def __str__(self):
         return (

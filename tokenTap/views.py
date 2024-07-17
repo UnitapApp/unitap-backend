@@ -152,17 +152,19 @@ class TokenDistributionClaimView(CreateAPIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        user_profile = request.user.profile
-        token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
-        user_wallet_address = request.data.get("user_wallet_address", None)
-        if user_wallet_address is None:
-            raise rest_framework.exceptions.ParseError(
-                "user_wallet_address is a required field"
-            )
-
-        self.wallet_is_vaild(user_profile, user_wallet_address, token_distribution)
-
         with transaction.atomic():
+            user_profile = request.user.profile
+            token_distribution = TokenDistribution.objects.select_for_update().get(
+                pk=self.kwargs["pk"]
+            )
+            user_wallet_address = request.data.get("user_wallet_address", None)
+            if user_wallet_address is None:
+                raise rest_framework.exceptions.ParseError(
+                    "user_wallet_address is a required field"
+                )
+
+            self.wallet_is_vaild(user_profile, user_wallet_address, token_distribution)
+
             try:
                 tdc = TokenDistributionClaim.objects.get(
                     user_profile=user_profile,
