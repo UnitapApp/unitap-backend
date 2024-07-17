@@ -193,7 +193,8 @@ class RaffleEntry(models.Model):
             ).all()
             for e in entities:
                 e.user_profile = user_profile
-                e.save()
+
+            RaffleEntry.objects.bulk_update(entities, ["user_profile"])
 
 
 class LineaRaffleEntries(models.Model):
