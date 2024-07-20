@@ -1,6 +1,7 @@
 import os
-
+import requests
 import tweepy
+from ratelimit import limits, sleep_and_retry
 
 
 class TwitterUtilsError(tweepy.TweepyException):
@@ -20,13 +21,6 @@ class TwitterUtils:
             access_token_secret=access_token_secret,
         )
         self.api = tweepy.API(auth)
-        self.client = tweepy.Client(
-            consumer_key=self.consumer_key,
-            consumer_secret=self.consumer_secret,
-            access_token=access_token,
-            access_token_secret=access_token_secret,
-            wait_on_rate_limit=True,
-        )
 
     @classmethod
     def get_authorization_url_and_token(cls) -> tuple:
@@ -46,7 +40,7 @@ class TwitterUtils:
 
     @classmethod
     def get_access_token(
-        cls, oauth_token: str, oauth_token_secret: str, oauth_verifier: str
+            cls, oauth_token: str, oauth_token_secret: str, oauth_verifier: str
     ) -> tuple:
         auth = tweepy.OAuth1UserHandler(
             consumer_key=cls.consumer_key, consumer_secret=cls.consumer_secret
@@ -64,59 +58,79 @@ class TwitterUtils:
 
         return access_token, access_token_secret
 
-    def get_username(self) -> str:
-        try:
-            username = self.api.verify_credentials().screen_name
-        except tweepy.TweepyException as e:
-            raise TwitterUtilsError(f"Can not get username, error: {e}")
-        return username
+    def get_username(self, access_token, access_token_secret):
+        pass
 
-    def get_user_id(self) -> str:
-        try:
-            user_id = self.api.verify_credentials().id_str
-        except tweepy.TweepyException as e:
-            raise TwitterUtilsError(f"Can not get user_id, error: {e}")
-        return user_id
 
-    def get_tweet_count(self) -> int:
-        username = self.get_username()
-        user = self.api.get_user(username)
-        return user.statuses_count
+class RapidTwitter:
+    rapid_key = os.getenv("RAPID_API_KEY")
+    host = 'twitter135.p.rapidapi.com'
 
-    def get_follower_count(self) -> int:
-        username = self.get_username()
-        user = self.api.get_user(username)
-        return user.followers_count
+    @sleep_and_retry
+    @limits(calls=5, period=1)
+    def _request(self, url, params):
+        return requests.get(
+            url=f'https://{self.host}/{url}',
+            headers={
+                'x-rapidapi-key': self.rapid_key,
+                'x-rapidapi-host': self.host
+            },
+            params=params
+        )
 
-    def get_is_replied(self, user_tweet_id: str, reference_tweet_id: str) -> bool:
-        user_id = self.get_user_id()
+    def get_user_id(self, username: str):
+        response = self._request(
+            url='UserByScreenName',
+            params={
+                'username': username
+            }
+        )
 
-        tweet = self.client.get_tweet(
-            id=user_tweet_id,
-            tweet_fields=["referenced_tweets"],
-            user_fields=["id"],
-            expansions=["referenced_tweets.id", "author_id"],
-            user_auth=True,
-        ).data
+        if response.status_code == 200:
+            return response.json()['data']['user']['result']['rest_id']
+        else:
+            raise Exception("Error in RapidAPI")
 
-        if tweet.referenced_tweets:
-            for referenced_tweet in tweet.referenced_tweets:
-                if (
-                    referenced_tweet.type == "replied_to"
-                    and referenced_tweet.id == str(reference_tweet_id)
-                ):
-                    if tweet.author_id == user_id:
-                        return True
-        return False
+    def is_following(self, username: str, target_id: str, cursor=None):
+        response = self._request(
+            url='v1.1/FollowingIds',
+            params={
+                'username': username,
+                'count': 5000,
+                'cursor': cursor
+            }
+        )
 
-    def get_is_liked(self, reference_tweet_id: str) -> bool:
-        user_id = self.get_user_id()
+        if response.status_code == 200:
+            data = response.json()
+            followings = data['ids']
 
-        liked_users = self.client.get_liking_users(
-            id=reference_tweet_id, user_auth=True
-        ).data
-
-        for liker in liked_users:
-            if liker.id == user_id:
+            if target_id in followings:
                 return True
-        return False
+            else:
+                cursor = data['next_cursor']
+                if cursor:
+                    return self.is_following(username, target_id, cursor)
+                return False
+        else:
+            raise Exception("Error in RapidAPI")
+
+    def get_followers(self, username: str, cursor=None):
+        response = self._request(
+            url='v1.1/FollowersIds',
+            params={
+                'username': username,
+                'count': 5000,
+                'cursor': cursor
+            }
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            followers = data['ids']
+            cursor = data['next_cursor']
+            if cursor:
+                followers += self.get_followers(username, cursor)
+            return followers
+        else:
+            raise Exception("Error in RapidAPI")
