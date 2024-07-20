@@ -68,12 +68,15 @@ class RaffleEnrollmentView(CreateAPIView):
         user_profile: UserProfile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
         user_wallet_address = request.data.get("user_wallet_address", None)
+        raffle_data = request.data.get("raffle_data", None)
         if not user_wallet_address:
             raise rest_framework.exceptions.ParseError(
                 "user_wallet_address is required"
             )
 
-        validator = RaffleEnrollmentValidator(user_profile=user_profile, raffle=raffle)
+        validator = RaffleEnrollmentValidator(
+            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data
+        )
 
         validator.is_valid(self.request.data)
         prizetap_winning_chance_number = int(

@@ -12,6 +12,9 @@ class RaffleEnrollmentValidator:
     def __init__(self, *args, **kwargs):
         self.user_profile: UserProfile = kwargs["user_profile"]
         self.raffle: Raffle = kwargs["raffle"]
+        self.raffle_data: dict = (
+            kwargs["raffle_data"] if "raffle_data" in kwargs else None
+        )
 
     def can_enroll_in_raffle(self):
         if not self.raffle.is_claimable:
@@ -32,10 +35,26 @@ class RaffleEnrollmentValidator:
             except KeyError:
                 pass
             if str(c.pk) in self.raffle.reversed_constraints_list:
-                if constraint.is_observed():
+                if self.raffle_data and str(c.pk) in self.raffle_data.keys():
+                    cdata = (
+                        dict(self.raffle_data[str(c.pk)])
+                        if self.raffle_data
+                        else dict()
+                    )
+                    if constraint.is_observed(**cdata):
+                        raise PermissionDenied(constraint.response)
+                elif constraint.is_observed():
                     raise PermissionDenied(constraint.response)
             else:
-                if not constraint.is_observed():
+                if self.raffle_data and str(c.pk) in self.raffle_data.keys():
+                    cdata = (
+                        dict(self.raffle_data[str(c.pk)])
+                        if self.raffle_data
+                        else dict()
+                    )
+                    if not constraint.is_observed(**cdata):
+                        raise PermissionDenied(constraint.response)
+                elif not constraint.is_observed():
                     raise PermissionDenied(constraint.response)
 
     def check_user_owns_wallet(self, user_wallet_address):

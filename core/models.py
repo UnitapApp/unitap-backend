@@ -17,6 +17,7 @@ from .constraints import (
     BeAttestedBy,
     BeFollowedByFarcasterUser,
     BeFollowedByLensUser,
+    BeFollowedByTwitterUser,
     BridgeEthToArb,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
@@ -38,6 +39,7 @@ from .constraints import (
     IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
+    IsFollowinTwitterUser,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -129,6 +131,8 @@ class UserConstraint(models.Model):
         HasGitcoinPassportProfile,
         IsFollowingFarcasterChannel,
         BridgeEthToArb,
+        IsFollowinTwitterUser,
+        BeFollowedByTwitterUser,
     ]
 
     name = models.CharField(
