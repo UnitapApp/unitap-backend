@@ -2169,41 +2169,29 @@ VRF_CLIENT_BSCTEST_ADDRESS = "0xb8B0c04282d9c55cb17d7ef0bF56ef3Bbe203F3C"
 match DEPLOYMENT_ENV:
     case "main":
         CONTRACT_ADDRESSES = {
-            # "80001": {
-            #     "erc20_prizetap_addr": "0x57b2BA844fD37F20E9358ABaa6995caA4fCC9994",
-            #     "erc721_prizetap_addr": "0xDB7bA3A3cbEa269b993250776aB5B275a5F004a0",
-            # },
             "42161": {
-                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+                "erc20_prizetap_addr": "0xeb1Ad34EA13aF7Ec73Bb872F3Ab2B9250d62b7FD",
+                "erc721_prizetap_addr": "0xAaBD83213d545180eeC498877Aa7891E232FCE59",
             },
-            # "30": {
-            #     "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-            #     "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-            # },
             "10": {
-                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+                "erc20_prizetap_addr": "0xeb1Ad34EA13aF7Ec73Bb872F3Ab2B9250d62b7FD",
+                "erc721_prizetap_addr": "0xAaBD83213d545180eeC498877Aa7891E232FCE59",
             },
             "59144": {
-                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
+                "erc20_prizetap_addr": "0xeb1Ad34EA13aF7Ec73Bb872F3Ab2B9250d62b7FD",
+                "erc721_prizetap_addr": "0xAaBD83213d545180eeC498877Aa7891E232FCE59",
+            },
+            "8453": {
+                "erc20_prizetap_addr": "0xeb1Ad34EA13aF7Ec73Bb872F3Ab2B9250d62b7FD",
+                "erc721_prizetap_addr": "0xAaBD83213d545180eeC498877Aa7891E232FCE59",
+            },
+            "7777777": {
+                "erc20_prizetap_addr": "0xeb1Ad34EA13aF7Ec73Bb872F3Ab2B9250d62b7FD",
+                "erc721_prizetap_addr": "0xAaBD83213d545180eeC498877Aa7891E232FCE59",
             },
         }
     case "dev":
         CONTRACT_ADDRESSES = {
-            "42161": {
-                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-            },
-            "10": {
-                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-            },
-            "59144": {
-                "erc20_prizetap_addr": "0xC74089ff29CC6F46DE9318F4a6b482cEadbf814C",
-                "erc721_prizetap_addr": "0xAB98C8DAD87C2fEB1fb723994c97845f26bc1dce",
-            },
             "97": {"erc20_prizetap_addr": "0x183390bE36EA575D93b5651c36cFe73DF642eD1b"},
         }
     case _:
