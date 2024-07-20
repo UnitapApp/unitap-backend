@@ -53,6 +53,6 @@ jobs:
           GITCOIN_PASSPORT_SCORER_ID: ${{ secrets.GITCOIN_PASSPORT_SCORER_ID }}
           GITCOIN_PASSPORT_API_KEY: ${{ secrets.GITCOIN_PASSPORT_API_KEY }}
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/unitap
-          CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
-          CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+          CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
+          CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
           DEPLOYMENT_ENV: "dev"

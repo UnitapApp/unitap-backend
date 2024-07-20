@@ -43,11 +43,13 @@ from core.constraints.lens import (
     IsFollowingLensUser,
 )
 from core.constraints.twitter import (
+    BeFollowedByTwitterUser,
     HasCommentOnATweet,
     HasMinimumTweetCount,
     HasMinimumTwitterFollowerCount,
     HasTwitter,
     HasVoteOnATweet,
+    IsFollowinTwitterUser,
 )
 
 

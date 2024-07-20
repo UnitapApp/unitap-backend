@@ -273,6 +273,10 @@ class TwitterConnection(BaseThirdPartyConnection):
             self.access_token, self.access_token_secret
         )
 
+    @property
+    def uesrname(self):
+        return self.driver.get_username(self.access_token, self.access_token_secret)
+
     def is_replied(self, self_tweet_id, target_tweet_id):
         return self.driver.get_is_replied(
             self.access_token, self.access_token_secret, self_tweet_id, target_tweet_id

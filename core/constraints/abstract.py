@@ -38,6 +38,7 @@ class ConstraintParam(Enum):
     FARCASTER_CHANNEL_ID = "FARCASTER_CHANNEL_ID"
     TWEET_ID = "tweet_id"
     TARGET_TWEET_ID = "target_tweet_id"
+    TWITTER_USERNAME = "twitter_username"
 
     @classmethod
     def choices(cls):

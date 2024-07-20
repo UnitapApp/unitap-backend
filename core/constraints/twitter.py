@@ -1,8 +1,11 @@
+import logging
+
 from core.constraints.abstract import (
     ConstraintApp,
     ConstraintParam,
     ConstraintVerification,
 )
+from core.thirdpartyapp import RapidTwitter
 
 
 class HasTwitter(ConstraintVerification):
@@ -111,3 +114,57 @@ class HasCommentOnATweet(ConstraintVerification):
         ):
             return True
         return False
+
+
+class IsFollowinTwitterUser(ConstraintVerification):
+    _param_keys = [ConstraintParam.TWITTER_USERNAME]
+    app_name = ConstraintApp.TWITTER.value
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import TwitterConnection
+
+        try:
+            twitter = TwitterConnection.get_connection(self.user_profile)
+        except TwitterConnection.DoesNotExist:
+            return False
+
+        twitter_username = twitter.username
+        rapid_twitter = RapidTwitter()
+        try:
+            rapid_twitter.is_following(
+                twitter_username,
+                self.param_values[ConstraintParam.TWITTER_USERNAME.name],
+            )
+        except Exception as e:
+            logging.error(f"Error in rapid_twitter: {e}")
+
+
+class BeFollowedByTwitterUser(ConstraintVerification):
+    _param_keys = [ConstraintParam.TWITTER_USERNAME]
+    app_name = ConstraintApp.TWITTER.value
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import TwitterConnection
+
+        try:
+            twitter = TwitterConnection.get_connection(self.user_profile)
+        except TwitterConnection.DoesNotExist:
+            return False
+
+        twitter_username = twitter.username
+        rapid_twitter = RapidTwitter()
+        try:
+            rapid_twitter.is_following(
+                rapid_twitter.is_following(
+                    self.param_values[ConstraintParam.TWITTER_USERNAME.name]
+                ),
+                twitter_username,
+            )
+        except Exception as e:
+            logging.error(f"Error in rapid_twitter: {e}")
