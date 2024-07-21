@@ -134,7 +134,7 @@ class IsFollowinTwitterUser(ConstraintVerification):
         twitter_username = twitter.username
         rapid_twitter = RapidTwitter()
         try:
-            rapid_twitter.is_following(
+            return rapid_twitter.is_following(
                 twitter_username,
                 self.param_values[ConstraintParam.TWITTER_USERNAME.name],
             )
@@ -160,7 +160,7 @@ class BeFollowedByTwitterUser(ConstraintVerification):
         twitter_username = twitter.username
         rapid_twitter = RapidTwitter()
         try:
-            rapid_twitter.is_following(
+            return rapid_twitter.is_following(
                 rapid_twitter.is_following(
                     self.param_values[ConstraintParam.TWITTER_USERNAME.name]
                 ),
