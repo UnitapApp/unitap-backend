@@ -1,6 +1,7 @@
 import logging
 
 from celery import shared_task
+from celery.signals import worker_ready
 from django.core.cache import cache
 
 from core.models import TokenPrice
@@ -8,7 +9,7 @@ from core.utils import memcache_lock
 
 from .celery_tasks import CeleryTasks
 from .models import ClaimReceipt, DonationReceipt, Faucet, TransactionBatch
-from celery.signals import worker_ready
+
 
 def passive_address_is_not_none(address):
     if address is not None or address != "" or address != " ":
@@ -106,6 +107,18 @@ def update_tokens_price():
         update_token_price.delay(token.pk)
 
 
+@shared_task
+def update_faucet_used_unitap_pass_list(faucet_id):
+    CeleryTasks.empty_used_unitap_pass_list(faucet_id)
+
+
+@shared_task
+def update_used_unitap_pass_list():
+    faucets = Faucet.objects.filter(is_one_time_claim=False)
+    for faucet in faucets:
+        update_faucet_used_unitap_pass_list.delay(faucet.pk)
+
+
 @shared_task(bind=True)
 def process_donation_receipt(self, donation_receipt_pk):
     id_ = f"{self.name}-LOCK-{donation_receipt_pk}"
@@ -130,18 +143,30 @@ def update_donation_receipt_pending_status():
 
 
 @shared_task
-def update_faucet_claims(_id , since_last_round=True):
+def update_faucet_claims(_id, since_last_round=True):
     CeleryTasks.update_claims_for_faucet(_id, since_last_round)
 
-@shared_task       
+
+@shared_task
 def update_all_faucets_claims(since_last_round=True):
     active_faucets = Faucet.objects.filter(is_active=True)
     for active_faucet in active_faucets:
         update_faucet_claims.delay(active_faucet.pk, since_last_round)
 
 
+@shared_task
+def remove_used_unitap_pass_list_for_each_faucet():
+    faucet_pk = Faucet.objects.values_list("pk", flat=True)
+    for faucet_pk in faucet_pk:
+        CeleryTasks.remove_unitap_pass_used_in_each_faucet(faucet_id=faucet_pk)
+
+
 @worker_ready.connect
 def at_start(sender, **k):
     with sender.app.connection() as conn:
-         sender.app.send_task(('faucet.tasks.update_all_faucets_claims'), (True,),connection=conn)
-         sender.app.send_task(('faucet.tasks.update_all_faucets_claims'), (False,),connection=conn)
+        sender.app.send_task(
+            ("faucet.tasks.update_all_faucets_claims"), (True,), connection=conn
+        )
+        sender.app.send_task(
+            ("faucet.tasks.update_all_faucets_claims"), (False,), connection=conn
+        )

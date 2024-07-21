@@ -23,6 +23,7 @@ from authentication.thirdpartydrivers import (
     TwitterDriver,
 )
 from core.models import NetworkTypes
+from core.thirdpartyapp import Subgraph
 
 
 class ProfileManager(models.Manager):
@@ -117,6 +118,19 @@ class UserProfile(models.Model):
 
     def owns_wallet(self, wallet_address):
         return self.wallets.filter(address=wallet_address).exists()
+
+    def has_unitap_pass(self):
+        sub = Subgraph()
+        addresses = Wallet.objects.filter(user_profile__pk=self.pk).values_list(
+            "address", flat=True
+        )
+        if not addresses:
+            return False, list()
+        owners = sub.get_unitap_pass_holders(addresses=addresses)
+        return (
+            bool(owners),
+            [token_id for _, token_ids in owners.items() for token_id in token_ids],
+        )
 
     def __str__(self) -> str:
         return self.username if self.username else f"User{self.pk}"
@@ -248,6 +262,30 @@ class TwitterConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.access_token and self.access_token_secret)
+
+    @property
+    def tweet_count(self):
+        return self.driver.get_tweet_count(self.access_token, self.access_token_secret)
+
+    @property
+    def follower_count(self):
+        return self.driver.get_follower_count(
+            self.access_token, self.access_token_secret
+        )
+
+    @property
+    def uesrname(self):
+        return self.driver.get_username(self.access_token, self.access_token_secret)
+
+    def is_replied(self, self_tweet_id, target_tweet_id):
+        return self.driver.get_is_replied(
+            self.access_token, self.access_token_secret, self_tweet_id, target_tweet_id
+        )
+
+    def is_liked(self, target_tweet_id):
+        return self.driver.get_is_liked(
+            self.access_token, self.access_token_secret, target_tweet_id
+        )
 
 
 class ENSConnection(BaseThirdPartyConnection):

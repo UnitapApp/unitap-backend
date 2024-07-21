@@ -17,7 +17,7 @@ from faucet.models import BrightUser, ClaimReceipt, GlobalSettings
 
 class ClaimManager(ABC):
     @abc.abstractmethod
-    def claim(self, amount, to_address=None) -> ClaimReceipt:
+    def claim(self, amount, to_address=None, ups=[]) -> ClaimReceipt:
         pass
 
     @abc.abstractmethod
@@ -33,32 +33,46 @@ class SimpleClaimManager(ClaimManager):
     def fund_manager(self):
         return EVMFundManager(self.credit_strategy.faucet)
 
-    def claim(self, amount, to_address=None):
+    def claim(self, amount, to_address=None, ups=[]):
         with transaction.atomic():
             user_profile = UserProfile.objects.select_for_update().get(
                 pk=self.credit_strategy.user_profile.pk
             )
-            self.assert_pre_claim_conditions(amount, user_profile)
+            self.assert_pre_claim_conditions(amount, user_profile, ups)
             return self.create_pending_claim_receipt(
-                amount, to_address
+                amount, to_address, ups
             )  # all pending claims will be processed periodically
 
-    def assert_pre_claim_conditions(self, amount, user_profile):
+    def assert_pre_claim_conditions(self, amount, user_profile, ups=[]):
         assert amount <= self.credit_strategy.get_unclaimed()
-        assert self.user_is_meet_verified() is True
+        # assert self.user_is_meet_verified() is True
+        used_unitap_pass = set(self.credit_strategy.faucet.used_unitap_pass_list)
+        not_used_unitap_pass = set(ups) - used_unitap_pass
+        assert len(ups) == 0 or len(not_used_unitap_pass) != 0
         assert not ClaimReceipt.objects.filter(
             faucet__chain=self.credit_strategy.faucet.chain,
             user_profile=user_profile,
             _status=ClaimReceipt.PENDING,
         ).exists()
 
-    def create_pending_claim_receipt(self, amount, to_address):
+    def create_pending_claim_receipt(self, amount, to_address, ups=[]):
         if to_address is None:
             raise rest_framework.exceptions.ParseError("wallet address is required")
+        _faucet = self.credit_strategy.faucet
+        _user_profile = self.credit_strategy.user_profile
+
+        used_unitap_pass = set(self.credit_strategy.faucet.used_unitap_pass_list)
+        not_used_unitap_pass = set(ups) - used_unitap_pass
+        _faucet.used_unitap_pass_list.extend(list(not_used_unitap_pass))
+        _faucet.save(
+            update_fields=[
+                "used_unitap_pass_list",
+            ]
+        )
 
         return ClaimReceipt.objects.create(
-            faucet=self.credit_strategy.faucet,
-            user_profile=self.credit_strategy.user_profile,
+            faucet_id=_faucet.pk,
+            user_profile=_user_profile,
             datetime=timezone.now(),
             amount=amount,
             _status=ClaimReceipt.PENDING,
@@ -91,8 +105,8 @@ class LimitedChainClaimManager(SimpleClaimManager):
             datetime__gte=start_of_the_round,
         ).count()
 
-    def assert_pre_claim_conditions(self, amount, user_profile):
-        super().assert_pre_claim_conditions(amount, user_profile)
+    def assert_pre_claim_conditions(self, amount, user_profile, ups):
+        super().assert_pre_claim_conditions(amount, user_profile, ups)
         total_claims = self.get_total_round_claims(user_profile)
         assert total_claims < self.get_round_limit()
 

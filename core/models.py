@@ -3,9 +3,11 @@ import inspect
 import logging
 
 from bip_utils import Bip44, Bip44Coins
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
+from rest_framework.exceptions import ValidationError
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
@@ -15,6 +17,7 @@ from .constraints import (
     BeAttestedBy,
     BeFollowedByFarcasterUser,
     BeFollowedByLensUser,
+    BeFollowedByTwitterUser,
     BridgeEthToArb,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
@@ -36,6 +39,7 @@ from .constraints import (
     IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
+    IsFollowinTwitterUser,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -79,6 +83,19 @@ class BigNumField(models.Field):
         return str(value)
 
 
+class UniqueArrayField(ArrayField):
+    description = "Unique array field"
+
+    def __init__(self, *args, unique_elements=False, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.unique_elements = unique_elements
+
+    def validate(self, value, model_instance):
+        super().validate(value, model_instance)
+        if self.unique_elements and value and len(set(value)) != len(value):
+            raise ValidationError("Duplicate elements in the array")
+
+
 class UserConstraint(models.Model):
     class Meta:
         abstract = True
@@ -114,6 +131,8 @@ class UserConstraint(models.Model):
         HasGitcoinPassportProfile,
         IsFollowingFarcasterChannel,
         BridgeEthToArb,
+        IsFollowinTwitterUser,
+        BeFollowedByTwitterUser,
     ]
 
     name = models.CharField(

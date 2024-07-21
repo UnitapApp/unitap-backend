@@ -204,6 +204,8 @@ class RaffleSerializer(serializers.ModelSerializer):
 
     def get_user_entry(self, raffle: Raffle):
         try:
+            if not self.context["user"]:
+                return None
             return RaffleEntrySerializer(
                 raffle.entries.get(user_profile=self.context["user"])
             ).data

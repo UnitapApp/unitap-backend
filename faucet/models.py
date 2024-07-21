@@ -12,7 +12,13 @@ from safedelete.models import SafeDeleteModel
 
 from authentication.models import UserProfile
 from brightIDfaucet.settings import BRIGHT_ID_INTERFACE
-from core.models import AbstractGlobalSettings, BigNumField, Chain, NetworkTypes
+from core.models import (
+    AbstractGlobalSettings,
+    BigNumField,
+    Chain,
+    NetworkTypes,
+    UniqueArrayField,
+)
 
 
 def get_cache_time(id):
@@ -74,7 +80,7 @@ class BrightUser(models.Model):
             return self.VERIFIED
         return self.get_verification_status()
 
-    def get_verification_status(self) -> states:
+    def get_verification_status(self):
         is_verified = BRIGHT_ID_INTERFACE.get_verification_status(str(self.context_id))
         if is_verified:
             self._verification_status = self.VERIFIED
@@ -187,6 +193,10 @@ class Faucet(models.Model):
         default=0, blank=True, null=True
     )
     total_claims_this_round = models.IntegerField(default=0, blank=True, null=True)
+
+    used_unitap_pass_list = UniqueArrayField(
+        models.IntegerField(), blank=True, default=list, unique_elements=True
+    )
 
     def __str__(self):
         return (

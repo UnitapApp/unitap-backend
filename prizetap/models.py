@@ -1,5 +1,5 @@
 from django.core.validators import FileExtensionValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -77,6 +77,10 @@ class Raffle(models.Model):
     pre_enrollment_file = models.FileField(
         upload_to="prizetap/pre_enrollments/%Y/%m/%d",
         validators=[FileExtensionValidator(allowed_extensions=["csv"])],
+        blank=True,
+        null=True,
+    )
+    pre_enrollment_wallets = models.TextField(
         blank=True,
         null=True,
     )
@@ -179,8 +183,18 @@ class RaffleEntry(models.Model):
     def age(self):
         return timezone.now() - self.created_at
 
-    def set_entry_user_profiles(self):
-        pass
+    @classmethod
+    def set_entry_user_profiles(cls, user):
+        user_profile: UserProfile = user.profile
+        with transaction.atomic():
+            user_wallets = list(user_profile.wallets.values_list("address", flat=True))
+            entities = RaffleEntry.objects.filter(
+                user_wallet_address__in=user_wallets
+            ).all()
+            for e in entities:
+                e.user_profile = user_profile
+
+            RaffleEntry.objects.bulk_update(entities, ["user_profile"])
 
 
 class LineaRaffleEntries(models.Model):

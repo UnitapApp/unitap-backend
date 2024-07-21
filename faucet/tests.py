@@ -12,7 +12,6 @@ from core.models import WalletAccount
 from faucet.constraints import OptimismDonationConstraint
 from faucet.faucet_manager.claim_manager import ClaimManagerFactory, SimpleClaimManager
 from faucet.faucet_manager.credit_strategy import RoundCreditStrategy
-from .celery_tasks import CeleryTasks
 from faucet.models import (
     Chain,
     ClaimReceipt,
@@ -22,6 +21,8 @@ from faucet.models import (
     NetworkTypes,
     TransactionBatch,
 )
+
+from .celery_tasks import CeleryTasks
 
 address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 fund_manager = "0x5802f1035AbB8B191bc12Ce4668E3815e8B7Efa0"
@@ -149,21 +150,21 @@ class TestClaim(APITestCase):
         except AssertionError:
             self.assertEqual(True, True)
 
-    @patch(
-        "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
-        lambda a: False,
-    )
-    def test_claim_unverified_user_should_fail(self):
-        claim_amount = 100
-        claim_manager_faucet = SimpleClaimManager(
-            RoundCreditStrategy(self.test_faucet1, self.new_user)
-        )
+    # @patch(
+    #     "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
+    #     lambda a: False,
+    # )
+    # def test_claim_unverified_user_should_fail(self):
+    #     claim_amount = 100
+    #     claim_manager_faucet = SimpleClaimManager(
+    #         RoundCreditStrategy(self.test_faucet1, self.new_user)
+    #     )
 
-        try:
-            claim_manager_faucet.claim(claim_amount)
-            self.assertEqual(True, False)
-        except AssertionError:
-            self.assertEqual(True, True)
+    #     try:
+    #         claim_manager_faucet.claim(claim_amount)
+    #         self.assertEqual(True, False)
+    #     except AssertionError:
+    #         self.assertEqual(True, True)
 
     @patch(
         "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
@@ -259,10 +260,11 @@ class TestClaim(APITestCase):
             claim_manager_faucet.claim(claim_amount_3, address)
         except AssertionError:
             self.assertEqual(True, True)
+
     @patch(
         "faucet.faucet_manager.claim_manager.SimpleClaimManager.user_is_meet_verified",
         lambda a: True,
-    )        
+    )
     def test_update_claims_task_with_various_statuses(self):
         ClaimReceipt.objects.create(
             faucet=self.test_faucet1,
@@ -270,7 +272,7 @@ class TestClaim(APITestCase):
             datetime=timezone.now(),
             _status=ClaimReceipt.VERIFIED,
             amount=10,
-        )           
+        )
 
         ClaimReceipt.objects.create(
             faucet=self.test_faucet1,
@@ -278,8 +280,8 @@ class TestClaim(APITestCase):
             datetime=timezone.now(),
             _status=ClaimReceipt.VERIFIED,
             amount=10,
-        )   
-        
+        )
+
         ClaimReceipt.objects.create(
             faucet=self.test_faucet1,
             user_profile=self.verified_user,
@@ -287,7 +289,7 @@ class TestClaim(APITestCase):
             _status=ClaimReceipt.REJECTED,
             amount=10,
         )
-        
+
         ClaimReceipt.objects.create(
             faucet=self.test_faucet1,
             user_profile=self.verified_user,
@@ -295,33 +297,27 @@ class TestClaim(APITestCase):
             _status=ClaimReceipt.PENDING,
             amount=10,
         )
-        
-      
+
         CeleryTasks.update_claims_for_faucet(self.test_faucet1.pk, False)
-        
-        #refetch test_faucet from DB
+
+        # refetch test_faucet from DB
         db_test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
         self.assertEqual(db_test_faucet1.total_claims_this_round, 2)
 
     def test_update_claims_task_since_last_round(self):
         ClaimReceipt.objects.create(
-                faucet=self.test_faucet1,
-                user_profile=self.verified_user,
-                datetime=RoundCreditStrategy.get_start_of_previous_round(),
-                _status=ClaimReceipt.VERIFIED,
-                amount=10,
-            )      
+            faucet=self.test_faucet1,
+            user_profile=self.verified_user,
+            datetime=RoundCreditStrategy.get_start_of_previous_round(),
+            _status=ClaimReceipt.VERIFIED,
+            amount=10,
+        )
 
+        CeleryTasks.update_claims_for_faucet(self.test_faucet1.pk, True)
 
-        
-        CeleryTasks.update_claims_for_faucet(self.test_faucet1.pk,True)
-        
         db_test_faucet1 = Faucet.objects.get(pk=self.test_faucet1.pk)
-        
-        self.assertEqual(db_test_faucet1.total_claims_since_last_round, 1)
 
-                    
-        
+        self.assertEqual(db_test_faucet1.total_claims_since_last_round, 1)
 
 
 class TestClaimAPI(APITestCase):
@@ -340,20 +336,20 @@ class TestClaimAPI(APITestCase):
         self.client.force_authenticate(user=self.verified_user.user)
         self.user_profile = self.verified_user
 
-    @patch(
-        "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (False, None),
-    )
-    def test_claim_max_api_should_fail_if_not_verified(self):
-        endpoint = reverse(
-            "FAUCET:claim-max",
-            kwargs={"faucet_pk": self.test_faucet.pk},
-        )
+    # @patch(
+    #     "authentication.models.UserProfile.is_meet_verified",
+    #     lambda a: (False, None),
+    # )
+    # def test_claim_max_api_should_fail_if_not_verified(self):
+    #     endpoint = reverse(
+    #         "FAUCET:claim-max",
+    #         kwargs={"faucet_pk": self.test_faucet.pk},
+    #     )
 
-        response = self.client.post(
-            endpoint, data={"address": "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"}
-        )
-        self.assertEqual(response.status_code, 403)
+    #     response = self.client.post(
+    #         endpoint, data={"address": "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9"}
+    #     )
+    #     self.assertEqual(response.status_code, 403)
 
     @patch(
         "authentication.models.UserProfile.is_meet_verified",

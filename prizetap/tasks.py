@@ -1,4 +1,4 @@
-import csv
+# import csv
 import logging
 import time
 
@@ -302,29 +302,56 @@ def process_raffles_pre_enrollments(self):
             return
 
         with transaction.atomic():
+            # queryset = (
+            #     Raffle.objects.exclude(pre_enrollment_file__isnull=True)
+            #     .exclude(pre_enrollment_file__exact="")
+            #     .filter(status=Raffle.Status.VERIFIED)
+            #     .filter(is_processed=False)
+            #     .order_by("id")
+            # )
+            # for raffle in queryset:
+            #     print(f"Process the raffle {raffle.pk} pre-enrollments")
+            #     with raffle.pre_enrollment_file.open("r") as f:
+            #         reader = csv.reader(f)
+            #         for row in reader:
+            #             user_profile = UserProfile.objects.get_by_wallet_address(
+            #                 Web3.to_checksum_address(row[0])
+            #             )
+            #             entry = RaffleEntry(
+            #                 raffle=raffle,
+            #                 user_profile=user_profile,
+            #                 user_wallet_address=row[0],
+            #                 multiplier=row[1],
+            #                 pre_enrollment=True,
+            #             )
+            #             entry.save()
+            #     raffle.is_processed = True
+            #     raffle.save()
+
             queryset = (
-                Raffle.objects.filter(pre_enrollment_file__isnull=False)
+                Raffle.objects.exclude(pre_enrollment_wallets__isnull=True)
+                .exclude(pre_enrollment_wallets__exact="")
                 .filter(status=Raffle.Status.VERIFIED)
                 .filter(is_processed=False)
                 .order_by("id")
             )
             for raffle in queryset:
                 print(f"Process the raffle {raffle.pk} pre-enrollments")
-                file_path = raffle.pre_enrollment_file.path
-                with open(file_path, newline="") as f:
-                    reader = csv.reader(f)
-                    for row in reader:
-                        user_profile = UserProfile.objects.get_by_wallet_address(
-                            Web3.to_checksum_address(row[0])
-                        )
-                        entry = RaffleEntry(
-                            raffle=raffle,
-                            user_profile=user_profile,
-                            user_wallet_address=row[0],
-                            multiplier=row[1],
-                            pre_enrollment=True,
-                        )
-                        entry.save()
+                lines = raffle.pre_enrollment_wallets.splitlines()
+                lines = list(filter(None, lines))
+                for line in lines:
+                    row = line.split(",")
+                    user_profile = UserProfile.objects.get_by_wallet_address(
+                        Web3.to_checksum_address(row[0])
+                    )
+                    entry = RaffleEntry(
+                        raffle=raffle,
+                        user_profile=user_profile,
+                        user_wallet_address=Web3.to_checksum_address(row[0]),
+                        multiplier=row[1],
+                        pre_enrollment=True,
+                    )
+                    entry.save()
                 raffle.is_processed = True
                 raffle.save()
 
@@ -340,11 +367,17 @@ def onchain_pre_enrollments(self):
         entries_queryset = (
             RaffleEntry.objects.filter(pre_enrollment=True)
             .filter(tx_hash__isnull=True)
+            .exclude(raffle__deadline__lt=timezone.now())
             .order_by("id")
         )
         batch_size = 50
         if entries_queryset.count() > 0:
             first_entry = entries_queryset.first()
+
+            print(
+                f"Perform onchain transaction of the raffle {first_entry.raffle.pk}"
+                " pre-enrollments"
+            )
 
             batch_entry = entries_queryset.filter(raffle=first_entry.raffle).all()[
                 :batch_size

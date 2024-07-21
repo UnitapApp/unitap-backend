@@ -93,6 +93,10 @@ app.conf.beat_schedule = {
         "task": "prizetap.tasks.onchain_pre_enrollments",
         "schedule": 300,
     },
+    "remove_unitap_pass_used_in_each_faucet": {
+        "task": "faucet.tasks.remove_unitap_pass_used_in_each_faucet",
+        "schedule": crontab(minute="0", hour="0", day_of_week="1"),
+    },
 }
 
 # Load task modules from all registered Django apps.

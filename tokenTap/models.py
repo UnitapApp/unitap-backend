@@ -5,9 +5,14 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authentication.models import UserProfile
-from core.models import AbstractGlobalSettings, Chain, UserConstraint
+from core.models import AbstractGlobalSettings, Chain, UniqueArrayField, UserConstraint
+from core.utils import calculate_percentage_date
 from faucet.constraints import OptimismHasClaimedGasConstraint
 from faucet.models import ClaimReceipt
+from tokenTap.constants import (
+    UNITAP_PASS_CLAIM_PERCENT,
+    UNITAP_PASS_CLAIM_TIME_AVAILABLE,
+)
 
 from .constraints import (
     OnceInALifeTimeVerification,
@@ -82,6 +87,9 @@ class TokenDistribution(models.Model):
 
     is_active = models.BooleanField(default=True)
     check_for_extension = models.BooleanField(default=False)
+    used_unitap_pass_list = UniqueArrayField(
+        models.IntegerField(), blank=True, default=list, unique_elements=True
+    )
 
     @property
     def reversed_constraints_list(self):
@@ -115,6 +123,32 @@ class TokenDistribution(models.Model):
     @property
     def number_of_claims(self):
         return self.claims.count()
+
+    @property
+    def max_claim_number_for_unitap_pass_user(self):
+        if (
+            self.max_number_of_claims is None
+            or self.claim_deadline_for_unitap_pass_user < timezone.now()
+        ):
+            return None
+        return int(self.max_number_of_claims * UNITAP_PASS_CLAIM_PERCENT)
+
+    @property
+    def remaining_claim_for_unitap_pass_user(self):
+        if self.max_claim_number_for_unitap_pass_user is None:
+            return None
+        is_unitap_pass_share_count = self.claims.filter(
+            is_unitap_pass_share=True
+        ).count()
+        return self.max_claim_number_for_unitap_pass_user - is_unitap_pass_share_count
+
+    @property
+    def claim_deadline_for_unitap_pass_user(self):
+        return calculate_percentage_date(
+            self.start_at,
+            self.deadline,
+            UNITAP_PASS_CLAIM_TIME_AVAILABLE,
+        )
 
     @property
     def total_claims_since_last_round(self):
@@ -155,6 +189,8 @@ class TokenDistributionClaim(models.Model):
 
     signature = models.CharField(max_length=1024, blank=True, null=True)
     nonce = models.BigIntegerField(null=True, blank=True)
+
+    is_unitap_pass_share = models.BooleanField(default=False, null=False, blank=False)
 
     status = models.CharField(
         max_length=30, choices=ClaimReceipt.states, default=ClaimReceipt.PENDING

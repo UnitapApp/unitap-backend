@@ -49,6 +49,8 @@ class RaffleListView(ListAPIView):
 
     def get(self, request):
         queryset = self.get_queryset()
+        if request.user.is_authenticated:
+            RaffleEntry.set_entry_user_profiles(request.user)
         serializer = RaffleSerializer(
             queryset,
             many=True,
@@ -65,13 +67,18 @@ class RaffleEnrollmentView(CreateAPIView):
     def post(self, request, pk):
         user_profile: UserProfile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
+        if raffle.pre_enrollment_wallets:
+            raise rest_framework.exceptions.ValidationError("Raffle is pre-enrollment")
         user_wallet_address = request.data.get("user_wallet_address", None)
+        raffle_data = request.data.get("raffle_data", None)
         if not user_wallet_address:
             raise rest_framework.exceptions.ParseError(
                 "user_wallet_address is required"
             )
 
-        validator = RaffleEnrollmentValidator(user_profile=user_profile, raffle=raffle)
+        validator = RaffleEnrollmentValidator(
+            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data
+        )
 
         validator.is_valid(self.request.data)
         prizetap_winning_chance_number = int(

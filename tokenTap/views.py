@@ -2,6 +2,7 @@ import json
 import logging
 
 import rest_framework.exceptions
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
@@ -14,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
@@ -63,7 +65,9 @@ class TokenDistributionClaimView(CreateAPIView):
                 "This token is not claimable"
             )
 
-    def check_user_permissions(self, token_distribution, user_profile):
+    def check_user_permissions(
+        self, token_distribution, user_profile, raffle_data=None
+    ):
         try:
             param_values = json.loads(token_distribution.constraint_params)
         except Exception:
@@ -76,10 +80,18 @@ class TokenDistributionClaimView(CreateAPIView):
             except KeyError:
                 pass
             if str(c.pk) in token_distribution.reversed_constraints_list:
-                if constraint.is_observed(token_distribution=token_distribution):
+                if raffle_data and str(c.pk) in raffle_data.keys():
+                    cdata = dict(raffle_data[str(c.pk)]) if raffle_data else dict()
+                    if constraint.is_observed(**cdata):
+                        raise PermissionDenied(constraint.response)
+                elif constraint.is_observed(token_distribution=token_distribution):
                     raise PermissionDenied(constraint.response)
             else:
-                if not constraint.is_observed(token_distribution=token_distribution):
+                if raffle_data and str(c.pk) in raffle_data.keys():
+                    cdata = dict(raffle_data[str(c.pk)]) if raffle_data else dict()
+                    if constraint.is_observed(**cdata):
+                        raise PermissionDenied(constraint.response)
+                elif not constraint.is_observed(token_distribution=token_distribution):
                     raise PermissionDenied(constraint.response)
 
     def check_user_credit(self, distribution, user_profile):
@@ -97,10 +109,35 @@ class TokenDistributionClaimView(CreateAPIView):
                 "You have reached your claim limit"
             )
 
-    def wallet_is_vaild(self, user_profile, user_wallet_address, token_distribution):
+    def wallet_is_valid(self, user_profile, user_wallet_address, token_distribution):
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
             if not user_profile.owns_wallet(user_wallet_address):
                 raise PermissionDenied("This wallet is not registered for this user")
+
+    def check_unitap_pass_share(
+        self, distribution: TokenDistribution, user_profile: UserProfile
+    ) -> tuple[bool, list[int]]:
+        if (
+            distribution.remaining_claim_for_unitap_pass_user is None
+            or not distribution.remaining_claim_for_unitap_pass_user > 0
+        ):
+            return False, list()
+
+        has_unitap_pass, unitap_pass_list = user_profile.has_unitap_pass()
+        if has_unitap_pass:
+            used_unitap_passes = set(distribution.used_unitap_pass_list)
+            not_used_unitap_passes = set(unitap_pass_list) - used_unitap_passes
+            if not len(not_used_unitap_passes):
+                raise PermissionDenied("You use all your unitap passes")
+            return has_unitap_pass, list(not_used_unitap_passes)
+
+        if distribution.claims.filter(is_unitap_pass_share=False).count() >= (
+            distribution.max_number_of_claims
+            - distribution.max_claim_number_for_unitap_pass_user
+        ):
+            raise PermissionDenied("Only unitap pass user could claim.")
+
+        return False, list()
 
     @swagger_auto_schema(
         responses={
@@ -125,57 +162,68 @@ class TokenDistributionClaimView(CreateAPIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        user_profile = request.user.profile
-        token_distribution = TokenDistribution.objects.get(pk=self.kwargs["pk"])
-        user_wallet_address = request.data.get("user_wallet_address", None)
-        if user_wallet_address is None:
-            raise rest_framework.exceptions.ParseError(
-                "user_wallet_address is a required field"
+        with transaction.atomic():
+            user_profile = request.user.profile
+            token_distribution = TokenDistribution.objects.select_for_update().get(
+                pk=self.kwargs["pk"]
+            )
+            user_wallet_address = request.data.get("user_wallet_address", None)
+            if user_wallet_address is None:
+                raise rest_framework.exceptions.ParseError(
+                    "user_wallet_address is a required field"
+                )
+
+            self.wallet_is_valid(user_profile, user_wallet_address, token_distribution)
+
+            try:
+                tdc = TokenDistributionClaim.objects.get(
+                    user_profile=user_profile,
+                    token_distribution=token_distribution,
+                    status=ClaimReceipt.PENDING,
+                )
+                return Response(
+                    {
+                        "detail": "Signature Was Already Created",
+                        "signature": TokenDistributionClaimSerializer(tdc).data,
+                    },
+                    status=200,
+                )
+
+            except TokenDistributionClaim.DoesNotExist:
+                pass
+
+            self.check_user_permissions(token_distribution, user_profile)
+
+            self.check_token_distribution_is_claimable(token_distribution)
+
+            self.check_user_credit(token_distribution, user_profile)
+
+            is_unitap_pass_user, user_unitap_pass_list = self.check_unitap_pass_share(
+                token_distribution, user_profile
             )
 
-        self.wallet_is_vaild(user_profile, user_wallet_address, token_distribution)
+            nonce = create_uint32_random_nonce()
+            if token_distribution.chain.chain_type == NetworkTypes.EVM:
+                hashed_message = hash_message(
+                    address=user_wallet_address,
+                    token=token_distribution.token_address,
+                    amount=token_distribution.amount,
+                    nonce=nonce,
+                )
 
-        try:
-            tdc = TokenDistributionClaim.objects.get(
-                user_profile=user_profile,
-                token_distribution=token_distribution,
-                status=ClaimReceipt.PENDING,
-            )
-            return Response(
-                {
-                    "detail": "Signature Was Already Created",
-                    "signature": TokenDistributionClaimSerializer(tdc).data,
-                },
-                status=200,
-            )
+                signature = sign_hashed_message(hashed_message=hashed_message)
 
-        except TokenDistributionClaim.DoesNotExist:
-            pass
-
-        self.check_user_permissions(token_distribution, user_profile)
-
-        self.check_token_distribution_is_claimable(token_distribution)
-
-        self.check_user_credit(token_distribution, user_profile)
-
-        nonce = create_uint32_random_nonce()
-        if token_distribution.chain.chain_type == NetworkTypes.EVM:
-            hashed_message = hash_message(
-                address=user_wallet_address,
-                token=token_distribution.token_address,
-                amount=token_distribution.amount,
-                nonce=nonce,
-            )
-
-            signature = sign_hashed_message(hashed_message=hashed_message)
-
-            tdc = TokenDistributionClaim.objects.create(
-                user_profile=user_profile,
-                nonce=nonce,
-                signature=signature,
-                token_distribution=token_distribution,
-                user_wallet_address=user_wallet_address,
-            )
+                tdc = TokenDistributionClaim.objects.create(
+                    user_profile=user_profile,
+                    nonce=nonce,
+                    signature=signature,
+                    token_distribution_id=token_distribution.pk,
+                    user_wallet_address=user_wallet_address,
+                    is_unitap_pass_share=is_unitap_pass_user,
+                )
+                # TODO: be careful about race condition
+                token_distribution.used_unitap_pass_list.extend(user_unitap_pass_list)
+                token_distribution.save(update_fields=["used_unitap_pass_list"])
 
         return Response(
             {

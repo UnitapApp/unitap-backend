@@ -9,6 +9,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      database:
+        image: postgres:14.1
+        env:
+          POSTGRES_DB: unitap
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
     strategy:
       max-parallel: 1
       matrix:
@@ -32,10 +47,12 @@ jobs:
           BRIGHT_PRIVATE_KEY: "bright-private-key"
           DEBUG: False
           SENTRY_DSN: "DEBUG-DSN"
-          DATABASE_URL: sqlite:///db/db.sqlite3
           MEMCACHEDCLOUD_SERVERS: " "
           MEMCACHEDCLOUD_USERNAME: " "
           MEMCACHEDCLOUD_PASSWORD: " "
           GITCOIN_PASSPORT_SCORER_ID: ${{ secrets.GITCOIN_PASSPORT_SCORER_ID }}
           GITCOIN_PASSPORT_API_KEY: ${{ secrets.GITCOIN_PASSPORT_API_KEY }}
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/unitap
+          CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
+          CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
           DEPLOYMENT_ENV: "dev"
