@@ -31,6 +31,6 @@ class TwitterDriver(BaseThirdPartyDriver):
         twitter = TwitterUtils(access_token, access_token_secret)
         return twitter.get_is_liked(target_tweet_id)
 
-    def get_usernamedef(self, access_token: str, access_token_secret: str) -> str:
+    def get_username(self, access_token: str, access_token_secret: str) -> str:
         twitter = TwitterUtils(access_token, access_token_secret)
         return twitter.get_username()
