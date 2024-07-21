@@ -67,6 +67,8 @@ class RaffleEnrollmentView(CreateAPIView):
     def post(self, request, pk):
         user_profile: UserProfile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
+        if raffle.pre_enrollment_wallets:
+            raise rest_framework.exceptions.ValidationError("Raffle is pre-enrollment")
         user_wallet_address = request.data.get("user_wallet_address", None)
         raffle_data = request.data.get("raffle_data", None)
         if not user_wallet_address:
