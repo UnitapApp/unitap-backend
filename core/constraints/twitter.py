@@ -192,7 +192,7 @@ class DidRetweetTweet(ConstraintVerification):
             logging.error(f"Error in DidRetweetTweet: {e}")
 
 
-class DidQouteTweet(ConstraintVerification):
+class DidQuoteTweet(ConstraintVerification):
     _param_keys = [ConstraintParam.TWEET_ID]
     app_name = ConstraintApp.TWITTER.value
 
@@ -211,4 +211,4 @@ class DidQouteTweet(ConstraintVerification):
         try:
             return twitter_util.did_quote_tweet(tweet_id=tweet_id)
         except Exception as e:
-            logging.error(f"Error in DidQouteTweet: {e}")
+            logging.error(f"Error in DidQuoteTweet: {e}")
