@@ -24,6 +24,7 @@ from .constraints import (
     DidCollectLensPublication,
     DidLikedFarcasterCast,
     DidMirrorOnLensPublication,
+    DidQouteTweet,
     DidRecastFarcasterCast,
     DidRetweetTweet,
     HasENSVerification,
@@ -135,6 +136,7 @@ class UserConstraint(models.Model):
         IsFollowinTwitterUser,
         BeFollowedByTwitterUser,
         DidRetweetTweet,
+        DidQouteTweet,
     ]
 
     name = models.CharField(
