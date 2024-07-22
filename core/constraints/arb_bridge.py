@@ -12,9 +12,11 @@ class BridgeEthToArb(ConstraintVerification):
 
     def is_observed(self, *args, **kwargs) -> bool:
         try:
-            return self.has_bridged(kwargs["from_time"])
-        except Exception:
-            pass
+            return self.has_bridged(
+                kwargs["from_time"] if "from_time" in kwargs else None
+            )
+        except Exception as e:
+            print(e)
         return False
 
     def has_bridged(self, from_time=None):
