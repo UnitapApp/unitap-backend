@@ -129,7 +129,7 @@ class TwitterUtils:
         while True and attempt < 5:
             attempt += 1
             response = self.client.get_retweeters(
-                id, user_auth=True, pagination_token=next_token
+                tweet_id, user_auth=True, pagination_token=next_token
             )
             retweeters = response.data
             if retweeters is None:
