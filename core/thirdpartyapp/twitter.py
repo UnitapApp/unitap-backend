@@ -159,10 +159,10 @@ class TwitterUtils:
             if quotes is None:
                 return False
 
-            did_qoute_tweet = bool(
+            did_quote_tweet = bool(
                 filter(lambda quote: quote.author_id == user_id, quotes)
             )
-            if did_qoute_tweet:
+            if did_quote_tweet:
                 return True
             next_token = response.meta.get("next_token")
             if next_token is None:
