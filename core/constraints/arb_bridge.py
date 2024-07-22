@@ -5,7 +5,6 @@ from core.thirdpartyapp import Subgraph
 
 
 class BridgeEthToArb(ConstraintVerification):
-    _param_keys = []
     app_name = ConstraintApp.ARB_BRIDGE.value
 
     def __init__(self, user_profile) -> None:
@@ -13,34 +12,51 @@ class BridgeEthToArb(ConstraintVerification):
 
     def is_observed(self, *args, **kwargs) -> bool:
         try:
-            return self.has_bridged()
+            return self.has_bridged(kwargs["from_time"])
         except Exception:
             pass
         return False
 
-    def has_bridged(self):
+    def has_bridged(self, from_time=None):
         subgraph = Subgraph()
 
         user_wallets = self.user_profile.wallets.values_list(
             Lower("address"), flat=True
         )
 
-        query = """
-        query GetMessageDelivereds($wallets: [String]) {
-            messageDelivereds(
-                where: {
-                    txOrigin_in: $wallets
-                    kind: 12
+        if from_time:
+            query = """
+            query GetMessageDelivereds($wallets: [String], $fromTime: String) {
+                messageDelivereds(
+                    where: {
+                        txOrigin_in: $wallets
+                        kind: 12
+                        timestamp_gt: $fromTime
+                    }
+                ) {
+                    id
+                    transactionHash
                 }
-            ) {
-                id
-                transactionHash
             }
-        }
-        """
-        vars = {
-            "wallets": list(user_wallets),
-        }
+            """
+            vars = {"wallets": list(user_wallets), "fromTime": str(from_time)}
+        else:
+            query = """
+            query GetMessageDelivereds($wallets: [String]) {
+                messageDelivereds(
+                    where: {
+                        txOrigin_in: $wallets
+                        kind: 12
+                    }
+                ) {
+                    id
+                    transactionHash
+                }
+            }
+            """
+            vars = {
+                "wallets": list(user_wallets),
+            }
 
         res = subgraph.send_post_request(
             subgraph.path.get("arb_bridge_mainnet"), query=query, vars=vars

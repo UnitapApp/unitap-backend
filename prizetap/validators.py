@@ -41,7 +41,9 @@ class RaffleEnrollmentValidator:
                         if self.raffle_data
                         else dict()
                     )
-                    if constraint.is_observed(**cdata):
+                    if constraint.is_observed(
+                        **cdata, from_time=int(self.raffle.start_at.timestamp())
+                    ):
                         raise PermissionDenied(constraint.response)
                 elif constraint.is_observed():
                     raise PermissionDenied(constraint.response)
