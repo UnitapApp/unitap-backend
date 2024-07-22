@@ -142,6 +142,32 @@ class TwitterUtils:
             if next_token is None:
                 return False
 
+    def did_quote_tweet(self, tweet_id):
+        user_id = self.get_user_id()
+        next_token = None
+        attempt = 0
+
+        while True and attempt < 5:
+            attempt += 1
+            response = self.client.get_quote_tweets(
+                tweet_id,
+                user_auth=True,
+                pagination_token=next_token,
+                expansions=["author_id"],
+            )
+            quotes = response.data
+            if quotes is None:
+                return False
+
+            did_qoute_tweet = bool(
+                filter(lambda quote: quote.author_id == user_id, quotes)
+            )
+            if did_qoute_tweet:
+                return True
+            next_token = response.meta.get("next_token")
+            if next_token is None:
+                return False
+
 
 class RapidTwitter:
     rapid_key = os.getenv("RAPID_API_KEY")
