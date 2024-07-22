@@ -2,7 +2,7 @@ import json
 
 import rest_framework.exceptions
 from django.db import transaction
-from django.db.models import F
+from django.db.models import Case, F, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
@@ -39,11 +39,18 @@ from .validators import (
 
 
 class RaffleListView(ListAPIView):
-    valid_time = timezone.now() - timezone.timedelta(days=360)
+    now = timezone.now()
+    valid_time = now - timezone.timedelta(days=360)
     queryset = (
         Raffle.objects.filter(is_active=True)
         .filter(deadline__gte=valid_time)
-        .order_by("-pk")
+        .annotate(
+            is_expired_true=Case(
+                When(deadline__gte=now, then=("deadline")), default=None
+            ),
+            is_expired_false=Case(When(deadline__lt=now, then=("pk")), default=None),
+        )
+        .order_by("-is_expired_false", "-is_expired_true")
     )
     serializer_class = RaffleSerializer
 
