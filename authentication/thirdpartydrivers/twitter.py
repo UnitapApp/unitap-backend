@@ -34,3 +34,7 @@ class TwitterDriver(BaseThirdPartyDriver):
     def get_username(self, access_token: str, access_token_secret: str) -> str:
         twitter = TwitterUtils(access_token, access_token_secret)
         return twitter.get_username()
+
+    def get_twitter_id(self, access_token: str, access_token_secret: str) -> str:
+        twitter = TwitterUtils(access_token, access_token_secret)
+        return twitter.get_user_id()
