@@ -1,17 +1,10 @@
 from django.db.models.functions import Lower
 
-from core.constraints.abstract import (
-    ConstraintApp,
-    ConstraintParam,
-    ConstraintVerification,
-)
+from core.constraints.abstract import ConstraintApp, ConstraintVerification
 from core.thirdpartyapp import Subgraph
 
 
 class BridgeEthToArb(ConstraintVerification):
-    _param_keys = [
-        ConstraintParam.MINIMUM,
-    ]
     app_name = ConstraintApp.ARB_BRIDGE.value
 
     def __init__(self, user_profile) -> None:
@@ -19,35 +12,51 @@ class BridgeEthToArb(ConstraintVerification):
 
     def is_observed(self, *args, **kwargs) -> bool:
         try:
-            min_amount = self.param_values[ConstraintParam.MINIMUM.name]
-            return self.has_bridged(min_amount)
+            return self.has_bridged(kwargs["from_time"])
         except Exception:
             pass
         return False
 
-    def has_bridged(self, min_amount):
+    def has_bridged(self, from_time=None):
         subgraph = Subgraph()
 
         user_wallets = self.user_profile.wallets.values_list(
             Lower("address"), flat=True
         )
 
-        query = """
-        query GetMessageDelivereds($wallets: [String]) {
-            messageDelivereds(
-                where: {
-                    txOrigin_in: $wallets
-                    kind: 12
+        if from_time:
+            query = """
+            query GetMessageDelivereds($wallets: [String], $fromTime: String) {
+                messageDelivereds(
+                    where: {
+                        txOrigin_in: $wallets
+                        kind: 12
+                        timestamp_gt: $fromTime
+                    }
+                ) {
+                    id
+                    transactionHash
                 }
-            ) {
-                id
-                transactionHash
             }
-        }
-        """
-        vars = {
-            "wallets": list(user_wallets),
-        }
+            """
+            vars = {"wallets": list(user_wallets), "fromTime": str(from_time)}
+        else:
+            query = """
+            query GetMessageDelivereds($wallets: [String]) {
+                messageDelivereds(
+                    where: {
+                        txOrigin_in: $wallets
+                        kind: 12
+                    }
+                ) {
+                    id
+                    transactionHash
+                }
+            }
+            """
+            vars = {
+                "wallets": list(user_wallets),
+            }
 
         res = subgraph.send_post_request(
             subgraph.path.get("arb_bridge_mainnet"), query=query, vars=vars
@@ -55,9 +64,7 @@ class BridgeEthToArb(ConstraintVerification):
         match res:
             case None:
                 return False
-            case {"data": {"messageDelivereds": messages}} if len(
-                messages
-            ) >= min_amount:
+            case {"data": {"messageDelivereds": messages}} if len(messages) > 0:
                 return True
             case _:
                 return False
