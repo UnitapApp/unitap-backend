@@ -1,11 +1,17 @@
 from django.db.models.functions import Lower
 
-from core.constraints.abstract import ConstraintApp, ConstraintVerification
+from core.constraints.abstract import (
+    ConstraintApp,
+    ConstraintParam,
+    ConstraintVerification,
+)
 from core.thirdpartyapp import Subgraph
 
 
 class BridgeEthToArb(ConstraintVerification):
-    _param_keys = []
+    _param_keys = [
+        ConstraintParam.MINIMUM,
+    ]
     app_name = ConstraintApp.ARB_BRIDGE.value
 
     def __init__(self, user_profile) -> None:
@@ -13,12 +19,13 @@ class BridgeEthToArb(ConstraintVerification):
 
     def is_observed(self, *args, **kwargs) -> bool:
         try:
-            return self.has_bridged()
+            min_amount = self.param_values[ConstraintParam.MINIMUM.name]
+            return self.has_bridged(min_amount)
         except Exception:
             pass
         return False
 
-    def has_bridged(self):
+    def has_bridged(self, min_amount):
         subgraph = Subgraph()
 
         user_wallets = self.user_profile.wallets.values_list(
@@ -48,7 +55,9 @@ class BridgeEthToArb(ConstraintVerification):
         match res:
             case None:
                 return False
-            case {"data": {"messageDelivereds": messages}} if len(messages) > 0:
+            case {"data": {"messageDelivereds": messages}} if len(
+                messages
+            ) >= min_amount:
                 return True
             case _:
                 return False
