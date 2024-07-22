@@ -5,7 +5,7 @@ from core.constraints.abstract import (
     ConstraintParam,
     ConstraintVerification,
 )
-from core.thirdpartyapp import RapidTwitter
+from core.thirdpartyapp import RapidTwitter, TwitterUtils
 
 
 class HasTwitter(ConstraintVerification):
@@ -166,5 +166,27 @@ class BeFollowedByTwitterUser(ConstraintVerification):
                 ),
                 twitter_username,
             )
+        except Exception as e:
+            logging.error(f"Error in rapid_twitter: {e}")
+
+
+class DidRetweetTweet(ConstraintVerification):
+    _param_keys = [ConstraintParam.TWEET_ID]
+    app_name = ConstraintApp.TWITTER.value
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        from authentication.models import TwitterConnection
+
+        try:
+            twitter = TwitterConnection.get_connection(self.user_profile)
+        except TwitterConnection.DoesNotExist:
+            return False
+        tweet_id = self.param_values[ConstraintParam.TWEET_ID.name]
+        twitter_util = TwitterUtils(twitter.access_token, twitter.access_token_secret)
+        try:
+            return twitter_util.did_retweet_tweet(tweet_id=tweet_id)
         except Exception as e:
             logging.error(f"Error in rapid_twitter: {e}")
