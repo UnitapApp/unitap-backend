@@ -14,8 +14,8 @@ class HaveUnitapPass(ConstraintVerification):
 
     def is_observed(self, *args, **kwargs):
         min_balance = self.param_values[ConstraintParam.MINIMUM.name]
-        chain = Chain.objects.get(chain_id=1)
-        nft_client = NFTClient(chain, "0x23826Fd930916718a98A21FF170088FBb4C30803")
+        chain = Chain.objects.get(chain_id=8453)
+        nft_client = NFTClient(chain, "0xA27b7B65b0de0c08b002E6be828731FA865027bB")
 
         user_addresses = [
             nft_client.to_checksum_address(wallet.address.lower())
