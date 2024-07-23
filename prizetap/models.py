@@ -118,6 +118,7 @@ class Raffle(models.Model):
             and not self.is_expired
             and not self.is_maxed_out
             and self.is_active
+            and not self.pre_enrollment_wallets
         )
 
     @property
