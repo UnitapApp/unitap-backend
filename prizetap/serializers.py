@@ -144,6 +144,7 @@ class RaffleSerializer(serializers.ModelSerializer):
     user_entry = serializers.SerializerMethodField()
     constraints = serializers.SerializerMethodField()
     creator_profile = SimpleProfilerSerializer()
+    is_pre_enrollment = serializers.SerializerMethodField()
 
     class Meta:
         model = Raffle
@@ -185,6 +186,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "winner_entries",
             "is_expired",
             "is_claimable",
+            "is_pre_enrollment",
             "user_entry",
             "number_of_entries",
             "number_of_onchain_entries",
@@ -211,6 +213,9 @@ class RaffleSerializer(serializers.ModelSerializer):
             ).data
         except RaffleEntry.DoesNotExist:
             return None
+
+    def get_is_pre_enrollment(self, raffle: Raffle):
+        return bool(raffle.pre_enrollment_wallets)
 
 
 class LineaRaffleEntrySerializer(serializers.ModelSerializer):
