@@ -294,6 +294,10 @@ class TwitterConnection(BaseThirdPartyConnection):
         )
 
 
+class ENSSaveError(Exception):
+    pass
+
+
 class ENSConnection(BaseThirdPartyConnection):
     title = "ENS"
     user_wallet_address = models.CharField(max_length=255)
@@ -305,6 +309,15 @@ class ENSConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.name)
+
+
+@receiver(pre_save, sender=ENSConnection)
+def check_ens_connection(sender, instance: ENSConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.is_connected()
+    if not res:
+        raise ENSSaveError("No ENS has been found.")
 
 
 class FarcasterConnection(BaseThirdPartyConnection):
