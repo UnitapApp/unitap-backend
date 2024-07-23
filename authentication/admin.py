@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from authentication.models import (
     BrightIDConnection,
+    ENSConnection,
     GitcoinPassportConnection,
     TwitterConnection,
     UserProfile,
@@ -39,12 +40,17 @@ class BrightIDConnectionAdmin(admin.ModelAdmin):
 
 class GitcoinPassportConnectionAdmin(admin.ModelAdmin):
     list_display = ["pk", "user_profile", "user_wallet_address"]
-    search_fields = ["user_wallet_address", "user_profile"]
+    search_fields = ["user_wallet_address", "user_profile__username"]
 
 
 class TwitterConnectionAdmin(admin.ModelAdmin):
     list_display = ["pk", "user_profile", "oauth_token"]
-    search_fields = ["user_profile", "oauth_token"]
+    search_fields = ["user_profile__username", "oauth_token"]
+
+
+class EnsConnectionAdmin(admin.ModelAdmin):
+    list_display = ["pk", "user_profile", "user_wallet_address"]
+    search_fields = ["user_profile__username", "user_wallet_address"]
 
 
 admin.site.register(Wallet, WalletAdmin)
@@ -52,3 +58,4 @@ admin.site.register(UserProfile, ProfileAdmin)
 admin.site.register(BrightIDConnection, BrightIDConnectionAdmin)
 admin.site.register(GitcoinPassportConnection, GitcoinPassportConnectionAdmin)
 admin.site.register(TwitterConnection, TwitterConnectionAdmin)
+admin.site.register(ENSConnection, EnsConnectionAdmin)
