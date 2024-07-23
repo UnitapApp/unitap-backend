@@ -34,6 +34,7 @@ from authentication.helpers import (
 from authentication.models import (
     BrightIDConnection,
     ENSConnection,
+    ENSSaveError,
     FarcasterConnection,
     FarcasterSaveError,
     GitcoinPassportSaveError,
@@ -445,7 +446,7 @@ class ENSConnectionView(CreateAPIView):
     def perform_create(self, serializer):
         try:
             serializer.save(user_profile=self.user_profile)
-        except ValidationError as e:
+        except ENSSaveError as e:
             raise ValidationError({"address": str(e)})
 
 
