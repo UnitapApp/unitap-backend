@@ -50,7 +50,7 @@ class TokenDistributionListView(ListAPIView):
         q = TokenDistribution.objects.filter(is_active=True).order_by('-pk')
 
         sorted_queryset = sorted(
-            q, key=lambda obj: obj.is_expired, reverse=True
+            q, key=lambda obj: obj.is_expired, reverse=False
         )
 
         return sorted_queryset
