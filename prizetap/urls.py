@@ -9,6 +9,7 @@ from prizetap.views import (
     LineaRaffleView,
     RaffleDetailsView,
     RaffleEnrollmentView,
+    RaffleEntriesView,
     RaffleListView,
     SetClaimingPrizeTxView,
     SetEnrollmentTxView,
@@ -86,5 +87,8 @@ urlpatterns = [
     ),
     path(
         "raffle-details/<int:pk>/", RaffleDetailsView.as_view(), name="raffle-details"
+    ),
+    path(
+        "raffle-entries/<int:pk>/", RaffleEntriesView.as_view(), name="raffle-entries"
     ),
 ]
