@@ -31,7 +31,7 @@ class FarcasterUtil:
         res = self.requests.get(
             path=path, headers=self.headers, params=params, session=self.session
         )
-        return res[address][0]
+        return res[address.lower()][0]
 
     def _get_bulk_profile(self, addresses: list[str]) -> dict:
         path = self.paths.get("get_bulk_profile_by_address")
