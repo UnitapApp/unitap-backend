@@ -155,8 +155,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         return token.key
 
     def get_up_balance(self, instance):
-        eth_chain = Chain.objects.get(chain_id=1)
-        nft_client = NFTClient(eth_chain, "0x23826Fd930916718a98A21FF170088FBb4C30803")
+        eth_chain = Chain.objects.get(chain_id=8453)
+        nft_client = NFTClient(eth_chain, "0xA27b7B65b0de0c08b002E6be828731FA865027bB")
 
         user_addresses = [
             nft_client.to_checksum_address(wallet.address.lower())
