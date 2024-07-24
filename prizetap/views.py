@@ -17,6 +17,7 @@ from web3 import Web3
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain
+from core.paginations import StandardResultsSetPagination
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
 from core.views import AbstractConstraintsListView
@@ -331,3 +332,12 @@ class RaffleDetailsView(RetrieveAPIView):
             },
         )
         return Response(serializer.data)
+
+
+class RaffleEntriesView(ListAPIView):
+    pagination_class = StandardResultsSetPagination
+    serializer_class = RaffleEntrySerializer
+
+    def get_queryset(self, *args, **kwargs):
+        raffle_pk = self.request.parser_context.get("kwargs").get("pk")
+        return RaffleEntry.objects.filter(raffle__pk=raffle_pk).order_by("pk")
