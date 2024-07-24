@@ -41,9 +41,13 @@ class RaffleEnrollmentValidator:
                         if self.raffle_data
                         else dict()
                     )
-                    if constraint.is_observed(**cdata):
+                    if constraint.is_observed(
+                        **cdata, from_time=int(self.raffle.start_at.timestamp())
+                    ):
                         raise PermissionDenied(constraint.response)
-                elif constraint.is_observed():
+                elif constraint.is_observed(
+                    from_time=int(self.raffle.start_at.timestamp())
+                ):
                     raise PermissionDenied(constraint.response)
             else:
                 if self.raffle_data and str(c.pk) in self.raffle_data.keys():
@@ -52,9 +56,13 @@ class RaffleEnrollmentValidator:
                         if self.raffle_data
                         else dict()
                     )
-                    if not constraint.is_observed(**cdata):
+                    if not constraint.is_observed(
+                        **cdata, from_time=int(self.raffle.start_at.timestamp())
+                    ):
                         raise PermissionDenied(constraint.response)
-                elif not constraint.is_observed():
+                elif not constraint.is_observed(
+                    from_time=int(self.raffle.start_at.timestamp())
+                ):
                     raise PermissionDenied(constraint.response)
 
     def check_user_owns_wallet(self, user_wallet_address):

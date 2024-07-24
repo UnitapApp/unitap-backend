@@ -24,7 +24,9 @@ from .constraints import (
     DidCollectLensPublication,
     DidLikedFarcasterCast,
     DidMirrorOnLensPublication,
+    DidQuoteTweet,
     DidRecastFarcasterCast,
+    DidRetweetTweet,
     HasENSVerification,
     HasFarcasterProfile,
     HasGitcoinPassportProfile,
@@ -133,6 +135,8 @@ class UserConstraint(models.Model):
         BridgeEthToArb,
         IsFollowinTwitterUser,
         BeFollowedByTwitterUser,
+        DidRetweetTweet,
+        DidQuoteTweet,
     ]
 
     name = models.CharField(

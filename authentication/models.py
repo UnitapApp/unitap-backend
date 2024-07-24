@@ -182,7 +182,7 @@ class Wallet(SafeDeleteModel):
 class BaseThirdPartyConnection(models.Model):
     title = "BaseThirdPartyConnection"
     user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.PROTECT, related_name="%(class)s"
+        UserProfile, on_delete=models.PROTECT, related_name="%(class)s", unique=True
     )
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
@@ -277,6 +277,12 @@ class TwitterConnection(BaseThirdPartyConnection):
     def username(self):
         return self.driver.get_username(self.access_token, self.access_token_secret)
 
+    @property
+    def twitter_id(self):
+        return self.driver.get_twitter_id(
+            self, self.access_token, self.access_token_secret
+        )
+
     def is_replied(self, self_tweet_id, target_tweet_id):
         return self.driver.get_is_replied(
             self.access_token, self.access_token_secret, self_tweet_id, target_tweet_id
@@ -286,6 +292,10 @@ class TwitterConnection(BaseThirdPartyConnection):
         return self.driver.get_is_liked(
             self.access_token, self.access_token_secret, target_tweet_id
         )
+
+
+class ENSSaveError(Exception):
+    pass
 
 
 class ENSConnection(BaseThirdPartyConnection):
@@ -299,6 +309,15 @@ class ENSConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.name)
+
+
+@receiver(pre_save, sender=ENSConnection)
+def check_ens_connection(sender, instance: ENSConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.is_connected()
+    if not res:
+        raise ENSSaveError("No ENS has been found.")
 
 
 class FarcasterConnection(BaseThirdPartyConnection):
