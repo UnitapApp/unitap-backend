@@ -92,6 +92,22 @@ def create_mainnet_chain():
     )
 
 
+def create_op_chain():
+    return Chain.objects.create(
+        chain_name="OP",
+        wallet=WalletAccount.objects.create(
+            name="Test Wallet",
+            private_key=test_wallet_key,
+            network_type=NetworkTypes.EVM,
+        ),
+        rpc_url_private="https://rpc.ankr.com/base",
+        explorer_url="https://basescan.org/",
+        native_currency_name="ETH",
+        symbol="ETH",
+        chain_id="8453",
+    )
+
+
 class CheckUsernameTestCase(APITestCase):
     def setUp(self) -> None:
         self.endpoint = "AUTHENTICATION:check-username"
@@ -487,6 +503,7 @@ class TestWalletView(APITestCase):
             "AUTHENTICATION:wallet-user", kwargs={"pk": self.wallet.pk}
         )
         self.client.force_authenticate(user=self.user_profile.user)
+        create_op_chain()
 
     def test_request_to_this_api_is_ok(self):
         response = self.client.get(self.endpoint)
@@ -535,6 +552,7 @@ class TestGetProfileView(APITestCase):
         self.user_profile = create_new_user()
         self.client.force_authenticate(user=self.user_profile.user)
         create_mainnet_chain()
+        create_op_chain()
 
     def test_request_to_this_api_is_ok(self):
         response = self.client.get(self.endpoint)
@@ -573,6 +591,7 @@ class TestVerifyLoginSignature(APITestCase):
         )
         self.public_key_test1 = "0xD8Be96705B9fb518eEb2758719831BAF6C6E5E05"
         create_mainnet_chain()
+        create_op_chain()
 
     def create_and_sign_message(self):
         timestamp = datetime.datetime.now().isoformat() + "Z"

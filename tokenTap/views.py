@@ -47,10 +47,10 @@ class TokenDistributionListView(ListAPIView):
     queryset = TokenDistribution.objects.filter(is_active=True)
 
     def get_queryset(self):
-        q = TokenDistribution.objects.filter(is_active=True)
+        q = TokenDistribution.objects.filter(is_active=True).order_by('-pk')
 
         sorted_queryset = sorted(
-            q, key=lambda obj: obj.total_claims_since_last_round, reverse=True
+            q, key=lambda obj: obj.is_expired, reverse=True
         )
 
         return sorted_queryset
