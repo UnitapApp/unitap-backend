@@ -135,12 +135,15 @@ class TwitterUtils:
             if retweeters is None:
                 return False
 
-            did_retweet = bool(filter(lambda user: user.id == user_id, retweeters))
+            did_retweet = bool(
+                list(filter(lambda user: user.id == user_id, retweeters))
+            )
             if did_retweet:
                 return True
             next_token = response.meta.get("next_token")
             if next_token is None:
                 return False
+        return False
 
     def did_quote_tweet(self, tweet_id):
         user_id = self.get_user_id()
@@ -160,7 +163,7 @@ class TwitterUtils:
                 return False
 
             did_quote_tweet = bool(
-                filter(lambda quote: quote.author_id == user_id, quotes)
+                list(filter(lambda quote: quote.author_id == user_id, quotes))
             )
             if did_quote_tweet:
                 return True
