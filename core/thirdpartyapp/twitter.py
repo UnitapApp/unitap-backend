@@ -27,7 +27,7 @@ class TwitterUtils:
             consumer_secret=self.consumer_secret,
             access_token=access_token,
             access_token_secret=access_token_secret,
-            wait_on_rate_limit=True,
+            wait_on_rate_limit=False,
         )
 
     @classmethod
@@ -183,6 +183,7 @@ class RapidTwitter:
             url=f"https://{self.host}/{url}",
             headers={"x-rapidapi-key": self.rapid_key, "x-rapidapi-host": self.host},
             params=params,
+            timeout=10,
         )
 
     def get_user_id(self, username: str):
