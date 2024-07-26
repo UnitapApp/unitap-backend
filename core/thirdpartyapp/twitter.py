@@ -183,6 +183,7 @@ class RapidTwitter:
             url=f"https://{self.host}/{url}",
             headers={"x-rapidapi-key": self.rapid_key, "x-rapidapi-host": self.host},
             params=params,
+            timeout=10,
         )
 
     def get_user_id(self, username: str):
