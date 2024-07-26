@@ -105,7 +105,7 @@ class TokenDistribution(models.Model):
     def is_maxed_out(self):
         if self.max_number_of_claims is None:
             return False
-        return self.max_number_of_claims <= self.number_of_onchain_claims
+        return self.max_number_of_claims <= self.number_of_claims
 
     @property
     def number_of_onchain_claims(self):
@@ -126,21 +126,39 @@ class TokenDistribution(models.Model):
 
     @property
     def max_claim_number_for_unitap_pass_user(self):
-        if (
-            self.max_number_of_claims is None
-            or self.claim_deadline_for_unitap_pass_user < timezone.now()
-        ):
+        if self.max_number_of_claims is None:
             return None
+        if self.claim_deadline_for_unitap_pass_user < timezone.now():
+            return 0
         return int(self.max_number_of_claims * UNITAP_PASS_CLAIM_PERCENT)
 
     @property
     def remaining_claim_for_unitap_pass_user(self):
-        if self.max_claim_number_for_unitap_pass_user is None:
+        remainingupclaims = self.max_claim_number_for_unitap_pass_user
+        if remainingupclaims is None:
             return None
+        if remainingupclaims == 0:
+            return 0
         is_unitap_pass_share_count = self.claims.filter(
             is_unitap_pass_share=True
         ).count()
-        return self.max_claim_number_for_unitap_pass_user - is_unitap_pass_share_count
+        return remainingupclaims - is_unitap_pass_share_count
+
+    @property
+    def remaining_claim_for_normal_user(self):
+        if self.max_number_of_claims is None:
+            return None
+        if (
+            self.max_claim_number_for_unitap_pass_user is None
+            or self.claim_deadline_for_unitap_pass_user < timezone.now()
+        ):
+            return self.max_number_of_claims - self.number_of_claims
+
+        return (
+            self.max_number_of_claims
+            - self.number_of_claims
+            - self.remaining_claim_for_unitap_pass_user
+        )
 
     @property
     def claim_deadline_for_unitap_pass_user(self):
