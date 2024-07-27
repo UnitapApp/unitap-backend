@@ -1,5 +1,7 @@
 import json
+import time
 
+from django.core.cache import cache
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from authentication.models import UserProfile
@@ -12,19 +14,19 @@ class RaffleEnrollmentValidator:
     def __init__(self, *args, **kwargs):
         self.user_profile: UserProfile = kwargs["user_profile"]
         self.raffle: Raffle = kwargs["raffle"]
-        self.raffle_data: dict = (
-            kwargs["raffle_data"] if "raffle_data" in kwargs else None
-        )
+        self.raffle_data: dict = kwargs.get("raffle_data", dict())
 
     def can_enroll_in_raffle(self):
         if not self.raffle.is_claimable:
             raise PermissionDenied("Can't enroll in this raffle")
 
-    def check_user_constraints(self):
+    def check_user_constraints(self, raise_exception=True):
         try:
             param_values = json.loads(self.raffle.constraint_params)
         except Exception:
             param_values = {}
+        error_messages = dict()
+        result = dict()
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
                 self.user_profile
@@ -34,36 +36,35 @@ class RaffleEnrollmentValidator:
                 constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
-            if str(c.pk) in self.raffle.reversed_constraints_list:
-                if self.raffle_data and str(c.pk) in self.raffle_data.keys():
-                    cdata = (
-                        dict(self.raffle_data[str(c.pk)])
-                        if self.raffle_data
-                        else dict()
-                    )
-                    if constraint.is_observed(
+            cdata = self.raffle_data.get(str(c.pk), dict())
+            cache_key = f"prizetap-{self.user_profile.pk}-{self.raffle.pk}-{c.pk}"
+            cache_data = cache.get(cache_key)
+            if cache_data is None:
+                if str(c.pk) in self.raffle.reversed_constraints_list:
+                    is_verified = not constraint.is_observed(
                         **cdata, from_time=int(self.raffle.start_at.timestamp())
-                    ):
-                        raise PermissionDenied(constraint.response)
-                elif constraint.is_observed(
-                    from_time=int(self.raffle.start_at.timestamp())
-                ):
-                    raise PermissionDenied(constraint.response)
-            else:
-                if self.raffle_data and str(c.pk) in self.raffle_data.keys():
-                    cdata = (
-                        dict(self.raffle_data[str(c.pk)])
-                        if self.raffle_data
-                        else dict()
                     )
-                    if not constraint.is_observed(
+                else:
+                    is_verified = constraint.is_observed(
                         **cdata, from_time=int(self.raffle.start_at.timestamp())
-                    ):
-                        raise PermissionDenied(constraint.response)
-                elif not constraint.is_observed(
-                    from_time=int(self.raffle.start_at.timestamp())
-                ):
-                    raise PermissionDenied(constraint.response)
+                    )
+                caching_time = 60 * 60 if is_verified else 60
+                expiration_time = time.time() + caching_time
+                cache_data = {
+                    "is_verified": is_verified,
+                    "expiration_time": expiration_time,
+                }
+                cache.set(
+                    cache_key,
+                    cache_data,
+                    caching_time,
+                )
+            if not cache_data.get("is_verified"):
+                error_messages[c.title] = constraint.response
+            result[c.pk] = cache_data
+        if len(error_messages) and raise_exception:
+            raise PermissionDenied(error_messages)
+        return result
 
     def check_user_owns_wallet(self, user_wallet_address):
         if not self.user_profile.owns_wallet(user_wallet_address):

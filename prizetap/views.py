@@ -1,5 +1,3 @@
-import json
-
 import rest_framework.exceptions
 from django.db import transaction
 from django.db.models import Case, F, When
@@ -15,7 +13,6 @@ from rest_framework.views import APIView
 from web3 import Web3
 
 from authentication.models import UserProfile
-from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain
 from core.paginations import StandardResultsSetPagination
 from core.serializers import ChainSerializer
@@ -78,7 +75,7 @@ class RaffleEnrollmentView(CreateAPIView):
         if raffle.pre_enrollment_wallets:
             raise rest_framework.exceptions.ValidationError("Raffle is pre-enrollment")
         user_wallet_address = request.data.get("user_wallet_address", None)
-        raffle_data = request.data.get("raffle_data", None)
+        raffle_data = request.data.get("raffle_data", dict())
         if not user_wallet_address:
             raise rest_framework.exceptions.ParseError(
                 "user_wallet_address is required"
@@ -191,33 +188,20 @@ class GetRaffleConstraintsView(APIView):
     def get(self, request, raffle_pk):
         user_profile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=raffle_pk)
-        try:
-            param_values = json.loads(raffle.constraint_params)
-        except Exception:
-            param_values = {}
-
+        raffle_data = request.query_params.get("raffle_data", dict())
         reversed_constraints = raffle.reversed_constraints_list
         response_constraints = []
+        validator = RaffleEnrollmentValidator(
+            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data
+        )
 
-        for c in raffle.constraints.all():
-            constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
-            constraint.response = c.response
-            try:
-                constraint.param_values = param_values[c.name]
-            except KeyError:
-                pass
-            is_verified = False
-            if str(c.pk) in reversed_constraints:
-                if not constraint.is_observed():
-                    is_verified = True
-            else:
-                if constraint.is_observed():
-                    is_verified = True
+        validated_constraints = validator.check_user_constraints(raise_exception=False)
+        for c_pk, data in validated_constraints.items():
             response_constraints.append(
                 {
-                    **ConstraintSerializer(c).data,
-                    "is_verified": is_verified,
-                    "is_reversed": True if str(c.pk) in reversed_constraints else False,
+                    **ConstraintSerializer(Constraint.objects.get(pk=c_pk)).data,
+                    **data,
+                    "is_reversed": True if str(c_pk) in reversed_constraints else False,
                 }
             )
 
