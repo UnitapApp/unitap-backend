@@ -1,7 +1,8 @@
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 # from brightIDfaucet.settings import IS_TESTING
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 
@@ -186,9 +187,9 @@ class TokenDistributionClaimTestCase(APITestCase):
 
     @patch(
         "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
+        new_callable=PropertyMock(side_effect=lambda: True),
     )
-    def test_reversed_constraints_violation(self):
+    def test_reversed_constraints_violation(self, _):
         self.td.reversed_constraints = str(self.meet_constraint.pk)
         self.td.save()
         self.client.force_authenticate(user=self.userprofile.user)
@@ -200,9 +201,9 @@ class TokenDistributionClaimTestCase(APITestCase):
 
     @patch(
         "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
+        new_callable=PropertyMock(side_effect=lambda: True),
     )
-    def test_duplicate_claim(self):
+    def test_duplicate_claim(self, _):
         TokenDistributionClaim.objects.create(
             user_profile=self.userprofile,
             token_distribution=self.td,
@@ -229,9 +230,9 @@ class TokenDistributionClaimTestCase(APITestCase):
 
     @patch(
         "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
+        new_callable=PropertyMock(side_effect=lambda: True),
     )
-    def test_has_pending_claim(self):
+    def test_has_pending_claim(self, _):
         TokenDistributionClaim.objects.create(
             user_profile=self.userprofile,
             token_distribution=self.td,
@@ -316,6 +317,10 @@ class TokenDistributionAPITestCase(APITestCase):
 
         self.td.constraints.set([self.permission1, self.permission4])
 
+    def tearDown(self) -> None:
+        cache.clear()
+        super().tearDown()
+
     def test_token_distribution_list(self):
         response = self.client.get(reverse("token-distribution-list"))
         self.assertEqual(response.status_code, 200)
@@ -383,9 +388,9 @@ class TokenDistributionAPITestCase(APITestCase):
 
     @patch(
         "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
+        new_callable=PropertyMock(side_effect=lambda: True),
     )
-    def test_token_distribution_not_claimable_already_claimed(self):
+    def test_token_distribution_not_claimable_already_claimed(self, _):
         TokenDistributionClaim.objects.create(
             user_profile=self.user_profile,
             token_distribution=self.td,

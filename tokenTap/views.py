@@ -1,6 +1,3 @@
-import json
-import logging
-
 import rest_framework.exceptions
 from django.db import transaction
 from django.http import Http404
@@ -16,7 +13,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from authentication.models import UserProfile
-from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain, NetworkTypes
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
@@ -33,13 +29,8 @@ from tokenTap.serializers import (
 )
 
 from .constants import CONTRACT_ADDRESSES
-from .helpers import (
-    create_uint32_random_nonce,
-    has_credit_left,
-    hash_message,
-    sign_hashed_message,
-)
-from .validators import SetDistributionTxValidator
+from .helpers import create_uint32_random_nonce, hash_message, sign_hashed_message
+from .validators import SetDistributionTxValidator, TokenDistributionValidator
 
 
 class TokenDistributionListView(ListAPIView):
@@ -47,67 +38,15 @@ class TokenDistributionListView(ListAPIView):
     queryset = TokenDistribution.objects.filter(is_active=True)
 
     def get_queryset(self):
-        q = TokenDistribution.objects.filter(is_active=True).order_by('-pk')
+        q = TokenDistribution.objects.filter(is_active=True).order_by("-pk")
 
-        sorted_queryset = sorted(
-            q, key=lambda obj: obj.is_expired, reverse=False
-        )
+        sorted_queryset = sorted(q, key=lambda obj: obj.is_expired, reverse=False)
 
         return sorted_queryset
 
 
 class TokenDistributionClaimView(CreateAPIView):
     permission_classes = [IsAuthenticated]
-
-    def check_token_distribution_is_claimable(self, token_distribution):
-        if not token_distribution.is_claimable:
-            raise rest_framework.exceptions.PermissionDenied(
-                "This token is not claimable"
-            )
-
-    def check_user_permissions(
-        self, token_distribution, user_profile, raffle_data=None
-    ):
-        try:
-            param_values = json.loads(token_distribution.constraint_params)
-        except Exception:
-            param_values = {}
-        for c in token_distribution.constraints.all():
-            constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
-            constraint.response = c.response
-            try:
-                constraint.param_values = param_values[c.name]
-            except KeyError:
-                pass
-            if str(c.pk) in token_distribution.reversed_constraints_list:
-                if raffle_data and str(c.pk) in raffle_data.keys():
-                    cdata = dict(raffle_data[str(c.pk)]) if raffle_data else dict()
-                    if constraint.is_observed(**cdata):
-                        raise PermissionDenied(constraint.response)
-                elif constraint.is_observed(token_distribution=token_distribution):
-                    raise PermissionDenied(constraint.response)
-            else:
-                if raffle_data and str(c.pk) in raffle_data.keys():
-                    cdata = dict(raffle_data[str(c.pk)]) if raffle_data else dict()
-                    if constraint.is_observed(**cdata):
-                        raise PermissionDenied(constraint.response)
-                elif not constraint.is_observed(token_distribution=token_distribution):
-                    raise PermissionDenied(constraint.response)
-
-    def check_user_credit(self, distribution, user_profile):
-        if distribution.is_one_time_claim:
-            already_claimed = distribution.claims.filter(
-                user_profile=user_profile,
-                status=ClaimReceipt.VERIFIED,
-            ).exists()
-            if already_claimed:
-                raise rest_framework.exceptions.PermissionDenied(
-                    "You have already claimed"
-                )
-        elif not has_credit_left(distribution, user_profile):
-            raise rest_framework.exceptions.PermissionDenied(
-                "You have reached your claim limit"
-            )
 
     def wallet_is_valid(self, user_profile, user_wallet_address, token_distribution):
         if token_distribution.chain.chain_type == NetworkTypes.EVM:
@@ -167,6 +106,7 @@ class TokenDistributionClaimView(CreateAPIView):
             token_distribution = TokenDistribution.objects.select_for_update().get(
                 pk=self.kwargs["pk"]
             )
+            td_data = request.query_params.get("td_data", dict())
             user_wallet_address = request.data.get("user_wallet_address", None)
             if user_wallet_address is None:
                 raise rest_framework.exceptions.ParseError(
@@ -192,11 +132,10 @@ class TokenDistributionClaimView(CreateAPIView):
             except TokenDistributionClaim.DoesNotExist:
                 pass
 
-            self.check_user_permissions(token_distribution, user_profile)
-
-            self.check_token_distribution_is_claimable(token_distribution)
-
-            self.check_user_credit(token_distribution, user_profile)
+            validator = TokenDistributionValidator(
+                token_distribution, user_profile, td_data
+            )
+            validator.is_valid()
 
             is_unitap_pass_user, user_unitap_pass_list = self.check_unitap_pass_share(
                 token_distribution, user_profile
@@ -240,34 +179,19 @@ class GetTokenDistributionConstraintsView(APIView):
     def get(self, request, td_id):
         user_profile = request.user.profile
         td = get_object_or_404(TokenDistribution, pk=td_id)
-        try:
-            param_values = json.loads(td.constraint_params)
-        except Exception as e:
-            logging.error("Error parsing constraint params", e)
-            param_values = {}
+        td_data = request.query_params.get("td_data")
 
         reversed_constraints = td.reversed_constraints_list
         response_constraints = []
 
-        for c in td.constraints.all():
-            constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
-            constraint.response = c.response
-            try:
-                constraint.param_values = param_values[c.name]
-            except KeyError:
-                pass
-            is_verified = False
-            if str(c.pk) in reversed_constraints:
-                if not constraint.is_observed(token_distribution=td):
-                    is_verified = True
-            else:
-                if constraint.is_observed(token_distribution=td):
-                    is_verified = True
+        validator = TokenDistributionValidator(td, user_profile, td_data)
+        validated_constraints = validator.check_user_permissions(raise_exception=False)
+        for c_pk, data in validated_constraints.items():
             response_constraints.append(
                 {
-                    **ConstraintSerializer(c).data,
-                    "is_verified": is_verified,
-                    "is_reversed": True if str(c.pk) in reversed_constraints else False,
+                    **ConstraintSerializer(Constraint.objects.get(pk=c_pk)).data,
+                    **data,
+                    "is_reversed": True if str(c_pk) in reversed_constraints else False,
                 }
             )
 

@@ -1,6 +1,15 @@
+import json
+import logging
+import time
+
+from django.core.cache import cache
 from rest_framework.exceptions import PermissionDenied
+
 from authentication.models import UserProfile
-from .models import TokenDistribution
+from core.constraints import ConstraintVerification, get_constraint
+
+from .helpers import has_credit_left
+from .models import ClaimReceipt, TokenDistribution
 
 
 class SetDistributionTxValidator:
@@ -11,7 +20,8 @@ class SetDistributionTxValidator:
     def is_owner_of_raffle(self):
         if not self.token_distribution.distributor_profile == self.user_profile:
             raise PermissionDenied(
-                "You don't have permission to update this token_distribution")
+                "You don't have permission to update this token_distribution"
+            )
 
     def is_tx_empty(self):
         if self.token_distribution.tx_hash:
@@ -24,3 +34,81 @@ class SetDistributionTxValidator:
         tx_hash = data.get("tx_hash", None)
         if not tx_hash or len(tx_hash) != 66:
             raise PermissionDenied("Tx hash is not valid")
+
+
+class TokenDistributionValidator:
+    def __init__(
+        self, td: TokenDistribution, user_profile: UserProfile, td_data: dict
+    ) -> None:
+        self.td = td
+        self.td_data = td_data
+        self.user_profile = user_profile
+
+    def check_user_permissions(self, raise_exception=True):
+        try:
+            param_values = json.loads(self.td.constraint_params)
+        except Exception as e:
+            logging.error("Error parsing constraint params", e)
+            param_values = {}
+        error_messages = dict()
+        result = dict()
+        for c in self.td.constraints.all():
+            constraint: ConstraintVerification = get_constraint(c.name)(
+                self.user_profile
+            )
+            constraint.response = c.response
+            try:
+                constraint.param_values = param_values[c.name]
+            except KeyError:
+                pass
+            cdata = self.td_data.get(str(c.pk), dict())
+            cache_key = f"tokentap-{self.user_profile.pk}-{self.td.pk}-{c.pk}"
+            cache_data = cache.get(cache_key)
+            if cache_data is None:
+                if str(c.pk) in self.td.reversed_constraints_list:
+                    is_verified = not constraint.is_observed(
+                        **cdata,
+                        token_distribution=self.td,
+                    )
+                else:
+                    is_verified = constraint.is_observed(
+                        **cdata,
+                        token_distribution=self.td,
+                    )
+                caching_time = 60 * 60 if is_verified else 60
+                expiration_time = time.time() + caching_time
+                cache_data = {
+                    "is_verified": is_verified,
+                    "expiration_time": expiration_time,
+                }
+                cache.set(
+                    cache_key,
+                    cache_data,
+                    caching_time,
+                )
+            if not cache_data.get("is_verified"):
+                error_messages[c.title] = constraint.response
+            result[c.pk] = cache_data
+        if len(error_messages) and raise_exception:
+            raise PermissionDenied(error_messages)
+        return result
+
+    def check_user_credit(self):
+        if self.td.is_one_time_claim:
+            already_claimed = self.td.claims.filter(
+                user_profile=self.user_profile,
+                status=ClaimReceipt.VERIFIED,
+            ).exists()
+            if already_claimed:
+                raise PermissionDenied("You have already claimed")
+        elif not has_credit_left(self.td, self.user_profile):
+            raise PermissionDenied("You have reached your claim limit")
+
+    def check_token_distribution_is_claimable(self):
+        if not self.td.is_claimable:
+            raise PermissionDenied("This token is not claimable")
+
+    def is_valid(self):
+        self.check_user_permissions()
+        self.check_token_distribution_is_claimable()
+        self.check_user_credit()
