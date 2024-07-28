@@ -105,7 +105,7 @@ class TwitterUtils:
                     referenced_tweet.type == "replied_to"
                     and referenced_tweet.id == str(reference_tweet_id)
                 ):
-                    if tweet.author_id == user_id:
+                    if str(tweet.author_id) == str(user_id):
                         return True
         return False
 
@@ -117,7 +117,7 @@ class TwitterUtils:
         ).data
 
         for liker in liked_users:
-            if liker.id == user_id:
+            if str(liker.id) == str(user_id):
                 return True
         return False
 
@@ -136,7 +136,7 @@ class TwitterUtils:
                 return False
 
             did_retweet = bool(
-                list(filter(lambda user: user.id == user_id, retweeters))
+                list(filter(lambda user: str(user.id) == str(user_id), retweeters))
             )
             if did_retweet:
                 return True
@@ -163,7 +163,7 @@ class TwitterUtils:
                 return False
 
             did_quote_tweet = bool(
-                list(filter(lambda quote: quote.author_id == user_id, quotes))
+                list(filter(lambda quote: str(quote.author_id) == str(user_id), quotes))
             )
             if did_quote_tweet:
                 return True
