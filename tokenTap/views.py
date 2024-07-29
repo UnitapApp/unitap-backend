@@ -179,7 +179,7 @@ class GetTokenDistributionConstraintsView(APIView):
     def get(self, request, td_id):
         user_profile = request.user.profile
         td = get_object_or_404(TokenDistribution, pk=td_id)
-        td_data = request.query_params.get("td_data")
+        td_data = request.query_params.get("td_data", dict())
 
         reversed_constraints = td.reversed_constraints_list
         response_constraints = []
