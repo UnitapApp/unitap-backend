@@ -42,6 +42,7 @@ from core.constraints.lens import (
     HasMinimumLensPost,
     IsFollowingLensUser,
 )
+from core.constraints.muon_node import HasMuonNode
 from core.constraints.twitter import (
     BeFollowedByTwitterUser,
     DidQuoteTweet,

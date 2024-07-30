@@ -35,6 +35,7 @@ from .constraints import (
     HasMinimumHumanityScore,
     HasMinimumLensFollower,
     HasMinimumLensPost,
+    HasMuonNode,
     HasNFTVerification,
     HasTokenTransferVerification,
     HasTokenVerification,
@@ -137,6 +138,7 @@ class UserConstraint(models.Model):
         BeFollowedByTwitterUser,
         DidRetweetTweet,
         DidQuoteTweet,
+        HasMuonNode,
     ]
 
     name = models.CharField(
