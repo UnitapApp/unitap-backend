@@ -161,12 +161,6 @@ class TokenDistribution(models.Model):
 
     @property
     def claim_deadline_for_unitap_pass_user(self):
-        dist_duration = self.deadline - self.start_at
-        if dist_duration > timedelta(days=30):
-            return self.start_at + timedelta(days=3)
-        elif dist_duration >= timedelta(days=7) and dist_duration <= timedelta(days=30):
-            return self.start_at + timedelta(days=2)
-
         return min(
             calculate_percentage_date(self.start_at, self.deadline, 0.5),
             self.start_at + timedelta(days=1),
