@@ -343,8 +343,23 @@ class TokenClient:
             total_transferred += event.args.value
         return total_transferred
 
+    def get_delegates_address(self, address: str):
+        if not self.web3_utils.contract:
+            raise InvalidAddressException("Invalid contract address")
+        func = self.web3_utils.contract.functions.delegates(address)
+        try:
+            return self.web3_utils.contract_call(func)
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
+            raise InvalidAddressException("Invalid contract address")
+
     def to_checksum_address(self, address: str):
-        return self.web3_utils.w3.to_checksum_address(address)
+        try:
+            return self.web3_utils.w3.to_checksum_address(address)
+        except web3.exceptions.InvalidAddress as e:
+            raise InvalidAddressException("Invalid user address") from e
 
 
 class UploadFileStorage:

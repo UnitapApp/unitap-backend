@@ -11,7 +11,7 @@ class ConstraintApp(Enum):
     ENS = "ENS"
     EAS = "EAS"
     GITCOIN_PASSPORT = "gitcoin_passport"
-    ARB_BRIDGE = "arb_bridge"
+    ARBITRUM = "arbitrum"
     TWITTER = "twitter"
     MUON = "muon"
 
