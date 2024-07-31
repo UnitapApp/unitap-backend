@@ -22,6 +22,7 @@ from .constraints import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     DidCollectLensPublication,
+    DidDelegateArbToAddress,
     DidLikedFarcasterCast,
     DidMirrorOnLensPublication,
     DidQuoteTweet,
@@ -139,6 +140,7 @@ class UserConstraint(models.Model):
         DidRetweetTweet,
         DidQuoteTweet,
         HasMuonNode,
+        DidDelegateArbToAddress,
     ]
 
     name = models.CharField(

@@ -92,7 +92,7 @@ class HasTokenVerification(ABCTokenVerification):
         super().__init__(user_profile)
 
     def get_amount(
-        self, user_address: str, token_address: str, token_client: TokenClient
+        self, user_address: str, token_address: None | str, token_client: TokenClient
     ) -> int:
         if token_address is None:
             return token_client.get_native_token_balance(user_address)
@@ -107,7 +107,7 @@ class HasTokenTransferVerification(ABCTokenVerification):
     ]
 
     def get_amount(
-        self, user_address: str, token_address: str, token_client: TokenClient
+        self, user_address: str, token_address: None | str, token_client: TokenClient
     ) -> int:
         if token_address is None:
             return 0
