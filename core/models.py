@@ -45,6 +45,7 @@ from .constraints import (
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
     IsFollowinTwitterUser,
+    GLMStakingVerification
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -143,6 +144,7 @@ class UserConstraint(models.Model):
         HasMuonNode,
         DidDelegateArbToAddress,
         DidDelegateOPToAddress,
+        GLMStakingVerification
     ]
 
     name = models.CharField(
