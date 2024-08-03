@@ -1,4 +1,3 @@
-version: "3.7"
 services:
   backend:
     platform: linux/amd64
@@ -53,7 +52,7 @@ services:
     container_name: memcached
     image: memcached:latest
     ports:
-        - "11211:11211"
+      - "11211:11211"
   ganache:
     platform: linux/amd64
     image: trufflesuite/ganache-cli

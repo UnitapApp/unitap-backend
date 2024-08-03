@@ -5,6 +5,7 @@ import logging
 from bip_utils import Bip44, Bip44Coins
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from .fields import CloudflareImagesField
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
 from rest_framework.exceptions import ValidationError
@@ -316,4 +317,4 @@ class Sponsor(models.Model):
     name = models.CharField(max_length=255, unique=True)
     link = models.URLField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    # TODO: image
+    image = CloudflareImagesField(blank=True, null=True, variant="public")

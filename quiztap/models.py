@@ -15,12 +15,10 @@ class Competition(models.Model):
         FINISHED = "FINISHED", _("Finished")
 
     title = models.CharField(max_length=255)
-    sponsor = models.ForeignKey(
+    sponsor = models.ManyToManyField(
         Sponsor,
         related_name="competitions",
-        null=True,
         blank=True,
-        on_delete=models.PROTECT,
     )
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.PROTECT, related_name="held_competitions"
