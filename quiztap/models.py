@@ -1,19 +1,13 @@
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
+from django.utils import timezone
+from .constants import ANSWER_TIME_SECOND, REST_BETWEEN_EACH_QUESTION_SECOND
 from authentication.models import UserProfile
 from core.models import BigNumField, Chain, Sponsor
 
-# Create your models here.
-
 
 class Competition(models.Model):
-    class Status(models.TextChoices):
-        NOT_STARTED = "NOT_STARTED", _("Not started")
-        IN_PROGRESS = "IN_PROGRESS", _("In progress")
-        FINISHED = "FINISHED", _("Finished")
-
     title = models.CharField(max_length=255)
     sponsor = models.ManyToManyField(
         Sponsor,
@@ -26,9 +20,6 @@ class Competition(models.Model):
     details = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     start_at = models.DateTimeField(null=False, blank=False)
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.NOT_STARTED
-    )
     prize_amount = BigNumField(null=False, blank=False)
     chain = models.ForeignKey(
         Chain,
@@ -57,6 +48,8 @@ class Competition(models.Model):
     def __str__(self):
         return f"{self.user_profile.username} - {self.title}"
 
+    def can_be_shown(self):
+        return self.start_at >= timezone.now()
 
 class UserCompetition(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
@@ -78,9 +71,15 @@ class Question(models.Model):
     number = models.IntegerField(
         null=False, blank=False, validators=[MinValueValidator(1)]
     )
-    can_be_shown = models.BooleanField(default=False, null=False, blank=False)
-    answer_can_be_shown = models.BooleanField(default=False, null=False, blank=False)
     text = models.TextField()
+
+    @property
+    def can_be_shown(self):
+        return self.competition.start_at + timezone.timedelta(seconds=(self.number - 1) * (ANSWER_TIME_SECOND + REST_BETWEEN_EACH_QUESTION_SECOND)) <= timezone.now()
+    
+    @property
+    def answer_can_be_shown(self):
+        return self.competition.start_at + timezone.timedelta(seconds=(self.number - 1) * (ANSWER_TIME_SECOND + REST_BETWEEN_EACH_QUESTION_SECOND) + ANSWER_TIME_SECOND) <= timezone.now()
 
     def __str__(self):
         return f"{self.competition.title} - {self.number} - {self.text}"
