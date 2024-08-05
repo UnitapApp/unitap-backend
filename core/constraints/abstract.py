@@ -14,6 +14,7 @@ class ConstraintApp(Enum):
     ARBITRUM = "arbitrum"
     TWITTER = "twitter"
     MUON = "muon"
+    OPTIMISM = "optimism"
 
     @classmethod
     def choices(cls):
