@@ -43,6 +43,7 @@ from core.constraints.lens import (
     IsFollowingLensUser,
 )
 from core.constraints.muon_node import HasMuonNode
+from core.constraints.optimism import DidDelegateOPToAddress
 from core.constraints.twitter import (
     BeFollowedByTwitterUser,
     DidQuoteTweet,

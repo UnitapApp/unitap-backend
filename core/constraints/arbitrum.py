@@ -87,6 +87,7 @@ class DidDelegateArbToAddress(ConstraintVerification):
         ConstraintParam.MINIMUM,
     )
 
+    ARBITRUM_CHAIN_ID = "42161"
     ARB_TOKEN_ABI = [
         {
             "inputs": [
@@ -116,7 +117,7 @@ class DidDelegateArbToAddress(ConstraintVerification):
         from core.models import Chain
 
         try:
-            chain = Chain.objects.get(chain_id="42161")
+            chain = Chain.objects.get(chain_id=self.ARBITRUM_CHAIN_ID)
         except Chain.DoesNotExist:
             logging.warning("Arbitrum chain not found")
             return False

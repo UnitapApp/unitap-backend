@@ -181,8 +181,8 @@ class Wallet(SafeDeleteModel):
 
 class BaseThirdPartyConnection(models.Model):
     title = "BaseThirdPartyConnection"
-    user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.PROTECT, related_name="%(class)s", unique=True
+    user_profile = models.OneToOneField(
+        UserProfile, on_delete=models.PROTECT, related_name="%(class)s"
     )
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
