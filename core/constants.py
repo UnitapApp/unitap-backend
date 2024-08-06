@@ -184,5 +184,18 @@ ERC20_METHODS = [
         ],
         "name": "Transfer",
         "type": "event",
-    },
+    }
+]
+GLM_METHODS=[
+    {
+        "inputs":[
+            {"internalType":"address","name":"","type":"address"}
+        ],
+        "name":"deposits",
+        "outputs":[
+            {"internalType":"uint256","name":"","type":"uint256"}
+        ],
+        "stateMutability":"view",
+        "type":"function"
+    }
 ]

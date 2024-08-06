@@ -540,7 +540,6 @@ from unittest.mock import patch
 class TestGLMStakingConstraint(BaseTestCase):
     def setUp(self):
         super().setUp()
-        # self.contract_address = "0x879133Fd79b7F48CE1c368b0fCA9ea168eaF117c"
         self.minimum_staked = 100
         self.wallet = WalletAccount.objects.create(
             name="ETH Chain Wallet",
