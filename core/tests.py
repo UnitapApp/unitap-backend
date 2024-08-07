@@ -26,6 +26,7 @@ from .constraints import (
     HasTokenVerification,
     HasTwitter,
     HasVoteOnATweet,
+    GLMStakingVerification
 )
 
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
@@ -532,3 +533,41 @@ class TestTwitterConstraint(BaseTestCase):
         }
 
         self.assertEqual(constraint.is_observed(), False)
+
+
+from unittest.mock import patch
+
+class TestGLMStakingConstraint(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.minimum_staked = 100 * 10**18
+        self.wallet = WalletAccount.objects.create(
+            name="ETH Chain Wallet",
+            private_key=test_wallet_key,
+            network_type=NetworkTypes.EVM,
+        )
+        self.chain = Chain.objects.create(
+            chain_name="Ethereum",
+            wallet=self.wallet,
+            rpc_url_private="https://eth.llamarpc.com/",
+            explorer_url="https://etherscan.io/",
+            native_currency_name="ETH",
+            symbol="ETH",
+            chain_id="1",
+        )
+        create_new_wallet(
+            self.user_profile,
+            "0xac176d9A8DBae960E7b539f4a6E16aD9003Ab37A",
+            NetworkTypes.EVM,
+        )
+
+    def test_glm_staking_constraint_true(self):
+
+        constraint = GLMStakingVerification(self.user_profile)
+
+        constraint.param_values = {
+            "CHAIN": self.chain.pk,
+            "MINIMUM": self.minimum_staked,
+        }
+
+        self.assertEqual(constraint.is_observed(), True)

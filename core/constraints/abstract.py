@@ -15,6 +15,7 @@ class ConstraintApp(Enum):
     TWITTER = "twitter"
     MUON = "muon"
     OPTIMISM = "optimism"
+    GLM_STAKING = "glm_staking"
 
     @classmethod
     def choices(cls):
