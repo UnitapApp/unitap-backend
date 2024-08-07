@@ -1,7 +1,7 @@
 from core.constraints.abstract import ConstraintParam, ConstraintVerification, ConstraintApp
 from core.utils import Web3Utils, InvalidAddressException
 from rest_framework.exceptions import ValidationError
-from core.constants import GLM_METHODS
+from core.constants import GLM_ABI
 
 
 
@@ -31,15 +31,15 @@ class GLMStakingVerification(ConstraintVerification):
         staked_amount = 0
         try:
             for wallet in self.user_addresses:
-                staked_amount += self.get_staked_amount(wallet, web3_utils) / 10 ** 18
+                staked_amount += self.get_staked_amount(wallet, web3_utils) 
                 
         except InvalidAddressException as e:
             raise ValidationError({"address": str(e)})
         
-        return staked_amount >= int(minimum)
+        return staked_amount >= minimum
 
     def get_staked_amount(self, user_address: str, web3_utils: Web3Utils) -> int:
-        web3_utils.set_contract(self.GLM_CONTRACT_ADDRESS, GLM_METHODS)
+        web3_utils.set_contract(self.GLM_CONTRACT_ADDRESS, GLM_ABI)
         deposits_function = web3_utils.contract.functions.deposits(user_address)
         return web3_utils.contract_call(deposits_function)
 

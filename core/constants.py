@@ -186,7 +186,7 @@ ERC20_METHODS = [
         "type": "event",
     }
 ]
-GLM_METHODS=[
+GLM_ABI=[
     {
         "inputs":[
             {"internalType":"address","name":"","type":"address"}
