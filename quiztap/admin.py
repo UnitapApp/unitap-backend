@@ -9,13 +9,12 @@ class CompetitionAdmin(admin.ModelAdmin):
         "title",
         "username",
         "details",
-        "status",
         "chain_name",
         "token",
     )
 
-    search_fields = ("status", "user_profile", "pk")
-    list_filter = ("status",)
+    search_fields = ("user_profile", "pk")
+    list_filter = ()
 
     @admin.display(ordering="chain__chain_name")
     def chain_name(self, obj):

@@ -12,12 +12,20 @@ from core.models import BigNumField, Chain, Sponsor
 class CompetitionManager(models.Manager):
     @property
     def not_started(self):
-        return self.filter(start_at__gte=timezone.now())
+        return self.filter(start_at__lt=timezone.now())
     
     @property
     def finished(self):
         return self.filter(
             start_at__gt=timezone.now() - timezone.timedelta(seconds=F("questions"))
+        )
+    
+    @property
+    def in_progress(self):
+        return self.filter(
+            start_at__lte=timezone.now() - timezone.timedelta(seconds=F("questions"))
+        ).filter(
+            start_at__gt=timezone.now()
         )
 
 
@@ -58,6 +66,8 @@ class Competition(models.Model):
     amount_won = BigNumField(default=0)
 
     is_active = models.BooleanField(default=True)
+
+    objects = CompetitionManager()
 
     def __str__(self):
         return f"{self.user_profile.username} - {self.title}"

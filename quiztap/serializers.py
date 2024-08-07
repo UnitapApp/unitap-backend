@@ -130,8 +130,8 @@ class ChoiceField(serializers.PrimaryKeyRelatedField):
 
 class UserCompetitionSerializer(serializers.ModelSerializer):
     competition = CompetitionField(
-        queryset=Competition.objects.filter(
-            is_active=True, status=Competition.Status.NOT_STARTED
+        queryset=Competition.objects.not_started.filter(
+            is_active=True
         )
     )
     user_profile = SimpleProfilerSerializer(read_only=True)
@@ -162,9 +162,8 @@ class UserCompetitionField(serializers.PrimaryKeyRelatedField):
 
 class UserAnswerSerializer(serializers.ModelSerializer):
     user_competition = UserCompetitionField(
-        queryset=UserCompetition.objects.filter(
+        queryset=UserCompetition.objects.filter( # TODO: filter out only in progress raffles
             competition__is_active=True,
-            competition__status=Competition.Status.IN_PROGRESS,
         )
     )
     selected_choice = ChoiceField(queryset=Choice.objects.all())

@@ -30,7 +30,8 @@ class CompetitionView(RetrieveAPIView):
 class QuestionView(RetrieveAPIView):
     http_method_names = ["get"]
     serializer_class = QuestionSerializer
-    queryset = Question.objects.filter(can_be_shown=True)
+    # queryset = Question.objects.filter(can_be_shown=True)
+    queryset = Question.objects.all()
 
 
 class EnrollInCompetitionView(ListCreateAPIView):
