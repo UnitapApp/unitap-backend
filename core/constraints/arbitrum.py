@@ -80,7 +80,7 @@ class BridgeEthToArb(ConstraintVerification):
 
 
 class DidDelegateArbToAddress(ConstraintVerification):
-    app_name = ConstraintApp.ARBITRUM
+    app_name = ConstraintApp.ARBITRUM.value
 
     _param_keys = (
         ConstraintParam.ADDRESS,
