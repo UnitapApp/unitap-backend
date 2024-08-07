@@ -2,9 +2,23 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.db.models import F
 from .constants import ANSWER_TIME_SECOND, REST_BETWEEN_EACH_QUESTION_SECOND
 from authentication.models import UserProfile
 from core.models import BigNumField, Chain, Sponsor
+
+
+
+class CompetitionManager(models.Manager):
+    @property
+    def not_started(self):
+        return self.filter(start_at__gte=timezone.now())
+    
+    @property
+    def finished(self):
+        return self.filter(
+            start_at__gt=timezone.now() - timezone.timedelta(seconds=F("questions"))
+        )
 
 
 class Competition(models.Model):
