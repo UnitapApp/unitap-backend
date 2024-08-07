@@ -21,6 +21,10 @@ class CompetitionManager(models.Manager):
         )
     
     @property
+    def started(self):
+        return self.filter(start_at__gte=timezone.now())
+    
+    @property
     def in_progress(self):
         return self.filter(
             start_at__lte=timezone.now() - timezone.timedelta(seconds=F("questions"))
@@ -67,7 +71,7 @@ class Competition(models.Model):
 
     is_active = models.BooleanField(default=True)
 
-    objects = CompetitionManager()
+    objects: CompetitionManager = CompetitionManager()
 
     def __str__(self):
         return f"{self.user_profile.username} - {self.title}"
@@ -88,6 +92,13 @@ class UserCompetition(models.Model):
         return f"{self.user_profile.username} - {self.competition.title}"
 
 
+
+class QuestionManager(models.Manager):
+    @property
+    def can_be_shown(self):
+        return self.filter(competition__start_at__gte=timezone.now())
+
+
 class Question(models.Model):
     competition = models.ForeignKey(
         Competition, on_delete=models.CASCADE, related_name="questions"
@@ -104,6 +115,8 @@ class Question(models.Model):
     @property
     def answer_can_be_shown(self):
         return self.competition.start_at + timezone.timedelta(seconds=(self.number - 1) * (ANSWER_TIME_SECOND + REST_BETWEEN_EACH_QUESTION_SECOND) + ANSWER_TIME_SECOND) <= timezone.now()
+
+    objects: QuestionManager = QuestionManager()
 
     def __str__(self):
         return f"{self.competition.title} - {self.number} - {self.text}"

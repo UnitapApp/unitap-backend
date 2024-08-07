@@ -88,13 +88,13 @@ class QuestionSerializer(serializers.ModelSerializer):
         except ZeroDivisionError:
             if (
                 ques.competition.is_active
-                and ques.competition.status == Competition.Status.IN_PROGRESS
+                and ques.competition.can_be_shown
             ):
                 return prize_amount
         except TypeError:
             if (
                 ques.competition.is_active
-                and ques.competition.status == Competition.Status.IN_PROGRESS
+                and ques.competition.can_be_shown
             ):
                 remain_participants_count = cache.get(
                     f"comp_{ques.competition.pk}_total_participants_count", 1
@@ -108,7 +108,7 @@ class CompetitionField(serializers.PrimaryKeyRelatedField):
         if self.pk_field is not None:
             return self.pk_field.to_representation(pk)
         try:
-            item = Competition.objects.get(pk=pk)
+            item = Competition.objects.started.get(pk=pk)
             serializer = CompetitionSerializer(item)
             return serializer.data
         except Competition.DoesNotExist:
@@ -162,7 +162,7 @@ class UserCompetitionField(serializers.PrimaryKeyRelatedField):
 
 class UserAnswerSerializer(serializers.ModelSerializer):
     user_competition = UserCompetitionField(
-        queryset=UserCompetition.objects.filter( # TODO: filter out only in progress raffles
+        queryset=UserCompetition.objects.filter(
             competition__is_active=True,
         )
     )

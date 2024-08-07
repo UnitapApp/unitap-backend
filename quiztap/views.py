@@ -1,6 +1,8 @@
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 
+from django.utils import timezone
+
 from authentication.permissions import IsMeetVerified
 from core.filters import ChainFilterBackend, IsOwnerFilterBackend, StatusFilterBackend
 from core.paginations import StandardResultsSetPagination
@@ -50,6 +52,12 @@ class UserAnswerView(ListCreateAPIView):
     serializer_class = UserAnswerSerializer
     filter_backends = [IsOwnerFilterBackend, NestedCompetitionFilter]
     queryset = UserAnswer.objects.all()
+
+
+    def get_queryset(self):
+        return self.queryset.filter(
+            competition__start_at__gte=timezone.now()
+        )
 
     def perform_create(self, serializer):
         serializer.save()
