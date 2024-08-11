@@ -369,4 +369,4 @@ def check_lens_profile_existance(sender, instance: LensConnection, **kwargs):
         return
     res = instance.profile_id
     if res is None:
-        raise FarcasterSaveError("Lens profile for this wallet not found.")
+        raise LensSaveError("Lens profile for this wallet not found.")

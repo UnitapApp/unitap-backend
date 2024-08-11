@@ -20,6 +20,7 @@ from core.constraints.farcaster import (
     DidRecastFarcasterCast,
     HasFarcasterProfile,
     HasMinimumFarcasterFollower,
+    IsFollowingFarcasterBatch,
     IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
 )
@@ -33,6 +34,7 @@ from core.constraints.gitcoin_passport import (
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
 )
+from core.constraints.glm_staking import GLMStakingVerification
 from core.constraints.lens import (
     BeFollowedByLensUser,
     DidCollectLensPublication,
@@ -53,12 +55,10 @@ from core.constraints.twitter import (
     HasMinimumTwitterFollowerCount,
     HasTwitter,
     HasVoteOnATweet,
+    IsFollowingTwitterBatch,
     IsFollowinTwitterUser,
 )
 
-from core.constraints.glm_staking import (
-    GLMStakingVerification
-)
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:
     app_name, constraint_name = constraint_label.split(".")

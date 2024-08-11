@@ -167,3 +167,31 @@ class IsFollowingFarcasterChannel(ConstraintVerification):
                 fa_connection.user_wallet_address,
             ],
         )
+
+
+class IsFollowingFarcasterBatch(ConstraintVerification):
+    _param_keys = [ConstraintParam.FARCASTER_FIDS]
+    app_name = ConstraintApp.FARCASTER.value
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def get_info(self, *args, **kwargs) -> dict:
+        from authentication.models import FarcasterConnection
+
+        farcaster_util = FarcasterUtil()
+        try:
+            fa_connection = FarcasterConnection.get_connection(self.user_profile)
+        except FarcasterConnection.DoesNotExist:
+            logging.error("Farcaster connection not found.")
+            return None
+        fids = self.param_values[ConstraintParam.FARCASTER_FIDS.name]
+        return farcaster_util.is_following_batch(
+            fids=fids, address=fa_connection.user_wallet_address
+        )
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        res = self.get_info(*args, **kwargs)
+        if res is None:
+            return False
+        return all(res.values())

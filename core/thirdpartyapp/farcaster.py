@@ -114,12 +114,17 @@ class FarcasterUtil:
             logging.error(f"user not found, error: {e}")
         return False
 
-    def _get_follow_status(self, user_fid: str, follower_fid: str) -> bool:
+    def _get_followers_status(self, user_fid: str, follower_fids: str | list) -> bool:
+        if isinstance(follower_fids, list):
+            follower_fids = ",".join(follower_fids)
         path = self.paths.get("get_bulk_profile_by_fid")
-        params = {"viewer_fid": user_fid, "fids": follower_fid}
-        return self.requests.get(
+        params = {"viewer_fid": user_fid, "fids": follower_fids}
+        res = self.requests.get(
             path=path, params=params, session=self.session, headers=self.headers
-        )["users"][0]["viewer_context"]["followed_by"]
+        )[0]["viewer_context"]["followed_by"]
+        return {
+            data["fid"]: data["viewer_context"]["following"] for data in res["users"]
+        }
 
     def is_following(self, fid: str, address: str) -> bool:
         """check if address followed fid or not.
@@ -129,7 +134,7 @@ class FarcasterUtil:
         """
         try:
             follower_fid = self._get_profile(address)["fid"]
-            return self._get_follow_status(fid, follower_fid)
+            return self._get_followers_status(follower_fid, fid)
         except (
             RequestException,
             IndexError,
@@ -148,7 +153,7 @@ class FarcasterUtil:
         """
         try:
             following_fid = self._get_profile(address)["fid"]
-            return self._get_follow_status(following_fid, fid)
+            return self._get_follow_status(fid, following_fid)
         except (
             RequestException,
             IndexError,
@@ -182,3 +187,17 @@ class FarcasterUtil:
         except (RequestException, KeyError, AttributeError) as e:
             logging.error(f"Channel not found, error: {e}")
         return False
+
+    def is_following_batch(self, fids: list[str], address: str) -> None | dict:
+        try:
+            follower_fid = self._get_profile(address)["fid"]
+            return self._get_follow_status(follower_fid, fids)
+        except (
+            RequestException,
+            IndexError,
+            KeyError,
+            AttributeError,
+            ValueError,
+        ) as e:
+            logging.error(f"could not check following status, error: {e}")
+        return None

@@ -40,6 +40,15 @@ class RaffleEnrollmentValidator:
             cache_key = f"prizetap-{self.user_profile.pk}-{self.raffle.pk}-{c.pk}"
             cache_data = cache.get(cache_key)
             if cache_data is None:
+                """
+                Refactor: this is not good design beacuse info is duplicated with
+                is_observed so we need some design change for in is_observed so
+                if info needed it must return it.
+                or more basical change likes change how constraints logic is.
+                """
+                info = constraint.get_info(
+                    **cdata, from_time=int(self.raffle.start_at.timestamp())
+                )
                 if str(c.pk) in self.raffle.reversed_constraints_list:
                     is_verified = not constraint.is_observed(
                         **cdata, from_time=int(self.raffle.start_at.timestamp())
@@ -52,6 +61,7 @@ class RaffleEnrollmentValidator:
                 expiration_time = time.time() + caching_time
                 cache_data = {
                     "is_verified": is_verified,
+                    "info": info,
                     "expiration_time": expiration_time,
                 }
                 cache.set(
