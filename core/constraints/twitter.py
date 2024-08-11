@@ -216,7 +216,7 @@ class DidQuoteTweet(ConstraintVerification):
 
 class IsFollowingTwitterBatch(ConstraintVerification):
     app_name = ConstraintApp.TWITTER.value
-    _param_keys = [ConstraintParam.TWEET_IDS]
+    _param_keys = [ConstraintParam.TWITTER_IDS]
 
     def __init__(self, user_profile) -> None:
         super().__init__(user_profile)
@@ -230,7 +230,7 @@ class IsFollowingTwitterBatch(ConstraintVerification):
             return None
 
         twitter_username = twitter.username
-        target_ids_list = self.param_values[ConstraintParam.TWEET_IDS.name]
+        target_ids_list = self.param_values[ConstraintParam.TWITTER_IDS.name]
 
         rapid_twitter = RapidTwitter()
         res = rapid_twitter.is_following_batch_with_cache(
