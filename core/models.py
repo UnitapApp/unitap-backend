@@ -29,6 +29,7 @@ from .constraints import (
     DidQuoteTweet,
     DidRecastFarcasterCast,
     DidRetweetTweet,
+    GLMStakingVerification,
     HasENSVerification,
     HasFarcasterProfile,
     HasGitcoinPassportProfile,
@@ -41,11 +42,12 @@ from .constraints import (
     HasNFTVerification,
     HasTokenTransferVerification,
     HasTokenVerification,
+    IsFollowingFarcasterBatch,
     IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
+    IsFollowingTwitterBatch,
     IsFollowinTwitterUser,
-    GLMStakingVerification
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -144,7 +146,9 @@ class UserConstraint(models.Model):
         HasMuonNode,
         DidDelegateArbToAddress,
         DidDelegateOPToAddress,
-        GLMStakingVerification
+        GLMStakingVerification,
+        IsFollowingTwitterBatch,
+        IsFollowingFarcasterBatch,
     ]
 
     name = models.CharField(

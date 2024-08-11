@@ -65,6 +65,10 @@ class TokenDistributionValidator:
             cache_key = f"tokentap-{self.user_profile.pk}-{self.td.pk}-{c.pk}"
             cache_data = cache.get(cache_key)
             if cache_data is None:
+                info = constraint.get_info(
+                    **cdata,
+                    token_distribution=self.td,
+                )
                 if str(c.pk) in self.td.reversed_constraints_list:
                     is_verified = not constraint.is_observed(
                         **cdata,
@@ -79,6 +83,7 @@ class TokenDistributionValidator:
                 expiration_time = time.time() + caching_time
                 cache_data = {
                     "is_verified": is_verified,
+                    "info": info,
                     "expiration_time": expiration_time,
                 }
                 cache.set(
