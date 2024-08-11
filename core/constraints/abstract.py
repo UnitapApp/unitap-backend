@@ -42,7 +42,7 @@ class ConstraintParam(Enum):
     TWEET_ID = "tweet_id"
     TARGET_TWEET_ID = "target_tweet_id"
     TWITTER_USERNAME = "twitter_username"
-    TWEET_IDS = "tweet_ids"
+    TWITTER_IDS = "twitter_ids"
     FARCASTER_FIDS = "farcaster_fids"
 
     @classmethod
