@@ -149,11 +149,13 @@ class UserProfile(models.Model):
 
         # Loop through each related connection
         for rel in self._meta.get_fields():
-            if rel.one_to_one and issubclass(
-                rel.related_model, BaseThirdPartyConnection
+            if (
+                rel.one_to_one
+                and issubclass(rel.related_model, BaseThirdPartyConnection)
+                and hasattr(self, rel.get_accessor_name())
             ):
                 related_manager = getattr(self, rel.get_accessor_name())
-                connections.extend(related_manager.all())
+                connections.append(related_manager)
 
         return connections
 
