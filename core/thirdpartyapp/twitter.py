@@ -224,7 +224,7 @@ class RapidTwitter:
             response.raise_for_status()
             data = response.json()
             followings = set(data.get("ids", []))
-            for id_, is_following in res:
+            for id_, is_following in res.items():
                 if is_following:
                     continue
                 res[id_] = id_ in followings
