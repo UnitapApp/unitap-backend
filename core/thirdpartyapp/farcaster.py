@@ -191,7 +191,7 @@ class FarcasterUtil:
     def is_following_batch(self, fids: list[str], address: str) -> None | dict:
         try:
             follower_fid = self._get_profile(address)["fid"]
-            return self._get_follow_status(follower_fid, fids)
+            return self._get_followers_status(follower_fid, fids)
         except (
             RequestException,
             IndexError,

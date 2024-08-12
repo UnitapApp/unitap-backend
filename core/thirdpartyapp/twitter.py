@@ -237,7 +237,7 @@ class RapidTwitter:
     def is_following_batch_with_cache(
         self, username: str, target_ids_list: list[str]
     ) -> dict[str:bool]:
-        cache_key = f'{self.get_user_id(username)}-{"-".join(target_ids_list)}'
+        cache_key = f'{self.get_user_id(username)}-{"-".join(map(str, target_ids_list))}'
         res = cache.get(cache_key)
         if res is not None:
             return res
