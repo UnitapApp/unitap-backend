@@ -230,7 +230,7 @@ class IsFollowingTwitterBatch(ConstraintVerification):
             return None
 
         twitter_username = twitter.username
-        target_ids_list = self.param_values[ConstraintParam.TWITTER_IDS.name]
+        target_ids_list = list(map(str, self.param_values[ConstraintParam.TWITTER_IDS.name]))
 
         rapid_twitter = RapidTwitter()
         res = rapid_twitter.is_following_batch_with_cache(
