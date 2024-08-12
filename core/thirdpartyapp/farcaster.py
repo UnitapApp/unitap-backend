@@ -116,12 +116,12 @@ class FarcasterUtil:
 
     def _get_followers_status(self, user_fid: str, follower_fids: str | list) -> bool:
         if isinstance(follower_fids, list):
-            follower_fids = ",".join(follower_fids)
+            follower_fids = ",".join(map(str, follower_fids))
         path = self.paths.get("get_bulk_profile_by_fid")
         params = {"viewer_fid": user_fid, "fids": follower_fids}
         res = self.requests.get(
             path=path, params=params, session=self.session, headers=self.headers
-        )[0]["viewer_context"]["followed_by"]
+        )
         return {
             data["fid"]: data["viewer_context"]["following"] for data in res["users"]
         }
