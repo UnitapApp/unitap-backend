@@ -234,12 +234,12 @@ def set_raffle_ids(self):
                     if raffle.creator_address != onchain_raffle["initiator"]:
                         is_valid = False
                         logging.error(f"Mismatch raffle {raffle.pk} initiator")
-                    # if (
-                    #     raffle.max_number_of_entries
-                    #     != onchain_raffle["maxParticipants"]
-                    # ):
-                    #     is_valid = False
-                    #     logging.error(f"Mismatch raffle {raffle.pk} maxParticipants")
+                    if (
+                        raffle.max_number_of_entries
+                        != onchain_raffle["maxParticipants"]
+                    ):
+                        is_valid = False
+                        logging.error(f"Mismatch raffle {raffle.pk} maxParticipants")
                     if raffle.max_multiplier != onchain_raffle["maxMultiplier"]:
                         is_valid = False
                         logging.error(f"Mismatch raffle {raffle.pk} maxMultiplier")
