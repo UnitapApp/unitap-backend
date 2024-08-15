@@ -212,3 +212,34 @@ class DidQuoteTweet(ConstraintVerification):
             return twitter_util.did_quote_tweet(tweet_id=tweet_id)
         except Exception as e:
             logging.error(f"Error in DidQuoteTweet: {e}")
+
+
+class IsFollowingTwitterBatch(ConstraintVerification):
+    app_name = ConstraintApp.TWITTER.value
+    _param_keys = [ConstraintParam.TWITTER_IDS]
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
+
+    def get_info(self, *args, **kwargs) -> None | dict:
+        from authentication.models import TwitterConnection
+
+        try:
+            twitter = TwitterConnection.get_connection(self.user_profile)
+        except TwitterConnection.DoesNotExist:
+            return None
+
+        twitter_username = twitter.username
+        target_ids_list = list(map(str, self.param_values[ConstraintParam.TWITTER_IDS.name]))
+
+        rapid_twitter = RapidTwitter()
+        res = rapid_twitter.is_following_batch_with_cache(
+            username=twitter_username, target_ids_list=target_ids_list
+        )
+        return res
+
+    def is_observed(self, *args, **kwargs) -> bool:
+        res = self.get_info(*args, **kwargs)
+        if res is None:
+            return False
+        return all(res.values())

@@ -2,6 +2,7 @@ import os
 
 import requests
 import tweepy
+from django.core.cache import cache
 from ratelimit import limits, sleep_and_retry
 
 
@@ -202,13 +203,49 @@ class RapidTwitter:
             )
             response.raise_for_status()
             data = response.json()
-            followings = data["ids"]
+            followings = data.get("ids", [])
             if target_id in followings:
                 return True
 
-            cursor = data["next_cursor"]
+            cursor = data.get("next_cursor")
             if not cursor:
                 return False
+
+    def is_following_batch(
+        self, username: str, target_ids_list: list[str]
+    ) -> dict[str:bool]:
+        res = {id_: False for id_ in target_ids_list}
+        cursor = None
+        while True:
+            response = self._request(
+                url="v1.1/FollowingIds",
+                params={"username": username, "count": 5000, "cursor": cursor},
+            )
+            response.raise_for_status()
+            data = response.json()
+            followings = set(map(str, data.get("ids", [])))
+            for id_, is_following in res.items():
+                if is_following:
+                    continue
+                res[id_] = id_ in followings
+            if all(res.values()):
+                return res
+            cursor = data.get("next_cursor")
+            if not cursor:
+                return res
+
+    def is_following_batch_with_cache(
+        self, username: str, target_ids_list: list[str]
+    ) -> dict[str:bool]:
+        cache_key = f'{self.get_user_id(username)}-{hash("-".join(target_ids_list))}'
+        res = cache.get(cache_key)
+        if res is not None:
+            return res
+        res = self.is_following_batch(
+            username=username, target_ids_list=target_ids_list
+        )
+        cache.set(cache_key, res, 60 * 10)
+        return res
 
     def get_followers(self, username: str, cursor=None):
         response = self._request(

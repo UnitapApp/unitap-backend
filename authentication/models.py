@@ -149,11 +149,13 @@ class UserProfile(models.Model):
 
         # Loop through each related connection
         for rel in self._meta.get_fields():
-            if rel.one_to_many and issubclass(
-                rel.related_model, BaseThirdPartyConnection
+            if (
+                rel.one_to_one
+                and issubclass(rel.related_model, BaseThirdPartyConnection)
+                and hasattr(self, rel.get_accessor_name())
             ):
                 related_manager = getattr(self, rel.get_accessor_name())
-                connections.extend(related_manager.all())
+                connections.append(related_manager)
 
         return connections
 
@@ -181,8 +183,8 @@ class Wallet(SafeDeleteModel):
 
 class BaseThirdPartyConnection(models.Model):
     title = "BaseThirdPartyConnection"
-    user_profile = models.ForeignKey(
-        UserProfile, on_delete=models.PROTECT, related_name="%(class)s", unique=True
+    user_profile = models.OneToOneField(
+        UserProfile, on_delete=models.PROTECT, related_name="%(class)s"
     )
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
@@ -369,4 +371,4 @@ def check_lens_profile_existance(sender, instance: LensConnection, **kwargs):
         return
     res = instance.profile_id
     if res is None:
-        raise FarcasterSaveError("Lens profile for this wallet not found.")
+        raise LensSaveError("Lens profile for this wallet not found.")

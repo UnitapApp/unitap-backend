@@ -22,11 +22,14 @@ from .constraints import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
     DidCollectLensPublication,
+    DidDelegateArbToAddress,
+    DidDelegateOPToAddress,
     DidLikedFarcasterCast,
     DidMirrorOnLensPublication,
     DidQuoteTweet,
     DidRecastFarcasterCast,
     DidRetweetTweet,
+    GLMStakingVerification,
     HasENSVerification,
     HasFarcasterProfile,
     HasGitcoinPassportProfile,
@@ -39,9 +42,11 @@ from .constraints import (
     HasNFTVerification,
     HasTokenTransferVerification,
     HasTokenVerification,
+    IsFollowingFarcasterBatch,
     IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
+    IsFollowingTwitterBatch,
     IsFollowinTwitterUser,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
@@ -139,6 +144,11 @@ class UserConstraint(models.Model):
         DidRetweetTweet,
         DidQuoteTweet,
         HasMuonNode,
+        DidDelegateArbToAddress,
+        DidDelegateOPToAddress,
+        GLMStakingVerification,
+        IsFollowingTwitterBatch,
+        IsFollowingFarcasterBatch,
     ]
 
     name = models.CharField(
