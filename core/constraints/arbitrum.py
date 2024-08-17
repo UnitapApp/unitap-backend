@@ -8,7 +8,7 @@ from core.constraints.abstract import (
     ConstraintVerification,
 )
 from core.thirdpartyapp import Subgraph
-from core.utils import InvalidAddressException, TokenClient
+from core.utils import InvalidAddressException, TokenClient, Web3Utils
 
 
 class BridgeEthToArb(ConstraintVerification):
@@ -79,13 +79,10 @@ class BridgeEthToArb(ConstraintVerification):
                 return False
 
 
-class DidDelegateArbToAddress(ConstraintVerification):
+class DelegateArb(ConstraintVerification):
     app_name = ConstraintApp.ARBITRUM.value
 
-    _param_keys = (
-        ConstraintParam.ADDRESS,
-        ConstraintParam.MINIMUM,
-    )
+    _param_keys = []
 
     ARBITRUM_CHAIN_ID = "42161"
     ARB_TOKEN_ABI = [
@@ -129,10 +126,12 @@ class DidDelegateArbToAddress(ConstraintVerification):
             try:
                 address = token_client.to_checksum_address(user_address)
                 delegated_address = token_client.get_delegates_address()
-                if (
-                    delegated_address.lower()
-                    != self.param_values[ConstraintParam.ADDRESS.name].lower()
-                ):
+                target_address = (
+                    self.param_values[ConstraintParam.ADDRESS.name].lower()
+                    if ConstraintParam.ADDRESS.name in self.param_keys()
+                    else Web3Utils.ZERO_ADDRESS
+                )
+                if delegated_address.lower() != target_address:
                     continue
                 balance = token_client.get_non_native_token_balance(address)
                 delegated_power += balance
@@ -141,3 +140,13 @@ class DidDelegateArbToAddress(ConstraintVerification):
         if delegated_power >= int(self.param_values[ConstraintParam.MINIMUM.name]):
             return True
         return False
+
+
+class DidDelegateArbToAddress(DelegateArb):
+    _param_keys = (
+        ConstraintParam.ADDRESS,
+        ConstraintParam.MINIMUM,
+    )
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)
