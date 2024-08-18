@@ -126,12 +126,13 @@ class DelegateArb(ConstraintVerification):
             try:
                 address = token_client.to_checksum_address(user_address)
                 delegated_address = token_client.get_delegates_address()
-                target_address = (
-                    self.param_values[ConstraintParam.ADDRESS.name].lower()
-                    if ConstraintParam.ADDRESS.name in self.param_keys()
-                    else Web3Utils.ZERO_ADDRESS
-                )
-                if delegated_address.lower() != target_address:
+                if not self.param_keys():
+                    if delegated_address.lower() != Web3Utils.ZERO_ADDRESS:
+                        return True
+                elif (
+                    delegated_address.lower()
+                    != self.param_values[ConstraintParam.ADDRESS.name].lower()
+                ):
                     continue
                 balance = token_client.get_non_native_token_balance(address)
                 delegated_power += balance
