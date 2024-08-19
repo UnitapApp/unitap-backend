@@ -5,12 +5,12 @@ from core.constraints.abstract import (
     ConstraintParam,
     ConstraintVerification,
 )
-from core.utils import InvalidAddressException, TokenClient, Web3Utils
+from core.utils import InvalidAddressException, TokenClient
 
 
 class DelegateOP(ConstraintVerification):
     app_name = ConstraintApp.OPTIMISM.value
-    _param_keys = []
+    _param_keys = [ConstraintParam.MINIMUM]
 
     OPTIMISM_CHAIN_ID = "10"
     OP_TOKEN_ABI = [
@@ -54,11 +54,9 @@ class DelegateOP(ConstraintVerification):
             try:
                 address = token_client.to_checksum_address(user_address)
                 delegated_address = token_client.get_delegates_address()
-                if not self.param_keys():
-                    if delegated_address.lower() != Web3Utils.ZERO_ADDRESS:
-                        return True
-                elif (
-                    delegated_address.lower()
+                if (
+                    ConstraintParam.ADDRESS.name in self.param_keys()
+                    and delegated_address.lower()
                     != self.param_values[ConstraintParam.ADDRESS.name].lower()
                 ):
                     continue
