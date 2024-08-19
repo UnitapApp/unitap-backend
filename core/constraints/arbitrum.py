@@ -8,7 +8,7 @@ from core.constraints.abstract import (
     ConstraintVerification,
 )
 from core.thirdpartyapp import Subgraph
-from core.utils import InvalidAddressException, TokenClient, Web3Utils
+from core.utils import InvalidAddressException, TokenClient
 
 
 class BridgeEthToArb(ConstraintVerification):
@@ -82,7 +82,7 @@ class BridgeEthToArb(ConstraintVerification):
 class DelegateArb(ConstraintVerification):
     app_name = ConstraintApp.ARBITRUM.value
 
-    _param_keys = []
+    _param_keys = [ConstraintParam.MINIMUM]
 
     ARBITRUM_CHAIN_ID = "42161"
     ARB_TOKEN_ABI = [
@@ -126,11 +126,9 @@ class DelegateArb(ConstraintVerification):
             try:
                 address = token_client.to_checksum_address(user_address)
                 delegated_address = token_client.get_delegates_address()
-                if not self.param_keys():
-                    if delegated_address.lower() != Web3Utils.ZERO_ADDRESS:
-                        return True
-                elif (
-                    delegated_address.lower()
+                if (
+                    ConstraintParam.ADDRESS.name in self.param_keys()
+                    and delegated_address.lower()
                     != self.param_values[ConstraintParam.ADDRESS.name].lower()
                 ):
                     continue
