@@ -8,12 +8,9 @@ from core.constraints.abstract import (
 from core.utils import InvalidAddressException, TokenClient
 
 
-class DidDelegateOPToAddress(ConstraintVerification):
+class DelegateOP(ConstraintVerification):
     app_name = ConstraintApp.OPTIMISM.value
-    _param_keys = (
-        ConstraintParam.MINIMUM,
-        ConstraintParam.ADDRESS,
-    )
+    _param_keys = [ConstraintParam.MINIMUM]
 
     OPTIMISM_CHAIN_ID = "10"
     OP_TOKEN_ABI = [
@@ -58,7 +55,8 @@ class DidDelegateOPToAddress(ConstraintVerification):
                 address = token_client.to_checksum_address(user_address)
                 delegated_address = token_client.get_delegates_address()
                 if (
-                    delegated_address.lower()
+                    ConstraintParam.ADDRESS.name in self.param_keys()
+                    and delegated_address.lower()
                     != self.param_values[ConstraintParam.ADDRESS.name].lower()
                 ):
                     continue
@@ -69,3 +67,13 @@ class DidDelegateOPToAddress(ConstraintVerification):
         if delegated_power >= int(self.param_values[ConstraintParam.MINIMUM.name]):
             return True
         return False
+
+
+class DidDelegateOPToAddress(ConstraintVerification):
+    _param_keys = (
+        ConstraintParam.MINIMUM,
+        ConstraintParam.ADDRESS,
+    )
+
+    def __init__(self, user_profile) -> None:
+        super().__init__(user_profile)

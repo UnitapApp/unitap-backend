@@ -7,7 +7,11 @@ from core.constraints.abstract import (
     ConstraintParam,
     ConstraintVerification,
 )
-from core.constraints.arbitrum import BridgeEthToArb, DidDelegateArbToAddress
+from core.constraints.arbitrum import (
+    BridgeEthToArb,
+    DelegateArb,
+    DidDelegateArbToAddress,
+)
 from core.constraints.bright_id import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
@@ -45,7 +49,7 @@ from core.constraints.lens import (
     IsFollowingLensUser,
 )
 from core.constraints.muon_node import HasMuonNode
-from core.constraints.optimism import DidDelegateOPToAddress
+from core.constraints.optimism import DelegateOP, DidDelegateOPToAddress
 from core.constraints.twitter import (
     BeFollowedByTwitterUser,
     DidQuoteTweet,
