@@ -182,7 +182,12 @@ class RapidTwitter:
     def _request(self, url, params):
         return requests.get(
             url=f"https://{self.host}/{url}",
-            headers={"x-rapidapi-key": self.rapid_key, "x-rapidapi-host": self.host},
+            headers={
+                "x-rapidapi-key": self.rapid_key,
+                "x-rapidapi-host": self.host,
+                "Accept": "application/json",
+                "Accept-Encoding": "gzip",
+            },
             params=params,
             timeout=10,
         )
@@ -237,7 +242,7 @@ class RapidTwitter:
     def is_following_batch_with_cache(
         self, username: str, target_ids_list: list[str]
     ) -> dict[str:bool]:
-        cache_key = f'{username}-{hash("-".join(target_ids_list))}'
+        cache_key = f'{self.get_user_id(username)}-{hash("-".join(target_ids_list))}'
         res = cache.get(cache_key)
         if res is not None:
             return res
