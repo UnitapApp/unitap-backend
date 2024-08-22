@@ -13,7 +13,6 @@ class GLMStakingVerification(ConstraintVerification):
     app_name = ConstraintApp.OCTANT.value
 
     _param_keys = [
-        ConstraintParam.CHAIN,
         ConstraintParam.MINIMUM,
     ]
     GLM_CONTRACT_ADDRESS = "0x879133Fd79b7F48CE1c368b0fCA9ea168eaF117c"
