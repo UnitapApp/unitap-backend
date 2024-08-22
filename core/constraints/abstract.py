@@ -11,7 +11,11 @@ class ConstraintApp(Enum):
     ENS = "ENS"
     EAS = "EAS"
     GITCOIN_PASSPORT = "gitcoin_passport"
-    ARB_BRIDGE = "arb_bridge"
+    ARBITRUM = "arbitrum"
+    TWITTER = "twitter"
+    MUON = "muon"
+    OPTIMISM = "optimism"
+    GLM_STAKING = "glm_staking"
 
     @classmethod
     def choices(cls):
@@ -35,6 +39,11 @@ class ConstraintParam(Enum):
     VALUE = "value"
     EAS_SCHEMA_ID = "eas_schema_id"
     FARCASTER_CHANNEL_ID = "FARCASTER_CHANNEL_ID"
+    TWEET_ID = "tweet_id"
+    TARGET_TWEET_ID = "target_tweet_id"
+    TWITTER_USERNAME = "twitter_username"
+    TWITTER_IDS = "twitter_ids"
+    FARCASTER_FIDS = "farcaster_fids"
 
     @classmethod
     def choices(cls):
@@ -49,6 +58,9 @@ class ConstraintVerification(ABC):
     def __init__(self, user_profile) -> None:
         self.user_profile = user_profile
         self._param_values = {}
+
+    def get_info(self, *args, **kwargs):
+        pass
 
     @abstractmethod
     def is_observed(self, *args, **kwargs) -> bool:

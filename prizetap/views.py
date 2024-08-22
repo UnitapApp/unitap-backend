@@ -1,8 +1,6 @@
-import json
-
 import rest_framework.exceptions
 from django.db import transaction
-from django.db.models import F
+from django.db.models import Case, F, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
@@ -15,8 +13,8 @@ from rest_framework.views import APIView
 from web3 import Web3
 
 from authentication.models import UserProfile
-from core.constraints import ConstraintVerification, get_constraint
 from core.models import Chain
+from core.paginations import StandardResultsSetPagination
 from core.serializers import ChainSerializer
 from core.swagger import ConstraintProviderSrializerInspector
 from core.views import AbstractConstraintsListView
@@ -39,11 +37,18 @@ from .validators import (
 
 
 class RaffleListView(ListAPIView):
-    valid_time = timezone.now() - timezone.timedelta(days=360)
+    now = timezone.now()
+    valid_time = now - timezone.timedelta(days=360)
     queryset = (
         Raffle.objects.filter(is_active=True)
         .filter(deadline__gte=valid_time)
-        .order_by("-pk")
+        .annotate(
+            is_expired_true=Case(
+                When(deadline__gte=now, then=("deadline")), default=None
+            ),
+            is_expired_false=Case(When(deadline__lt=now, then=("pk")), default=None),
+        )
+        .order_by("-is_expired_false", "-is_expired_true")
     )
     serializer_class = RaffleSerializer
 
@@ -67,13 +72,18 @@ class RaffleEnrollmentView(CreateAPIView):
     def post(self, request, pk):
         user_profile: UserProfile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=pk)
+        if raffle.pre_enrollment_wallets:
+            raise rest_framework.exceptions.ValidationError("Raffle is pre-enrollment")
         user_wallet_address = request.data.get("user_wallet_address", None)
+        raffle_data = request.data.get("raffle_data", dict())
         if not user_wallet_address:
             raise rest_framework.exceptions.ParseError(
                 "user_wallet_address is required"
             )
 
-        validator = RaffleEnrollmentValidator(user_profile=user_profile, raffle=raffle)
+        validator = RaffleEnrollmentValidator(
+            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data
+        )
 
         validator.is_valid(self.request.data)
         prizetap_winning_chance_number = int(
@@ -178,33 +188,20 @@ class GetRaffleConstraintsView(APIView):
     def get(self, request, raffle_pk):
         user_profile = request.user.profile
         raffle = get_object_or_404(Raffle, pk=raffle_pk)
-        try:
-            param_values = json.loads(raffle.constraint_params)
-        except Exception:
-            param_values = {}
-
+        raffle_data = request.query_params.get("raffle_data", dict())
         reversed_constraints = raffle.reversed_constraints_list
         response_constraints = []
+        validator = RaffleEnrollmentValidator(
+            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data
+        )
 
-        for c in raffle.constraints.all():
-            constraint: ConstraintVerification = get_constraint(c.name)(user_profile)
-            constraint.response = c.response
-            try:
-                constraint.param_values = param_values[c.name]
-            except KeyError:
-                pass
-            is_verified = False
-            if str(c.pk) in reversed_constraints:
-                if not constraint.is_observed():
-                    is_verified = True
-            else:
-                if constraint.is_observed():
-                    is_verified = True
+        validated_constraints = validator.check_user_constraints(raise_exception=False)
+        for c_pk, data in validated_constraints.items():
             response_constraints.append(
                 {
-                    **ConstraintSerializer(c).data,
-                    "is_verified": is_verified,
-                    "is_reversed": True if str(c.pk) in reversed_constraints else False,
+                    **ConstraintSerializer(Constraint.objects.get(pk=c_pk)).data,
+                    **data,
+                    "is_reversed": True if str(c_pk) in reversed_constraints else False,
                 }
             )
 
@@ -319,3 +316,12 @@ class RaffleDetailsView(RetrieveAPIView):
             },
         )
         return Response(serializer.data)
+
+
+class RaffleEntriesView(ListAPIView):
+    pagination_class = StandardResultsSetPagination
+    serializer_class = RaffleEntrySerializer
+
+    def get_queryset(self, *args, **kwargs):
+        raffle_pk = self.request.parser_context.get("kwargs").get("pk")
+        return RaffleEntry.objects.filter(raffle__pk=raffle_pk).order_by("pk")

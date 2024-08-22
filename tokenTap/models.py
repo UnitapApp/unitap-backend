@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.core.cache import cache
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -9,10 +11,7 @@ from core.models import AbstractGlobalSettings, Chain, UniqueArrayField, UserCon
 from core.utils import calculate_percentage_date
 from faucet.constraints import OptimismHasClaimedGasConstraint
 from faucet.models import ClaimReceipt
-from tokenTap.constants import (
-    UNITAP_PASS_CLAIM_PERCENT,
-    UNITAP_PASS_CLAIM_TIME_AVAILABLE,
-)
+from tokenTap.constants import UNITAP_PASS_CLAIM_PERCENT
 
 from .constraints import (
     OnceInALifeTimeVerification,
@@ -105,7 +104,7 @@ class TokenDistribution(models.Model):
     def is_maxed_out(self):
         if self.max_number_of_claims is None:
             return False
-        return self.max_number_of_claims <= self.number_of_onchain_claims
+        return self.max_number_of_claims <= self.number_of_claims
 
     @property
     def number_of_onchain_claims(self):
@@ -126,28 +125,51 @@ class TokenDistribution(models.Model):
 
     @property
     def max_claim_number_for_unitap_pass_user(self):
-        if (
-            self.max_number_of_claims is None
-            or self.claim_deadline_for_unitap_pass_user < timezone.now()
-        ):
+        if self.max_number_of_claims is None:
             return None
+        if self.claim_deadline_for_unitap_pass_user < timezone.now():
+            return 0
         return int(self.max_number_of_claims * UNITAP_PASS_CLAIM_PERCENT)
 
     @property
     def remaining_claim_for_unitap_pass_user(self):
-        if self.max_claim_number_for_unitap_pass_user is None:
+        total_claim_number_for_ups = self.max_claim_number_for_unitap_pass_user
+        if total_claim_number_for_ups is None:
             return None
+        if total_claim_number_for_ups == 0:
+            return 0
         is_unitap_pass_share_count = self.claims.filter(
             is_unitap_pass_share=True
         ).count()
-        return self.max_claim_number_for_unitap_pass_user - is_unitap_pass_share_count
+        return total_claim_number_for_ups - is_unitap_pass_share_count
+
+    @property
+    def remaining_claim_for_normal_user(self):
+        if self.max_number_of_claims is None:
+            return None
+        if (
+            self.max_claim_number_for_unitap_pass_user is None
+            or self.claim_deadline_for_unitap_pass_user < timezone.now()
+        ):
+            return self.max_number_of_claims - self.number_of_claims
+
+        return (
+            self.max_number_of_claims
+            - self.number_of_claims
+            - self.remaining_claim_for_unitap_pass_user
+        )
 
     @property
     def claim_deadline_for_unitap_pass_user(self):
-        return calculate_percentage_date(
-            self.start_at,
-            self.deadline,
-            UNITAP_PASS_CLAIM_TIME_AVAILABLE,
+        dist_duration = self.deadline - self.start_at
+        if dist_duration > timedelta(days=30):
+            return self.start_at + timedelta(days=3)
+        elif dist_duration >= timedelta(days=7) and dist_duration <= timedelta(days=30):
+            return self.start_at + timedelta(days=2)
+
+        return min(
+            calculate_percentage_date(self.start_at, self.deadline, 0.5),
+            self.start_at + timedelta(days=1),
         )
 
     @property

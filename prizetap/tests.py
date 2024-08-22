@@ -3,6 +3,7 @@ import json
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
@@ -92,6 +93,9 @@ class RaffleTestCase(BaseTestCase):
             status=Raffle.Status.VERIFIED,
         )
         self.raffle.constraints.set([self.meet_constraint])
+
+    def tearDown(self) -> None:
+        cache.clear()
 
     def test_raffle_creation(self):
         self.assertEqual(Raffle.objects.count(), 1)
@@ -537,10 +541,10 @@ class RaffleAPITestCase(RaffleTestCase):
         )
 
     @patch(
-        "core.constraints.BrightIDMeetVerification.is_observed",
-        lambda a: False,
+        "authentication.models.UserProfile.is_meet_verified",
+        new_callable=PropertyMock(side_effect=lambda: False),
     )
-    def test_get_raffle_constraints(self):
+    def test_get_raffle_constraints(self, _):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.get(
             reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk})
@@ -552,9 +556,9 @@ class RaffleAPITestCase(RaffleTestCase):
 
     @patch(
         "authentication.models.UserProfile.is_meet_verified",
-        lambda a: (True, None),
+        new_callable=PropertyMock(side_effect=lambda: True),
     )
-    def test_get_raffle_constraints_when_is_verified(self):
+    def test_get_raffle_constraints_when_is_verified(self, _):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.get(
             reverse("get-raffle-constraints", kwargs={"raffle_pk": self.raffle.pk})

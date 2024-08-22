@@ -149,11 +149,13 @@ class UserProfile(models.Model):
 
         # Loop through each related connection
         for rel in self._meta.get_fields():
-            if rel.one_to_many and issubclass(
-                rel.related_model, BaseThirdPartyConnection
+            if (
+                rel.one_to_one
+                and issubclass(rel.related_model, BaseThirdPartyConnection)
+                and hasattr(self, rel.get_accessor_name())
             ):
                 related_manager = getattr(self, rel.get_accessor_name())
-                connections.extend(related_manager.all())
+                connections.append(related_manager)
 
         return connections
 
@@ -181,7 +183,7 @@ class Wallet(SafeDeleteModel):
 
 class BaseThirdPartyConnection(models.Model):
     title = "BaseThirdPartyConnection"
-    user_profile = models.ForeignKey(
+    user_profile = models.OneToOneField(
         UserProfile, on_delete=models.PROTECT, related_name="%(class)s"
     )
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -263,6 +265,40 @@ class TwitterConnection(BaseThirdPartyConnection):
     def is_connected(self):
         return bool(self.access_token and self.access_token_secret)
 
+    @property
+    def tweet_count(self):
+        return self.driver.get_tweet_count(self.access_token, self.access_token_secret)
+
+    @property
+    def follower_count(self):
+        return self.driver.get_follower_count(
+            self.access_token, self.access_token_secret
+        )
+
+    @property
+    def username(self):
+        return self.driver.get_username(self.access_token, self.access_token_secret)
+
+    @property
+    def twitter_id(self):
+        return self.driver.get_twitter_id(
+            self, self.access_token, self.access_token_secret
+        )
+
+    def is_replied(self, self_tweet_id, target_tweet_id):
+        return self.driver.get_is_replied(
+            self.access_token, self.access_token_secret, self_tweet_id, target_tweet_id
+        )
+
+    def is_liked(self, target_tweet_id):
+        return self.driver.get_is_liked(
+            self.access_token, self.access_token_secret, target_tweet_id
+        )
+
+
+class ENSSaveError(Exception):
+    pass
+
 
 class ENSConnection(BaseThirdPartyConnection):
     title = "ENS"
@@ -275,6 +311,15 @@ class ENSConnection(BaseThirdPartyConnection):
 
     def is_connected(self):
         return bool(self.name)
+
+
+@receiver(pre_save, sender=ENSConnection)
+def check_ens_connection(sender, instance: ENSConnection, **kwargs):
+    if instance.pk is not None:
+        return
+    res = instance.is_connected()
+    if not res:
+        raise ENSSaveError("No ENS has been found.")
 
 
 class FarcasterConnection(BaseThirdPartyConnection):
@@ -326,4 +371,4 @@ def check_lens_profile_existance(sender, instance: LensConnection, **kwargs):
         return
     res = instance.profile_id
     if res is None:
-        raise FarcasterSaveError("Lens profile for this wallet not found.")
+        raise LensSaveError("Lens profile for this wallet not found.")

@@ -161,7 +161,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         user_addresses = [
             nft_client.to_checksum_address(wallet.address.lower())
-            for wallet in instance.wallets.filter(wallet_type=eth_chain.chain_type)
+            for wallet in instance.wallets.filter(wallet_type=base_chain.chain_type)
         ]
 
         user_balance = 0

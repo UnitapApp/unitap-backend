@@ -143,7 +143,7 @@ def get_raffle_winners(self):
                             and addr != "0x0000000000000000000000000000000000000000"
                         ):
                             winner_entry = raffle.entries.filter(
-                                user_profile__wallets__address__iexact=addr
+                                user_wallet_address__iexact=addr
                             ).get()
                             winner_entry.is_winner = True
                             winner_entry.save()

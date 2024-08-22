@@ -270,7 +270,3 @@ REST_FRAMEWORK = {
     ),
 }
 CELERY_BROKER_URL = REDIS_URL
-
-
-
-

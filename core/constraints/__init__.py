@@ -7,7 +7,11 @@ from core.constraints.abstract import (
     ConstraintParam,
     ConstraintVerification,
 )
-from core.constraints.arb_bridge import BridgeEthToArb
+from core.constraints.arbitrum import (
+    BridgeEthToArb,
+    DelegateArb,
+    DidDelegateArbToAddress,
+)
 from core.constraints.bright_id import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
@@ -20,6 +24,7 @@ from core.constraints.farcaster import (
     DidRecastFarcasterCast,
     HasFarcasterProfile,
     HasMinimumFarcasterFollower,
+    IsFollowingFarcasterBatch,
     IsFollowingFarcasterChannel,
     IsFollowingFarcasterUser,
 )
@@ -33,6 +38,7 @@ from core.constraints.gitcoin_passport import (
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
 )
+from core.constraints.glm_staking import GLMStakingVerification
 from core.constraints.lens import (
     BeFollowedByLensUser,
     DidCollectLensPublication,
@@ -41,6 +47,20 @@ from core.constraints.lens import (
     HasMinimumLensFollower,
     HasMinimumLensPost,
     IsFollowingLensUser,
+)
+from core.constraints.muon_node import HasMuonNode
+from core.constraints.optimism import DelegateOP, DidDelegateOPToAddress
+from core.constraints.twitter import (
+    BeFollowedByTwitterUser,
+    DidQuoteTweet,
+    DidRetweetTweet,
+    HasCommentOnATweet,
+    HasMinimumTweetCount,
+    HasMinimumTwitterFollowerCount,
+    HasTwitter,
+    HasVoteOnATweet,
+    IsFollowingTwitterBatch,
+    IsFollowinTwitterUser,
 )
 
 
