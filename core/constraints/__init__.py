@@ -39,7 +39,6 @@ from core.constraints.gitcoin_passport import (
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
 )
-from core.constraints.glm_staking import GLMStakingVerification
 from core.constraints.lens import (
     BeFollowedByLensUser,
     DidCollectLensPublication,
@@ -50,6 +49,7 @@ from core.constraints.lens import (
     IsFollowingLensUser,
 )
 from core.constraints.muon_node import HasMuonNode
+from core.constraints.octant import GLMStakingVerification
 from core.constraints.optimism import DelegateOP, DidDelegateOPToAddress
 from core.constraints.twitter import (
     BeFollowedByTwitterUser,
