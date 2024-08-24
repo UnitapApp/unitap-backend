@@ -8,7 +8,7 @@ from core.constraints.abstract import (
     ConstraintVerification,
 )
 
-from ..thirdpartyapp.subgraph import Subgraph
+from ..thirdpartyapp.gitcoin_graph import GitcoinGraph
 
 
 class HasGitcoinPassportProfile(ConstraintVerification):
@@ -87,34 +87,28 @@ class HasDonatedOnGitcoin(ConstraintVerification):
             return False
 
     def has_donated(self, min, num_of_projects, round):
-        subgraph = Subgraph(self._graph_url)
+        graph = GitcoinGraph()
 
         user_wallets = self.user_profile.wallets.values_list(
             Lower("address"), flat=True
         )
 
-        query = """
-        query getDonationsByDonorAddress($addresses: [String!]!, $round: Int!) {
-            donations(
-                filter: {
-                    donorAddress: {in: $addresses}
-                    roundId: { equalTo: $round }
-                }
-            ) {
-                id
-                amountInUsd
-                projectId
-            }
-        }
-        """
-        vars = {"addresses": list(user_wallets), "round": round}
-
-        res = subgraph.send_post_request(
-            subgraph.path.get("gitcoin"),
-            query=query,
-            vars=vars,
-            other_json_params={"operationName": "getDonationsByDonorAddress"},
+        query = (
+            "\n  query getDonationsByDonorAddress($address: [String!]!) {\n"
+            "    donations(\n      first: 1000\n      filter: {\n"
+            "        donorAddress: { in: $address }\n      }\n    )"
+            " {\n      id\n      projectId\n      amountInUsd\n  }\n    }\n"
         )
+        vars = {"address": list(user_wallets)}
+
+        res = graph.send_post_request(
+            {
+                "query": query,
+                "variables": vars,
+                "operationName": "getDonationsByDonorAddress",
+            }
+        )
+        print(res)
         match res:
             case {"data": {"donations": donations}} if len(donations) > 0:
                 donated_projects = []
