@@ -17,6 +17,7 @@ from .constraints import (
     BeAttestedBy,
     BrightIDAuraVerification,
     BrightIDMeetVerification,
+    GLMStakingVerification,
     HasCommentOnATweet,
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
@@ -26,7 +27,6 @@ from .constraints import (
     HasTokenVerification,
     HasTwitter,
     HasVoteOnATweet,
-    GLMStakingVerification
 )
 
 test_wallet_key = "f57fecd11c6034fd2665d622e866f05f9b07f35f253ebd5563e3d7e76ae66809"
@@ -535,8 +535,6 @@ class TestTwitterConstraint(BaseTestCase):
         self.assertEqual(constraint.is_observed(), False)
 
 
-from unittest.mock import patch
-
 class TestGLMStakingConstraint(BaseTestCase):
     def setUp(self):
         super().setUp()
@@ -562,11 +560,9 @@ class TestGLMStakingConstraint(BaseTestCase):
         )
 
     def test_glm_staking_constraint_true(self):
-
         constraint = GLMStakingVerification(self.user_profile)
 
         constraint.param_values = {
-            "CHAIN": self.chain.pk,
             "MINIMUM": self.minimum_staked,
         }
 
