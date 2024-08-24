@@ -93,13 +93,22 @@ class HasDonatedOnGitcoin(ConstraintVerification):
             Lower("address"), flat=True
         )
 
-        query = (
-            "\n  query getDonationsByDonorAddress($address: [String!]!) {\n"
-            "    donations(\n      first: 1000\n      filter: {\n"
-            "        donorAddress: { in: $address }\n      }\n    )"
-            " {\n      id\n      projectId\n      amountInUsd\n  }\n    }\n"
-        )
-        vars = {"address": list(user_wallets)}
+        query = """
+            query getDonationsByDonorAddress($address: [String!]!, $round: String!) {
+                donations(
+                    first: 1000
+                    filter: {
+                        donorAddress: { in: $address }
+                        roundId: { equalTo: $round }
+                    }
+                ) {
+                    id
+                    projectId
+                    amountInUsd
+                }
+            }
+                """
+        vars = {"address": list(user_wallets), "round": str(round)}
 
         res = graph.send_post_request(
             {

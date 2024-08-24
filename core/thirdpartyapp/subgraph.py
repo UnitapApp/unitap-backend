@@ -6,28 +6,23 @@ from core.thirdpartyapp import config
 
 
 class Subgraph:
+    requests = RequestHelper(config.SUBGRAPH_BASE_URL)
     path = {
         "unitap_pass": "query/73675/unitap-pass-eth/version/latest",
         "arb_bridge_mainnet": "query/21879/unitap-arb-bridge-mainnet/version/latest",
-        "gitcoin": "graphql",
     }
 
-    def __init__(self, base_url=None):
-        self.requests = (
-            RequestHelper(base_url)
-            if base_url
-            else RequestHelper(config.SUBGRAPH_BASE_URL)
-        )
+    def __init__(self):
         self.session = self.requests.get_session()
 
     def __del__(self):
         self.session.close()
 
-    def send_post_request(self, path, query, vars, other_json_params=None, **kwargs):
+    def send_post_request(self, path, query, vars, **kwargs):
         try:
             return self.requests.post(
                 path=path,
-                json={"query": query, "variables": vars, **other_json_params},
+                json={"query": query, "variables": vars},
                 session=self.session,
                 **kwargs,
             )

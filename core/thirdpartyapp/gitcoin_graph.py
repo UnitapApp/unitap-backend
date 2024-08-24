@@ -2,7 +2,7 @@ import json
 import logging
 
 import requests
-import zstd
+import zstandard as zstd
 
 
 class GitcoinGraph:
@@ -13,9 +13,7 @@ class GitcoinGraph:
             res = requests.post(
                 self.URL, headers={"Content-Type": "application/json"}, json=json_data
             )
-            print(res.content.startswith(b"\x28\xb5\x2f\xfd"))
-            print()
-            return json.loads(zstd.decompress(res.content))
+            return json.loads(zstd.decompress(res.content, 1073741824).decode())
         except Exception as e:
             print(e)
             logging.error("Could not connect to gitcoin graph API")
