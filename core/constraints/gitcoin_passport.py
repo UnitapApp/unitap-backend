@@ -117,7 +117,6 @@ class HasDonatedOnGitcoin(ConstraintVerification):
                 "operationName": "getDonationsByDonorAddress",
             }
         )
-        print(res)
         match res:
             case {"data": {"donations": donations}} if len(donations) > 0:
                 donated_projects = []
