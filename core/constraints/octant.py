@@ -36,7 +36,7 @@ class GLMStakingVerification(ConstraintVerification):
         except InvalidAddressException as e:
             raise ValidationError({"address": str(e)})
 
-        return staked_amount >= minimum
+        return int(staked_amount) >= int(minimum)
 
     def get_staked_amount(self, user_address: str, web3_utils: Web3Utils) -> int:
         web3_utils.set_contract(self.GLM_CONTRACT_ADDRESS, GLM_ABI)
