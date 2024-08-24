@@ -35,6 +35,7 @@ from core.constraints.general import (
     HasTokenVerification,
 )
 from core.constraints.gitcoin_passport import (
+    HasDonatedOnGitcoin,
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
 )

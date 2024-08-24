@@ -44,6 +44,7 @@ class ConstraintParam(Enum):
     TWITTER_USERNAME = "twitter_username"
     TWITTER_IDS = "twitter_ids"
     FARCASTER_FIDS = "farcaster_fids"
+    COUNT = "count"
 
     @classmethod
     def choices(cls):
