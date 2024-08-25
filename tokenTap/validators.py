@@ -7,6 +7,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
+from core.utils import RequestContextExtractor
 
 from .helpers import has_credit_left
 from .models import ClaimReceipt, TokenDistribution
@@ -55,7 +56,7 @@ class TokenDistributionValidator:
         result = dict()
         for c in self.td.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile, { "request": self.request }
+                self.user_profile, { "request": RequestContextExtractor(self.request) }
             )
             constraint.response = c.response
             try:
