@@ -18,12 +18,11 @@ class HasVerifiedCloudflareCaptcha(ConstraintVerification):
 
     @staticmethod
     def get_client_ip(request: HttpRequest) -> str:
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META['REMOTE_ADDR']
-        return ip
+        return (
+            x_forwarded_for.split(',')[0]
+            if (x_forwarded_for := request.META.get('HTTP_X_FORWARDED_FOR'))
+            else request.META['REMOTE_ADDR']
+        )
 
     def is_observed(self, *args, **kwargs) -> bool:
         cloudflare = CloudflareUtil()
