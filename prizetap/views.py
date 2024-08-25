@@ -82,7 +82,7 @@ class RaffleEnrollmentView(CreateAPIView):
             )
 
         validator = RaffleEnrollmentValidator(
-            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data
+            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data, request=request
         )
 
         validator.is_valid(self.request.data)
@@ -192,7 +192,7 @@ class GetRaffleConstraintsView(APIView):
         reversed_constraints = raffle.reversed_constraints_list
         response_constraints = []
         validator = RaffleEnrollmentValidator(
-            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data
+            user_profile=user_profile, raffle=raffle, raffle_data=raffle_data, request=request
         )
 
         validated_constraints = validator.check_user_constraints(raise_exception=False)
