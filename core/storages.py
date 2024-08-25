@@ -32,8 +32,6 @@ class CloudflareImagesStorage(Storage):
         Has to be implemented.
         """
         content = self.service.open(name)
-        # print(content, "\n\n\n\n\n\n\n\n\n\n")
-        # print("FILASDASDASDD", File(content, name=name))
         return File(content, name=name)
 
     def _save(self, name, content):
@@ -110,7 +108,6 @@ class CloudflareImagesStorage(Storage):
         """
         Custom methods which allow to pass a variant and respect the original signature of `url`
         """
-        print("URL: ")
         return self.service.get_url(name, variant)
 
     def get_accessed_time(self, name):
