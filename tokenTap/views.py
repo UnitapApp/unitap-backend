@@ -185,7 +185,7 @@ class GetTokenDistributionConstraintsView(APIView):
         reversed_constraints = td.reversed_constraints_list
         response_constraints = []
 
-        validator = TokenDistributionValidator(td, user_profile, td_data, request=request)
+        validator = TokenDistributionValidator(td, user_profile, td_data, request=RequestContextExtractor(request))
         validated_constraints = validator.check_user_permissions(raise_exception=False)
         for c_pk, data in validated_constraints.items():
             response_constraints.append(
