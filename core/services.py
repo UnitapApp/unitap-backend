@@ -58,13 +58,9 @@ class CloudflareImagesService:
         """
 
         if self.domain:
-            return "https://{}/cdn-cgi/imagedelivery/{}/{}/{}".format(
-                self.domain, self.account_hash, name, variant
-            )
+            return f"https://{self.domain}/cdn-cgi/imagedelivery/{self.account_hash}/{name}/{variant}"
 
-        return "https://imagedelivery.net/{}/{}/{}".format(
-            self.account_hash, name, variant
-        )
+        return f"https://imagedelivery.net/{self.account_hash}/{name}/{variant}"
 
     def open(self, name, variant=None):
         """
