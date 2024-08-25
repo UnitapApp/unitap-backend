@@ -9,10 +9,13 @@ class CloudflareUtil:
 
 
   def is_verified(self, token: str, ip: str) -> bool:
-    res = requests.post(self.api_url + "/siteverify", data={
-      "secret": self.secret_key,
-      "response": token,
-      "remoteip": ip
-    })
+    res = requests.post(
+        f"{self.api_url}/siteverify",
+        data={
+            "secret": self.secret_key,
+            "response": token,
+            "remoteip": ip
+        },
+    )
 
     return res.ok and res.json()["success"]
