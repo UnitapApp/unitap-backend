@@ -5,6 +5,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
+from django.http import HttpRequest
 import pytz
 import web3.exceptions
 from django.core.cache import cache
@@ -377,3 +378,23 @@ class UploadFileStorage:
             str(self.upload_to or "") + file_name + file_extension, file
         )
         return MEDIA_ROOT + "/" + path
+
+
+
+
+class RequestContextExtractor:
+    def __init__(self, request) -> None:
+        self.headers = request.headers
+        self.ip = RequestContextExtractor.get_client_ip(request.META.get('HTTP_X_FORWARDED_FOR') or request.META['REMOTE_ADDR'])
+        self.data = {**request.query_params, **request.data}
+
+    @staticmethod
+    def get_client_ip(x_forwarded_for):
+        if x_forwarded_for:
+            ip_list = [ip.strip() for ip in x_forwarded_for.split(',')]
+            for ip in ip_list:
+                if ip and not ip.startswith(('10.', '172.16.', '192.168.')):
+                    return ip
+        return None
+
+    

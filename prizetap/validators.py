@@ -6,6 +6,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
+from core.utils import RequestContextExtractor
 
 from .models import Raffle, RaffleEntry
 
@@ -30,7 +31,7 @@ class RaffleEnrollmentValidator:
         result = dict()
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile, { "request": self.request }
+                self.user_profile, { "request": RequestContextExtractor(self.request) }
             )
             constraint.response = c.response
             try:

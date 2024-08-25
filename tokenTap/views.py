@@ -2,6 +2,7 @@ import rest_framework.exceptions
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from core.utils import RequestContextExtractor
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
@@ -133,7 +134,7 @@ class TokenDistributionClaimView(CreateAPIView):
                 pass
 
             validator = TokenDistributionValidator(
-                token_distribution, user_profile, td_data, request=request
+                token_distribution, user_profile, td_data, request=RequestContextExtractor(request)
             )
             validator.is_valid()
 
