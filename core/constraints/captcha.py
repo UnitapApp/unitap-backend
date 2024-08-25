@@ -33,10 +33,6 @@ class HasVerifiedCloudflareCaptcha(ConstraintVerification):
         
         request = self.context["request"]
 
-        token = request.data.get("cf-turnstile-response") or request.query_params.get("cf-turnstile-response")
+        turnstile_token = request.data.get("cf-turnstile-response") or request.query_params.get("cf-turnstile-response")
 
-
-        if not token:
-            return False
-
-        return cloudflare.is_verified(token, self.get_client_ip(request))
+        return turnstile_token is not None and cloudflare.is_verified(turnstile_token, self.get_client_ip(request))
