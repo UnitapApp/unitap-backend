@@ -17,12 +17,14 @@ class HasVerifiedCloudflareCaptcha(ConstraintVerification):
     app_name = ConstraintApp.GENERAL.value
 
     @staticmethod
-    def get_client_ip(request: HttpRequest) -> str:
-        return (
-            x_forwarded_for.split(',')[0]
-            if (x_forwarded_for := request.META.get('HTTP_X_FORWARDED_FOR'))
-            else request.META['REMOTE_ADDR']
-        )
+    def get_client_ip(x_forwarded_for):
+        if x_forwarded_for:
+            ip_list = [ip.strip() for ip in x_forwarded_for.split(',')]
+            for ip in ip_list:
+                if ip and not ip.startswith(('10.', '172.16.', '192.168.')):
+                    return ip
+        return None
+
 
     def is_observed(self, *args, **kwargs) -> bool:
         cloudflare = CloudflareUtil()
@@ -34,4 +36,10 @@ class HasVerifiedCloudflareCaptcha(ConstraintVerification):
 
         turnstile_token = request.data.get("cf-turnstile-response") or request.query_params.get("cf-turnstile-response")
 
-        return turnstile_token is not None and cloudflare.is_verified(turnstile_token, self.get_client_ip(request))
+        return (
+            turnstile_token is not None and 
+            cloudflare.is_verified(
+                turnstile_token, 
+                self.get_client_ip(request.META.get('HTTP_X_FORWARDED_FOR') or request.META['REMOTE_ADDR']) # type: ignore
+            )
+        )
