@@ -6,6 +6,7 @@ from bip_utils import Bip44, Bip44Coins
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha
 from encrypted_model_fields.fields import EncryptedCharField
 from rest_framework.exceptions import ValidationError
 from solders.keypair import Keypair
@@ -155,6 +156,7 @@ class UserConstraint(models.Model):
         GLMStakingVerification,
         IsFollowingTwitterBatch,
         IsFollowingFarcasterBatch,
+        HasVerifiedCloudflareCaptcha,
     ]
 
     name = models.CharField(
