@@ -61,7 +61,6 @@ class TokenDistributionValidator:
         for c in self.td.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
                 self.user_profile, 
-                context={"request": self.request}
             )
             constraint.response = c.response
             try:
@@ -85,6 +84,7 @@ class TokenDistributionValidator:
                     is_verified = constraint.is_observed(
                         **cdata,
                         token_distribution=self.td,
+                        context={"request": self.request}
                     )
                 caching_time = 60 * 60 if is_verified else 60
                 expiration_time = time.time() + caching_time

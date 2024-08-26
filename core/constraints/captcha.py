@@ -16,17 +16,19 @@ class HasVerifiedCloudflareCaptcha(ConstraintVerification):
 
     def is_observed(self, *args, **kwargs) -> bool:
 
-        if self.context is None or self.context.get("requset") is None:
+        context = kwargs.get("context")
+
+        if context is None or context.get("requset") is None:
             return False
 
         cloudflare = CloudflareUtil()
 
         request_context: RequestContextExtractor = RequestContextExtractor(
-            self.context["requset"]
+            context["requset"]
         )
 
         turnstile_token = request_context.data.get("cf-turnstile-response")
 
-        return turnstile_token is not None and cloudflare.is_verified(
+        return request_context.ip is not None and turnstile_token is not None and cloudflare.is_verified(
             turnstile_token, request_context.ip
         )

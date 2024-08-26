@@ -30,7 +30,7 @@ class RaffleEnrollmentValidator:
         result = dict()
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile, context={"request": self.request}
+                self.user_profile
             )
             constraint.response = c.response
             try:
@@ -56,7 +56,7 @@ class RaffleEnrollmentValidator:
                     )
                 else:
                     is_verified = constraint.is_observed(
-                        **cdata, from_time=int(self.raffle.start_at.timestamp())
+                        **cdata, from_time=int(self.raffle.start_at.timestamp()), context={"request": self.request}
                     )
                 caching_time = 60 * 60 if is_verified else 60
                 expiration_time = time.time() + caching_time
