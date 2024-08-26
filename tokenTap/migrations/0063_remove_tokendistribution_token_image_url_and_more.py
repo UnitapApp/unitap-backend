@@ -7,14 +7,24 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tokenTap', '0062_remove_tokendistribution_image_url_and_more'),
+        ('tokenTap', '0062_alter_constraint_name'),
     ]
 
     operations = [
+         migrations.RenameField(
+            model_name='tokendistribution',
+            old_name='token_image_url',
+            new_name='token_image',
+        ),
         migrations.AlterField(
             model_name='tokendistribution',
-            name='token_image_url',
+            name='token_image',
             field=cloudflare_images.field.CloudflareImagesField(blank=True, upload_to='', variant='public'),
+        ),
+         migrations.RenameField(
+            model_name='tokendistribution',
+            old_name='image_url',
+            new_name='image',
         ),
         migrations.AlterField(
             model_name='tokendistribution',

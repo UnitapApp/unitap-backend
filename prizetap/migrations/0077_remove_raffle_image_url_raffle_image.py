@@ -7,10 +7,15 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('prizetap', '0075_alter_constraint_name'),
+        ('prizetap', '0076_alter_constraint_name'),
     ]
 
     operations = [
+        migrations.RenameField(
+            model_name='raffle',
+            old_name='image_url',
+            new_name='image',
+        ),
         migrations.AlterField(
             model_name='raffle',
             name='image_url',
