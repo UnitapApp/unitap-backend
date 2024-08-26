@@ -38,12 +38,17 @@ class SetDistributionTxValidator:
 
 class TokenDistributionValidator:
     def __init__(
-        self, td: TokenDistribution, user_profile: UserProfile, td_data: dict, *args, **kwargs
+        self,
+        td: TokenDistribution,
+        user_profile: UserProfile,
+        td_data: dict,
+        *args,
+        **kwargs,
     ) -> None:
         self.td = td
         self.td_data = td_data
         self.user_profile = user_profile
-        self.request = kwargs.get("request")
+        self.request_context = kwargs.get("request_context")
 
     def check_user_permissions(self, raise_exception=True):
         try:
@@ -55,7 +60,7 @@ class TokenDistributionValidator:
         result = dict()
         for c in self.td.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile, { "request": self.request }
+                self.user_profile, {"request_context": self.request_context}
             )
             constraint.response = c.response
             try:

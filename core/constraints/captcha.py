@@ -1,6 +1,3 @@
-
-
-from django.http import HttpRequest
 from core.constraints.abstract import ConstraintApp, ConstraintVerification
 from core.thirdpartyapp.cloudflare import CloudflareUtil
 
@@ -13,26 +10,21 @@ from core.utils import RequestContextExtractor
 logger = logging.getLogger(__name__)
 
 
-
 class HasVerifiedCloudflareCaptcha(ConstraintVerification):
     _param_keys = []
     app_name = ConstraintApp.GENERAL.value
 
-
     def is_observed(self, *args, **kwargs) -> bool:
+
+        if self.context is None or self.context.get("request_context") is None:
+            return False
+
         cloudflare = CloudflareUtil()
 
-        if self.context is None or self.context.get("request") is None:
-            return False
-        
-        request: RequestContextExtractor = self.context["request"]
+        request: RequestContextExtractor = self.context["request_context"]
 
         turnstile_token = request.data.get("cf-turnstile-response")
 
-        return (
-            turnstile_token is not None and 
-            cloudflare.is_verified(
-                turnstile_token, 
-                self.get_client_ip(request.ip) # type: ignore
-            )
+        return turnstile_token is not None and cloudflare.is_verified(
+            turnstile_token, request.ip
         )
