@@ -166,6 +166,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
 
+STORAGES = {
+    "default": { 
+        "BACKEND": "cloudflare_images.storage.CloudflareImagesStorage",
+    },
+    "staticfiles": {  # default
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+
 # Database
 DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 

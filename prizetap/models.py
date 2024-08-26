@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from authentication.models import UserProfile
 from core.models import BigNumField, Chain, UserConstraint
 from faucet.constraints import OptimismClaimingGasConstraint, OptimismDonationConstraint
+from cloudflare_images.field import CloudflareImagesField
 
 from .constraints import HaveUnitapPass, NotHaveUnitapPass
 
@@ -49,7 +50,7 @@ class Raffle(models.Model):
     twitter_url = models.URLField(max_length=255, null=True, blank=True)
     email_url = models.EmailField(max_length=255)
     telegram_url = models.URLField(max_length=255, null=True, blank=True)
-    image_url = models.URLField(max_length=255, null=True, blank=True)
+    image = CloudflareImagesField(max_length=255, null=True, blank=True)
 
     prize_amount = BigNumField()
     prize_asset = models.CharField(max_length=255)
