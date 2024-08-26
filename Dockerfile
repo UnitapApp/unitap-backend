@@ -8,7 +8,7 @@ RUN pip install -r requirements.txt
 COPY . .
 RUN mkdir db
 RUN mkdir -p static
-RUN mkdir media
+RUN mkdir media -p
 RUN chmod +x start_dev.sh
 
 EXPOSE 5678

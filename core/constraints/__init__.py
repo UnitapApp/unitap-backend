@@ -63,6 +63,7 @@ from core.constraints.twitter import (
     IsFollowingTwitterBatch,
     IsFollowinTwitterUser,
 )
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:

@@ -56,9 +56,10 @@ class ConstraintVerification(ABC):
     app_name = ConstraintApp.GENERAL.value
     __response_text = ""
 
-    def __init__(self, user_profile) -> None:
+    def __init__(self, user_profile, context=None) -> None:
         self.user_profile = user_profile
         self._param_values = {}
+        self.context = context
 
     def get_info(self, *args, **kwargs):
         pass
