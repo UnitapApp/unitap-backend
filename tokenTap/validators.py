@@ -48,7 +48,7 @@ class TokenDistributionValidator:
         self.td = td
         self.td_data = td_data
         self.user_profile = user_profile
-        self.request_context = kwargs.get("request_context")
+        self.request = kwargs.get("request")
 
     def check_user_permissions(self, raise_exception=True):
         try:
@@ -61,7 +61,7 @@ class TokenDistributionValidator:
         for c in self.td.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
                 self.user_profile, 
-                context={"request_context": self.request_context}
+                context={"request": self.request}
             )
             constraint.response = c.response
             try:
