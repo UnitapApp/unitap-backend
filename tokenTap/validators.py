@@ -60,7 +60,8 @@ class TokenDistributionValidator:
         result = dict()
         for c in self.td.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile, {"request_context": self.request_context}
+                self.user_profile, 
+                context={"request_context": self.request_context}
             )
             constraint.response = c.response
             try:
