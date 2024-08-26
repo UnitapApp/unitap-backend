@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 class HasVerifiedCloudflareCaptcha(ConstraintVerification):
     _param_keys = []
     app_name = ConstraintApp.GENERAL.value
-    is_cachable = False
+    is_cachable = True
+    valid_cache_until = 2 * 60
+    invalid_cache_until = 0
 
     def is_observed(self, *args, **kwargs) -> bool:
 
