@@ -397,4 +397,15 @@ class RequestContextExtractor:
                     return ip
         return None
 
-    
+
+
+def cache_constraint_result(cache_key, is_verified, info):
+    caching_time = 60 * 60 if is_verified else 60
+    expiration_time = time.time() + caching_time
+    cache_data = {
+        "is_verified": is_verified,
+        "info": info,
+        "expiration_time": expiration_time,
+    }
+    cache.set(cache_key, cache_data, caching_time)
+    return cache_data
