@@ -399,11 +399,11 @@ class RequestContextExtractor:
 
 
 
-def cache_constraint_result(cache_key, constraint, info):
-    caching_time = constraint.valid_cache_until if constraint.is_verified else constraint.invalid_cache_until
+def cache_constraint_result(cache_key, is_verified, constraint, info):
+    caching_time = constraint.valid_cache_until if is_verified else constraint.invalid_cache_until
     expiration_time = time.time() + caching_time
     cache_data = {
-        "is_verified": constraint.is_verified,
+        "is_verified": is_verified,
         "info": info,
         "expiration_time": expiration_time,
     }
