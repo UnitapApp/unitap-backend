@@ -14,16 +14,6 @@ def create_prizetap_constraint(apps, schema_editor):
     )
 
 
-def create_tokentap_constraint(apps, schema_editor):
-    Constraint = apps.get_model("tokenTap", "Constraint")
-
-    Constraint.objects.create(
-        name="core.HasVerifiedCloudflareCaptcha",
-        description="HasVerifiedCloudflareCaptcha",
-        title="Passed Cloudflare Captcha",
-        type="VER",
-    )
-
 
 class Migration(migrations.Migration):
 
@@ -95,6 +85,5 @@ class Migration(migrations.Migration):
                 unique=True,
             ),
         ),
-        migrations.RunPython(create_tokentap_constraint),
         migrations.RunPython(create_prizetap_constraint),
     ]
