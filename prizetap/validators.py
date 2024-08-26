@@ -58,18 +58,20 @@ class RaffleEnrollmentValidator:
                     is_verified = constraint.is_observed(
                         **cdata, from_time=int(self.raffle.start_at.timestamp()), context={"request": self.request}
                     )
-                caching_time = 60 * 60 if is_verified else 60
-                expiration_time = time.time() + caching_time
-                cache_data = {
-                    "is_verified": is_verified,
-                    "info": info,
-                    "expiration_time": expiration_time,
-                }
-                cache.set(
-                    cache_key,
-                    cache_data,
-                    caching_time,
-                )
+                if constraint.is_cachable:
+                    caching_time = 60 * 60 if is_verified else 60
+                    expiration_time = time.time() + caching_time
+                    cache_data = {
+                        "is_verified": is_verified,
+                        "info": info,
+                        "expiration_time": expiration_time,
+                    }
+                    cache.set(
+                        cache_key,
+                        cache_data,
+                        caching_time,
+                    )
+                    
             if not cache_data.get("is_verified"):
                 error_messages[c.title] = constraint.response
             result[c.pk] = cache_data
