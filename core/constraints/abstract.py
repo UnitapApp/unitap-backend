@@ -56,6 +56,8 @@ class ConstraintVerification(ABC):
     app_name = ConstraintApp.GENERAL.value
     __response_text = ""
     is_cachable = True
+    invalid_cache_until = 60
+    valid_cache_until = 60 * 60
 
     def __init__(self, user_profile) -> None:
         self.user_profile = user_profile

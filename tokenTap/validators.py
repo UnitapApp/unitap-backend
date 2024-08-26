@@ -93,7 +93,7 @@ class TokenDistributionValidator:
                     )
 
                 if constraint.is_cachable:
-                    constraint_data = cache_constraint_result(cache_key, is_verified, info)
+                    constraint_data = cache_constraint_result(cache_key, constraint, info)
                 else:
                     constraint_data = {"is_verified": is_verified, "info": info}
 
