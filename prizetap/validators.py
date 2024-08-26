@@ -15,7 +15,7 @@ class RaffleEnrollmentValidator:
         self.user_profile: UserProfile = kwargs["user_profile"]
         self.raffle: Raffle = kwargs["raffle"]
         self.raffle_data: dict = kwargs.get("raffle_data", dict())
-        self.request = kwargs.get("requset")
+        self.request = kwargs.get("request")
 
     def can_enroll_in_raffle(self):
         if not self.raffle.is_claimable:
