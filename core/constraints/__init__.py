@@ -35,10 +35,10 @@ from core.constraints.general import (
     HasTokenVerification,
 )
 from core.constraints.gitcoin_passport import (
+    HasDonatedOnGitcoin,
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
 )
-from core.constraints.glm_staking import GLMStakingVerification
 from core.constraints.lens import (
     BeFollowedByLensUser,
     DidCollectLensPublication,
@@ -49,6 +49,7 @@ from core.constraints.lens import (
     IsFollowingLensUser,
 )
 from core.constraints.muon_node import HasMuonNode
+from core.constraints.octant import GLMStakingVerification
 from core.constraints.optimism import DelegateOP, DidDelegateOPToAddress
 from core.constraints.twitter import (
     BeFollowedByTwitterUser,
@@ -62,6 +63,7 @@ from core.constraints.twitter import (
     IsFollowingTwitterBatch,
     IsFollowinTwitterUser,
 )
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:

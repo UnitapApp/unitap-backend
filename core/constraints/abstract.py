@@ -15,7 +15,7 @@ class ConstraintApp(Enum):
     TWITTER = "twitter"
     MUON = "muon"
     OPTIMISM = "optimism"
-    GLM_STAKING = "glm_staking"
+    OCTANT = "octant"
 
     @classmethod
     def choices(cls):
@@ -44,6 +44,7 @@ class ConstraintParam(Enum):
     TWITTER_USERNAME = "twitter_username"
     TWITTER_IDS = "twitter_ids"
     FARCASTER_FIDS = "farcaster_fids"
+    COUNT = "count"
 
     @classmethod
     def choices(cls):
@@ -54,6 +55,9 @@ class ConstraintVerification(ABC):
     _param_keys = []
     app_name = ConstraintApp.GENERAL.value
     __response_text = ""
+    is_cachable = True
+    invalid_cache_until = 60
+    valid_cache_until = 60 * 60
 
     def __init__(self, user_profile) -> None:
         self.user_profile = user_profile

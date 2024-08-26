@@ -6,6 +6,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
+from core.utils import cache_constraint_result
 
 from .models import Raffle, RaffleEntry
 
@@ -15,6 +16,7 @@ class RaffleEnrollmentValidator:
         self.user_profile: UserProfile = kwargs["user_profile"]
         self.raffle: Raffle = kwargs["raffle"]
         self.raffle_data: dict = kwargs.get("raffle_data", dict())
+        self.request = kwargs.get("request")
 
     def can_enroll_in_raffle(self):
         if not self.raffle.is_claimable:
@@ -38,8 +40,8 @@ class RaffleEnrollmentValidator:
                 pass
             cdata = self.raffle_data.get(str(c.pk), dict())
             cache_key = f"prizetap-{self.user_profile.pk}-{self.raffle.pk}-{c.pk}"
-            cache_data = cache.get(cache_key)
-            if cache_data is None:
+            constraint_data = cache.get(cache_key)
+            if constraint_data is None:
                 """
                 Refactor: this is not good design beacuse info is duplicated with
                 is_observed so we need some design change for in is_observed so
@@ -55,23 +57,17 @@ class RaffleEnrollmentValidator:
                     )
                 else:
                     is_verified = constraint.is_observed(
-                        **cdata, from_time=int(self.raffle.start_at.timestamp())
+                        **cdata, from_time=int(self.raffle.start_at.timestamp()), context={"request": self.request}
                     )
-                caching_time = 60 * 60 if is_verified else 60
-                expiration_time = time.time() + caching_time
-                cache_data = {
-                    "is_verified": is_verified,
-                    "info": info,
-                    "expiration_time": expiration_time,
-                }
-                cache.set(
-                    cache_key,
-                    cache_data,
-                    caching_time,
-                )
-            if not cache_data.get("is_verified"):
+
+                if constraint.is_cachable:
+                    constraint_data = cache_constraint_result(cache_key, is_verified, constraint, info)
+                else:
+                    constraint_data = {"is_verified": is_verified, "info": info}
+
+            if not constraint_data.get("is_verified"):
                 error_messages[c.title] = constraint.response
-            result[c.pk] = cache_data
+            result[c.pk] = constraint_data
         if len(error_messages) and raise_exception:
             raise PermissionDenied(error_messages)
         return result
