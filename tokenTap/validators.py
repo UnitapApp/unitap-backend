@@ -1,15 +1,17 @@
 import json
 import logging
-import time
 
 from django.core.cache import cache
 from rest_framework.exceptions import PermissionDenied
 
 from authentication.models import UserProfile
 from core.constraints import ConstraintVerification, get_constraint
+from core.utils import cache_constraint_result
 
 from .helpers import has_credit_left
 from .models import ClaimReceipt, TokenDistribution
+
+
 
 
 class SetDistributionTxValidator:
@@ -34,6 +36,8 @@ class SetDistributionTxValidator:
         tx_hash = data.get("tx_hash", None)
         if not tx_hash or len(tx_hash) != 66:
             raise PermissionDenied("Tx hash is not valid")
+
+
 
 
 class TokenDistributionValidator:
@@ -67,10 +71,11 @@ class TokenDistributionValidator:
                 constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
+            
             cdata = self.td_data.get(str(c.pk), dict())
             cache_key = f"tokentap-{self.user_profile.pk}-{self.td.pk}-{c.pk}"
-            cache_data = cache.get(cache_key)
-            if cache_data is None:
+            constraint_data = cache.get(cache_key)
+            if constraint_data is None:
                 info = constraint.get_info(
                     **cdata,
                     token_distribution=self.td,
@@ -86,24 +91,21 @@ class TokenDistributionValidator:
                         token_distribution=self.td,
                         context={"request": self.request}
                     )
-                caching_time = 60 * 60 if is_verified else 60
-                expiration_time = time.time() + caching_time
-                cache_data = {
-                    "is_verified": is_verified,
-                    "info": info,
-                    "expiration_time": expiration_time,
-                }
-                cache.set(
-                    cache_key,
-                    cache_data,
-                    caching_time,
-                )
-            if not cache_data.get("is_verified"):
+
+                if constraint.is_cachable:
+                    constraint_data = cache_constraint_result(cache_key, is_verified, info)
+                else:
+                    constraint_data = {"is_verified": is_verified, "info": info}
+
+            if not constraint_data.get("is_verified"):
                 error_messages[c.title] = constraint.response
-            result[c.pk] = cache_data
+            result[c.pk] = constraint_data
         if len(error_messages) and raise_exception:
             raise PermissionDenied(error_messages)
         return result
+    
+    def cache_constraint(self):
+        pass
 
     def check_user_credit(self):
         if self.td.is_one_time_claim:

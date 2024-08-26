@@ -55,6 +55,7 @@ class ConstraintVerification(ABC):
     _param_keys = []
     app_name = ConstraintApp.GENERAL.value
     __response_text = ""
+    is_cachable = True
 
     def __init__(self, user_profile) -> None:
         self.user_profile = user_profile
