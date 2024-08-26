@@ -86,15 +86,16 @@ class TokenDistributionValidator:
                         token_distribution=self.td,
                         context={"request": self.request}
                     )
+
+                caching_time = 60 * 60 if is_verified else 60
+                expiration_time = time.time() + caching_time
+                cache_data = {
+                    "is_verified": is_verified,
+                    "info": info,
+                    "expiration_time": expiration_time,
+                }
+
                 if constraint.is_cachable:
-                    caching_time = 60 * 60 if is_verified else 60
-                    expiration_time = time.time() + caching_time
-                    cache_data = {
-                        "is_verified": is_verified,
-                        "info": info,
-                        "expiration_time": expiration_time,
-                    }
-                    
                     cache.set(
                         cache_key,
                         cache_data,
