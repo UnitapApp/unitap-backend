@@ -3,7 +3,6 @@ from django.db import transaction
 from django.db.models import Case, F, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from core.utils import RequestContextExtractor
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -86,7 +85,7 @@ class RaffleEnrollmentView(CreateAPIView):
             user_profile=user_profile,
             raffle=raffle,
             raffle_data=raffle_data,
-            request_context=RequestContextExtractor(request),
+            request_context=request,
         )
 
         validator.is_valid(self.request.data)
@@ -199,7 +198,7 @@ class GetRaffleConstraintsView(APIView):
             user_profile=user_profile,
             raffle=raffle,
             raffle_data=raffle_data,
-            request_context=RequestContextExtractor(request),
+            request_context=request,
         )
 
         validated_constraints = validator.check_user_constraints(raise_exception=False)

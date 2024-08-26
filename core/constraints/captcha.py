@@ -21,7 +21,9 @@ class HasVerifiedCloudflareCaptcha(ConstraintVerification):
 
         cloudflare = CloudflareUtil()
 
-        request: RequestContextExtractor = self.context["request_context"]
+        request: RequestContextExtractor = RequestContextExtractor(
+            self.context["request_context"]
+        )
 
         turnstile_token = request.data.get("cf-turnstile-response")
 

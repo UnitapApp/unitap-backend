@@ -2,7 +2,6 @@ import rest_framework.exceptions
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from core.utils import RequestContextExtractor
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import PermissionDenied
@@ -134,7 +133,10 @@ class TokenDistributionClaimView(CreateAPIView):
                 pass
 
             validator = TokenDistributionValidator(
-                token_distribution, user_profile, td_data, request=RequestContextExtractor(request)
+                token_distribution,
+                user_profile,
+                td_data,
+                request_context=request,
             )
             validator.is_valid()
 
@@ -185,7 +187,9 @@ class GetTokenDistributionConstraintsView(APIView):
         reversed_constraints = td.reversed_constraints_list
         response_constraints = []
 
-        validator = TokenDistributionValidator(td, user_profile, td_data, request=RequestContextExtractor(request))
+        validator = TokenDistributionValidator(
+            td, user_profile, td_data, request_context=request
+        )
         validated_constraints = validator.check_user_permissions(raise_exception=False)
         for c_pk, data in validated_constraints.items():
             response_constraints.append(

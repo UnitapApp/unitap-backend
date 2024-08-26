@@ -15,7 +15,7 @@ class RaffleEnrollmentValidator:
         self.user_profile: UserProfile = kwargs["user_profile"]
         self.raffle: Raffle = kwargs["raffle"]
         self.raffle_data: dict = kwargs.get("raffle_data", dict())
-        self.request_context = kwargs.get("request_context", None)
+        self.request_context = kwargs.get("request_context")
 
     def can_enroll_in_raffle(self):
         if not self.raffle.is_claimable:
@@ -30,8 +30,7 @@ class RaffleEnrollmentValidator:
         result = dict()
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile, 
-                context={"request_context": self.request_context}
+                self.user_profile, context={"request_context": self.request_context}
             )
             constraint.response = c.response
             try:
