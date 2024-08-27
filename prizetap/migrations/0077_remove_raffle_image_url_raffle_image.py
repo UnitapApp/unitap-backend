@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name='raffle',
-            name='image_url',
+            name='image',
             field=cloudflare_images.field.CloudflareImagesField(blank=True, max_length=255, null=True, upload_to='', variant='public'),
         ),
     ]
