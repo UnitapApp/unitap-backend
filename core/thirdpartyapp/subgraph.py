@@ -7,7 +7,7 @@ from core.thirdpartyapp import config
 
 class Subgraph:
     requests = RequestHelper(config.SUBGRAPH_BASE_URL)
-    path = {
+    paths = {
         "unitap_pass": "query/73675/unitap-pass-eth/version/latest",
         "arb_bridge_mainnet": "query/21879/unitap-arb-bridge-mainnet/version/latest",
     }
@@ -53,7 +53,7 @@ class Subgraph:
         while True:
             vars["skip"] = count
             res = self.send_post_request(
-                self.path.get("unitap_pass"), query=query, vars=vars
+                self.paths.get("unitap_pass"), query=query, vars=vars
             )
             match res:
                 case None:
