@@ -22,3 +22,4 @@ EAS_BASE_URL = {
     ),
 }
 SUBGRAPH_BASE_URL = os.getenv("SUBGRAPH_BASE_URL", "https://api.studio.thegraph.com")
+ZORA_BASE_URL = os.getenv("ZORA_BASE_URL", "https://explorer.zora.energy")

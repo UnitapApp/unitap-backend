@@ -6,11 +6,12 @@ from bip_utils import Bip44, Bip44Coins
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from core.constraints.captcha import HasVerifiedCloudflareCaptcha
 from encrypted_model_fields.fields import EncryptedCharField
 from rest_framework.exceptions import ValidationError
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
+
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha
 
 from .constraints import (
     AllowListVerification,
@@ -28,6 +29,7 @@ from .constraints import (
     DidDelegateArbToAddress,
     DidDelegateOPToAddress,
     DidLikedFarcasterCast,
+    DidMintZoraNFT,
     DidMirrorOnLensPublication,
     DidQuoteTweet,
     DidRecastFarcasterCast,
@@ -157,6 +159,7 @@ class UserConstraint(models.Model):
         IsFollowingTwitterBatch,
         IsFollowingFarcasterBatch,
         HasVerifiedCloudflareCaptcha,
+        DidMintZoraNFT,
     ]
 
     name = models.CharField(

@@ -68,7 +68,7 @@ class BridgeEthToArb(ConstraintVerification):
             }
 
         res = subgraph.send_post_request(
-            subgraph.path.get("arb_bridge_mainnet"), query=query, vars=vars
+            subgraph.paths.get("arb_bridge_mainnet"), query=query, vars=vars
         )
         match res:
             case None:
