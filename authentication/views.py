@@ -738,7 +738,15 @@ class TwitterOAuthCallbackView(APIView):
 
         twitter_connection.access_token = access_token
         twitter_connection.access_token_secret = access_token_secret
+        twitter_connection.twitter_id = twitter_connection.get_twitter_id()
 
-        twitter_connection.save(update_fields=("access_token", "access_token_secret"))
-
+        try:
+            twitter_connection.save(
+                update_fields=("access_token", "access_token_secret", "twitter_id")
+            )
+        except IntegrityError:
+            raise ValidationError(
+                """We can not connect you twitter account,
+                may be your account is connected before"""
+            )
         return Response({}, HTTP_200_OK)
