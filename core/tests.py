@@ -396,6 +396,7 @@ class TestTwitterConstraint(BaseTestCase):
             oauth_token_secret=oauth_token_secret,
             access_token="test",
             access_token_secret="test",
+            twitter_id="1",
         )
 
         self.not_connected_user_profile = UserProfile.objects.create(
