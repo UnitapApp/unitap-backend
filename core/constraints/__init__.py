@@ -16,7 +16,7 @@ from core.constraints.bright_id import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
 )
-from core.constraints.captcha import HasVerifiedCloudflareCaptcha
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha, HasVerifiedHCaptcha
 from core.constraints.EAS import Attest, BeAttestedBy
 from core.constraints.ens import HasENSVerification
 from core.constraints.farcaster import (
