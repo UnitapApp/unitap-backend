@@ -7,7 +7,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tokenTap', '0062_alter_constraint_name'),
+        ('tokenTap', '0063_alter_constraint_name'),
     ]
 
     operations = [
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='tokendistribution',
             name='token_image',
-            field=cloudflare_images.field.CloudflareImagesField(blank=True, upload_to='', variant='public'),
+            field=cloudflare_images.field.CloudflareImagesField(blank=True, null=True, upload_to='', variant='public'),
         ),
          migrations.RenameField(
             model_name='tokendistribution',
@@ -29,6 +29,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='tokendistribution',
             name='image',
-            field=cloudflare_images.field.CloudflareImagesField(blank=True, upload_to='', variant='public'),
+            field=cloudflare_images.field.CloudflareImagesField(blank=True, null=True, upload_to='', variant='public'),
         ),
     ]
