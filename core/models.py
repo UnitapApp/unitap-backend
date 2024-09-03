@@ -11,7 +11,7 @@ from rest_framework.exceptions import ValidationError
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
-from core.constraints.captcha import HasVerifiedCloudflareCaptcha
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha, HasVerifiedHCaptcha
 
 from .constraints import (
     AllowListVerification,
@@ -160,6 +160,7 @@ class UserConstraint(models.Model):
         IsFollowingFarcasterBatch,
         HasVerifiedCloudflareCaptcha,
         DidMintZoraNFT,
+        HasVerifiedHCaptcha
     ]
 
     name = models.CharField(
