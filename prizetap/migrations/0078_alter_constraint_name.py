@@ -19,7 +19,7 @@ def create_prizetap_constraint(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('prizetap', '0077_alter_constraint_name'),
+        ('prizetap', '0077_remove_raffle_image_url_raffle_image'),
     ]
 
     operations = [

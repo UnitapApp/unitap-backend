@@ -18,7 +18,7 @@ def create_tokentap_constraint(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tokenTap', '0063_alter_constraint_name'),
+        ('tokenTap', '0063_remove_tokendistribution_token_image_url_and_more'),
     ]
 
     operations = [
