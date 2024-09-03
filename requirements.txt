@@ -34,3 +34,4 @@ tweepy~=4.14.0
 ratelimit~=2.2.1
 pillow==10.4.0
 django-cloudflare-images~=0.6.0
+zstandard~=0.17.0
