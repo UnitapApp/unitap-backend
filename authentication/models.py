@@ -260,10 +260,11 @@ class TwitterConnection(BaseThirdPartyConnection):
     access_token_secret = models.CharField(
         max_length=255, unique=True, blank=True, null=True
     )
+    twitter_id = models.CharField(max_length=255, unique=True, null=True)
     driver = TwitterDriver()
 
     def is_connected(self):
-        return bool(self.access_token and self.access_token_secret)
+        return bool(self.twitter_id)
 
     @property
     def tweet_count(self):
@@ -279,11 +280,8 @@ class TwitterConnection(BaseThirdPartyConnection):
     def username(self):
         return self.driver.get_username(self.access_token, self.access_token_secret)
 
-    @property
-    def twitter_id(self):
-        return self.driver.get_twitter_id(
-            self, self.access_token, self.access_token_secret
-        )
+    def get_twitter_id(self):
+        return self.driver.get_twitter_id(self.access_token, self.access_token_secret)
 
     def is_replied(self, self_tweet_id, target_tweet_id):
         return self.driver.get_is_replied(

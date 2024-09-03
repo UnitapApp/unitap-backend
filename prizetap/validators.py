@@ -1,5 +1,4 @@
 import json
-import time
 
 from django.core.cache import cache
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -31,7 +30,7 @@ class RaffleEnrollmentValidator:
         result = dict()
         for c in self.raffle.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile
+                self.user_profile, obj=self.raffle
             )
             constraint.response = c.response
             try:
@@ -57,11 +56,15 @@ class RaffleEnrollmentValidator:
                     )
                 else:
                     is_verified = constraint.is_observed(
-                        **cdata, from_time=int(self.raffle.start_at.timestamp()), context={"request": self.request}
+                        **cdata,
+                        from_time=int(self.raffle.start_at.timestamp()),
+                        context={"request": self.request},
                     )
 
                 if constraint.is_cachable:
-                    constraint_data = cache_constraint_result(cache_key, is_verified, constraint, info)
+                    constraint_data = cache_constraint_result(
+                        cache_key, is_verified, constraint, info
+                    )
                 else:
                     constraint_data = {"is_verified": is_verified, "info": info}
 

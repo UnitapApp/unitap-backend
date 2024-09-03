@@ -16,6 +16,7 @@ class ConstraintApp(Enum):
     MUON = "muon"
     OPTIMISM = "optimism"
     OCTANT = "octant"
+    ZORA = "zora"
 
     @classmethod
     def choices(cls):
@@ -59,9 +60,10 @@ class ConstraintVerification(ABC):
     invalid_cache_until = 60
     valid_cache_until = 60 * 60
 
-    def __init__(self, user_profile) -> None:
+    def __init__(self, user_profile, *, obj=None) -> None:
         self.user_profile = user_profile
         self._param_values = {}
+        self.obj = obj
 
     def get_info(self, *args, **kwargs):
         pass

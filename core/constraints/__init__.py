@@ -16,6 +16,7 @@ from core.constraints.bright_id import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
 )
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha, HasVerifiedHCaptcha
 from core.constraints.EAS import Attest, BeAttestedBy
 from core.constraints.ens import HasENSVerification
 from core.constraints.farcaster import (
@@ -63,7 +64,7 @@ from core.constraints.twitter import (
     IsFollowingTwitterBatch,
     IsFollowinTwitterUser,
 )
-from core.constraints.captcha import HasVerifiedCloudflareCaptcha
+from core.constraints.zora import DidMintZoraNFT
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:

@@ -161,7 +161,7 @@ class RaffleSerializer(serializers.ModelSerializer):
             "twitter_url",
             "email_url",
             "telegram_url",
-            "image_url",
+            "image",
             "prize_amount",
             "prize_asset",
             "prize_name",

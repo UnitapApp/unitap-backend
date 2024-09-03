@@ -12,8 +12,6 @@ from .helpers import has_credit_left
 from .models import ClaimReceipt, TokenDistribution
 
 
-
-
 class SetDistributionTxValidator:
     def __init__(self, *args, **kwargs):
         self.user_profile: UserProfile = kwargs["user_profile"]
@@ -36,8 +34,6 @@ class SetDistributionTxValidator:
         tx_hash = data.get("tx_hash", None)
         if not tx_hash or len(tx_hash) != 66:
             raise PermissionDenied("Tx hash is not valid")
-
-
 
 
 class TokenDistributionValidator:
@@ -64,14 +60,14 @@ class TokenDistributionValidator:
         result = dict()
         for c in self.td.constraints.all():
             constraint: ConstraintVerification = get_constraint(c.name)(
-                self.user_profile, 
+                self.user_profile, obj=self.td
             )
             constraint.response = c.response
             try:
                 constraint.param_values = param_values[c.name]
             except KeyError:
                 pass
-            
+
             cdata = self.td_data.get(str(c.pk), dict())
             cache_key = f"tokentap-{self.user_profile.pk}-{self.td.pk}-{c.pk}"
             constraint_data = cache.get(cache_key)
@@ -89,11 +85,13 @@ class TokenDistributionValidator:
                     is_verified = constraint.is_observed(
                         **cdata,
                         token_distribution=self.td,
-                        context={"request": self.request}
+                        context={"request": self.request},
                     )
 
                 if constraint.is_cachable:
-                    constraint_data = cache_constraint_result(cache_key, is_verified, constraint, info)
+                    constraint_data = cache_constraint_result(
+                        cache_key, is_verified, constraint, info
+                    )
                 else:
                     constraint_data = {"is_verified": is_verified, "info": info}
 
@@ -103,7 +101,7 @@ class TokenDistributionValidator:
         if len(error_messages) and raise_exception:
             raise PermissionDenied(error_messages)
         return result
-    
+
     def cache_constraint(self):
         pass
 

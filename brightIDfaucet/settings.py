@@ -72,7 +72,12 @@ MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
 MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
 DEPLOYMENT_ENV = os.environ.get("DEPLOYMENT_ENV")
 
+CLOUDFLARE_IMAGES_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
+CLOUDFLARE_IMAGES_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
+CLOUDFLARE_IMAGES_ACCOUNT_HASH = os.environ.get("CLOUDFLARE_ACCOUNT_HASH")
+
 CLOUDFLARE_TURNSTILE_SECRET_KEY = os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY")
+H_CAPTCHA_SECRET = os.environ.get("H_CAPTCHA_SECRET")
 
 assert DEPLOYMENT_ENV in ["dev", "main"]
 
@@ -162,6 +167,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
+
+STORAGES = {
+    "default": { 
+        "BACKEND": "cloudflare_images.storage.CloudflareImagesStorage",
+    },
+    "staticfiles": {  # default
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 
 # Database
 DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
