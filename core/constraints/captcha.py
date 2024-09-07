@@ -60,7 +60,7 @@ class HasVerifiedHCaptcha(ConstraintVerification):
             context["request"]
         )
 
-        turnstile_token = request_context.data.get("cf-turnstile-response")
+        turnstile_token = request_context.data.get("hc-turnstile-response") or request_context.data.get("cf-turnstile-response")
 
         return request_context.ip is not None and turnstile_token is not None and hcaptcha.is_verified(
             turnstile_token, request_context.ip
