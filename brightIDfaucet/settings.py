@@ -7,6 +7,8 @@ import sentry_sdk
 from dotenv import load_dotenv
 from sentry_sdk.integrations.django import DjangoIntegration
 
+from corsheaders.defaults import default_headers
+
 from faucet.faucet_manager.bright_id_interface import BrightIDInterface
 
 load_dotenv()
@@ -243,6 +245,15 @@ if not DEBUG:
     CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
 else:
     CORS_ALLOW_ALL_ORIGINS = True
+
+
+# Add Turnstile response headers for CORS
+# These headers are required for Cloudflare and HCaptcha Turnstile anti-bot service
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'cf-turnstile-response',
+    'hc-turnstile-response',
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
