@@ -246,6 +246,10 @@ if not DEBUG:
 else:
     CORS_ALLOW_ALL_ORIGINS = True
 
+
+# Add Turnstile response headers for CORS
+# These headers are required for Cloudflare and HCaptcha Turnstile anti-bot service
+
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'cf-turnstile-response',
     'hc-turnstile-response',
