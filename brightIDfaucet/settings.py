@@ -176,11 +176,7 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 CACHES = {
     "default": {
         "BACKEND": "django_bmemcached.memcached.BMemcached",
-        "LOCATION": MEMCACHED_URL.split(","),
-        "OPTIONS": {
-            "username": MEMCACHED_USERNAME,
-            "password": MEMCACHED_PASSWORD,
-        },
+        "LOCATION": MEMCACHED_URL
     }
 }
 # Password validation
