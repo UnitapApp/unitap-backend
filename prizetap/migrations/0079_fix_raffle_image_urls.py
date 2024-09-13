@@ -22,7 +22,7 @@ def fix_raffle_images_prefix(apps, schema):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("tokenTap", "0078_alter_constraint_name"),
+        ("prizetap", "0078_alter_constraint_name"),
     ]
 
     operations = [
