@@ -31,7 +31,7 @@ class HasVerifiedCloudflareCaptcha(ConstraintVerification):
             context["request"]
         )
 
-        turnstile_token = request_context.data.get("cf-turnstile-response")
+        turnstile_token = request_context.headers.get("cf-turnstile-response")
 
         return request_context.ip is not None and turnstile_token is not None and cloudflare.is_verified(
             turnstile_token, request_context.ip
@@ -60,7 +60,7 @@ class HasVerifiedHCaptcha(ConstraintVerification):
             context["request"]
         )
 
-        turnstile_token = request_context.data.get("cf-turnstile-response")
+        turnstile_token = request_context.headers.get("hc-turnstile-response")
 
         return request_context.ip is not None and turnstile_token is not None and hcaptcha.is_verified(
             turnstile_token, request_context.ip

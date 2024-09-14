@@ -12,8 +12,8 @@ class DidMintZoraNFT(ConstraintVerification):
     app_name = ConstraintApp.ZORA.value
     _param_keys = [ConstraintParam.ADDRESS]
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
+    def __init__(self, user_profile, *, obj=None) -> None:
+        super().__init__(user_profile, obj=obj)
 
     def is_observed(self, *args, **kwargs) -> bool:
         zora_util = ZoraUtil()
