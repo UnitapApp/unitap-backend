@@ -12,9 +12,6 @@ class HasFarcasterProfile(ConstraintVerification):
     _param_keys = []
     app_name = ConstraintApp.FARCASTER.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import FarcasterConnection
 
@@ -29,9 +26,6 @@ class HasFarcasterProfile(ConstraintVerification):
 class IsFollowingFarcasterUser(ConstraintVerification):
     _param_keys = [ConstraintParam.FARCASTER_FID]
     app_name = ConstraintApp.FARCASTER.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import FarcasterConnection
@@ -74,9 +68,6 @@ class DidLikedFarcasterCast(ConstraintVerification):
     _param_keys = [ConstraintParam.FARCASTER_CAST_HASH]
     app_name = ConstraintApp.FARCASTER.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import FarcasterConnection
 
@@ -98,9 +89,6 @@ class DidRecastFarcasterCast(ConstraintVerification):
     _param_keys = [ConstraintParam.FARCASTER_CAST_HASH]
     app_name = ConstraintApp.FARCASTER.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import FarcasterConnection
 
@@ -121,9 +109,6 @@ class DidRecastFarcasterCast(ConstraintVerification):
 class HasMinimumFarcasterFollower(ConstraintVerification):
     _param_keys = [ConstraintParam.MINIMUM]
     app_name = ConstraintApp.FARCASTER.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import FarcasterConnection
@@ -148,9 +133,6 @@ class IsFollowingFarcasterChannel(ConstraintVerification):
     _param_keys = [ConstraintParam.FARCASTER_CHANNEL_ID]
     app_name = ConstraintApp.FARCASTER.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import FarcasterConnection
 
@@ -172,9 +154,6 @@ class IsFollowingFarcasterChannel(ConstraintVerification):
 class IsFollowingFarcasterBatch(ConstraintVerification):
     _param_keys = [ConstraintParam.FARCASTER_FIDS]
     app_name = ConstraintApp.FARCASTER.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def get_info(self, *args, **kwargs) -> dict:
         from authentication.models import FarcasterConnection

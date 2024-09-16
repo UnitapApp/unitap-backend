@@ -15,9 +15,6 @@ class HasGitcoinPassportProfile(ConstraintVerification):
     _param_keys = []
     app_name = ConstraintApp.GITCOIN_PASSPORT.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import GitcoinPassportConnection
 
@@ -36,9 +33,6 @@ class HasGitcoinPassportProfile(ConstraintVerification):
 class HasMinimumHumanityScore(ConstraintVerification):
     _param_keys = [ConstraintParam.MINIMUM]
     app_name = ConstraintApp.GITCOIN_PASSPORT.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import GitcoinPassportConnection
@@ -71,9 +65,6 @@ class HasDonatedOnGitcoin(ConstraintVerification):
     ]
     app_name = ConstraintApp.GITCOIN_PASSPORT.value
     _graph_url = "https://grants-stack-indexer-v2.gitcoin.co"
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         try:

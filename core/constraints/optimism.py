@@ -35,9 +35,6 @@ class DelegateOP(ConstraintVerification):
     ]
     OP_TOKEN_CONTRACT = "0x4200000000000000000000000000000000000042"
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from core.models import Chain
 
@@ -74,6 +71,3 @@ class DidDelegateOPToAddress(ConstraintVerification):
         ConstraintParam.MINIMUM,
         ConstraintParam.ADDRESS,
     )
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
