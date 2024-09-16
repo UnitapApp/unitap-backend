@@ -62,7 +62,7 @@ from core.constraints.twitter import (
     HasTwitter,
     HasVoteOnATweet,
     IsFollowingTwitterBatch,
-    IsFollowinTwitterUser,
+    IsFollowingTwitterUser,
 )
 from core.constraints.zora import DidMintZoraNFT
 
