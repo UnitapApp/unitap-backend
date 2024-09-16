@@ -17,9 +17,6 @@ class GLMStakingVerification(ConstraintVerification):
     ]
     GLM_CONTRACT_ADDRESS = "0x879133Fd79b7F48CE1c368b0fCA9ea168eaF117c"
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs):
         from core.models import Chain
 

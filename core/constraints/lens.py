@@ -12,9 +12,6 @@ class HasLensProfile(ConstraintVerification):
     _param_keys = []
     app_name = ConstraintApp.LENS.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import LensConnection
 
@@ -30,9 +27,6 @@ class HasLensProfile(ConstraintVerification):
 class IsFollowingLensUser(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PROFILE_ID]
     app_name = ConstraintApp.LENS.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import LensConnection
@@ -50,9 +44,6 @@ class IsFollowingLensUser(ConstraintVerification):
 class BeFollowedByLensUser(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PROFILE_ID]
     app_name = ConstraintApp.LENS.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import LensConnection
@@ -72,9 +63,6 @@ class BeFollowedByLensUser(ConstraintVerification):
 class DidMirrorOnLensPublication(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PUBLICATION_ID]
     app_name = ConstraintApp.LENS.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import LensConnection
@@ -96,9 +84,6 @@ class DidMirrorOnLensPublication(ConstraintVerification):
 class DidCollectLensPublication(ConstraintVerification):
     _param_keys = [ConstraintParam.LENS_PUBLICATION_ID]
     app_name = ConstraintApp.LENS.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import LensConnection
@@ -122,9 +107,6 @@ class HasMinimumLensFollower(ConstraintVerification):
     _param_keys = [ConstraintParam.MINIMUM]
     app_name = ConstraintApp.LENS.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import LensConnection
 
@@ -147,9 +129,6 @@ class HasMinimumLensFollower(ConstraintVerification):
 class HasMinimumLensPost(ConstraintVerification):
     _param_keys = [ConstraintParam.MINIMUM]
     app_name = ConstraintApp.LENS.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import LensConnection

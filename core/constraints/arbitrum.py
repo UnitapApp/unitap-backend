@@ -14,9 +14,6 @@ from core.utils import InvalidAddressException, TokenClient
 class BridgeEthToArb(ConstraintVerification):
     app_name = ConstraintApp.ARBITRUM.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         try:
             return self.has_bridged(
@@ -107,9 +104,6 @@ class DelegateArb(ConstraintVerification):
     ]
     ARB_TOKEN_CONTRACT = "0x912CE59144191C1204E64559FE8253a0e49E6548"
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from core.models import Chain
 
@@ -146,6 +140,3 @@ class DidDelegateArbToAddress(DelegateArb):
         ConstraintParam.ADDRESS,
         ConstraintParam.MINIMUM,
     )
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
