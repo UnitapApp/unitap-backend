@@ -53,7 +53,7 @@ from .constraints import (
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
     IsFollowingTwitterBatch,
-    IsFollowinTwitterUser,
+    IsFollowingTwitterUser,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -146,7 +146,7 @@ class UserConstraint(models.Model):
         HasGitcoinPassportProfile,
         IsFollowingFarcasterChannel,
         BridgeEthToArb,
-        IsFollowinTwitterUser,
+        IsFollowingTwitterUser,
         BeFollowedByTwitterUser,
         DidRetweetTweet,
         DidQuoteTweet,

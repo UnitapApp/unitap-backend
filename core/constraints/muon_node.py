@@ -51,10 +51,10 @@ class HasMuonNode(ConstraintVerification):
     CHAIN_ID = 56
     CONTRACT_ADDR = "0x6eA3096eB0fAf5c1DEb970DCd29A6b10a48DaD83"
 
-    def __init__(self, user_profile) -> None:
+    def __init__(self, user_profile, *, obj=None) -> None:
         from core.models import Chain
 
-        super().__init__(user_profile)
+        super().__init__(user_profile, obj=obj)
         self.chain = Chain.objects.get(chain_id=HasMuonNode.CHAIN_ID)
         self.web3_utils = Web3Utils(self.chain.rpc_url_private, self.chain.poa)
         self.web3_utils.set_contract(HasMuonNode.CONTRACT_ADDR, MUON_NODE_MANAGER_ABI)
