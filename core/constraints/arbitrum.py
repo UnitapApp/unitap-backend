@@ -119,8 +119,8 @@ class DelegateArb(ConstraintVerification):
         for user_address in self.user_addresses:
             try:
                 address = token_client.to_checksum_address(user_address)
-                delegated_address = token_client.get_delegates_address()
-                if (
+                delegated_address = token_client.get_delegates_address(user_address)
+                if not delegated_address or (
                     ConstraintParam.ADDRESS.name in self.param_keys()
                     and delegated_address.lower()
                     != self.param_values[ConstraintParam.ADDRESS.name].lower()
