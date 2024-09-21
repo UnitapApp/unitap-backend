@@ -7,6 +7,7 @@ from authentication.models import (
     TwitterConnection,
     UserProfile,
     Wallet,
+    FarcasterConnection,
 )
 
 
@@ -53,9 +54,15 @@ class EnsConnectionAdmin(admin.ModelAdmin):
     search_fields = ["user_profile__username", "user_wallet_address"]
 
 
+class FarcasterConnectionAdmin(admin.ModelAdmin):
+    list_display = ["pk", "user_profile", "user_wallet_address"]
+    search_fields = ["user_profile__username", "user_wallet_address"]
+
+
 admin.site.register(Wallet, WalletAdmin)
 admin.site.register(UserProfile, ProfileAdmin)
 admin.site.register(BrightIDConnection, BrightIDConnectionAdmin)
 admin.site.register(GitcoinPassportConnection, GitcoinPassportConnectionAdmin)
 admin.site.register(TwitterConnection, TwitterConnectionAdmin)
 admin.site.register(ENSConnection, EnsConnectionAdmin)
+admin.site.register(FarcasterConnection, FarcasterConnectionAdmin)
