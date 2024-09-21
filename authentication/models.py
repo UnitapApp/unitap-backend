@@ -234,7 +234,7 @@ class GitcoinPassportConnection(BaseThirdPartyConnection):
     @property
     def score(self):
         _score = self.driver.submit_passport(self.user_wallet_address)
-        return _score
+        return _score if _score is not None else 0
 
 
 @receiver(pre_save, sender=GitcoinPassportConnection)
