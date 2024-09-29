@@ -24,6 +24,7 @@ from authentication.views import (
     UserThirdPartyConnectionsView,
     WalletListCreateView,
     WalletView,
+    BrightIDSignatureStatusView,
 )
 
 app_name = "AUTHENTICATION"
@@ -45,6 +46,11 @@ urlpatterns = [
         "user/check-username/",
         CheckUsernameView.as_view(),
         name="check-username",
+    ),
+    path(
+        "user/recover/brightid-status/",
+        BrightIDSignatureStatusView.as_view(),
+        name="recover-status",
     ),
     path(
         "user/wallets/",

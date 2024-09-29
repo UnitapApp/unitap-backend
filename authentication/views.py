@@ -211,6 +211,42 @@ class SponsorView(CreateAPIView):
         )
 
 
+class BrightIDSignatureStatusView(CreateAPIView):
+    def post(self, request, *args, **kwargs):
+        address = request.data.get("brightid_address", None)
+        signature = request.data.get("brightid_signature", None)
+        if not address or not signature:
+            return Response({"message": "Invalid request"}, status=403)
+
+        verified_signature = verify_signature_eth_scheme(address, address, signature)
+
+        is_sponsored, _ = BrightIDConnection.driver.check_sponsorship(address)
+
+        # print(verified_signature, is_sponsored)
+
+        if not verified_signature or not is_sponsored:
+            return Response({"is_verified": False})
+
+        (
+            is_meet_verified,
+            meet_context_ids,
+        ) = BrightIDConnection.driver.get_meets_verification_status(address)
+
+        if not is_meet_verified:
+            return Response({"is_verified": False})
+
+        existing_brightid = BrightIDConnection.objects.get(
+            context_id=meet_context_ids[-1]
+        )
+
+        return Response(
+            {
+                "is_verified": True,
+                "user_profile": ProfileSerializer(existing_brightid.user_profile).data,
+            }
+        )
+
+
 class ConnectBrightIDView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
