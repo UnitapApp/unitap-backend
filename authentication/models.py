@@ -250,6 +250,14 @@ def submit_passport(sender, instance: GitcoinPassportConnection, **kwargs):
         raise GitcoinPassportSaveError("Gitcoin passport not exists.")
 
 
+class TelegramConnection(BaseThirdPartyConnection):
+    title = "Telegram"
+    user_id = models.BigIntegerField()
+    first_name = models.CharField(null=True, blank=True, max_length=255)
+    last_name = models.CharField(null=True, blank=True, max_length=255)
+    username = models.CharField(null=True, blank=True, max_length=600)
+
+
 class TwitterConnection(BaseThirdPartyConnection):
     title = "Twitter"
     oauth_token = models.CharField(max_length=255, unique=True, blank=False, null=False)

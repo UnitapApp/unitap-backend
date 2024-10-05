@@ -135,6 +135,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "safedelete",
+    "django_telegram_login",
 ]
 
 MIDDLEWARE = [
@@ -171,7 +172,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
 
 STORAGES = {
-    "default": { 
+    "default": {
         "BACKEND": "cloudflare_images.storage.CloudflareImagesStorage",
     },
     "staticfiles": {  # default
@@ -251,8 +252,8 @@ else:
 # These headers are required for Cloudflare and HCaptcha Turnstile anti-bot service
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
-    'cf-turnstile-response',
-    'hc-turnstile-response',
+    "cf-turnstile-response",
+    "hc-turnstile-response",
 ]
 
 # Static files (CSS, JavaScript, Images)
