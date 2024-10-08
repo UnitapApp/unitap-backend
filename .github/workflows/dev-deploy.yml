@@ -17,6 +17,6 @@ jobs:
       - name: Push to dokku
         uses: dokku/github-action@master
         with:
-          git_remote_url: 'ssh://dokku@70.34.210.129:unitap-dev'
+          git_remote_url: 'ssh://dokku@70.34.210.129:80/unitap-dev'
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           branch: 'develop'
