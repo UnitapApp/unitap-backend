@@ -171,14 +171,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
 
 STORAGES = {
-    "default": { 
+    "default": {
         "BACKEND": "cloudflare_images.storage.CloudflareImagesStorage",
     },
     "staticfiles": {  # default
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
-
 
 # Database
 DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
@@ -192,23 +191,32 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 #     }
 # }
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_bmemcached.memcached.BMemcached",
-        "LOCATION": MEMCACHED_URL.split(","),
-        "OPTIONS": {
-            "username": MEMCACHED_USERNAME,
-            "password": MEMCACHED_PASSWORD,
-        },
+if ',' in MEMCACHED_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_bmemcached.memcached.BMemcached",
+            "LOCATION": MEMCACHED_URL.split(","),
+            "OPTIONS": {
+                "username": MEMCACHED_USERNAME,
+                "password": MEMCACHED_PASSWORD,
+            },
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_bmemcached.memcached.BMemcached",
+            "LOCATION": MEMCACHED_URL
+        }
+    }
+
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.Us"
-        "erAttributeSimilarityValidator",
+                "erAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -245,7 +253,6 @@ if not DEBUG:
     CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
 else:
     CORS_ALLOW_ALL_ORIGINS = True
-
 
 # Add Turnstile response headers for CORS
 # These headers are required for Cloudflare and HCaptcha Turnstile anti-bot service
