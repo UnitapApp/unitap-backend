@@ -1,4 +1,4 @@
-name: 'dev-deploy'
+name: Deploy to Server
 
 on:
   push:
@@ -8,15 +8,23 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: Cloning repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Push to dokku
-        uses: dokku/github-action@master
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          git_remote_url: 'dokku@70.34.210.129:unitap-dev'
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          branch: 'develop'
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Disable Host Key Checking
+        run: |
+          mkdir -p ~/.ssh
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+
+      - name: Push to Server
+        run: |
+          git remote add dokku dokku@70.34.210.129:unitap-dev
+          git fetch --unshallow origin
+          git push dokku develop -f
