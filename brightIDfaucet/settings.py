@@ -191,7 +191,7 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 #     }
 # }
 
-if ',' in MEMCACHED_URL:
+if MEMCACHED_URL and ',' in MEMCACHED_URL:
     CACHES = {
         "default": {
             "BACKEND": "django_bmemcached.memcached.BMemcached",
