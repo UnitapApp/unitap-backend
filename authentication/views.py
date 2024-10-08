@@ -218,11 +218,9 @@ class BrightIDSignatureStatusView(CreateAPIView):
         if not address or not signature:
             return Response({"message": "Invalid request"}, status=403)
 
+        is_sponsored = BrightIDConnection.driver.check_sponsorship(address)
+
         verified_signature = verify_signature_eth_scheme(address, address, signature)
-
-        is_sponsored, _ = BrightIDConnection.driver.check_sponsorship(address)
-
-        # print(verified_signature, is_sponsored)
 
         if not verified_signature or not is_sponsored:
             return Response({"is_verified": False})
