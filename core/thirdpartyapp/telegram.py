@@ -11,7 +11,7 @@ class TelegramUtil:
     def __init__(self) -> None:
         pass
 
-    def login_user(self, telegram_data):
+    def verify_login(self, telegram_data):
         is_verified = verify_telegram_authentication(
             bot_token=self.bot_token, request_data=telegram_data
         )

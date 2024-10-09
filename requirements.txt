@@ -35,3 +35,5 @@ ratelimit~=2.2.1
 pillow==10.4.0
 django-cloudflare-images~=0.6.0
 zstandard~=0.17.0
+pyTelegramBotAPI==4.23.0
+django-telegram-login==0.2.3

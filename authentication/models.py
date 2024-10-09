@@ -257,6 +257,9 @@ class TelegramConnection(BaseThirdPartyConnection):
     last_name = models.CharField(null=True, blank=True, max_length=255)
     username = models.CharField(null=True, blank=True, max_length=600)
 
+    def is_connected(self):
+        return True
+
 
 class TwitterConnection(BaseThirdPartyConnection):
     title = "Twitter"
