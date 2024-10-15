@@ -18,7 +18,6 @@ class RaffleEntryAdmin(admin.ModelAdmin):
         "tx_hash",
         "age",
     ]
-    autocomplete_fields = ["wallet_address"]
 
 
 class LineaRaffleEntriesAdmin(admin.ModelAdmin):
