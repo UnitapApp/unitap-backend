@@ -137,7 +137,6 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "safedelete",
-    "django_telegram_login",
 ]
 
 MIDDLEWARE = [

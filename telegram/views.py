@@ -1,7 +1,5 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django_telegram_login.widgets.generator import create_redirect_login_widget
-from django_telegram_login.authentication import verify_telegram_authentication
 from django.conf import settings
 
 from core.thirdpartyapp.telegram import TelegramUtil
