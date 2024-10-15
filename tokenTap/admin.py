@@ -36,6 +36,7 @@ class TokenDistributionClaimAdmin(admin.ModelAdmin):
     ]
     search_fields = ["user_wallet_address"]
     list_filter = ["token_distribution", "status"]
+    autocomplete_fields = ["user_profile"]
 
 
 class GlobalSettingsAdmin(admin.ModelAdmin):
