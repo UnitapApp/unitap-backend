@@ -23,7 +23,6 @@ class RaffleEntryAdmin(admin.ModelAdmin):
 
 class LineaRaffleEntriesAdmin(admin.ModelAdmin):
     list_display = ["pk", "wallet_address", "is_winner"]
-    autocomplete_fields = ["wallet_address"]
 
 
 admin.site.register(Raffle, RaffleAdmin)
