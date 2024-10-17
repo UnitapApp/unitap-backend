@@ -164,7 +164,9 @@ class TelegramMessenger:
         if not args:
             return command
 
-        return f"{command},{",".join(args)}"
+        args_str = ",".join(args)
+
+        return f"{command},{args_str}"
 
     def handle_callback_query(self, call: types.CallbackQuery):
         """
