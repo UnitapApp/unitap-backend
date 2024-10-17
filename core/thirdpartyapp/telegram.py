@@ -38,10 +38,3 @@ class TelegramUtil:
 
     def verify_login(self, telegram_data):
         return verify_telegram_auth(self.bot_token, telegram_data)
-
-    def create_telegram_widget(self, redirect_url):
-        telegram_login_widget = create_redirect_login_widget(
-            redirect_url, self.bot_username
-        )
-
-        return telegram_login_widget
