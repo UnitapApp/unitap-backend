@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import TelegramLoginCallbackView, TelegramLoginView
+from .views import TelegramLoginCallbackView, telebot_respond
 
 
 urlpatterns = [
@@ -8,7 +8,5 @@ urlpatterns = [
         TelegramLoginCallbackView.as_view(),
         name="telegram-login-callback",
     ),
-    path(
-        "wh/",
-    ),
+    path("wh/", telebot_respond, name="telegram-update-messages"),
 ]

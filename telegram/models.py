@@ -9,7 +9,7 @@ class TelegramConnection(BaseThirdPartyConnection):
     first_name = models.CharField(null=True, blank=True, max_length=255)
     last_name = models.CharField(null=True, blank=True, max_length=255)
     username = models.CharField(null=True, blank=True, max_length=600)
-    is_collected_easter_egg = models.BooleanField(default=False)
+    # is_collected_easter_egg = models.BooleanField(default=False)
 
     @override
     def is_connected(self):

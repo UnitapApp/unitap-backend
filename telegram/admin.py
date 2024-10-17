@@ -9,7 +9,7 @@ from telegram.bot import TelegramMessenger
 
 @admin.register(TelegramConnection)
 class TelegramConnectionAdmin(admin.ModelAdmin):
-    list_display = ("user", "connected_at")  # Adjust as per your model fields
+    list_display = ("pk", "user_profile", "user_id")  # Adjust as per your model fields
 
     def get_urls(self):
         urls = super().get_urls()
