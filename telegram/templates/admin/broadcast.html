@@ -1,0 +1,8 @@
+<!-- templates/admin/broadcast.html -->
+{% extends "admin/base_site.html" %} {% block content %}
+<h1>Broadcast Message to Telegram Users</h1>
+<form method="post">
+  {% csrf_token %} {{ form.as_p }}
+  <button type="submit" class="default">Send Message</button>
+</form>
+{% endblock %}

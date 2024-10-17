@@ -54,6 +54,7 @@ from .constraints import (
     IsFollowingLensUser,
     IsFollowingTwitterBatch,
     IsFollowingTwitterUser,
+    HasTelegramConnection,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -160,7 +161,8 @@ class UserConstraint(models.Model):
         IsFollowingFarcasterBatch,
         HasVerifiedCloudflareCaptcha,
         DidMintZoraNFT,
-        HasVerifiedHCaptcha
+        HasVerifiedHCaptcha,
+        HasTelegramConnection,
     ]
 
     name = models.CharField(
