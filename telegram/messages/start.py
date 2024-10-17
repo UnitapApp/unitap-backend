@@ -1,5 +1,6 @@
 from telegram.bot import BaseTelegramCommandHandler
 from telebot import types
+from .menu import home_markup
 
 
 class StartCommandHandler(BaseTelegramCommandHandler):
@@ -9,18 +10,8 @@ class StartCommandHandler(BaseTelegramCommandHandler):
         if args:
             return
 
-        markup = types.ReplyKeyboardMarkup()
-
-        markup.add(types.KeyboardButton("Connect your account"))
-
-        markup.add(types.KeyboardButton("Stats of gastap"))
-
-        markup.add(types.KeyboardButton("Report bug 🪲"))
-
-        markup.add(types.KeyboardButton("About Unitap ❓"))
-
         self.messenger.reply_to(
             message,
             "Welcome to unitap official telegram bot, how can i help you?",
-            reply_markup=markup,
+            reply_markup=home_markup,
         )

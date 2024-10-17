@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from telegram.serializers import TelegramConnectionSerializer
 from telegram.models import TelegramConnection
+from telegram.messages.menu import home_markup
 from core.thirdpartyapp.telegram import TelegramUtil
 
 from .bot import telebot_instance, TelegramMessenger
@@ -90,7 +91,7 @@ class TelegramLoginCallbackView(CreateAPIView):
             user_id = telegram_data["id"]
 
             TelegramMessenger.get_instance().send_message(
-                chat_id=user_id, text=welcome_text
+                chat_id=user_id, text=welcome_text, reply_markup=home_markup
             )
 
             serializer.save(user_profile=self.user_profile)

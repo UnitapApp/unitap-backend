@@ -160,6 +160,12 @@ class TelegramMessenger:
 
         return instance.handler(message, command, args[1:])
 
+    def build_callback_string(self, command: str, args: list[str]):
+        if not args:
+            return command
+
+        return f"{command},{",".join(args)}"
+
     def handle_callback_query(self, call: types.CallbackQuery):
         """
         Handle a callback query (typically from inline buttons) by dispatching it to the appropriate handler.
