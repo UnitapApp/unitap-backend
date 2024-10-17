@@ -48,14 +48,13 @@ def telebot_respond(request):
     ):
         raise PermissionDenied("Invalid secret token")
 
-    if request.META["CONTENT_TYPE"] == "application/json":
-        json_data = request.body.decode("utf-8")
-        update = telebot.types.Update.de_json(json_data)
-        telebot_instance.process_new_updates([update])
-        return HttpResponse("")
-
-    else:
+    if request.META["CONTENT_TYPE"] != "application/json":
         raise PermissionDenied
+
+    json_data = request.body.decode("utf-8")
+    update = telebot.types.Update.de_json(json_data)
+    telebot_instance.process_new_updates([update])
+    return HttpResponse("")
 
 
 welcome_text = """*Welcome to Unitap!* 🎉
