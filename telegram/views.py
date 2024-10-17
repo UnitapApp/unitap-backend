@@ -83,9 +83,8 @@ class TelegramLoginCallbackView(CreateAPIView):
 
     def perform_create(self, serializer: TelegramConnectionSerializer):
         telegram_data = serializer.validated_data
-        is_verified = TelegramUtil().verify_login(telegram_data)
 
-        if is_verified:
+        if TelegramUtil().verify_login(telegram_data):
             user_id = telegram_data["id"]
 
             TelegramMessenger.get_instance().send_message(
