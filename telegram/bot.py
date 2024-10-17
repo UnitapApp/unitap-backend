@@ -362,27 +362,24 @@ class BaseTelegramCallbackHandler(TelegramEventHandler):
 
 
 def register_message_handlers():
-    handlers = {}
-    for subclass in BaseTelegramMessageHandler.__subclasses__():
-        if subclass.message:
-            handlers[subclass.message] = subclass(telebot_instance)
-
-    return handlers
+    return {
+        subclass.callback: subclass(telebot_instance)
+        for subclass in BaseTelegramMessageHandler.__subclasses__()
+        if subclass.callback
+    }
 
 
 def register_callback_handlers():
-    handlers = {}
-    for subclass in BaseTelegramCallbackHandler.__subclasses__():
-        if subclass.callback:
-            handlers[subclass.callback] = subclass(telebot_instance)
-
-    return handlers
+    return {
+        subclass.callback: subclass(telebot_instance)
+        for subclass in BaseTelegramCallbackHandler.__subclasses__()
+        if subclass.callback
+    }
 
 
 def register_command_handlers():
-    handlers = {}
-    for subclass in BaseTelegramCommandHandler.__subclasses__():
-        if subclass.command:
-            handlers[subclass.command] = subclass(telebot_instance)
-
-    return handlers
+    return {
+        subclass.callback: subclass(telebot_instance)
+        for subclass in BaseTelegramCommandHandler.__subclasses__()
+        if subclass.callback
+    }
