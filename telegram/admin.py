@@ -5,6 +5,7 @@ from django.shortcuts import render
 from .models import TelegramConnection
 from .forms import BroadcastMessageForm
 from telegram.bot import TelegramMessenger
+from django.core.exceptions import PermissionDenied
 
 
 @admin.register(TelegramConnection)
@@ -22,7 +23,14 @@ class TelegramConnectionAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
+    @admin.action(
+        description="Broadcast message to all users",
+        permissions=["telegram.can_broadcast"],
+    )
     def broadcast_view(self, request):
+        if not request.user.has_perm("telegram.can_broadcast"):
+            raise PermissionDenied("You do not have permission to broadcast messages.")
+
         if request.method == "POST":
             form = BroadcastMessageForm(request.POST)
             if form.is_valid():

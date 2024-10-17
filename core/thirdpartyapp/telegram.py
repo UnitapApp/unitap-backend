@@ -22,11 +22,7 @@ def verify_telegram_auth(bot_token, data):
     if calculated_hash != hash_check:
         return False
 
-    # Optional: Check that the authentication data is recent (within a day)
-    if time.time() - int(auth_data["auth_date"]) > 86400:
-        return False
-
-    return True
+    return time.time() - int(auth_data["auth_date"]) <= 86400
 
 
 class TelegramUtil:

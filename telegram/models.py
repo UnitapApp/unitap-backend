@@ -14,3 +14,8 @@ class TelegramConnection(BaseThirdPartyConnection):
     @override
     def is_connected(self):
         return True
+
+    class Meta:
+        permissions = [
+            ("can_broadcast", "Can broadcast messages"),
+        ]
