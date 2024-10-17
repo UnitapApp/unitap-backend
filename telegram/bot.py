@@ -135,10 +135,7 @@ class TelegramMessenger:
         """
         instance = self.message_handlers.get(message.text)
 
-        if not instance:
-            return None
-
-        return instance.handler(message)
+        return None if not instance else instance.handler(message)
 
     def handle_user_command(self, message: types.Message):
         """
@@ -155,10 +152,7 @@ class TelegramMessenger:
 
         instance = self.command_handlers.get(command)
 
-        if not instance:
-            return None
-
-        return instance.handler(message, command, args[1:])
+        return None if not instance else instance.handler(message, command, args[1:])
 
     def build_callback_string(self, command: str, args: list[str]):
         if not args:
