@@ -7,10 +7,12 @@ import telebot
 import time
 import logging
 
+from telegram.models import TelegramConnection
+
 
 logger = logging.getLogger(__name__)
 
-bot = telebot.TeleBot(settings.TELEGRAM_BOT_API_KEY)
+telebot_instance = telebot.TeleBot(settings.TELEGRAM_BOT_API_KEY)
 
 MAX_REQUESTS_PER_SECOND = 30
 
@@ -201,7 +203,9 @@ class TelegramMessenger:
 
         # Replace with your webhook and Telegram Bot token
         webhook_url = "https://api.unitap.app/api/telegram/wh/"
-        telegram_api_url = f"https://api.telegram.org/bot{bot.token}/setWebhook"
+        telegram_api_url = (
+            f"https://api.telegram.org/bot{telebot_instance.token}/setWebhook"
+        )
 
         # Register webhook with secret token for added security
         requests.post(
@@ -214,15 +218,31 @@ class TelegramMessenger:
         Prepare the bot by registering the message and callback handlers for processing updates.
         This is the setup function that connects Telegram message updates with handler functions.
         """
-        bot.message_handler(func=lambda _: True)(
+        telebot_instance.message_handler(func=lambda _: True)(
             lambda message: self.on_telegram_message(message)
         )
 
-        bot.callback_query_handler(func=lambda _: True)(
+        telebot_instance.callback_query_handler(func=lambda _: True)(
             lambda call: self.handle_callback_query(call)
         )
 
-    def send_message(self, user: UserProfile, *args, **kwargs) -> types.Message:
+    def send_message(self, *args, **kwargs):
+        return self.limiter.send_telegram_request(
+            telebot_instance.send_message,
+            *args,
+            **kwargs,
+        )
+
+    def send_photo(self, *args, **kwargs):
+        return self.limiter.send_telegram_request(
+            telebot_instance.send_photo,
+            *args,
+            **kwargs,
+        )
+
+    def send_message_with_profile(
+        self, user: UserProfile, *args, **kwargs
+    ) -> types.Message:
         """
         Send a message to a user using Telegram bot API with rate limiting.
 
@@ -241,7 +261,10 @@ class TelegramMessenger:
             raise ValueError("[T] User telegram connection must be present")
 
         return self.limiter.send_telegram_request(
-            bot.send_message, chat_id=user.telegramconnections.user_id, *args, **kwargs
+            telebot_instance.send_message,
+            chat_id=user.telegramconnections.user_id,
+            *args,
+            **kwargs,
         )
 
     def update_query_messages(self, call: types.CallbackQuery, text: str, markup):
@@ -257,7 +280,7 @@ class TelegramMessenger:
             The result of the bot.edit_message_text method.
         """
         return self.limiter.send_telegram_request(
-            bot.edit_message_text,
+            telebot_instance.edit_message_text,
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             text=text,
@@ -275,7 +298,9 @@ class TelegramMessenger:
         Returns:
             The result of the bot.reply_to method.
         """
-        return self.limiter.send_telegram_request(bot.reply_to, *args, **kwargs)
+        return self.limiter.send_telegram_request(
+            telebot_instance.reply_to, *args, **kwargs
+        )
 
 
 class TelegramEventHandler:
@@ -287,6 +312,18 @@ class TelegramEventHandler:
 
     def handler(self, message: types.Message):
         raise NotImplementedError("[T] Subclasses should implement the handler method")
+
+    def get_user(self, user_id):
+        telegram_connection = TelegramConnection.objects.filter(user_id=user_id).first()
+
+        return None if telegram_connection is None else telegram_connection.user_profile
+
+    def register_next_step_handler(
+        self, message: types.Message, callback, *args, **kwargs
+    ):
+        return self.messenger.limiter.send_telegram_request(
+            self.bot.register_next_step_handler, message, callback, *args, **kwargs
+        )
 
 
 class BaseTelegramCommandHandler(TelegramEventHandler):
@@ -320,7 +357,7 @@ def register_message_handlers():
     handlers = {}
     for subclass in BaseTelegramMessageHandler.__subclasses__():
         if subclass.message:
-            handlers[subclass.message] = subclass(bot)
+            handlers[subclass.message] = subclass(telebot_instance)
 
     return handlers
 
@@ -329,7 +366,7 @@ def register_callback_handlers():
     handlers = {}
     for subclass in BaseTelegramCallbackHandler.__subclasses__():
         if subclass.callback:
-            handlers[subclass.callback] = subclass(bot)
+            handlers[subclass.callback] = subclass(telebot_instance)
 
     return handlers
 
@@ -338,6 +375,6 @@ def register_command_handlers():
     handlers = {}
     for subclass in BaseTelegramCommandHandler.__subclasses__():
         if subclass.command:
-            handlers[subclass.command] = subclass(bot)
+            handlers[subclass.command] = subclass(telebot_instance)
 
     return handlers

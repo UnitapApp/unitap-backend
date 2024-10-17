@@ -1,10 +1,11 @@
-from rest_framework.views import CreateApiView
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-
+from rest_framework.permissions import IsAuthenticated
+from telegram.serializers import TelegramConnectionSerializer
 from telegram.models import TelegramConnection
 from core.thirdpartyapp.telegram import TelegramUtil
 
-from .bot import tbot
+from .bot import telebot_instance, TelegramMessenger
 
 from django.core.cache import cache
 from django.conf import settings
@@ -51,25 +52,47 @@ def telebot_respond(request):
     if request.META["CONTENT_TYPE"] == "application/json":
         json_data = request.body.decode("utf-8")
         update = telebot.types.Update.de_json(json_data)
-        tbot.process_new_updates([update])
+        telebot_instance.process_new_updates([update])
         return HttpResponse("")
 
     else:
         raise PermissionDenied
 
 
-class TelegramLoginCallbackView(CreateApiView):
+welcome_text = """*Welcome to Unitap!* 🎉
 
-    def post(self, request):
-        telegram_data = request.data
+Your Telegram account is now successfully *connected* to Unitap. From here on, you'll receive important updates, notifications, and can interact with Unitap directly through this chat.
+
+Here’s what you can do:
+- *Submit issues or requests*
+- *Get notified about events and changes*
+- *Ask for hints or help* when needed
+
+Type `/help` at any time to see available commands.
+
+Thanks for joining Unitap! We’re here to assist you in staying productive and connected.
+"""
+
+
+class TelegramLoginCallbackView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TelegramConnectionSerializer
+
+    @property
+    def user_profile(self):
+        return self.request.user.profile
+
+    def perform_create(self, serializer: TelegramConnectionSerializer):
+        telegram_data = serializer.validated_data
         is_verified = TelegramUtil().verify_login(telegram_data)
 
         if is_verified:
             user_id = telegram_data["id"]
-            username = telegram_data["username"]
 
-            return Response(
-                {"status": "success", "user_id": user_id, "username": username}
+            TelegramMessenger.get_instance().send_message(
+                chat_id=user_id, text=welcome_text
             )
+
+            serializer.save(user_profile=self.user_profile)
         else:
             return Response({"status": "error"}, status=400)
