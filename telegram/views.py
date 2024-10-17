@@ -20,9 +20,7 @@ import requests
 
 
 def get_telegram_safe_ips():
-    telegram_ips_cache = cache.get("telegram_safe_ip_list")
-
-    if telegram_ips_cache:
+    if telegram_ips_cache := cache.get("telegram_safe_ip_list"):
         return telegram_ips_cache
 
     telegram_ips = requests.get("https://core.telegram.org/bots/webhooks").json()[
