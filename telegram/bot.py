@@ -176,10 +176,7 @@ class TelegramMessenger:
 
         instance = self.callback_handlers.get(cmd_parts[0])
 
-        if not instance:
-            return None
-
-        return instance.handler(call)
+        return None if not instance else instance.handler(call)
 
     def on_telegram_message(self, message: types.Message):
         """
