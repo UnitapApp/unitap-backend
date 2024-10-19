@@ -69,6 +69,11 @@ def create_verified_user() -> UserProfile:
     return user
 
 
+@patch("authentication.models.submit_passport")
+def mock_submit_passport(sender, instance: GitcoinPassportConnection, **kwargs):
+    return None
+
+
 def create_new_wallet(user_profile, _address, wallet_type) -> Wallet:
     wallet, is_create = Wallet.objects.get_or_create(
         user_profile=user_profile, address=_address, wallet_type=wallet_type
