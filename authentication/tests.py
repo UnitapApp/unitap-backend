@@ -69,11 +69,6 @@ def create_verified_user() -> UserProfile:
     return user
 
 
-@patch("authentication.models.submit_passport")
-def mock_submit_passport(sender, instance: GitcoinPassportConnection, **kwargs):
-    return None
-
-
 def create_new_wallet(user_profile, _address, wallet_type) -> Wallet:
     wallet, is_create = Wallet.objects.get_or_create(
         user_profile=user_profile, address=_address, wallet_type=wallet_type
@@ -688,6 +683,7 @@ class TestGitcoinPassportThirdPartyConnection(APITestCase):
             user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
         )
 
+    @patch("authentication.models.submit_passport", lambda a, b: True)
     def test_gitcoin_passport_connection_successful(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
@@ -702,6 +698,7 @@ class TestGitcoinPassportThirdPartyConnection(APITestCase):
             1,
         )
 
+    @patch("authentication.models.submit_passport", lambda a, b: True)
     def test_gitcoin_passport_not_exists(self):
         address_does_not_have_gitcoin_passport = (
             "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF5"
@@ -718,6 +715,7 @@ class TestGitcoinPassportThirdPartyConnection(APITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
+    @patch("authentication.models.submit_passport", lambda a, b: True)
     def test_address_not_owned_by_user(self):
         self.client.force_authenticate(user=self.user_profile.user)
         response = self.client.post(
