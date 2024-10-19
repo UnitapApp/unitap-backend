@@ -11,6 +11,7 @@ class TelegramConfig(AppConfig):
             return super().ready()
 
         from .bot import TelegramMessenger
+        from telegram import messages
 
         messenger = TelegramMessenger.get_instance()
         messenger.ensure_webhook()
