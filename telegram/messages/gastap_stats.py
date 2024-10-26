@@ -11,7 +11,7 @@ Here are the available chains for claiming gas tokens:
 {% for faucet in faucets %}
 🔵 *{{ faucet.chain.chain_name }}*  
 Max Claim Amount: {{ faucet.max_claim_amount }}  
-Available for: {% if faucet.is_one_time_claim %}One-time{% else %}Weekly{% endif %}
+Available for: {% if faucet.is_one_time_claim %}One Time{% else %}Weekly{% endif %}
 
 {% if faucet.has_enough_funds %}
 🟢 *Status:* Available  
@@ -20,7 +20,6 @@ Fuel Level: {{ faucet.fuel_level }}%
 🔴 *Status:* Out of Balance
 {% endif %}
 
----
 {% endfor %}
 
 Remember: You need BrightID verification to claim your tokens.
