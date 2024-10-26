@@ -1,18 +1,51 @@
 from authentication.models import UserProfile
 from django.conf import settings
+from django.utils import timezone
 from abc import ABC, abstractmethod
-from telebot import types
+from telebot import types, ExceptionHandler
 
 import telebot
 import time
 import logging
+import traceback
 
 from telegram.models import TelegramConnection
 
 
 logger = logging.getLogger(__name__)
 
-telebot_instance = telebot.TeleBot(settings.TELEGRAM_BOT_API_KEY)
+
+class ExceptionHandler(ExceptionHandler):
+    def handle(self, exception: Exception):
+        # Timestamp for when the exception occurred
+        timestamp = timezone.now().strftime("%d/%m/%Y, %H:%M:%S")
+
+        logger.error(f"Custom exception handler triggered for {exception}: {timestamp}")
+        traceback.print_exception(type(exception), exception, exception.__traceback__)
+
+        # Detailed message with improved readability
+        exception_message = (
+            f"**Exception Details**\n\n"
+            f"**Exception Type:** `{exception.__class__.__name__}`\n"
+            f"**Occurred At:** `{timestamp}`\n"
+            f"\n**Traceback:**\n"
+            f"```\n{''.join(traceback.format_exception(type(exception), exception, exception.__traceback__))}\n```"
+        )
+
+        sticker_emoji = "🪲🪲"  # Customize as needed for better visibility
+        TelegramMessenger.get_instance().send_message(
+            chat_id=settings.TELEGRAM_BUG_REPORTER_CHANNEL_ID,
+            text=(
+                f"{sticker_emoji} **An error has occurred!** {sticker_emoji}\n\n"
+                f"{exception_message}"
+            ),
+        )
+
+
+telebot_instance = telebot.TeleBot(
+    settings.TELEGRAM_BOT_API_KEY, exception_handler=ExceptionHandler()
+)
+
 
 MAX_REQUESTS_PER_SECOND = 30
 
