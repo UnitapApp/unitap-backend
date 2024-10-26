@@ -233,14 +233,13 @@ class TelegramMessenger:
         """
         import requests
 
-        # Replace with your webhook and Telegram Bot token
         webhook_url = "https://api.unitap.app/api/telegram/wh/"
         telegram_api_url = (
             f"https://api.telegram.org/bot{telebot_instance.token}/setWebhook"
         )
 
         # Register webhook with secret token for added security
-        requests.post(
+        res = requests.post(
             telegram_api_url,
             data={"url": webhook_url, "secret_token": settings.TELEGRAM_BOT_API_SECRET},
         )
@@ -250,6 +249,10 @@ class TelegramMessenger:
         Prepare the bot by registering the message and callback handlers for processing updates.
         This is the setup function that connects Telegram message updates with handler functions.
         """
+        self.callback_handlers = register_callback_handlers()
+        self.message_handlers = register_message_handlers()
+        self.command_handlers = register_command_handlers()
+
         telebot_instance.message_handler(func=lambda _: True)(
             lambda message: self.on_telegram_message(message)
         )
@@ -387,9 +390,9 @@ class BaseTelegramCallbackHandler(TelegramEventHandler):
 
 def register_message_handlers():
     return {
-        subclass.callback: subclass(telebot_instance)
+        subclass.message: subclass(telebot_instance)
         for subclass in BaseTelegramMessageHandler.__subclasses__()
-        if subclass.callback
+        if subclass.message
     }
 
 
@@ -403,7 +406,7 @@ def register_callback_handlers():
 
 def register_command_handlers():
     return {
-        subclass.callback: subclass(telebot_instance)
+        subclass.command: subclass(telebot_instance)
         for subclass in BaseTelegramCommandHandler.__subclasses__()
-        if subclass.callback
+        if subclass.command
     }

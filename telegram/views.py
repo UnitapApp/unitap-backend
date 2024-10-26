@@ -46,8 +46,6 @@ def telebot_respond(request):
     # if client_ip not in telegram_ips:
     #     raise PermissionDenied("Invalid IP address")
 
-    logger.info(request.headers)
-
     if (
         request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         != settings.TELEGRAM_BOT_API_SECRET
