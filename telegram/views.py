@@ -17,6 +17,10 @@ from django.views.decorators.csrf import csrf_exempt
 
 import telebot
 import requests
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_telegram_safe_ips():
@@ -41,6 +45,8 @@ def telebot_respond(request):
     # # Validate the request's IP address against Telegram's IP ranges
     # if client_ip not in telegram_ips:
     #     raise PermissionDenied("Invalid IP address")
+
+    logger.info(request.headers)
 
     if (
         request.headers.get("X-Telegram-Bot-Api-Secret-Token")
