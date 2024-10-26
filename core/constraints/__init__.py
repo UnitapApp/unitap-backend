@@ -65,6 +65,7 @@ from core.constraints.twitter import (
     IsFollowingTwitterUser,
 )
 from core.constraints.zora import DidMintZoraNFT
+from core.constraints.telegram import HasTelegramConnection
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:

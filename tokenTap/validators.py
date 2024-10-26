@@ -52,7 +52,7 @@ class TokenDistributionValidator:
 
     def check_user_permissions(self, raise_exception=True):
         try:
-            param_values = json.loads(self.td.constraint_params)
+            param_values = json.loads(self.td.constraint_params or "{}")
         except Exception as e:
             logging.error("Error parsing constraint params", e)
             param_values = {}

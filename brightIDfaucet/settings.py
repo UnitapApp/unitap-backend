@@ -74,6 +74,12 @@ MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
 MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
 DEPLOYMENT_ENV = os.environ.get("DEPLOYMENT_ENV")
 
+
+TELEGRAM_BOT_API_KEY = os.environ.get("TELEGRAM_BOT_API_KEY")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME")
+TELEGRAM_BOT_API_SECRET = os.environ.get("TELEGRAM_BOT_API_SECRET")
+TELEGRAM_BUG_REPORTER_CHANNEL_ID = os.environ.get("TELEGRAM_BUG_REPORTER_CHANNEL_ID")
+
 CLOUDFLARE_IMAGES_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
 CLOUDFLARE_IMAGES_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
 CLOUDFLARE_IMAGES_ACCOUNT_HASH = os.environ.get("CLOUDFLARE_ACCOUNT_HASH")
@@ -135,6 +141,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "safedelete",
+    "telegram.apps.TelegramConfig",
 ]
 
 MIDDLEWARE = [
@@ -171,14 +178,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "brightIDfaucet.wsgi.application"
 
 STORAGES = {
-    "default": { 
+    "default": {
         "BACKEND": "cloudflare_images.storage.CloudflareImagesStorage",
     },
     "staticfiles": {  # default
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
-
 
 # Database
 DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
@@ -192,23 +198,32 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 #     }
 # }
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_bmemcached.memcached.BMemcached",
-        "LOCATION": MEMCACHED_URL.split(","),
-        "OPTIONS": {
-            "username": MEMCACHED_USERNAME,
-            "password": MEMCACHED_PASSWORD,
-        },
+if MEMCACHED_URL and ',' in MEMCACHED_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_bmemcached.memcached.BMemcached",
+            "LOCATION": MEMCACHED_URL.split(","),
+            "OPTIONS": {
+                "username": MEMCACHED_USERNAME,
+                "password": MEMCACHED_PASSWORD,
+            },
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_bmemcached.memcached.BMemcached",
+            "LOCATION": MEMCACHED_URL
+        }
+    }
+
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.Us"
-        "erAttributeSimilarityValidator",
+                "erAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -246,13 +261,12 @@ if not DEBUG:
 else:
     CORS_ALLOW_ALL_ORIGINS = True
 
-
 # Add Turnstile response headers for CORS
 # These headers are required for Cloudflare and HCaptcha Turnstile anti-bot service
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
-    'cf-turnstile-response',
-    'hc-turnstile-response',
+    "cf-turnstile-response",
+    "hc-turnstile-response",
 ]
 
 # Static files (CSS, JavaScript, Images)
