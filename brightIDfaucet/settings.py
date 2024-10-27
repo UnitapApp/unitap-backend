@@ -198,24 +198,24 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 #     }
 # }
 
-if MEMCACHED_URL and ',' in MEMCACHED_URL:
-    CACHES = {
-        "default": {
-            "BACKEND": "django_bmemcached.memcached.BMemcached",
-            "LOCATION": MEMCACHED_URL.split(","),
-            "OPTIONS": {
-                "username": MEMCACHED_USERNAME,
-                "password": MEMCACHED_PASSWORD,
-            },
-        }
+# if MEMCACHED_URL and ',' in MEMCACHED_URL:
+CACHES = {
+    "default": {
+        "BACKEND": "django_bmemcached.memcached.BMemcached",
+        "LOCATION": MEMCACHED_URL.split(","),
+        "OPTIONS": {
+            "username": MEMCACHED_USERNAME,
+            "password": MEMCACHED_PASSWORD,
+        },
     }
-else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django_bmemcached.memcached.BMemcached",
-            "LOCATION": MEMCACHED_URL
-        }
-    }
+}
+# else:
+#     CACHES = {
+#         "default": {
+#             "BACKEND": "django_bmemcached.memcached.BMemcached",
+#             "LOCATION": MEMCACHED_URL
+#         }
+#     }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
