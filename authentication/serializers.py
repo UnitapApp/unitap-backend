@@ -46,7 +46,7 @@ class WalletSerializer(serializers.ModelSerializer):
         fields = ["pk", "wallet_type", "address", "signature", "message"]
 
     def is_valid(self, raise_exception=False):
-        super_is_validated = super().is_valid(raise_exception)
+        super_is_validated = super().is_valid(raise_exception=raise_exception)
 
         address = self.validated_data.get("address")
         message = self.validated_data.get("message")
@@ -208,8 +208,8 @@ class GitcoinPassportConnectionSerializer(BaseThirdPartyConnectionSerializer):
         ]
 
     def is_valid(self, raise_exception=False):
-        super_is_validated = super().is_valid(raise_exception)
-        is_address_valid = self.validate_address(raise_exception)
+        super_is_validated = super().is_valid(raise_exception=raise_exception)
+        is_address_valid = self.validate_address(raise_exception=raise_exception)
 
         return is_address_valid and super_is_validated
 
@@ -237,7 +237,7 @@ class ENSConnectionSerializer(BaseThirdPartyConnectionSerializer):
         ]
 
     def is_valid(self, raise_exception=False):
-        super_is_validated = super().is_valid(raise_exception)
+        super_is_validated = super().is_valid(raise_exception=raise_exception)
         is_address_valid = self.validate_address(raise_exception)
 
         return is_address_valid and super_is_validated
@@ -255,7 +255,7 @@ class FarcasterConnectionSerializer(BaseThirdPartyConnectionSerializer):
         ]
 
     def is_valid(self, raise_exception=False):
-        super_is_validated = super().is_valid(raise_exception)
+        super_is_validated = super().is_valid(raise_exception=raise_exception)
         is_address_valid = self.validate_address(raise_exception)
 
         return is_address_valid and super_is_validated
@@ -273,7 +273,7 @@ class LensConnectionSerializer(BaseThirdPartyConnectionSerializer):
         ]
 
     def is_valid(self, raise_exception=False):
-        super_is_validated = super().is_valid(raise_exception)
+        super_is_validated = super().is_valid(raise_exception=raise_exception)
         is_address_valid = self.validate_address(raise_exception)
 
         return is_address_valid and super_is_validated

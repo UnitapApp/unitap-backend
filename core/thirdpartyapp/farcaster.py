@@ -134,7 +134,7 @@ class FarcasterUtil:
         """
         try:
             follower_fid = self._get_profile(address)["fid"]
-            return self._get_followers_status(follower_fid, fid)
+            return self._get_followers_status(follower_fid, fid)[fid]
         except (
             RequestException,
             IndexError,
@@ -153,7 +153,7 @@ class FarcasterUtil:
         """
         try:
             following_fid = self._get_profile(address)["fid"]
-            return self._get_follow_status(fid, following_fid)
+            return self._get_follow_status(fid, following_fid)[following_fid]
         except (
             RequestException,
             IndexError,

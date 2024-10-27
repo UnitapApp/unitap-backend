@@ -5,9 +5,6 @@ class HasENSVerification(ConstraintVerification):
     _param_keys = []
     app_name = ConstraintApp.ENS.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import ENSConnection
 

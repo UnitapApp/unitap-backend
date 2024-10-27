@@ -11,6 +11,8 @@ from rest_framework.exceptions import ValidationError
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha, HasVerifiedHCaptcha
+
 from .constraints import (
     AllowListVerification,
     Attest,
@@ -27,11 +29,13 @@ from .constraints import (
     DidDelegateArbToAddress,
     DidDelegateOPToAddress,
     DidLikedFarcasterCast,
+    DidMintZoraNFT,
     DidMirrorOnLensPublication,
     DidQuoteTweet,
     DidRecastFarcasterCast,
     DidRetweetTweet,
     GLMStakingVerification,
+    HasDonatedOnGitcoin,
     HasENSVerification,
     HasFarcasterProfile,
     HasGitcoinPassportProfile,
@@ -49,7 +53,8 @@ from .constraints import (
     IsFollowingFarcasterUser,
     IsFollowingLensUser,
     IsFollowingTwitterBatch,
-    IsFollowinTwitterUser,
+    IsFollowingTwitterUser,
+    HasTelegramConnection,
 )
 from .utils import SolanaWeb3Utils, Web3Utils
 
@@ -137,11 +142,12 @@ class UserConstraint(models.Model):
         HasFarcasterProfile,
         BeAttestedBy,
         Attest,
+        HasDonatedOnGitcoin,
         HasMinimumHumanityScore,
         HasGitcoinPassportProfile,
         IsFollowingFarcasterChannel,
         BridgeEthToArb,
-        IsFollowinTwitterUser,
+        IsFollowingTwitterUser,
         BeFollowedByTwitterUser,
         DidRetweetTweet,
         DidQuoteTweet,
@@ -153,6 +159,10 @@ class UserConstraint(models.Model):
         GLMStakingVerification,
         IsFollowingTwitterBatch,
         IsFollowingFarcasterBatch,
+        HasVerifiedCloudflareCaptcha,
+        DidMintZoraNFT,
+        HasVerifiedHCaptcha,
+        HasTelegramConnection,
     ]
 
     name = models.CharField(

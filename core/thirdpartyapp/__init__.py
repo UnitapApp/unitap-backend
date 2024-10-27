@@ -5,3 +5,4 @@ from .gitcoin_passport import GitcoinPassport, GitcoinPassportRequestError  # no
 from .lens import LensUtil  # noqa: F401
 from .subgraph import Subgraph
 from .twitter import RapidTwitter, TwitterUtils
+from .zora import ZoraUtil

@@ -35,9 +35,6 @@ class DelegateOP(ConstraintVerification):
     ]
     OP_TOKEN_CONTRACT = "0x4200000000000000000000000000000000000042"
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from core.models import Chain
 
@@ -53,8 +50,8 @@ class DelegateOP(ConstraintVerification):
         for user_address in self.user_addresses:
             try:
                 address = token_client.to_checksum_address(user_address)
-                delegated_address = token_client.get_delegates_address()
-                if (
+                delegated_address = token_client.get_delegates_address(user_address)
+                if not delegated_address or (
                     ConstraintParam.ADDRESS.name in self.param_keys()
                     and delegated_address.lower()
                     != self.param_values[ConstraintParam.ADDRESS.name].lower()
@@ -74,6 +71,3 @@ class DidDelegateOPToAddress(ConstraintVerification):
         ConstraintParam.MINIMUM,
         ConstraintParam.ADDRESS,
     )
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)

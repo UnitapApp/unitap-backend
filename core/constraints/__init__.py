@@ -16,6 +16,7 @@ from core.constraints.bright_id import (
     BrightIDAuraVerification,
     BrightIDMeetVerification,
 )
+from core.constraints.captcha import HasVerifiedCloudflareCaptcha, HasVerifiedHCaptcha
 from core.constraints.EAS import Attest, BeAttestedBy
 from core.constraints.ens import HasENSVerification
 from core.constraints.farcaster import (
@@ -35,10 +36,10 @@ from core.constraints.general import (
     HasTokenVerification,
 )
 from core.constraints.gitcoin_passport import (
+    HasDonatedOnGitcoin,
     HasGitcoinPassportProfile,
     HasMinimumHumanityScore,
 )
-from core.constraints.glm_staking import GLMStakingVerification
 from core.constraints.lens import (
     BeFollowedByLensUser,
     DidCollectLensPublication,
@@ -49,6 +50,7 @@ from core.constraints.lens import (
     IsFollowingLensUser,
 )
 from core.constraints.muon_node import HasMuonNode
+from core.constraints.octant import GLMStakingVerification
 from core.constraints.optimism import DelegateOP, DidDelegateOPToAddress
 from core.constraints.twitter import (
     BeFollowedByTwitterUser,
@@ -60,8 +62,10 @@ from core.constraints.twitter import (
     HasTwitter,
     HasVoteOnATweet,
     IsFollowingTwitterBatch,
-    IsFollowinTwitterUser,
+    IsFollowingTwitterUser,
 )
+from core.constraints.zora import DidMintZoraNFT
+from core.constraints.telegram import HasTelegramConnection
 
 
 def get_constraint(constraint_label: str) -> ConstraintVerification:

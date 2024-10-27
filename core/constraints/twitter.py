@@ -116,12 +116,9 @@ class HasCommentOnATweet(ConstraintVerification):
         return False
 
 
-class IsFollowinTwitterUser(ConstraintVerification):
+class IsFollowingTwitterUser(ConstraintVerification):
     _param_keys = [ConstraintParam.TWITTER_USERNAME]
     app_name = ConstraintApp.TWITTER.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import TwitterConnection
@@ -145,9 +142,6 @@ class IsFollowinTwitterUser(ConstraintVerification):
 class BeFollowedByTwitterUser(ConstraintVerification):
     _param_keys = [ConstraintParam.TWITTER_USERNAME]
     app_name = ConstraintApp.TWITTER.value
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import TwitterConnection
@@ -174,9 +168,6 @@ class DidRetweetTweet(ConstraintVerification):
     _param_keys = [ConstraintParam.TWEET_ID]
     app_name = ConstraintApp.TWITTER.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import TwitterConnection
 
@@ -196,9 +187,6 @@ class DidQuoteTweet(ConstraintVerification):
     _param_keys = [ConstraintParam.TWEET_ID]
     app_name = ConstraintApp.TWITTER.value
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs) -> bool:
         from authentication.models import TwitterConnection
 
@@ -217,9 +205,6 @@ class DidQuoteTweet(ConstraintVerification):
 class IsFollowingTwitterBatch(ConstraintVerification):
     app_name = ConstraintApp.TWITTER.value
     _param_keys = [ConstraintParam.TWITTER_IDS]
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def get_info(self, *args, **kwargs) -> None | dict:
         from authentication.models import TwitterConnection

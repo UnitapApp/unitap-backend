@@ -15,9 +15,6 @@ class HasNFTVerification(ConstraintVerification):
         ConstraintParam.MINIMUM,
     ]
 
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def is_observed(self, *args, **kwargs):
         from core.models import Chain
 
@@ -48,9 +45,6 @@ class ABCTokenVerification(ConstraintVerification, ABC):
         ConstraintParam.ADDRESS,
         ConstraintParam.MINIMUM,
     ]
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     @abstractmethod
     def get_amount(
@@ -88,9 +82,6 @@ class ABCTokenVerification(ConstraintVerification, ABC):
 
 
 class HasTokenVerification(ABCTokenVerification):
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
-
     def get_amount(
         self, user_address: str, token_address: None | str, token_client: TokenClient
     ) -> int:
@@ -116,9 +107,6 @@ class HasTokenTransferVerification(ABCTokenVerification):
 
 class AllowListVerification(ConstraintVerification):
     _param_keys = [ConstraintParam.CSV_FILE]
-
-    def __init__(self, user_profile) -> None:
-        super().__init__(user_profile)
 
     def is_observed(self, *args, **kwargs):
         file_path = self.param_values[ConstraintParam.CSV_FILE.name]
