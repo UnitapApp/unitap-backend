@@ -10,7 +10,7 @@ Here are the available chains for claiming gas tokens:
 
 {% for faucet in faucets %}
 🔵 *{{ faucet.chain.chain_name }}*  
-Max Claim Amount: {{ faucet.max_claim_amount }}  
+Max Claim Amount: {{ faucet.max_claim_amount / (10 ** faucet.chain.decimals) }} {{ faucet.chain.symbol }}  
 Available for: {% if faucet.is_one_time_claim %}One Time{% else %}Weekly{% endif %}
 
 {% if faucet.has_enough_funds %}
