@@ -38,4 +38,4 @@ class GastapStatsHandler(BaseTelegramMessageHandler):
 
         rendered_message = template.render(context)
 
-        self.messenger.reply_to(message, text=rendered_message, parse_mode="MarkdownV2")
+        self.messenger.reply_to(message, text=rendered_message)
