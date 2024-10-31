@@ -11,3 +11,6 @@ class TelegramConnectionSerializer(BaseThirdPartyConnectionSerializer):
         model = TelegramConnection
         fields = "__all__"
         read_only_fields = ["created_at", "pk", "user_profile", "title"]
+
+    def validate_address(self, raise_exception=False):
+        return True
