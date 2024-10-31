@@ -10,9 +10,7 @@ class TelegramConnectionSerializer(BaseThirdPartyConnectionSerializer):
     class Meta:
         model = TelegramConnection
         fields = "__all__"
-        read_only_fields = [
-            "created_on",
-            "pk",
-            "user_profile",
-            "title",
-        ]
+        read_only_fields = ["created_at", "pk", "user_profile", "title"]
+
+    def validate_address(self, raise_exception=False):
+        return True
