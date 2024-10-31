@@ -10,9 +10,4 @@ class TelegramConnectionSerializer(BaseThirdPartyConnectionSerializer):
     class Meta:
         model = TelegramConnection
         fields = "__all__"
-        read_only_fields = [
-            "created_on",
-            "pk",
-            "user_profile",
-            "title",
-        ]
+        read_only_fields = ["created_on", "pk", "user_profile", "title", "is_connected"]
