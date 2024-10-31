@@ -14,3 +14,6 @@ class TelegramConnectionSerializer(BaseThirdPartyConnectionSerializer):
 
     def validate_address(self, raise_exception=False):
         return True
+
+    def get_is_connected(self, obj):
+        return True
