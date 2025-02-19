@@ -198,7 +198,6 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 #     }
 # }
 
-# if MEMCACHED_URL and ',' in MEMCACHED_URL:
 CACHES = {
     "default": {
         "BACKEND": "django_bmemcached.memcached.BMemcached",
@@ -209,6 +208,7 @@ CACHES = {
         },
     }
 }
+
 # else:
 #     CACHES = {
 #         "default": {
@@ -223,7 +223,7 @@ CACHES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.Us"
-                "erAttributeSimilarityValidator",
+        "erAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -251,6 +251,7 @@ WHITE_ORIGINS = [
     "https://unitap-front.vercel.app",
     "http://127.0.0.1:5678",
     "https://unitap.app",
+    "https://dashboard.unitap.app",
     "https://bright.cafepay.app",
     "https://api.unitap.app",
     "https://stage.unitap.app",
