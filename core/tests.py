@@ -316,7 +316,7 @@ class TestEASAttestConstraint(BaseTestCase):
 class TestGitcoinPassportConstraint(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.address = "0x0cE49AF5d8c5A70Edacd7115084B2b3041fE4fF6"
+        self.address = "0x05204E317D25eb172115546297b056965bE2C74d"
         self.user_profile = self.user_profile
         create_new_wallet(
             user_profile=self.user_profile, _address=self.address, wallet_type="EVM"
