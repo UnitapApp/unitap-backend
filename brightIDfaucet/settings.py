@@ -251,16 +251,15 @@ WHITE_ORIGINS = [
     "https://unitap-front.vercel.app",
     "http://127.0.0.1:5678",
     "https://unitap.app",
+    "https://www.unitap.app",
     "https://dashboard.unitap.app",
     "https://bright.cafepay.app",
     "https://api.unitap.app",
     "https://stage.unitap.app",
 ]
 
-if not DEBUG:
-    CORS_ALLOWED_ORIGINS = WHITE_ORIGINS
-else:
-    CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Add Turnstile response headers for CORS
 # These headers are required for Cloudflare and HCaptcha Turnstile anti-bot service
