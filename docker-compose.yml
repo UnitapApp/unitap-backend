@@ -4,6 +4,7 @@ services:
     platform: linux/amd64
     build: .
     image: unitap-backend
+    command:  ./start_dev.sh
     environment:
       - FIELD_KEY=${FIELD_KEY}
       - SECRET_KEY=${SECRET_KEY}

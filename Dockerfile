@@ -12,4 +12,5 @@ RUN mkdir media -p
 RUN chmod +x start_dev.sh
 
 EXPOSE 5678
-CMD ./start_dev.sh
+# CMD ./start_dev.sh
+ 
