@@ -13,6 +13,9 @@
       "quantity": 1
     }
   },
+  "scripts": {
+    "postdeploy": "python manage.py migrate"
+  },
   "healthchecks": {
     "web": [
       {
