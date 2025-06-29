@@ -69,7 +69,10 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN")
 DEBUG = str2bool(os.environ.get("DEBUG"))
 DATABASE_URL = os.environ.get("DATABASE_URL")
 REDIS_URL = os.environ.get("REDIS_URL")
-MEMCACHED_URL = os.environ.get("MEMCACHEDCLOUD_SERVERS")
+MEMCACHED_URL = os.environ.get("MEMCACHED_URL") or os.environ.get(
+    "MEMCACHEDCLOUD_SERVERS"
+)
+
 MEMCACHED_USERNAME = os.environ.get("MEMCACHEDCLOUD_USERNAME")
 MEMCACHED_PASSWORD = os.environ.get("MEMCACHEDCLOUD_PASSWORD")
 DEPLOYMENT_ENV = os.environ.get("DEPLOYMENT_ENV")
