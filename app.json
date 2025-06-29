@@ -1,0 +1,30 @@
+{
+  "formation": {
+    "release": {
+      "quantity": 1
+    },
+    "beat": {
+      "quantity": 1
+    },
+    "worker": {
+      "quantity": 1
+    },
+    "web": {
+      "quantity": 1
+    }
+  },
+  "healthchecks": {
+    "web": [
+      {
+        "type": "startup",
+        "name": "web check",
+        "description": "Checking if the app responds to the healthcheck endpoint",
+        "path": "/pass/art/1",
+        "attempts": 10,
+        "interval": "30s",
+        "wait": 10,
+        "initialDelay": 30
+      }
+    ]
+  }
+}
