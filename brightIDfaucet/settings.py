@@ -305,3 +305,13 @@ REST_FRAMEWORK = {
     ),
 }
 CELERY_BROKER_URL = REDIS_URL
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://unitap-front.vercel.app",
+    "https://unitap.app",
+    "https://www.unitap.app",
+    "https://dashboard.unitap.app",
+    "https://bright.cafepay.app",
+    "https://api.unitap.app",
+    "https://stage.unitap.app",
+]
